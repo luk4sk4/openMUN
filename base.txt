@@ -1,0 +1,114 @@
+# 📋 ESPECIFICACIÓN TÉCNICA BACKEND OPENMUN (V2)
+
+## 1. Arquitectura Base
+- **Backend:** Node.js (Express) + Socket.io + SQLite (`better-sqlite3` en modo WAL).
+- **Servidor Base:** `http://<IP_O_DOMINIO>:3000` (o la URL configurada).
+- **Persistencia y Limpieza:** 
+  - Avisos purgados automáticamente tras 24h.
+  - Conferencias inactivas auto-archivadas tras 30 días con envío de backup JSON vía Proton Mail (`contacto@openmun.app`).
+
+---
+
+## 2. API REST (Endpoints)
+
+### A. Conferencias
+- `POST /api/conferencias`
+  - Body: `{ id: string, nombre: string, pin_admin: string, pin_acceso?: string, email_admin?: string }`
+  - Respuesta: `{ ok: true, mensaje: "Conferencia creada exitosamente" }`
+- `POST /api/conferencias/:id/acceso`
+  - Body: `{ pin?: string }`
+  - Respuesta: `{ id, nombre, requierePin: boolean, comites: [...] }`
+- `GET /api/conferencias/:id/resumen` (Para Dashboard de Secretaría)
+  - Respuesta: `{ comites: [{ id, nombre, tipo_sesion, topico_actual, actualizado_en }] }`
+
+### B. Comités y Estados
+- `POST /api/conferencias/:id/comites`
+  - Body: `{ id?: string, nombre: string, pin_mesa?: string, datos_json?: object|string }`
+  - Respuesta: `{ ok: true, comiteId: string }`
+- `PATCH /api/comites/:id/estado`
+  - Body: `{ tipo_sesion?: string, topico_actual?: string }`
+  - Estados permitidos: `'formal'`, `'informal'`, `'receso'`, `'votacion'`
+  - Respuesta: `{ ok: true }`
+
+### C. Avisos y Notificaciones
+- `POST /api/conferencias/:id/avisos`
+  - Body: `{ comite_id?: string, emisor: 'organizacion'|'staff'|'logistica'|'mesa', tipo: 'info'|'urgente'|'alerta', mensaje: string }`
+  - Respuesta: `{ ok: true, id: number }`
+- `GET /api/conferencias/:id/avisos?comite_id=...`
+  - Respuesta: `{ avisos: [{ id, emisor, tipo, mensaje, comite_id, creado_en }] }`
+- `PATCH /api/avisos/:id/desactivar`
+  - Respuesta: `{ ok: true }`
+
+---
+
+## 3. Eventos Socket.io (WebSocket)
+- **Cliente -> Servidor:**
+  - `socket.emit('unirse-comite', salaId)` (ej: `hmun26_cs`)
+  - `socket.emit('enviar-datos', { sala: salaId, json: estadoCompleto })`
+- **Servidor -> Cliente:**
+  - `socket.on('cargar-estado-inicial', (jsonEstado) => { ... })`
+  - `socket.on('nuevos-datos', (jsonEstado) => { ... })`
+  - `socket.on('cierre-forzado', (motivo) => { ... })` (desconexión tras 12h continuas)
+
+Aquí tienes la especificación técnica del nuevo endpoint PATCH /api/conferencias/:id y el código listo para implementarlo en tu backend.
+Especificación Técnica para tu Agente Frontend
+
+    PATCH /api/conferencias/:id
+
+        Headers: Content-Type: application/json
+
+        Payload (Body):
+        JSON
+
+        {
+          "pin_admin_actual": "1234",
+          "nombre": "Harvard National MUN 2026 (Actualizado)",
+          "nuevo_pin_admin": "5678",
+          "pin_acceso": "delegados2026",
+          "email_admin": "secretaria@hmun.org"
+        }
+
+        (Todos los campos son opcionales excepto pin_admin_actual, que valida los permisos de secretaría para autorizar los cambios).
+
+        Respuesta Exitosa (200):
+        JSON
+
+        { "ok": true, "mensaje": "Conferencia actualizada correctamente" }
+
+        Errores Posibles:
+
+            400: Falta pin_admin_actual en el body.
+
+            401: pin_admin_actual no coincide con el registrado.
+
+            404: Conferencia no encontrada.
+
+---
+
+### D. Actualización de Comité
+- `PATCH /api/comites/:id`
+  - Headers: `Content-Type: application/json`
+  - Body:
+    ```json
+    {
+      "nombre": "Consejo de Seguridad (Actualizado)",
+      "pin_mesa": "4321",
+      "tipo_sesion": "informal",
+      "topico_actual": "Crisis en Oriente Medio",
+      "datos_json": { "oradores": [], "tiempo": 60 }
+    }
+    ```
+    (Todos los campos son opcionales; solo se actualizan los enviados).
+---
+
+### E. Checklist de Staff (Indexada)
+| Método | Endpoint | Body / Query | Respuesta Exitosa | Descripción |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/conferencias/:id/checklist` | Query: `?comite_id=...` (opcional) | `{ checklist: [{ id, conferencia_id, comite_id, titulo, completado, asignado_a, creado_en }] }` | Lista tareas ordenadas por `completado ASC, creado_en DESC`. |
+| `POST` | `/api/conferencias/:id/checklist` | `{ comite_id?, titulo, asignado_a? }` | `{ ok: true, id }` | Crea una nueva tarea de checklist (global o por comité). |
+| `PATCH` | `/api/checklist/:id/toggle` | `{ completado: boolean }` | `{ ok: true }` | Alterna el estado completado (1) o pendiente (0). |
+| `DELETE` | `/api/checklist/:id` | *Ninguno* | `{ ok: true, mensaje: "Elemento eliminado" }` | Elimina una tarea individual. |
+| `DELETE` | `/api/conferencias/:id/checklist/completados` | Query: `?comite_id=...` (opcional) | `{ ok: true, eliminados: number }` | Borra masivamente todas las tareas completadas (`completado = 1`). |
+
+
+

@@ -1,0 +1,32 @@
+{
+  "id": "unodc",
+  "nombre": "Oficina de las Naciones Unidas contra la Droga y el Delito (UNODC)",
+  "descripcion": "Comisión de Prevención del Delito y Justicia Penal / Estupefacientes contra el crimen organizado y el narcotráfico.",
+  "categoria": "Programa ONU / Justicia",
+  "paises": [
+    { "nombre": "Afganistán", "bandera": "af", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Alemania", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Bolivia", "bandera": "bo", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Brasil", "bandera": "br", "veto": false, "estatus": "Ausente" },
+    { "nombre": "China", "bandera": "cn", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Colombia", "bandera": "co", "veto": false, "estatus": "Ausente" },
+    { "nombre": "España", "bandera": "es", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Estados Unidos", "bandera": "us", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Irán", "bandera": "ir", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Italia", "bandera": "it", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Japón", "bandera": "jp", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Marruecos", "bandera": "ma", "veto": false, "estatus": "Ausente" },
+    { "nombre": "México", "bandera": "mx", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Myanmar", "bandera": "mm", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Nigeria", "bandera": "ng", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Países Bajos", "bandera": "nl", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Perú", "bandera": "pe", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Reino Unido", "bandera": "gb", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Rusia", "bandera": "ru", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Singapur", "bandera": "sg", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Sudáfrica", "bandera": "za", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Tailandia", "bandera": "th", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Turquía", "bandera": "tr", "veto": false, "estatus": "Ausente" }
+  ]
+}

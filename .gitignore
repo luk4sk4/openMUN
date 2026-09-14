@@ -1,0 +1,48 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies and Builds
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Databases & Storage
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+backups/
+*.backup
+
+# Temporary test / capture scripts
+capture.cjs
+
+# Editor & System files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# AI / Agent workspace caches
+.gemini
+.claude

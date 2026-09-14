@@ -1,0 +1,27 @@
+{
+  "id": "celac",
+  "nombre": "América Latina y Caribe (CELAC)",
+  "descripcion": "Bloque representativo de América Latina y las naciones del Caribe.",
+  "categoria": "Regional",
+  "paises": [
+    { "nombre": "Argentina", "bandera": "ar", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Bolivia", "bandera": "bo", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Brasil", "bandera": "br", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Chile", "bandera": "cl", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Colombia", "bandera": "co", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Costa Rica", "bandera": "cr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Cuba", "bandera": "cu", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Ecuador", "bandera": "ec", "veto": false, "estatus": "Ausente" },
+    { "nombre": "El Salvador", "bandera": "sv", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Guatemala", "bandera": "gt", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Honduras", "bandera": "hn", "veto": false, "estatus": "Ausente" },
+    { "nombre": "México", "bandera": "mx", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Nicaragua", "bandera": "ni", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Panamá", "bandera": "pa", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Paraguay", "bandera": "py", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Perú", "bandera": "pe", "veto": false, "estatus": "Ausente" },
+    { "nombre": "República Dominicana", "bandera": "do", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Uruguay", "bandera": "uy", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Venezuela", "bandera": "ve", "veto": false, "estatus": "Ausente" }
+  ]
+}

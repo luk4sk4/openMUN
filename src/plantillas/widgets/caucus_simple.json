@@ -1,0 +1,15 @@
+{
+  "id": "caucus_simple",
+  "title": "Caucus Simple / No Moderado",
+  "targetTab": "DEBATE",
+  "category": "Tiempo",
+  "badge": "Minimalista",
+  "icon": "Hourglass",
+  "iconBg": "rgba(236, 72, 153, 0.2)",
+  "iconColor": "#ec4899",
+  "description": "Temporizador simple de cuenta regresiva para negociaciones informales y pizarra de registro de mociones.",
+  "widgets": [
+    { "i": "cronometro_only_time", "col": 0, "row": 0, "colSpan": 6, "rowSpan": 4 },
+    { "i": "pizarra_mociones", "col": 6, "row": 0, "colSpan": 6, "rowSpan": 4 }
+  ]
+}

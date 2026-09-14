@@ -1,0 +1,32 @@
+{
+  "id": "oms",
+  "nombre": "Organización Mundial de la Salud (OMS / WHO)",
+  "descripcion": "Agencia especializada en salud pública internacional, respuesta ante epidemias y gobernanza sanitaria global.",
+  "categoria": "Salud / Agencia ONU",
+  "paises": [
+    { "nombre": "Alemania", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Argentina", "bandera": "ar", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Australia", "bandera": "au", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Brasil", "bandera": "br", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Canadá", "bandera": "ca", "veto": false, "estatus": "Ausente" },
+    { "nombre": "China", "bandera": "cn", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Colombia", "bandera": "co", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Corea del Sur", "bandera": "kr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Cuba", "bandera": "cu", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Egipto", "bandera": "eg", "veto": false, "estatus": "Ausente" },
+    { "nombre": "España", "bandera": "es", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Estados Unidos", "bandera": "us", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Etiopía", "bandera": "et", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "India", "bandera": "in", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Italia", "bandera": "it", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Japón", "bandera": "jp", "veto": false, "estatus": "Ausente" },
+    { "nombre": "México", "bandera": "mx", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Nigeria", "bandera": "ng", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Noruega", "bandera": "no", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Reino Unido", "bandera": "gb", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Singapur", "bandera": "sg", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Sudáfrica", "bandera": "za", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Suiza", "bandera": "ch", "veto": false, "estatus": "Ausente" }
+  ]
+}

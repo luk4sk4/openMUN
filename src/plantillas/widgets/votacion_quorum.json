@@ -1,0 +1,15 @@
+{
+  "id": "votacion_quorum",
+  "title": "Votación Oficial & Quórum",
+  "targetTab": "VOTING",
+  "category": "Votaciones",
+  "badge": "Ideal para Voting",
+  "icon": "Vote",
+  "iconBg": "rgba(59, 130, 246, 0.2)",
+  "iconColor": "#3b82f6",
+  "description": "Sistema completo de votaciones sustantivas y procedimentales, mayorías cualificadas, veto P5 y matriz de asistencia / roll call.",
+  "widgets": [
+    { "i": "votacion_oficial", "col": 0, "row": 0, "colSpan": 7, "rowSpan": 5 },
+    { "i": "matriz_paises", "col": 7, "row": 0, "colSpan": 5, "rowSpan": 5 }
+  ]
+}

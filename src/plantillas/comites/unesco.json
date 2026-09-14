@@ -1,0 +1,33 @@
+{
+  "id": "unesco",
+  "nombre": "UNESCO (Educación, Ciencia y Cultura)",
+  "descripcion": "Organización de las Naciones Unidas para la Educación, la Ciencia, la Cultura y la Preservación del Patrimonio.",
+  "categoria": "Cultura / Educación ONU",
+  "paises": [
+    { "nombre": "Alemania", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Argentina", "bandera": "ar", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Brasil", "bandera": "br", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Canadá", "bandera": "ca", "veto": false, "estatus": "Ausente" },
+    { "nombre": "China", "bandera": "cn", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Corea del Sur", "bandera": "kr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Cuba", "bandera": "cu", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Egipto", "bandera": "eg", "veto": false, "estatus": "Ausente" },
+    { "nombre": "España", "bandera": "es", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Estados Unidos", "bandera": "us", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Grecia", "bandera": "gr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "India", "bandera": "in", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Indonesia", "bandera": "id", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Italia", "bandera": "it", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Japón", "bandera": "jp", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Kenia", "bandera": "ke", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Líbano", "bandera": "lb", "veto": false, "estatus": "Ausente" },
+    { "nombre": "México", "bandera": "mx", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Nigeria", "bandera": "ng", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Perú", "bandera": "pe", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Reino Unido", "bandera": "gb", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Sudáfrica", "bandera": "za", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Turquía", "bandera": "tr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Ucrania", "bandera": "ua", "veto": false, "estatus": "Ausente" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "setup_comienzo",
+  "title": "Apertura & Configuración",
+  "targetTab": "COMIENZO",
+  "category": "Configuración",
+  "badge": "Ideal para Inicio",
+  "icon": "FileCheck2",
+  "iconBg": "rgba(34, 197, 94, 0.2)",
+  "iconColor": "#22c55e",
+  "description": "Configuración del nombre de comisión, agenda oficial de la sesión, importación de delegaciones y pase de lista inicial.",
+  "widgets": [
+    { "i": "establecer_agenda", "col": 0, "row": 0, "colSpan": 12, "rowSpan": 4 },
+    { "i": "importar_paises", "col": 0, "row": 4, "colSpan": 6, "rowSpan": 5 },
+    { "i": "matriz_paises", "col": 6, "row": 4, "colSpan": 6, "rowSpan": 5 }
+  ]
+}

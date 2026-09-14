@@ -1,0 +1,169 @@
+{
+  "theme": {
+    "backgroundColor": "#0c0e14",
+    "panelColor": "#161922",
+    "headerColor": "#10121a",
+    "subnavColor": "#141720",
+    "cardHeaderColor": "#1e222f",
+    "textColor": "#f1f5f9",
+    "primaryColor": "#3b82f6",
+    "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
+    "borderRadius": "6px"
+  },
+  "accessibility": {
+    "dyslexiaMode": false,
+    "fontSizeScale": 1,
+    "colorblindMode": "none",
+    "themeMode": "dark",
+    "densityMode": "standard"
+  },
+  "layouts": {
+    "COMIENZO": [
+      {
+        "i": "matriz_paises",
+        "col": 0,
+        "row": 0,
+        "colSpan": 7,
+        "rowSpan": 6
+      },
+      {
+        "i": "importar_paises",
+        "col": 7,
+        "row": 2,
+        "colSpan": 5,
+        "rowSpan": 4
+      },
+      {
+        "i": "establecer_agenda",
+        "col": 7,
+        "row": 0,
+        "colSpan": 5,
+        "rowSpan": 2
+      }
+    ],
+    "GSL": [
+      {
+        "i": "lista_oradores",
+        "col": 0,
+        "row": 0,
+        "colSpan": 3,
+        "rowSpan": 6
+      },
+      {
+        "i": "cronometro_principal",
+        "col": 3,
+        "row": 0,
+        "colSpan": 6,
+        "rowSpan": 6
+      },
+      {
+        "i": "anadir_paises_gsl",
+        "col": 9,
+        "row": 0,
+        "colSpan": 3,
+        "rowSpan": 6
+      }
+    ],
+    "DEBATE": [
+      {
+        "i": "cronometro_dual",
+        "col": 4,
+        "row": 0,
+        "colSpan": 5,
+        "rowSpan": 6
+      },
+      {
+        "i": "pizarra_mociones",
+        "col": 0,
+        "row": 0,
+        "colSpan": 4,
+        "rowSpan": 6
+      },
+      {
+        "i": "anadir_paises_debate",
+        "col": 9,
+        "row": 0,
+        "colSpan": 3,
+        "rowSpan": 6
+      }
+    ],
+    "VOTING": [
+      {
+        "i": "votacion_oficial",
+        "col": 0,
+        "row": 0,
+        "colSpan": 6,
+        "rowSpan": 6
+      },
+      {
+        "i": "mapa_votacion",
+        "col": 6,
+        "row": 0,
+        "colSpan": 6,
+        "rowSpan": 6
+      }
+    ],
+    "ENMIENDAS": [
+      {
+        "i": "controlador_enmiendas",
+        "col": 0,
+        "row": 0,
+        "colSpan": 7,
+        "rowSpan": 6
+      },
+      {
+        "i": "mini_votacion",
+        "col": 7,
+        "row": 0,
+        "colSpan": 5,
+        "rowSpan": 3
+      },
+      {
+        "i": "cronometro_enmiendas",
+        "col": 7,
+        "row": 3,
+        "colSpan": 5,
+        "rowSpan": 3
+      }
+    ],
+    "INFO": [
+      {
+        "i": "matriz_paises",
+        "col": 7,
+        "row": 0,
+        "colSpan": 5,
+        "rowSpan": 6
+      },
+      {
+        "i": "historico_delegaciones",
+        "col": 0,
+        "row": 0,
+        "colSpan": 7,
+        "rowSpan": 6
+      }
+    ],
+    "LIBRE": []
+  },
+  "alertasCrisis": [
+    {
+      "id": "ev_init_1",
+      "titulo": "Movilización Inesperada de Fuerzas en Frontera",
+      "categoria": "CRITICA",
+      "fuente": "Reuters / UN Situation Center",
+      "descripcion": "Las tensiones diplomáticas escalan tras el despliegue no anunciado de unidades blindadas. La presidencia del comité solicita posturas oficiales urgentes.",
+      "imagen": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80",
+      "horaSimulada": "Día 1 - 08:30 hrs",
+      "horaReal": "08:30",
+      "paisesInvolucrados": [],
+      "estado": "Activo",
+      "fijadoComoBanner": true
+    }
+  ],
+  "relojCrisis": {
+    "activo": false,
+    "dia": 1,
+    "horas": 8,
+    "minutos": 30,
+    "velocidad": 1
+  }
+}

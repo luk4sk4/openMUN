@@ -1,0 +1,16 @@
+{
+  "id": "debate_moderado",
+  "title": "Debate & Caucus Moderado",
+  "targetTab": "DEBATE",
+  "category": "Debate",
+  "badge": "Ideal para Caucus",
+  "icon": "Timer",
+  "iconBg": "rgba(249, 115, 22, 0.2)",
+  "iconColor": "#fb923c",
+  "description": "Reloj dual para tiempo individual y total, pizarra interactiva de mociones y selector ágil de oradores para caucus moderados.",
+  "widgets": [
+    { "i": "cronometro_dual", "col": 0, "row": 0, "colSpan": 4, "rowSpan": 5 },
+    { "i": "pizarra_mociones", "col": 4, "row": 0, "colSpan": 4, "rowSpan": 5 },
+    { "i": "anadir_paises_debate", "col": 8, "row": 0, "colSpan": 4, "rowSpan": 5 }
+  ]
+}

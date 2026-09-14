@@ -1,0 +1,28 @@
+{
+  "id": "g20",
+  "nombre": "Cumbre del G20",
+  "descripcion": "Las principales 20 economías mundiales y organizaciones regionales.",
+  "categoria": "Económico / Político",
+  "paises": [
+    { "nombre": "Alemania", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Arabia Saudita", "bandera": "sa", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Argentina", "bandera": "ar", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Australia", "bandera": "au", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Brasil", "bandera": "br", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Canadá", "bandera": "ca", "veto": false, "estatus": "Ausente" },
+    { "nombre": "China", "bandera": "cn", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Corea del Sur", "bandera": "kr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Estados Unidos", "bandera": "us", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": true, "estatus": "Ausente" },
+    { "nombre": "India", "bandera": "in", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Indonesia", "bandera": "id", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Italia", "bandera": "it", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Japón", "bandera": "jp", "veto": false, "estatus": "Ausente" },
+    { "nombre": "México", "bandera": "mx", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Reino Unido", "bandera": "gb", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Rusia", "bandera": "ru", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Sudáfrica", "bandera": "za", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Turquía", "bandera": "tr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Unión Europea", "bandera": "eu", "veto": false, "estatus": "Ausente" }
+  ]
+}

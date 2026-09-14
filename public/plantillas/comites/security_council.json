@@ -1,0 +1,23 @@
+{
+  "id": "security_council",
+  "nombre": "Consejo de Seguridad (UNSC / CSNU)",
+  "descripcion": "5 miembros permanentes con derecho a veto (P5) y 10 miembros no permanentes elegidos por la AG.",
+  "categoria": "ONU Principal / Seguridad",
+  "paises": [
+    { "nombre": "China", "bandera": "cn", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Estados Unidos", "bandera": "us", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Reino Unido", "bandera": "gb", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Rusia", "bandera": "ru", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Argelia", "bandera": "dz", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Dinamarca", "bandera": "dk", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Eslovenia", "bandera": "si", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Grecia", "bandera": "gr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Guyana", "bandera": "gy", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Pakistán", "bandera": "pk", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Panamá", "bandera": "pa", "veto": false, "estatus": "Ausente" },
+    { "nombre": "República de Corea", "bandera": "kr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Sierra Leona", "bandera": "sl", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Somalia", "bandera": "so", "veto": false, "estatus": "Ausente" }
+  ]
+}

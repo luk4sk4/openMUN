@@ -1,0 +1,17 @@
+{
+  "id": "crisis_lab",
+  "title": "Gabinete de Crisis & Noticiero",
+  "targetTab": "LIBRE",
+  "category": "Debate",
+  "badge": "Nuevo",
+  "icon": "Flame",
+  "iconBg": "rgba(239, 68, 68, 0.2)",
+  "iconColor": "#ef4444",
+  "description": "Sala de situación con noticiero en vivo, cronómetro dual, selector aleatorio de intervenciones y pizarra de mociones.",
+  "widgets": [
+    { "i": "gestor_crisis", "col": 0, "row": 0, "colSpan": 7, "rowSpan": 5 },
+    { "i": "selector_aleatorio", "col": 7, "row": 0, "colSpan": 5, "rowSpan": 5 },
+    { "i": "cronometro_dual", "col": 0, "row": 5, "colSpan": 6, "rowSpan": 4 },
+    { "i": "pizarra_mociones", "col": 6, "row": 5, "colSpan": 6, "rowSpan": 4 }
+  ]
+}

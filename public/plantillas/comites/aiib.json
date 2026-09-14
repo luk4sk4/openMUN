@@ -1,0 +1,30 @@
+{
+  "id": "aiib",
+  "nombre": "Banco Asiático de Inversión en Infraestructura (AIIB)",
+  "descripcion": "Institución financiera multilateral para el desarrollo de infraestructuras sostenibles y conectividad regional.",
+  "categoria": "Financiero / Multilateral",
+  "paises": [
+    { "nombre": "Alemania", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Arabia Saudita", "bandera": "sa", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Argentina", "bandera": "ar", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Australia", "bandera": "au", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Brasil", "bandera": "br", "veto": false, "estatus": "Ausente" },
+    { "nombre": "China", "bandera": "cn", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Corea del Sur", "bandera": "kr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Egipto", "bandera": "eg", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Emiratos Árabes Unidos", "bandera": "ae", "veto": false, "estatus": "Ausente" },
+    { "nombre": "España", "bandera": "es", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Filipinas", "bandera": "ph", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "India", "bandera": "in", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Indonesia", "bandera": "id", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Italia", "bandera": "it", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Pakistán", "bandera": "pk", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Reino Unido", "bandera": "gb", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Rusia", "bandera": "ru", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Singapur", "bandera": "sg", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Tailandia", "bandera": "th", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Turquía", "bandera": "tr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Vietnam", "bandera": "vn", "veto": false, "estatus": "Ausente" }
+  ]
+}

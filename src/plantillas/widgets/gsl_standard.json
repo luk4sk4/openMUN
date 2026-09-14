@@ -1,0 +1,16 @@
+{
+  "id": "gsl_standard",
+  "title": "GSL Estándar (Lista de Oradores)",
+  "targetTab": "GSL",
+  "category": "Debate",
+  "badge": "Ideal para GSL",
+  "icon": "Users",
+  "iconBg": "rgba(168, 85, 247, 0.2)",
+  "iconColor": "#c084fc",
+  "description": "Disposición estándar de 3 columnas para la Lista General de Oradores: oradores en cola, cronómetro de discurso y buscador rápido de delegaciones.",
+  "widgets": [
+    { "i": "lista_oradores", "col": 0, "row": 0, "colSpan": 4, "rowSpan": 5 },
+    { "i": "cronometro_principal", "col": 4, "row": 0, "colSpan": 4, "rowSpan": 5 },
+    { "i": "anadir_paises_gsl", "col": 8, "row": 0, "colSpan": 4, "rowSpan": 5 }
+  ]
+}

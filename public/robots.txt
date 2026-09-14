@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Host
+Host: https://openmun.app
+
+# Sitemaps
+Sitemap: https://openmun.app/sitemap.xml

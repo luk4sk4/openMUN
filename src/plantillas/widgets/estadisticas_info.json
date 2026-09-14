@@ -1,0 +1,15 @@
+{
+  "id": "estadisticas_info",
+  "title": "Estadísticas & Participación",
+  "targetTab": "INFO",
+  "category": "Estadísticas",
+  "badge": "Ideal para Info",
+  "icon": "BarChart3",
+  "iconBg": "rgba(6, 182, 212, 0.2)",
+  "iconColor": "#06b6d4",
+  "description": "Panel de métricas con histórico de intervenciones, interrupciones y matriz integral de estados por delegación.",
+  "widgets": [
+    { "i": "matriz_paises", "col": 0, "row": 0, "colSpan": 6, "rowSpan": 5 },
+    { "i": "historico_delegaciones", "col": 6, "row": 0, "colSpan": 6, "rowSpan": 5 }
+  ]
+}

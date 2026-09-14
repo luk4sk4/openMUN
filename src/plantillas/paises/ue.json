@@ -1,0 +1,25 @@
+{
+  "id": "ue",
+  "nombre": "Consejo de la Unión Europea",
+  "descripcion": "Estados miembros de la Unión Europea para toma de decisiones comunitarias.",
+  "categoria": "Regional",
+  "paises": [
+    { "nombre": "Alemania", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Italia", "bandera": "it", "veto": false, "estatus": "Ausente" },
+    { "nombre": "España", "bandera": "es", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Polonia", "bandera": "pl", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Países Bajos", "bandera": "nl", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Bélgica", "bandera": "be", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Grecia", "bandera": "gr", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Portugal", "bandera": "pt", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Suecia", "bandera": "se", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Austria", "bandera": "at", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Irlanda", "bandera": "ie", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Dinamarca", "bandera": "dk", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Finlandia", "bandera": "fi", "veto": false, "estatus": "Ausente" },
+    { "nombre": "República Checa", "bandera": "cz", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Rumania", "bandera": "ro", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Hungría", "bandera": "hu", "veto": false, "estatus": "Ausente" }
+  ]
+}

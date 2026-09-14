@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenMUN — Software Libre para Modelos de Naciones Unidas</title>
+    
+    <!-- SEO & Metadata Primarios -->
+    <meta name="description" content="Plataforma libre, gratuita y serverless para Modelos de Naciones Unidas. Control de oradores, debates y votaciones P2P en tiempo real. ¡Pruébala gratis!" />
+    <meta name="keywords" content="OpenMUN, Modelo de Naciones Unidas, Modelo de Naciones Unidas online, MUN software, software mesa directiva MUN, debate MUN, cronometro MUN, lista de oradores GSL, votacion MUN, P2P WebRTC, software libre MUN, Model United Nations software" />
+    <meta name="author" content="OpenMUN Team" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <link rel="canonical" href="https://openmun.app/" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0f172a" />
+    
+    <!-- Favicons & App Icons (Optimizados para Google Search y Navegadores) -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
+    <!-- Open Graph / Facebook / WhatsApp / LinkedIn / Google Rich Previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://openmun.app/" />
+    <meta property="og:title" content="OpenMUN — Software Libre para Modelos de Naciones Unidas" />
+    <meta property="og:description" content="Plataforma libre, gratuita y serverless para Modelos de Naciones Unidas (MUN). Gestión de oradores, cronómetros y votaciones P2P en tiempo real." />
+    <meta property="og:image" content="https://openmun.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="OpenMUN — Plataforma Web de Modelo de Naciones Unidas" />
+    <meta property="og:logo" content="https://openmun.app/logo.png" />
+    <meta property="og:site_name" content="OpenMUN" />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://openmun.app/" />
+    <meta name="twitter:title" content="OpenMUN — Software Libre para Modelos de Naciones Unidas" />
+    <meta name="twitter:description" content="Plataforma libre, gratuita y serverless para Modelos de Naciones Unidas (MUN). Gestión de oradores, cronómetros y votaciones P2P en tiempo real." />
+    <meta name="twitter:image" content="https://openmun.app/og-image.png" />
+    <meta name="twitter:image:alt" content="OpenMUN Logo y Plataforma MUN" />
+
+    <!-- Conexiones Optimizadas (DNS + TCP / TLS) -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://static.cloudflareinsights.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://static.cloudflareinsights.com" crossorigin>
+
+    <!-- Carga de Fuentes Optimizada No Bloqueante -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700;800;900&family=Lexend:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700;800;900&family=Lexend:wght@300;400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700;800;900&family=Lexend:wght@300;400;500;600;700;800&display=swap">
+    </noscript>
+
+    <!-- Datos Estructurados JSON-LD (Schema.org) para Google Search y Logo Oficial -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://openmun.app/#organization",
+          "name": "OpenMUN",
+          "url": "https://openmun.app",
+          "logo": {
+            "@type": "ImageObject",
+            "@id": "https://openmun.app/#logo",
+            "url": "https://openmun.app/logo.png",
+            "contentUrl": "https://openmun.app/logo.png",
+            "caption": "OpenMUN Logo",
+            "width": 512,
+            "height": 512
+          },
+          "image": "https://openmun.app/logo.png",
+          "description": "Software libre y gratuito para Modelos de Naciones Unidas (MUN)."
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://openmun.app/#website",
+          "url": "https://openmun.app",
+          "name": "OpenMUN",
+          "publisher": {
+            "@id": "https://openmun.app/#organization"
+          },
+          "image": "https://openmun.app/logo.png"
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://openmun.app/#webapp",
+          "name": "OpenMUN",
+          "alternateName": ["openMUN", "Open MUN", "OpenMUN App"],
+          "url": "https://openmun.app",
+          "description": "Plataforma web libre, gratuita y serverless en tiempo real para la gestión y proyección de comités de Modelos de Naciones Unidas (MUN).",
+          "applicationCategory": "EducationalApplication",
+          "operatingSystem": "All",
+          "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+          "isAccessibleForFree": true,
+          "image": "https://openmun.app/logo.png",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "author": {
+            "@id": "https://openmun.app/#organization"
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Pre-renderizado estático legible para buscadores (SEO Crawlers & Social Bots) -->
+      <header style="padding: 2rem; font-family: sans-serif; text-align: center;">
+        <h1 style="font-size: 2.2rem; color: #2563eb;">OpenMUN — Software Libre para Modelos de Naciones Unidas (MUN)</h1>
+        <p style="font-size: 1.1rem; max-width: 800px; margin: 1rem auto; color: #475569;">
+          Plataforma integral, modular y de latencia cero para mesas directivas (Chairs), delegaciones, secretarías y gabinetes de crisis en comités de Model United Nations (MUN).
+        </p>
+      </header>
+      <main style="padding: 1rem 2rem; font-family: sans-serif; max-width: 1000px; margin: 0 auto;">
+        <section>
+          <h2>Características Principales para Comités MUN</h2>
+          <ul>
+            <li><strong>Lista General de Oradores (GSL):</strong> Gestión fluida de delegaciones con tiempos configurables por orador, cesiones de palabra y cola en tiempo real.</li>
+            <li><strong>Cronómetros Dinámicos:</strong> Control preciso de debates moderados e inmoderados con alertas visuales y sonoras.</li>
+            <li><strong>Gestión de Quórum y Asistencia:</strong> Matriz de países con cálculo automático de mayorías simples, 2/3 y cualificadas.</li>
+            <li><strong>Pizarra de Mociones y Votación Oficial:</strong> Registro jerárquico de mociones, votaciones procedimentales/sustantivas y mapa de votos.</li>
+            <li><strong>Sincronización P2P en Tiempo Real:</strong> Comunicación Peer-to-Peer mediante WebRTC y códigos QR para conectar proyectores, secretarías y delegaciones sin servidor intermediario.</li>
+            <li><strong>Gabinete de Crisis y Noticiero TV:</strong> Emisión de noticias en directo, alertas urgentes y cintillo permanente de noticias.</li>
+            <li><strong>Privacidad y Sincronización Nube:</strong> Datos guardados localmente con opción de respaldo en Google Drive. 100% libre bajo licencia AGPLv3.</li>
+          </ul>
+        </section>
+        <section style="margin-top: 2rem;">
+          <h2>Preguntas Frecuentes (FAQ)</h2>
+          <article>
+            <h3>¿Qué es OpenMUN y para qué sirve?</h3>
+            <p>OpenMUN es una plataforma web de código abierto diseñada para facilitar la moderación y gestión de simulaciones de Modelos de Naciones Unidas (MUN). Permite a las Mesas de Presidencia llevar el control de oradores, cronómetros, mociones, votaciones, cálculo de quorum y transmitir el estado de la sesión en vivo a delegados y pantallas de proyección.</p>
+          </article>
+          <article>
+            <h3>¿Es realmente 100% gratuito y de código abierto?</h3>
+            <p>Sí, totalmente. OpenMUN es software libre bajo licencia GNU AGPLv3. No incluye pagos, suscripciones premium ni publicidad.</p>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
+        <h2>JavaScript es necesario para ejecutar OpenMUN</h2>
+        <p>Esta aplicación requiere JavaScript habilitado en tu navegador para funcionar de forma interactiva.</p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.jsx"></script>
+    <!-- Cloudflare Web Analytics -->
+    <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "65173986860b4765a28482847ce7c5df"}'></script>
+    <!-- End Cloudflare Web Analytics -->
+  </body>
+</html>

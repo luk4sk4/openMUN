@@ -1,0 +1,20 @@
+{
+  "id": "crisis",
+  "nombre": "Gabinete de Crisis Histórico (Guerra Fría)",
+  "descripcion": "Bloques oriental, occidental y delegaciones clave de mediación.",
+  "categoria": "Crisis / Histórico",
+  "paises": [
+    { "nombre": "Estados Unidos", "bandera": "us", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Unión Soviética (URSS)", "bandera": "ru", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Reino Unido", "bandera": "gb", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Francia", "bandera": "fr", "veto": true, "estatus": "Ausente" },
+    { "nombre": "China", "bandera": "cn", "veto": true, "estatus": "Ausente" },
+    { "nombre": "Cuba", "bandera": "cu", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Alemania Oriental (RDA)", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Alemania Occidental (RFA)", "bandera": "de", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Yugoslavia", "bandera": "rs", "veto": false, "estatus": "Ausente" },
+    { "nombre": "India", "bandera": "in", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Egipto", "bandera": "eg", "veto": false, "estatus": "Ausente" },
+    { "nombre": "Naciones Unidas (ONU)", "bandera": "un", "veto": false, "estatus": "Ausente" }
+  ]
+}

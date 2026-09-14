@@ -1,0 +1,703 @@
+/* Import OpenDyslexic and alternative accessible fonts */
+@import url('https://fonts.cdnfonts.com/css/open-dyslexic');
+
+/* Reset and base styles */
+:root {
+  /* Dynamic CSS custom properties managed by AccessibilityContext */
+  --bg-color: #0c0e14;
+  --panel-color: #161922;
+  --panel-bg: #161922;
+  --card-header-bg: #1e222f;
+  --card-hover: rgba(255, 255, 255, 0.04);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --header-bg: #10121a;
+  --subnav-bg: #141720;
+  --border-color: #2b3042;
+  --subborder-color: #222636;
+  --text-color: #f1f5f9;
+  --muted-text: #94a3b8;
+  --btn-bg: #3b82f6;
+  --btn-text: #ffffff;
+  --font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: filter 0.25s ease, background-color 0.25s ease, color 0.25s ease;
+}
+
+html {
+  /* font-size is dynamically updated via AccessibilityContext scale (e.g. 100%, 120%, 80%) */
+  transition: font-size 0.2s ease;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Modo Dislexia - Tipografía optimizada con máxima legibilidad */
+body.dyslexia-mode,
+body.dyslexia-mode *,
+html.dyslexia-mode,
+html.dyslexia-mode *,
+.dyslexia-mode,
+.dyslexia-mode * {
+  font-family: 'OpenDyslexic', 'Atkinson Hyperlegible', 'Lexend', 'Comic Sans MS', sans-serif !important;
+  letter-spacing: 0.035em !important;
+  word-spacing: 0.06em !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Custom Modern Scrollbars across all browsers */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, rgba(148, 163, 184, 0.28)) transparent;
+}
+
+/* Webkit Scrollbars (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(148, 163, 184, 0.25));
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, rgba(148, 163, 184, 0.55));
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--btn-bg, #3b82f6);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Custom Modern Range Sliders (Inputs de rango) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--slider-track-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 6px 0;
+}
+
+input[type="range"]:hover {
+  background: var(--slider-track-hover, rgba(255, 255, 255, 0.15));
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+/* Slider Thumb - Webkit */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--btn-bg, #3b82f6);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.8), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  background: #2563eb;
+}
+
+/* Slider Thumb - Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--btn-bg, #3b82f6);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.8), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(0.95);
+  background: #2563eb;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: var(--slider-track-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 9999px;
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 6px;
+  background: var(--btn-bg, #3b82f6);
+  border-radius: 9999px 0 0 9999px;
+}
+
+/* React Grid Layout overrides for better visuals */
+.react-grid-item.react-grid-placeholder {
+  background: var(--btn-bg, #3b82f6) !important;
+  opacity: 0.15;
+  transition-duration: 100ms;
+  z-index: 2;
+  user-select: none;
+}
+
+/* Animaciones y Clases para Alertas de Temporizadores */
+@keyframes blinkRed {
+  0%, 100% {
+    background-color: var(--timer-negative-bg, #3f0c0c);
+    border-color: var(--timer-negative-border, #ef4444);
+    color: var(--timer-negative-color, #ef4444);
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.55);
+  }
+  50% {
+    background-color: var(--card-header-bg, #1e222f);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: var(--text-color, #f1f5f9);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.15);
+  }
+}
+
+.timer-blink-red {
+  animation: blinkRed 1s infinite cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: none !important;
+}
+
+.timer-warning-red {
+  background-color: var(--timer-negative-bg, #3f0c0c) !important;
+  border-color: var(--timer-negative-border, #ef4444) !important;
+  color: var(--timer-negative-color, #ef4444) !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.35) !important;
+}
+
+.timer-negative {
+  background-color: var(--timer-negative-bg, #3f0c0c) !important;
+  border-color: var(--timer-negative-border, #ef4444) !important;
+  color: var(--timer-negative-color, #ef4444) !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.45) !important;
+}
+
+.timer-orange {
+  background-color: var(--timer-orange-bg, #431407) !important;
+  border-color: var(--timer-orange-border, #f97316) !important;
+  color: var(--timer-orange-color, #f97316) !important;
+}
+
+
+/* Controles flotantes de Widgets (Visibles solo al pasar el ratón o interactuar) */
+.widget-card .widget-floating-controls {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.widget-card:hover .widget-floating-controls,
+.widget-card:focus-within .widget-floating-controls,
+.widget-card.is-interacting .widget-floating-controls {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Ocultar flechas default de los inputs de tipo number */
+.no-spin::-webkit-outer-spin-button,
+.no-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spin[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Estilo para flechas personalizadas de ajuste de tiempo */
+.timer-arrow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.timer-arrow-btn:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.timer-arrow-btn:active {
+  transform: scale(0.92);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom Modern Range Sliders (Inputs de rango) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--slider-track-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 6px 0;
+}
+
+input[type="range"]:hover {
+  background: var(--slider-track-hover, rgba(255, 255, 255, 0.15));
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+/* Slider Thumb - Webkit */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--btn-bg, #3b82f6);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.8), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  background: #2563eb;
+}
+
+/* Slider Thumb - Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--btn-bg, #3b82f6);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.8), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(0.95);
+  background: #2563eb;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: var(--slider-track-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 9999px;
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 6px;
+  background: var(--btn-bg, #3b82f6);
+  border-radius: 9999px 0 0 9999px;
+}
+
+/* React Grid Layout overrides for better visuals */
+.react-grid-item.react-grid-placeholder {
+  background: var(--btn-bg, #3b82f6) !important;
+  opacity: 0.15;
+  transition-duration: 100ms;
+  z-index: 2;
+  user-select: none;
+}
+
+/* Animaciones y Clases para Alertas de Temporizadores */
+@keyframes blinkRed {
+  0%, 100% {
+    background-color: var(--timer-negative-bg, #3f0c0c);
+    border-color: var(--timer-negative-border, #ef4444);
+    color: var(--timer-negative-color, #ef4444);
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.55);
+  }
+  50% {
+    background-color: var(--card-header-bg, #1e222f);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: var(--text-color, #f1f5f9);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.15);
+  }
+}
+
+.timer-blink-red {
+  animation: blinkRed 1s infinite cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: none !important;
+}
+
+.timer-warning-red {
+  background-color: var(--timer-negative-bg, #3f0c0c) !important;
+  border-color: var(--timer-negative-border, #ef4444) !important;
+  color: var(--timer-negative-color, #ef4444) !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.35) !important;
+}
+
+.timer-negative {
+  background-color: var(--timer-negative-bg, #3f0c0c) !important;
+  border-color: var(--timer-negative-border, #ef4444) !important;
+  color: var(--timer-negative-color, #ef4444) !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.45) !important;
+}
+
+.timer-orange {
+  background-color: var(--timer-orange-bg, #431407) !important;
+  border-color: var(--timer-orange-border, #f97316) !important;
+  color: var(--timer-orange-color, #f97316) !important;
+}
+
+
+/* Controles flotantes de Widgets (Visibles solo al pasar el ratón o interactuar) */
+.widget-card .widget-floating-controls {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.widget-card:hover .widget-floating-controls,
+.widget-card:focus-within .widget-floating-controls,
+.widget-card.is-interacting .widget-floating-controls {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Ocultar flechas default de los inputs de tipo number */
+.no-spin::-webkit-outer-spin-button,
+.no-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spin[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Estilo para flechas personalizadas de ajuste de tiempo */
+.timer-arrow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.timer-arrow-btn:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.timer-arrow-btn:active {
+  transform: scale(0.92);
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes toastSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Skeleton Loading Styles */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-shimmer.light-mode {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-pulse {
+  animation: skeletonPulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODOS DE DENSIDAD DE INTERFAZ (Compacta / Estándar / Proyección)
+   ───────────────────────────────────────────────────────────── */
+:root {
+    --density-padding-y: 0.6rem;
+    --density-padding-x: 1rem;
+    --density-gap: 0.75rem;
+    --density-font-scale: 1.1;
+    --density-widget-header-padding: 0.8rem 1.2rem;
+    --density-button-padding: 0.5rem 0.9rem;
+}
+
+/* Modo Compacto: Optimizado para pantallas portátiles de 13"-14" */
+body.density-compact,
+html.density-compact {
+  --density-padding-y: 0.22rem;
+  --density-padding-x: 0.45rem;
+  --density-gap: 0.3rem;
+  --density-font-scale: 0.88;
+  --density-widget-header-padding: 0.35rem 0.6rem;
+  --density-button-padding: 0.22rem 0.45rem;
+}
+
+body.density-compact nav {
+  padding: 0.4rem 1rem !important;
+}
+
+body.density-compact nav button {
+  padding: 4px 7px !important;
+  font-size: 0.75rem !important;
+}
+
+body.density-compact .react-grid-item {
+  padding: 1px !important;
+}
+
+body.density-compact .react-grid-item > div {
+  padding: 0.5rem !important;
+  gap: 0.4rem !important;
+}
+
+body.density-compact input,
+body.density-compact select,
+body.density-compact button {
+  font-size: 0.78rem !important;
+}
+
+/* Modo Proyección: Diseñado para pantallas secundarias, proyectores HDMI y televisores */
+body.density-projector,
+html.density-projector {
+  --density-padding-y: 0.85rem;
+  --density-padding-x: 1.25rem;
+  --density-gap: 0.95rem;
+  --density-font-scale: 1.22;
+  --density-widget-header-padding: 1rem 1.4rem;
+  --density-button-padding: 0.65rem 1.25rem;
+}
+
+body.density-projector nav {
+  padding: 1rem 2rem !important;
+}
+
+body.density-projector nav button {
+  padding: 8px 14px !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+}
+
+body.density-projector .react-grid-item {
+  padding: 4px !important;
+}
+
+body.density-projector .react-grid-item > div {
+  padding: 1.25rem !important;
+  border-width: 2px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.density-projector input,
+body.density-projector select,
+body.density-projector button {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+}
+
+body.density-projector .timer-digits,
+body.density-projector [data-timer-display],
+body.density-projector .reloj-gsl-display {
+  font-size: 1.35em !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MICRO-INTERACCIONES Y ANIMACIONES DINÁMICAS
+   ───────────────────────────────────────────────────────────── */
+@keyframes speakerTurnIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  60% {
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes timerAlertPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.45);
+  }
+}
+
+@keyframes fadeScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes highlightPulse {
+  0%, 100% {
+    opacity: 0.9;
+    border-color: var(--border-color);
+  }
+  50% {
+    opacity: 1;
+    border-color: #3b82f6;
+  }
+}
+
+.anim-speaker-turn {
+  animation: speakerTurnIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.anim-fade-scale {
+  animation: fadeScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.anim-timer-alert {
+  animation: timerAlertPulse 1.2s ease-in-out infinite;
+}
+
+.anim-highlight-pulse {
+  animation: highlightPulse 2s ease-in-out infinite;
+}
+
+
+

@@ -1397,10 +1397,10 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                             color: '#3b82f6',
                             border: '1px solid rgba(59, 130, 246, 0.35)',
                             padding: '0.12rem 0.45rem',
-                            borderRadius: '4px'
-                          }}>
-                            🌐 BD Conferencia
-                          </span>
+                              borderRadius: '4px'
+                            }}>
+                              Conferencia
+                            </span>
                           <span style={{
                             fontSize: '0.68rem',
                             fontWeight: '800',

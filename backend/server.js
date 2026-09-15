@@ -130,7 +130,7 @@ const qGetAvisosActivos = db.prepare(`
     AND creado_en >= datetime('now', '-24 hours')
   ORDER BY creado_en DESC
 `);
-const qGetAvisosPorComite = db.prepare(`
+const qGetAvisosChairConComite = db.prepare(`
   SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
   FROM avisos 
   WHERE conferencia_id = ? 
@@ -138,16 +138,17 @@ const qGetAvisosPorComite = db.prepare(`
     AND (
       comite_id IS NULL 
       OR comite_id = '' 
-      OR comite_id = 'GLOBAL' 
-      OR comite_id = 'CHAIRS_ALL'
-      OR comite_id = ? 
-      OR comite_id = ('CHAIR_' || ?)
-      OR comite_id = ('MESA_' || ?)
+      OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
+      OR UPPER(comite_id) IN ('CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL')
+      OR LOWER(comite_id) = LOWER(?)
+      OR LOWER(comite_id) = ('comite_' || LOWER(?))
+      OR LOWER(comite_id) = ('chair_' || LOWER(?))
+      OR LOWER(comite_id) = ('mesa_' || LOWER(?))
     )
     AND creado_en >= datetime('now', '-24 hours')
   ORDER BY creado_en DESC
 `);
-const qGetAvisosPorStaff = db.prepare(`
+const qGetAvisosChairSinComite = db.prepare(`
   SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
   FROM avisos 
   WHERE conferencia_id = ? 
@@ -155,16 +156,13 @@ const qGetAvisosPorStaff = db.prepare(`
     AND (
       comite_id IS NULL 
       OR comite_id = '' 
-      OR comite_id = 'GLOBAL' 
-      OR comite_id = 'STAFF_ALL' 
-      OR comite_id = ? 
-      OR comite_id = ('STAFF_COMITE_' || ?) 
-      OR comite_id = ('STAFF_' || ?)
+      OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
+      OR UPPER(comite_id) IN ('CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL')
     )
     AND creado_en >= datetime('now', '-24 hours')
   ORDER BY creado_en DESC
 `);
-const qGetAvisosStaffAll = db.prepare(`
+const qGetAvisosStaffConComite = db.prepare(`
   SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
   FROM avisos 
   WHERE conferencia_id = ? 
@@ -172,13 +170,62 @@ const qGetAvisosStaffAll = db.prepare(`
     AND (
       comite_id IS NULL 
       OR comite_id = '' 
-      OR comite_id = 'GLOBAL' 
-      OR comite_id = 'STAFF_ALL' 
+      OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
+      OR UPPER(comite_id) IN ('STAFF_ALL', 'STAFF_GLOBAL')
+      OR LOWER(comite_id) = LOWER(?)
+      OR LOWER(comite_id) = ('comite_' || LOWER(?))
+      OR LOWER(comite_id) = ('staff_comite_' || LOWER(?))
+      OR LOWER(comite_id) = ('staff_' || LOWER(?))
+    )
+    AND creado_en >= datetime('now', '-24 hours')
+  ORDER BY creado_en DESC
+`);
+const qGetAvisosStaffGlobales = db.prepare(`
+  SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
+  FROM avisos 
+  WHERE conferencia_id = ? 
+    AND activo = 1 
+    AND (
+      comite_id IS NULL 
+      OR comite_id = '' 
+      OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
+      OR UPPER(comite_id) IN ('STAFF_ALL', 'STAFF_GLOBAL')
       OR comite_id LIKE 'STAFF_%'
     )
     AND creado_en >= datetime('now', '-24 hours')
   ORDER BY creado_en DESC
 `);
+const qGetAvisosDelegateConComite = db.prepare(`
+  SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
+  FROM avisos 
+  WHERE conferencia_id = ? 
+    AND activo = 1 
+    AND (
+      comite_id IS NULL 
+      OR comite_id = '' 
+      OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
+      OR LOWER(comite_id) = LOWER(?)
+      OR LOWER(comite_id) = ('comite_' || LOWER(?))
+    )
+    AND creado_en >= datetime('now', '-24 hours')
+  ORDER BY creado_en DESC
+`);
+const qGetAvisosDelegateGlobales = db.prepare(`
+  SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
+  FROM avisos 
+  WHERE conferencia_id = ? 
+    AND activo = 1 
+    AND (
+      comite_id IS NULL 
+      OR comite_id = '' 
+      OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
+    )
+    AND creado_en >= datetime('now', '-24 hours')
+  ORDER BY creado_en DESC
+`);
+const qGetAvisosPorComite = qGetAvisosChairConComite;
+const qGetAvisosPorStaff = qGetAvisosStaffConComite;
+const qGetAvisosStaffAll = qGetAvisosStaffGlobales;
 const qDesactivarAviso = db.prepare(`UPDATE avisos SET activo = 0 WHERE id = ?`);
 const qLimpiarAvisosViejos = db.prepare(`
   DELETE FROM avisos 
@@ -598,18 +645,34 @@ app.get('/api/conferencias/:id/avisos', (req, res) => {
 	const confId = req.params.id.toLowerCase().trim();
 	const { comite_id, role, rol, todos } = req.query;
 	const userRole = (role || rol || '').toLowerCase().trim();
+	const rawComiteId = comite_id && comite_id !== 'ALL' && comite_id !== 'GLOBAL' && comite_id !== 'TODOS'
+		? String(comite_id).trim().replace(/^(chair_|mesa_|staff_comite_|staff_)/i, '').replace(/^comite_/i, '')
+		: null;
+
 	try {
 		let avisos;
 		if (todos === 'true' || userRole === 'secretaria' || userRole === 'organizacion' || userRole === 'admin') {
 			avisos = qGetAvisosActivos.all(confId);
 		} else if (userRole === 'staff' || userRole === 'staff_global') {
-			if (comite_id && comite_id !== 'ALL' && comite_id !== 'GLOBAL' && comite_id !== 'TODOS') {
-				avisos = qGetAvisosPorStaff.all(confId, comite_id, comite_id, comite_id);
+			if (rawComiteId) {
+				avisos = qGetAvisosStaffConComite.all(confId, rawComiteId, rawComiteId, rawComiteId, rawComiteId);
 			} else {
-				avisos = qGetAvisosStaffAll.all(confId);
+				avisos = qGetAvisosStaffGlobales.all(confId);
 			}
-		} else if (comite_id && comite_id !== 'ALL' && comite_id !== 'GLOBAL') {
-			avisos = qGetAvisosPorComite.all(confId, comite_id, comite_id, comite_id);
+		} else if (userRole === 'chair' || userRole === 'mesa' || userRole === 'secretariat') {
+			if (rawComiteId) {
+				avisos = qGetAvisosChairConComite.all(confId, rawComiteId, rawComiteId, rawComiteId, rawComiteId);
+			} else {
+				avisos = qGetAvisosChairSinComite.all(confId);
+			}
+		} else if (userRole === 'delegate') {
+			if (rawComiteId) {
+				avisos = qGetAvisosDelegateConComite.all(confId, rawComiteId, rawComiteId);
+			} else {
+				avisos = qGetAvisosDelegateGlobales.all(confId);
+			}
+		} else if (rawComiteId) {
+			avisos = qGetAvisosChairConComite.all(confId, rawComiteId, rawComiteId, rawComiteId, rawComiteId);
 		} else {
 			avisos = qGetAvisosActivos.all(confId);
 		}

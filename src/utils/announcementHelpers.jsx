@@ -83,13 +83,28 @@ export const obtenerOpcionesDestino = (comites = [], rolActual = 'mesa', current
 };
 
 /**
+ * Normaliza un ID de comité o destinatario eliminando prefijos de rol y comite_, y pasando a minúsculas.
+ *
+ * @param {string} id - ID a normalizar
+ * @returns {string}
+ */
+export const normalizarIdComite = (id) => {
+  if (!id) return '';
+  return String(id)
+    .trim()
+    .toLowerCase()
+    .replace(/^(chair_|mesa_|staff_comite_|staff_)/i, '')
+    .replace(/^comite_/i, '');
+};
+
+/**
  * Obtiene la etiqueta descriptiva, icono y colores asociados a un código de destino.
  *
  * @param {string} comiteId - El código guardado en el aviso (`comite_id`)
  * @param {Array} comites - Lista de comités de la conferencia
  */
 export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
-  if (!comiteId || comiteId === 'GLOBAL' || comiteId === '') {
+  if (!comiteId || comiteId === 'GLOBAL' || comiteId === '' || comiteId === 'ALL' || comiteId === 'TODOS') {
     return {
       label: 'Toda la Conferencia',
       shortLabel: 'Global',
@@ -101,8 +116,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
   }
 
   const clean = String(comiteId).trim();
+  const cleanUpper = clean.toUpperCase();
 
-  if (clean === 'SECRETARIA' || clean === 'ORGANIZACION') {
+  if (cleanUpper === 'SECRETARIA' || cleanUpper === 'ORGANIZACION') {
     return {
       label: 'Organización / Secretaría',
       shortLabel: 'Organización',
@@ -113,7 +129,7 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
     };
   }
 
-  if (clean === 'STAFF_ALL') {
+  if (cleanUpper === 'STAFF_ALL' || cleanUpper === 'STAFF_GLOBAL') {
     return {
       label: 'Todo el Staff',
       shortLabel: 'Todo Staff',
@@ -124,7 +140,7 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
     };
   }
 
-  if (clean === 'CHAIRS_ALL') {
+  if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(cleanUpper)) {
     return {
       label: 'Todas las Mesas',
       shortLabel: 'Todas Mesas',
@@ -135,9 +151,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
     };
   }
 
-  if (clean.startsWith('STAFF_COMITE_') || clean.startsWith('STAFF_')) {
-    const rawId = clean.replace('STAFF_COMITE_', '').replace('STAFF_', '');
-    const comite = comites.find(c => String(c.id).toLowerCase() === rawId.toLowerCase());
+  if (cleanUpper.startsWith('STAFF_COMITE_') || cleanUpper.startsWith('STAFF_')) {
+    const rawId = normalizarIdComite(clean);
+    const comite = (comites || []).find(c => normalizarIdComite(c.id) === rawId);
     const nombre = comite?.nombre || rawId;
     return {
       label: `Staff de ${nombre}`,
@@ -149,9 +165,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
     };
   }
 
-  if (clean.startsWith('CHAIR_') || clean.startsWith('MESA_')) {
-    const rawId = clean.replace('CHAIR_', '').replace('MESA_', '');
-    const comite = comites.find(c => String(c.id).toLowerCase() === rawId.toLowerCase());
+  if (cleanUpper.startsWith('CHAIR_') || cleanUpper.startsWith('MESA_')) {
+    const rawId = normalizarIdComite(clean);
+    const comite = (comites || []).find(c => normalizarIdComite(c.id) === rawId);
     const nombre = comite?.nombre || rawId;
     return {
       label: `Mesa de ${nombre}`,
@@ -164,8 +180,8 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
   }
 
   // Si es un ID directo de comité (ej: 'c1' o 'COMITE_c1')
-  const rawId = clean.replace('COMITE_', '');
-  const comite = comites.find(c => String(c.id).toLowerCase() === rawId.toLowerCase());
+  const rawId = normalizarIdComite(clean);
+  const comite = (comites || []).find(c => normalizarIdComite(c.id) === rawId);
   const nombre = comite?.nombre || rawId;
 
   return {
@@ -244,7 +260,7 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
   }
 
   // Si no tiene tag en texto pero tiene un comiteId específico que no es global
-  if (comiteId && comiteId !== 'GLOBAL') {
+  if (comiteId && comiteId !== 'GLOBAL' && comiteId !== 'ALL' && comiteId !== 'TODOS') {
     const meta = obtenerEtiquetaDestino(comiteId, comites);
     return (
       <div style={{ display: 'inline', wordBreak: 'break-word' }}>
@@ -280,6 +296,12 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
 /**
  * Filtra si un aviso de Base de Datos le corresponde a la entidad/rol actual.
  *
+ * Reglas estrictas:
+ * - Chair / Mesa: solo ve su mesa, mesa global, global, y su comité. NUNCA ve mensajes a staff ni secretaría.
+ * - Staff: solo ve su comité, staff de su comité, staff global, y global. NUNCA ve mensajes a mesas ni secretaría.
+ * - Delegate: solo ve su comité y global.
+ * - Secretaría General / Admin: ve todo.
+ *
  * @param {object} aviso - Objeto de aviso desde la base de datos
  * @param {object} context - Contexto del visor { role: 'secretaria'|'staff'|'staff_global'|'chair'|'delegate', currentComiteId: string }
  * @returns {boolean}
@@ -287,93 +309,101 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
 export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null } = {}) => {
   if (!aviso) return false;
 
-  // 1. La Secretaría General / Organización siempre ve TODO
-  if (role === 'secretaria' || role === 'organizacion' || role === 'admin') {
+  const userRole = String(role || 'staff').trim().toLowerCase();
+
+  // 1. La Secretaría General / Organización / Admin siempre ve TODO
+  if (userRole === 'secretaria' || userRole === 'organizacion' || userRole === 'admin') {
     return true;
   }
 
-  const comiteId = aviso.comite_id ? String(aviso.comite_id).trim() : '';
-  const comiteUpper = comiteId.toUpperCase();
-  const currentClean = currentComiteId ? String(currentComiteId).trim().toLowerCase() : '';
+  const rawDestino = aviso.comite_id ? String(aviso.comite_id).trim() : '';
+  const destinoUpper = rawDestino.toUpperCase();
 
-  // 2. Mensajes Globales (sin comite_id o 'GLOBAL') -> Llegan a todos
-  if (!comiteId || comiteUpper === 'GLOBAL') {
+  // 2. Mensajes Globales (sin comite_id o 'GLOBAL'/'ALL'/'TODOS') -> Llegan a todos los roles
+  const esGlobal = !rawDestino || destinoUpper === 'GLOBAL' || destinoUpper === 'ALL' || destinoUpper === 'TODOS';
+  if (esGlobal) {
     return true;
   }
 
-  // 3. Si el rol es STAFF GLOBAL / Staff de Conferencia
-  if (role === 'staff_global') {
-    // Ve todo lo relativo a Staff
-    if (comiteUpper === 'STAFF_ALL' || comiteUpper.startsWith('STAFF_')) {
+  const normCurrent = normalizarIdComite(currentComiteId);
+
+  // 3. CHAIR / MESA DIRECTIVA (y consola de secretaría de sala)
+  if (userRole === 'chair' || userRole === 'mesa' || userRole === 'secretariat' || userRole === 'dais') {
+    // a) Mesa global
+    if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(destinoUpper)) {
       return true;
     }
-    // Si tiene sala asignada, avisos directos a su sala
-    if (currentClean && (comiteId.toLowerCase() === currentClean || comiteId.toLowerCase() === `comite_${currentClean}`)) {
-      return true;
-    }
-    // No debe ver avisos específicos para mesas directivas ni de secretaría
-    return false;
-  }
 
-  // 4. Si el rol es STAFF de un comité
-  if (role === 'staff') {
-    // Aviso general para todo el equipo de Staff
-    if (comiteUpper === 'STAFF_ALL') return true;
-
-    // Aviso para el staff de una sala específica
-    if (currentClean && currentClean !== 'todos') {
-      if (comiteId.toLowerCase() === currentClean) return true;
-      if (comiteId.toLowerCase() === `comite_${currentClean}`) return true;
-      if (comiteId.toLowerCase() === `staff_${currentClean}`) return true;
-      if (comiteId.toLowerCase() === `staff_comite_${currentClean}`) return true;
-    } else {
-      // Si no tiene sala fija asignada (o filtro TODOS), ve cualquier requerimiento dirigido a staff
-      if (comiteUpper.startsWith('STAFF_')) return true;
-    }
-
-    // El staff nunca ve avisos exclusivos para mesas directivas ni de secretaría
-    return false;
-  }
-
-  // 5. Si el rol es CHAIR / MESA DIRECTIVA de un comité
-  if (role === 'chair' || role === 'mesa') {
-    // Las mesas NUNCA deben ver avisos dirigidos a Staff ni a Secretaría
-    if (comiteUpper === 'STAFF_ALL' || comiteUpper.startsWith('STAFF_')) {
-      return false;
-    }
-    if (comiteUpper === 'SECRETARIA' || comiteUpper === 'ORGANIZACION') {
+    // b) Las mesas NUNCA deben ver avisos dirigidos a Staff ni a Secretaría General
+    if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL' || destinoUpper.startsWith('STAFF_') || destinoUpper === 'SECRETARIA' || destinoUpper === 'ORGANIZACION') {
       return false;
     }
 
-    // Avisos dirigidos a todas las mesas
-    if (comiteUpper === 'CHAIRS_ALL') return true;
-
-    // Avisos dirigidos a su propia mesa o comité
-    if (currentClean && currentClean !== 'todos') {
-      if (comiteId.toLowerCase() === currentClean) return true;
-      if (comiteId.toLowerCase() === `comite_${currentClean}`) return true;
-      if (comiteId.toLowerCase() === `chair_${currentClean}`) return true;
-      if (comiteId.toLowerCase() === `mesa_${currentClean}`) return true;
+    // c) Si la mesa no tiene sala asignada, solo ve Global y Mesa Global (ya evaluados arriba)
+    if (!normCurrent || normCurrent === 'todos') {
+      return false;
     }
 
-    // Bloquear avisos de otras mesas y de otros comités
+    // d) Su mesa: ej. CHAIR_<comiteId> o MESA_<comiteId>
+    if (destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_')) {
+      const targetMesa = normalizarIdComite(destinoUpper);
+      return targetMesa === normCurrent;
+    }
+
+    // e) Su comité completo: ej. <comiteId> o COMITE_<comiteId>
+    const targetComite = normalizarIdComite(destinoUpper);
+    return targetComite === normCurrent;
+  }
+
+  // 4. STAFF (y STAFF GLOBAL)
+  if (userRole === 'staff' || userRole === 'staff_global') {
+    // a) Staff global
+    if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL') {
+      return true;
+    }
+
+    // b) El Staff NUNCA debe ver avisos dirigidos a Mesas Directivas ni a Secretaría General
+    if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(destinoUpper) ||
+        destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_') ||
+        destinoUpper === 'SECRETARIA' || destinoUpper === 'ORGANIZACION') {
+      return false;
+    }
+
+    // c) Staff de su comité: ej. STAFF_COMITE_<comiteId> o STAFF_<comiteId>
+    if (destinoUpper.startsWith('STAFF_COMITE_') || destinoUpper.startsWith('STAFF_')) {
+      const targetStaffComite = normalizarIdComite(destinoUpper);
+      // Si el staff es global o no tiene sala fija ('TODOS' o null), ve avisos a staff de cualquier sala para soporte
+      if (!normCurrent || normCurrent === 'todos' || userRole === 'staff_global') {
+        return true;
+      }
+      return targetStaffComite === normCurrent;
+    }
+
+    // d) Su comité: ej. <comiteId> o COMITE_<comiteId>
+    if (!normCurrent || normCurrent === 'todos') {
+      // Si no tiene sala fija, no ve mensajes a salas específicas completas
+      return false;
+    }
+    const targetComite = normalizarIdComite(destinoUpper);
+    return targetComite === normCurrent;
+  }
+
+  // 5. DELEGATE (Delegaciones de un comité)
+  if (userRole === 'delegate') {
+    // Los delegados NUNCA ven avisos internos de staff, mesas o secretaría
+    if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL' || destinoUpper.startsWith('STAFF_')) return false;
+    if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(destinoUpper) ||
+        destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_')) return false;
+    if (destinoUpper === 'SECRETARIA' || destinoUpper === 'ORGANIZACION') return false;
+
+    // Su comité
+    if (normCurrent && normCurrent !== 'todos') {
+      const targetComite = normalizarIdComite(destinoUpper);
+      return targetComite === normCurrent;
+    }
     return false;
   }
 
-  // 6. Si el rol es DELEGATE de un comité
-  if (role === 'delegate') {
-    // Los delegados no ven avisos internos de staff, mesas o secretaría
-    if (comiteUpper === 'STAFF_ALL' || comiteUpper.startsWith('STAFF_')) return false;
-    if (comiteUpper === 'CHAIRS_ALL' || comiteUpper.startsWith('CHAIR_') || comiteUpper.startsWith('MESA_')) return false;
-    if (comiteUpper === 'SECRETARIA' || comiteUpper === 'ORGANIZACION') return false;
-
-    if (currentClean && currentClean !== 'todos') {
-      if (comiteId.toLowerCase() === currentClean) return true;
-      if (comiteId.toLowerCase() === `comite_${currentClean}`) return true;
-    }
-    return false;
-  }
-
-  // Usuarios generales o preliminares (solo ven comunicados globales)
+  // Usuario general: solo ve comunicados globales
   return false;
 };

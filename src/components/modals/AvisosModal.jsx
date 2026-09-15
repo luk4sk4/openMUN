@@ -269,7 +269,8 @@ const AvisosModal = ({
   // Avisos globales de toda la conferencia
   const avisosGlobales = avisos.filter(av => {
     if (descartadosLocales.includes(av.id)) return false;
-    return !av.comite_id || av.comite_id === 'GLOBAL' || av.comite_id === '';
+    const cid = av.comite_id ? String(av.comite_id).trim().toUpperCase() : '';
+    return !cid || cid === 'GLOBAL' || cid === 'ALL' || cid === 'TODOS';
   });
 
   const esAdmin = currentRole === 'secretaria' || currentRole === 'organizacion' || currentRole === 'admin';

@@ -55,7 +55,7 @@ import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import ConferenceBanner from '../common/ConferenceBanner';
 import conferenceService from '../../services/conferenceService';
-import { formatearMensajeAviso } from '../../utils/announcementHelpers';
+import { formatearMensajeAviso, correspondeAviso, obtenerEtiquetaDestino } from '../../utils/announcementHelpers';
 import MatrizPaises from '../widgets/MatrizPaises';
 import HistoricoDelegaciones from '../widgets/HistoricoDelegaciones';
 import EstablecerAgenda from '../widgets/EstablecerAgenda';
@@ -139,14 +139,27 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
   // Avisos de Conferencia (Base de Datos)
   const [avisosDB, setAvisosDB] = useState([]);
+  const [comitesConf, setComitesConf] = useState([]);
   const confActiva = conferenceService.obtenerSesionActiva();
+  const currentComiteId = (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || roomId || null;
+
+  // Cargar comités de la conferencia si está vinculada
+  useEffect(() => {
+    if (confActiva?.id) {
+      conferenceService.obtenerResumen(confActiva.id).then(res => {
+        if (res?.comites && Array.isArray(res.comites)) {
+          setComitesConf(res.comites);
+        }
+      }).catch(() => {});
+    }
+  }, [confActiva?.id]);
 
   useEffect(() => {
     if (!confActiva?.id) return;
     const fetchAvisos = async () => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       try {
-        const res = await conferenceService.obtenerAvisos(confActiva.id);
+        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'chair');
         if (res && Array.isArray(res.avisos)) {
           setAvisosDB(res.avisos);
         }
@@ -162,13 +175,29 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVis);
     }
+
+    const handleNuevo = (e) => {
+      if (e.detail) {
+        setAvisosDB(prev => [e.detail, ...prev.filter(a => a.id !== e.detail.id)]);
+      }
+    };
+    const handleDesactivado = (e) => {
+      if (e.detail?.id) {
+        setAvisosDB(prev => prev.filter(a => String(a.id) !== String(e.detail.id)));
+      }
+    };
+    window.addEventListener('openmun_nuevo_aviso', handleNuevo);
+    window.addEventListener('openmun_aviso_desactivado', handleDesactivado);
+
     return () => {
       clearInterval(interval);
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVis);
       }
+      window.removeEventListener('openmun_nuevo_aviso', handleNuevo);
+      window.removeEventListener('openmun_aviso_desactivado', handleDesactivado);
     };
-  }, [confActiva?.id]);
+  }, [confActiva?.id, currentComiteId]);
 
   const state = remoteSessionState || {};
   const nombreComite = sessionNombreComite || state.comision || state.nombreComite || 'Comité en Vivo';
@@ -196,8 +225,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     return !isSec && !isBack;
   });
 
-  // Avisos BD filtrados
+  // Avisos de Conferencia filtrados estrictamente para la Mesa
   const avisosDBFiltrados = avisosDB.filter(a => {
+    if (!correspondeAviso(a, { role: 'chair', currentComiteId })) return false;
     if (!filtroTexto) return true;
     return a.mensaje?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
            a.emisor?.toLowerCase().includes(filtroTexto.toLowerCase());
@@ -458,7 +488,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       </header>
 
       {/* Banner de Avisos Oficiales */}
-      <ConferenceBanner isLight={isLight} role="secretaria" />
+      <ConferenceBanner isLight={isLight} role="chair" comiteId={currentComiteId} />
 
       {/* ── Sub-navegación por Pestañas ── */}
       <div style={{
@@ -972,8 +1002,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
             {/* Columna Izquierda: Pestañas de Mensajes, Feed de Notas y Filtros */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Selector de Sub-Pestañas: Secretaría vs Delegaciones */}
-              {/* Selector de Sub-Pestañas: BD Conferencia vs Secretaría vs Delegaciones */}
+              {/* Selector de Sub-Pestañas: Conferencia vs Secretaría vs Delegaciones */}
               <div style={{
                 backgroundColor: 'var(--panel-color)',
                 border: '1px solid var(--border-color)',
@@ -1006,7 +1035,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   }}
                 >
                   <Globe size={15} />
-                  <span>Avisos Conferencia (BD)</span>
+                  <span>Avisos Conferencia</span>
                   <span style={{
                     fontSize: '0.72rem',
                     padding: '0.15rem 0.5rem',
@@ -1015,7 +1044,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                     color: subTabNotas === 'CONFERENCIA_DB' ? '#ffffff' : 'var(--text-color)',
                     fontWeight: '800'
                   }}>
-                    {avisosDB.length}
+                    {avisosDBFiltrados.length}
                   </span>
                 </button>
 
@@ -1200,7 +1229,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                               padding: '0.12rem 0.45rem',
                               borderRadius: '4px'
                             }}>
-                              🌐 BD Conferencia
+                              Conferencia
                             </span>
 
                             <span style={{
@@ -1215,11 +1244,11 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                               {av.emisor}
                             </span>
 
-                            {av.comite_id && (
-                              <span style={{ fontSize: '0.75rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                                Para Comité: <code>{av.comite_id}</code>
-                              </span>
-                            )}
+                            <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '600' }}>
+                              Destino: <strong style={{ color: 'var(--text-color)' }}>
+                                {obtenerEtiquetaDestino(av.comite_id, comitesConf).label}
+                              </strong>
+                            </span>
                           </div>
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1246,7 +1275,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                         </div>
 
                         <div style={{ fontSize: '0.88rem', color: 'var(--text-color)', lineHeight: '1.4' }}>
-                          {formatearMensajeAviso(av.mensaje)}
+                          {formatearMensajeAviso(av.mensaje, null, comitesConf)}
                         </div>
                       </div>
                     ))}

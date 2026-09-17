@@ -137,6 +137,7 @@
     "networkCrashDrive": "Para guardar la sesión sin conexión y moverla a otro ordenador, descarga el archivo",
     "networkCrashLive": "Conexión con los delegados caída",
     "networkCrashConference": "Conexión con la conferencia perdida. Se guardará la sesión cuando se recupere la conexión. Si no, se recomienda descargar el archivo",
+    "networkCrashGeneral": "Se ha perdido la conexión a internet. OpenMUN continuará funcionando con normalidad en modo local.",
     "networkCrashDownloadBtn": "Descargar archivo",
     "networkRestoredTitle": "Conexión restablecida",
     "networkRestoredDesc": "Se ha restablecido la conexión a internet."

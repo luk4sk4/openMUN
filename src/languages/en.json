@@ -135,6 +135,7 @@
     "networkCrashDrive": "To save the session offline and move it to another computer, download the file",
     "networkCrashLive": "Connection with delegates lost",
     "networkCrashConference": "Connection to conference lost. The session will be saved once connection is restored. Otherwise, downloading the file is recommended",
+    "networkCrashGeneral": "Internet connection lost. OpenMUN will continue working normally in local mode.",
     "networkCrashDownloadBtn": "Download file",
     "networkRestoredTitle": "Connection restored",
     "networkRestoredDesc": "Internet connection has been restored."

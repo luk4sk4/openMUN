@@ -19,7 +19,7 @@ export const NetworkCrashMonitor = () => {
   const { t } = useTranslation();
   const { addToast, removeToast } = useToast();
   const { isDriveLinked, descargarSesionJSON, sincronizarDriveManual } = useSession();
-  const { viewMode, connectionStatus, connectedPeers } = useP2P();
+  const { viewMode, connectionStatus, connectedPeers, roomId, role } = useP2P();
 
   // 1. Google Drive vinculado o sesión autenticada activa
   const hasDrive = Boolean(isDriveLinked || googleDriveService.isAuthenticated());
@@ -34,10 +34,14 @@ export const NetworkCrashMonitor = () => {
     ))
   );
 
-  // 3. Sesión en vivo activa (con delegados conectados o como host)
+  // 3. Sesión en vivo activa (con delegados conectados, como host, en sala o reconectando)
   const hasLive = Boolean(
     connectionStatus === 'host_active' ||
-    (Array.isArray(connectedPeers) && connectedPeers.length > 0)
+    connectionStatus === 'connected' ||
+    connectionStatus === 'reconnecting' ||
+    (Array.isArray(connectedPeers) && connectedPeers.length > 0) ||
+    Boolean(roomId && role && role !== 'none') ||
+    Boolean(peerService && (peerService.isHost || peerService.socket || peerService.roomId))
   );
 
   // El usuario requiere red si utiliza alguna de estas 3 características
@@ -71,13 +75,6 @@ export const NetworkCrashMonitor = () => {
   useEffect(() => {
     const handleNetworkLost = () => {
       const current = stateRef.current;
-
-      // Si el usuario no está usando ninguna característica dependiente de red,
-      // la aplicación funciona 100% en modo local sin necesidad de alarmarlo.
-      if (!current.needsNetwork) {
-        return;
-      }
-
       wasOfflineRef.current = true;
 
       // Construcción del mensaje según el contexto activo
@@ -107,10 +104,20 @@ export const NetworkCrashMonitor = () => {
         );
       }
 
+      // Si no usa Drive, conferencia ni sala en vivo, mostrar mensaje tranquilizador
+      if (messageParts.length === 0) {
+        messageParts.push(
+          t(
+            'toast.networkCrashGeneral',
+            'Se ha perdido la conexión a internet. OpenMUN continuará funcionando con normalidad en modo local.'
+          )
+        );
+      }
+
       const toastMessage = messageParts.join('\n\n');
 
       // Botón de acción para descargar la sesión o la conferencia directamente
-      const downloadAction = (current.hasDrive || current.inConference) ? {
+      const downloadAction = (current.hasDrive || current.inConference || current.hasLive) ? {
         label: t('toast.networkCrashDownloadBtn', 'Descargar archivo'),
         onClick: () => {
           if (current.viewMode === 'conference') {
@@ -140,32 +147,49 @@ export const NetworkCrashMonitor = () => {
         wasOfflineRef.current = false;
         const current = stateRef.current;
 
-        if (current.needsNetwork) {
-          addToast({
-            type: 'success',
-            title: t('toast.networkRestoredTitle', 'Conexión restablecida'),
-            message: t('toast.networkRestoredDesc', 'Se ha restablecido la conexión a internet.'),
-            duration: 4500
-          });
+        addToast({
+          type: 'success',
+          title: t('toast.networkRestoredTitle', 'Conexión restablecida'),
+          message: t('toast.networkRestoredDesc', 'Se ha restablecido la conexión a internet.'),
+          duration: 4500
+        });
 
-          // Si tiene Google Drive vinculado, intentar sincronizar en segundo plano
-          if (current.hasDrive && typeof current.sincronizarDriveManual === 'function') {
-            current.sincronizarDriveManual(false).catch(() => {});
-          }
+        // Si tiene Google Drive vinculado, intentar sincronizar en segundo plano
+        if (current.hasDrive && typeof current.sincronizarDriveManual === 'function') {
+          current.sincronizarDriveManual(false).catch(() => {});
         }
       }
     };
 
+    // Comprobación inmediata al montar
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      handleNetworkLost();
+    }
+
+    // Intervalo de seguridad para detectar caídas de red si el evento offline del navegador no se dispara
+    const probeInterval = setInterval(() => {
+      if (typeof navigator !== 'undefined') {
+        if (!navigator.onLine && !wasOfflineRef.current) {
+          handleNetworkLost();
+        } else if (navigator.onLine && wasOfflineRef.current && (!stateRef.current.hasLive || connectionStatus !== 'reconnecting')) {
+          handleNetworkRestored();
+        }
+      }
+    }, 2500);
+
     window.addEventListener('offline', handleNetworkLost);
     window.addEventListener('online', handleNetworkRestored);
     window.addEventListener('openmun_network_failure', handleNetworkLost);
+    window.addEventListener('openmun_network_restored', handleNetworkRestored);
 
     return () => {
+      clearInterval(probeInterval);
       window.removeEventListener('offline', handleNetworkLost);
       window.removeEventListener('online', handleNetworkRestored);
       window.removeEventListener('openmun_network_failure', handleNetworkLost);
+      window.removeEventListener('openmun_network_restored', handleNetworkRestored);
     };
-  }, [addToast, removeToast, t]);
+  }, [addToast, removeToast, connectionStatus, t]);
 
   return null;
 };

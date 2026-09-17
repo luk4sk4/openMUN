@@ -309,13 +309,20 @@ class NetworkService {
         });
 
         this.socket.on('connect_error', (err) => {
-          console.warn('Error de conexión Socket.io en Host:', err.message);
-          this.emit('error', { error: `Error de conexión con el servidor: ${err.message}` });
+          console.warn('Error de conexión Socket.io en Host (reintentando en segundo plano):', err.message);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+          }
+          this.emit('connection_lost', { error: err.message });
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
           console.log(`Reconectado exitosamente al servidor (intento ${attemptNumber})`);
           this.socketId = this.socket.id;
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_network_restored'));
+            window.dispatchEvent(new Event('online'));
+          }
           if (this.roomId) {
             this.socket.emit('unirse-comite', this.roomId);
             // Re-enviar el estado actual para resincronizar a los participantes
@@ -323,10 +330,15 @@ class NetworkService {
               this.broadcastStateToClients(this.latestSessionState);
             }
           }
+          this.emit('host_ready', { roomId: this.roomId, roomSettings: this.roomSettings });
         });
 
         this.socket.on('disconnect', (reason) => {
           console.warn('Host desconectado del servidor Socket.io:', reason);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+          }
+          this.emit('connection_lost', { reason });
           if (reason === 'io server disconnect') {
             this.socket.connect();
           }
@@ -497,12 +509,22 @@ class NetworkService {
         this.socket.on('connect_error', (err) => {
           if (!isResolved) {
             console.warn('Error de conexión en cliente Socket.io:', err.message);
+          } else {
+            console.warn('Error de conexión en cliente Socket.io (reintentando en segundo plano):', err.message);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+            }
+            this.emit('connection_lost', { error: err.message });
           }
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
           console.log(`Cliente reconectado a sala ${cleanRoomId} (intento ${attemptNumber})`);
           this.socketId = this.socket.id;
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_network_restored'));
+            window.dispatchEvent(new Event('online'));
+          }
           if (cleanRoomId) {
             this.socket.emit('unirse-comite', cleanRoomId);
             // Re-autenticar silenciosamente
@@ -513,10 +535,19 @@ class NetworkService {
               id: `auth-reconnect-${Date.now()}`
             });
           }
+          this.emit('connected', {
+            role: this.role,
+            country: this.clientCountry,
+            roomSettings: this.roomSettings
+          });
         });
 
         this.socket.on('disconnect', (reason) => {
           console.warn('Cliente desconectado de la sala:', reason);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+          }
+          this.emit('connection_lost', { reason });
           if (reason === 'io server disconnect') {
             this.socket.connect();
           }

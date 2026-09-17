@@ -156,7 +156,14 @@ export const P2PProvider = ({ children }) => {
     sessionActionHandlersRef.current = { ...sessionActionHandlersRef.current, ...handlers };
   }, []);
 
+  const lastNotificationRef = useRef({ text: '', timestamp: 0 });
   const addNotification = useCallback((text, type = 'info') => {
+    if (!text) return;
+    const now = Date.now();
+    if (lastNotificationRef.current.text === text && (now - lastNotificationRef.current.timestamp) < 4000) {
+      return;
+    }
+    lastNotificationRef.current = { text, timestamp: now };
     const id = Date.now() + Math.random();
     setNotifications(prev => [...prev, { id, text, type }]);
     setTimeout(() => {
@@ -206,15 +213,29 @@ export const P2PProvider = ({ children }) => {
         }
       }
 
+      if (event === 'connection_lost') {
+        setConnectionStatus('reconnecting');
+      }
+
       if (event === 'disconnected') {
         setConnectionStatus('disconnected');
         addNotification(data.reason || 'Desconectado de la sala', 'warning');
       }
 
       if (event === 'error') {
-        setError(data.error);
+        const errorMsg = typeof data === 'string' ? data : (data?.error || '');
+        // Suprimir bucle de errores de transporte mientras el socket reintenta reconectar
+        if (
+          errorMsg.toLowerCase().includes('websocket') ||
+          errorMsg.toLowerCase().includes('xhr poll') ||
+          errorMsg.toLowerCase().includes('connect_error')
+        ) {
+          setConnectionStatus('reconnecting');
+          return;
+        }
+        setError(errorMsg);
         setConnectionStatus('error');
-        addNotification(`${data.error}`, 'error');
+        addNotification(errorMsg, 'error');
       }
 
       if (event === 'peer_list_updated') {

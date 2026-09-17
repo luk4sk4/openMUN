@@ -40,8 +40,12 @@ export class RootErrorBoundary extends Component {
     this.setState({ errorInfo });
     console.error('[OpenMUN RootErrorBoundary] Uncaught application error:', error, errorInfo);
 
-    // If it's a chunk error and we haven't attempted a force reload in this session, do it once automatically
+    // If it's a chunk error and we haven't attempted a force reload in this session, do it once automatically ONLY if online
     if (isDynamicChunkError(error)) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('[OpenMUN RootErrorBoundary] Suppressing automatic reload for chunk error because user is offline.');
+        return;
+      }
       const reloadKey = 'openmun_root_chunk_reload';
       const hasReloaded = window.sessionStorage?.getItem(reloadKey) === 'true';
       if (!hasReloaded) {
@@ -52,6 +56,12 @@ export class RootErrorBoundary extends Component {
   }
 
   handleReload = () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const confirmReload = window.confirm(
+        'Actualmente no tienes conexión a internet. Si recargas ahora y no tienes los recursos en caché, la pantalla podría quedar inaccesible hasta que regrese la conexión. ¿Deseas recargar de todos modos?'
+      );
+      if (!confirmReload) return;
+    }
     // Clear chunk reload flags before manual reload
     try {
       Object.keys(window.sessionStorage || {}).forEach((k) => {

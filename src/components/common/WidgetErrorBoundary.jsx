@@ -42,6 +42,10 @@ export class WidgetErrorBoundary extends Component {
   };
 
   handleReloadPage = () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      alert('No tienes conexión a internet en este momento. Espera a recuperar la conexión antes de recargar la aplicación.');
+      return;
+    }
     window.location.reload();
   };
 

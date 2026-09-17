@@ -35,6 +35,7 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
     guardarNuevaSesionEnDrive,
     vincularArchivoDrive,
     eliminarSesionDrive,
+    resolverConflictoDrive,
     nombreComite
   } = useSession();
 
@@ -307,15 +308,31 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                   <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>
                     {driveUser?.name || 'Google Drive'} {driveUser?.email && <span style={{ fontWeight: 'normal', color: 'var(--muted-text)', fontSize: '0.78rem' }}>({driveUser.email})</span>}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#00ac47', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '3px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00ac47' }} />
-                    <span>Sincronizando activamente con: <strong>{driveFileName || 'sesion_activa.json'}</strong></span>
+                  <div style={{
+                    fontSize: '0.72rem',
+                    color: driveSyncStatus === 'conflict' ? '#f59e0b' : '#00ac47',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    marginTop: '3px'
+                  }}>
+                    <span style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: driveSyncStatus === 'conflict' ? '#f59e0b' : '#00ac47'
+                    }} />
+                    <span>
+                      {driveSyncStatus === 'conflict'
+                        ? <>Conflicto detectado en: <strong>{driveFileName || 'sesion_activa.json'}</strong></>
+                        : <>Sincronizando activamente con: <strong>{driveFileName || 'sesion_activa.json'}</strong></>}
+                    </span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
                   <button
-                    onClick={sincronizarDriveManual}
+                    onClick={() => sincronizarDriveManual(false)}
                     title="Forzar sincronización ahora"
                     style={{
                       display: 'flex',
@@ -360,6 +377,71 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                   </button>
                 </div>
               </div>
+
+              {/* Alerta de Conflicto de Concurrencia */}
+              {driveSyncStatus === 'conflict' && (
+                <div
+                  style={{
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    borderRadius: '8px',
+                    padding: '0.85rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.6rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontWeight: '600', fontSize: '0.85rem' }}>
+                    <AlertCircle size={16} />
+                    <span>Conflicto de Sincronización Detectado</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: '1.4' }}>
+                    Se ha detectado una versión más reciente en Google Drive guardada desde otro dispositivo o pestaña. Para evitar sobreescribir datos accidentalmente, el autoguardado está en pausa.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={async () => {
+                        setLoading(true);
+                        const ok = await resolverConflictoDrive('recargar');
+                        setLoading(false);
+                        if (ok) showNotification('Sesión actualizada desde Google Drive', 'success');
+                      }}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(38, 132, 252, 0.3)',
+                        backgroundColor: '#2684fc',
+                        color: '#fff',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cargar versión más reciente de Drive
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setLoading(true);
+                        const ok = await resolverConflictoDrive('sobrescribir');
+                        setLoading(false);
+                        if (ok) showNotification('Archivo en Drive sobrescrito con la sesión local', 'info');
+                      }}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        backgroundColor: 'transparent',
+                        color: '#f59e0b',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Sobrescribir Drive con mi sesión actual
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Botón y Formulario de Nueva Sesión */}
               {!mostrarCrear ? (

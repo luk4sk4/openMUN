@@ -84,6 +84,14 @@ const SessionMenuDropdown = ({
             backgroundColor: '#00ac47',
             boxShadow: '0 0 5px #00ac47'
           }} />
+        ) : isDriveLinked && driveSyncStatus === 'conflict' ? (
+          <span style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: '#f59e0b',
+            boxShadow: '0 0 5px #f59e0b'
+          }} />
         ) : isDriveLinked && driveSyncStatus === 'error' ? (
           <span style={{
             width: '6px',
@@ -330,14 +338,18 @@ const SessionMenuDropdown = ({
                   ? 'rgba(0, 172, 71, 0.15)'
                   : driveSyncStatus === 'syncing'
                     ? 'rgba(38, 132, 252, 0.15)'
-                    : 'rgba(234, 67, 53, 0.15)',
+                    : driveSyncStatus === 'conflict'
+                      ? 'rgba(245, 158, 11, 0.15)'
+                      : 'rgba(234, 67, 53, 0.15)',
               color: !isDriveLinked
                 ? 'var(--muted-text)'
                 : driveSyncStatus === 'synced'
                   ? '#00ac47'
                   : driveSyncStatus === 'syncing'
                     ? '#2684fc'
-                    : '#ea4335'
+                    : driveSyncStatus === 'conflict'
+                      ? '#f59e0b'
+                      : '#ea4335'
             }}>
               {!isDriveLinked
                 ? 'Offline'
@@ -345,7 +357,9 @@ const SessionMenuDropdown = ({
                   ? 'Sincronizado'
                   : driveSyncStatus === 'syncing'
                     ? 'Guardando...'
-                    : 'Error'}
+                    : driveSyncStatus === 'conflict'
+                      ? 'Conflicto'
+                      : 'Error'}
             </span>
           </div>
 

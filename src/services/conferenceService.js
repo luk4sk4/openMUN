@@ -59,6 +59,11 @@ async function fetchWithDeduplication(url, ttlMs = 4000) {
       const data = await handleResponse(res);
       requestCache.set(url, { data, timestamp: Date.now() });
       return data;
+    } catch (err) {
+      if (typeof window !== 'undefined' && (!navigator.onLine || err.name === 'TypeError')) {
+        window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+      }
+      throw err;
     } finally {
       inFlightRequests.delete(url);
     }

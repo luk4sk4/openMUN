@@ -100,13 +100,18 @@ export const SessionProvider = ({ children }) => {
   const [yieldEvento, setYieldEvento] = useState(null);
 
   // Estados de Google Drive
-  const [driveFileId, setDriveFileId] = useState(() => localStorage.getItem('openmun_drive_file_id') || null);
+  const [driveFileId, setDriveFileId] = useState(() => {
+    const saved = localStorage.getItem('openmun_drive_file_id');
+    return (saved && /^[a-zA-Z0-9_-]{10,100}$/.test(saved)) ? saved : null;
+  });
   const [driveFileName, setDriveFileName] = useState(() => localStorage.getItem('openmun_drive_file_name') || 'openmun_sesion_activa.json');
   const [isDriveLinked, setIsDriveLinked] = useState(false);
-  const [driveSyncStatus, setDriveSyncStatus] = useState('disconnected'); // 'disconnected' | 'connecting' | 'synced' | 'syncing' | 'error'
+  const [driveSyncStatus, setDriveSyncStatus] = useState('disconnected'); // 'disconnected' | 'connecting' | 'synced' | 'syncing' | 'error' | 'conflict'
   const [driveUser, setDriveUser] = useState(null);
   const [driveLastSync, setDriveLastSync] = useState(null);
   const [driveFilesList, setDriveFilesList] = useState([]);
+  const [driveRemoteModifiedTime, setDriveRemoteModifiedTime] = useState(null);
+  const driveRemoteModifiedTimeRef = useRef(null);
   const isInitialSyncRef = useRef(false);
 
   // Mantener referencias actualizadas para lectura en callbacks
@@ -1381,7 +1386,7 @@ export const SessionProvider = ({ children }) => {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error al exportar sesión completa:', err);
-      alert('Error al exportar sesión: ' + err.message);
+      alert('No se pudo exportar la sesión. Verifica los permisos o configuración del navegador.');
     }
   };
 
@@ -1414,25 +1419,45 @@ export const SessionProvider = ({ children }) => {
       const hayDatosLocales = paises.length > 0 || oradoresCola.length > 0 || (nombreComite && nombreComite.trim().length > 0);
 
       // Si ya hay un archivo id guardado y existe en Drive
-      let targetFile = driveFileId ? archivos.find(f => f.id === driveFileId) : null;
+      const isValidId = driveFileId && /^[a-zA-Z0-9_-]{10,100}$/.test(driveFileId);
+      let targetFile = isValidId ? archivos.find(f => f.id === driveFileId) : null;
       if (!targetFile && archivos.length > 0) {
         targetFile = archivos[0];
+      }
+
+      // Si teníamos un id en localStorage pero ya no existe en la carpeta openMUN, limpiarlo
+      if (driveFileId && !targetFile) {
+        localStorage.removeItem('openmun_drive_file_id');
+        localStorage.removeItem('openmun_drive_file_name');
+        setDriveFileId(null);
       }
 
       if (targetFile) {
         setDriveFileId(targetFile.id);
         setDriveFileName(targetFile.name);
+        driveRemoteModifiedTimeRef.current = targetFile.modifiedTime || new Date().toISOString();
+        setDriveRemoteModifiedTime(driveRemoteModifiedTimeRef.current);
         localStorage.setItem('openmun_drive_file_id', targetFile.id);
         localStorage.setItem('openmun_drive_file_name', targetFile.name);
 
         if (!hayDatosLocales) {
-          // Si no hay datos locales, cargar directamente la sesión desde Drive
+          // Si no hay datos locales, cargar directamente la sesión desde Drive comprobando validez
           const sesionRemota = await googleDriveService.descargarSesion(targetFile.id);
-          cargarSesionJSON(sesionRemota);
+          const ok = cargarSesionJSON(sesionRemota);
+          if (!ok) {
+            console.warn('[Google Drive] El archivo de sesión en Drive no superó la validación.');
+            alert('El archivo encontrado en Google Drive no contiene una sesión válida de OpenMUN.');
+            setDriveSyncStatus('error');
+            return false;
+          }
         } else {
           // Si ya hay datos locales, sincronizar actualizando el archivo en Drive
           const snapshotActual = generarSnapshotSesion();
-          await googleDriveService.actualizarArchivoSesion(targetFile.id, snapshotActual);
+          const updated = await googleDriveService.actualizarArchivoSesion(targetFile.id, snapshotActual);
+          if (updated?.modifiedTime) {
+            driveRemoteModifiedTimeRef.current = updated.modifiedTime;
+            setDriveRemoteModifiedTime(updated.modifiedTime);
+          }
         }
       } else {
         // No existe ningún archivo en la carpeta openMUN -> crear nuevo archivo
@@ -1443,6 +1468,8 @@ export const SessionProvider = ({ children }) => {
         const nuevoArchivo = await googleDriveService.crearArchivoSesion(snapshotActual, nombreArchivo);
         setDriveFileId(nuevoArchivo.id);
         setDriveFileName(nuevoArchivo.name);
+        driveRemoteModifiedTimeRef.current = nuevoArchivo.modifiedTime || new Date().toISOString();
+        setDriveRemoteModifiedTime(driveRemoteModifiedTimeRef.current);
         localStorage.setItem('openmun_drive_file_id', nuevoArchivo.id);
         localStorage.setItem('openmun_drive_file_name', nuevoArchivo.name);
         const actualizados = await googleDriveService.listarArchivosSesion();
@@ -1455,9 +1482,9 @@ export const SessionProvider = ({ children }) => {
       isInitialSyncRef.current = true;
       return true;
     } catch (err) {
-      console.error('Error al conectar Google Drive:', err);
+      console.error('[Google Drive Connect Error]:', err);
       setDriveSyncStatus('error');
-      alert('Error al conectar con Google Drive: ' + (err.message || err));
+      alert('No se pudo conectar con Google Drive. Verifica tu conexión e inténtalo de nuevo.');
       return false;
     }
   };
@@ -1465,10 +1492,19 @@ export const SessionProvider = ({ children }) => {
   // Cargar una sesión específica desde Drive por su File ID
   const cargarSesionDesdeDrive = async (fileId, fileName) => {
     try {
+      if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
+        alert('Identificador de archivo no válido.');
+        return false;
+      }
       setDriveSyncStatus('syncing');
       const sesionRemota = await googleDriveService.descargarSesion(fileId);
       const ok = cargarSesionJSON(sesionRemota);
       if (ok) {
+        const meta = await googleDriveService.obtenerMetadatosArchivo(fileId).catch(() => null);
+        const modTime = meta?.modifiedTime || new Date().toISOString();
+        driveRemoteModifiedTimeRef.current = modTime;
+        setDriveRemoteModifiedTime(modTime);
+
         setDriveFileId(fileId);
         if (fileName) setDriveFileName(fileName);
         localStorage.setItem('openmun_drive_file_id', fileId);
@@ -1477,12 +1513,15 @@ export const SessionProvider = ({ children }) => {
         setDriveSyncStatus('synced');
         setDriveLastSync(new Date());
         return true;
+      } else {
+        setDriveSyncStatus('error');
+        alert('El archivo seleccionado no contiene una estructura válida de sesión para OpenMUN.');
+        return false;
       }
-      return false;
     } catch (err) {
-      console.error('Error al cargar sesión desde Drive:', err);
+      console.error('[Google Drive Load Error]:', err);
       setDriveSyncStatus('error');
-      alert('Error al cargar archivo desde Drive: ' + err.message);
+      alert('No se pudo cargar la sesión seleccionada desde Google Drive.');
       return false;
     }
   };
@@ -1492,7 +1531,13 @@ export const SessionProvider = ({ children }) => {
     try {
       setDriveSyncStatus('syncing');
       const snapshotActual = generarSnapshotSesion();
-      const nuevo = await googleDriveService.crearArchivoSesion(snapshotActual, nombreArchivo);
+      const sanitizedName = (nombreArchivo || 'openmun_sesion.json').trim().replace(/[^a-zA-Z0-9._-]/g, '_');
+      const nuevo = await googleDriveService.crearArchivoSesion(snapshotActual, sanitizedName);
+      
+      const modTime = nuevo.modifiedTime || new Date().toISOString();
+      driveRemoteModifiedTimeRef.current = modTime;
+      setDriveRemoteModifiedTime(modTime);
+
       setDriveFileId(nuevo.id);
       setDriveFileName(nuevo.name);
       localStorage.setItem('openmun_drive_file_id', nuevo.id);
@@ -1506,9 +1551,9 @@ export const SessionProvider = ({ children }) => {
       setDriveLastSync(new Date());
       return nuevo;
     } catch (err) {
-      console.error('Error al crear nueva sesión en Drive:', err);
+      console.error('[Google Drive Create Error]:', err);
       setDriveSyncStatus('error');
-      alert('Error al crear archivo en Drive: ' + err.message);
+      alert('No se pudo crear el archivo en Google Drive.');
       return null;
     }
   };
@@ -1516,6 +1561,9 @@ export const SessionProvider = ({ children }) => {
   // Vincular la sincronización activa a un archivo existente de Drive
   const vincularArchivoDrive = async (fileId, fileName) => {
     try {
+      if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
+        return false;
+      }
       setDriveFileId(fileId);
       setDriveFileName(fileName);
       localStorage.setItem('openmun_drive_file_id', fileId);
@@ -1523,14 +1571,17 @@ export const SessionProvider = ({ children }) => {
       setDriveSyncStatus('syncing');
 
       const snapshotActual = generarSnapshotSesion();
-      await googleDriveService.actualizarArchivoSesion(fileId, snapshotActual);
+      const updated = await googleDriveService.actualizarArchivoSesion(fileId, snapshotActual);
+      const modTime = updated?.modifiedTime || new Date().toISOString();
+      driveRemoteModifiedTimeRef.current = modTime;
+      setDriveRemoteModifiedTime(modTime);
 
       setIsDriveLinked(true);
       setDriveSyncStatus('synced');
       setDriveLastSync(new Date());
       return true;
     } catch (err) {
-      console.error('Error al vincular archivo en Drive:', err);
+      console.error('[Google Drive Link Error]:', err);
       setDriveSyncStatus('error');
       return false;
     }
@@ -1539,10 +1590,15 @@ export const SessionProvider = ({ children }) => {
   // Eliminar un archivo de Drive
   const eliminarSesionDrive = async (fileId) => {
     try {
+      if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
+        return false;
+      }
       await googleDriveService.eliminarArchivo(fileId);
       if (driveFileId === fileId) {
         setDriveFileId(null);
         setDriveFileName('');
+        driveRemoteModifiedTimeRef.current = null;
+        setDriveRemoteModifiedTime(null);
         localStorage.removeItem('openmun_drive_file_id');
         localStorage.removeItem('openmun_drive_file_name');
         setIsDriveLinked(false);
@@ -1552,8 +1608,8 @@ export const SessionProvider = ({ children }) => {
       setDriveFilesList(archivos);
       return true;
     } catch (err) {
-      console.error('Error al eliminar archivo en Drive:', err);
-      alert('Error al eliminar archivo de Drive: ' + err.message);
+      console.error('[Google Drive Delete Error]:', err);
+      alert('No se pudo eliminar el archivo de Google Drive.');
       return false;
     }
   };
@@ -1565,22 +1621,35 @@ export const SessionProvider = ({ children }) => {
     setDriveSyncStatus('disconnected');
     setDriveUser(null);
     setDriveFilesList([]);
+    driveRemoteModifiedTimeRef.current = null;
+    setDriveRemoteModifiedTime(null);
   };
 
   // 5. SINCRONIZACIÓN MANUAL CON DRIVE
-  const sincronizarDriveManual = async () => {
+  const sincronizarDriveManual = async (force = false) => {
     if (!isDriveLinked || !driveFileId) {
       return await conectarGoogleDrive();
     }
     try {
       setDriveSyncStatus('syncing');
       const snapshot = generarSnapshotSesion();
-      await googleDriveService.actualizarArchivoSesion(driveFileId, snapshot);
+      const updated = await googleDriveService.actualizarArchivoSesion(driveFileId, snapshot, {
+        checkConflict: !force,
+        expectedModifiedTime: driveRemoteModifiedTimeRef.current
+      });
+      const modTime = updated?.modifiedTime || new Date().toISOString();
+      driveRemoteModifiedTimeRef.current = modTime;
+      setDriveRemoteModifiedTime(modTime);
       setDriveSyncStatus('synced');
       setDriveLastSync(new Date());
       return true;
     } catch (err) {
-      console.error('Error en sincronización manual con Drive:', err);
+      if (err.code === 'CONFLICT') {
+        console.warn('[Google Drive Conflict] Modificación remota detectada al sincronizar manualmente.');
+        setDriveSyncStatus('conflict');
+        return false;
+      }
+      console.error('[Google Drive Manual Sync Error]:', err);
       setDriveSyncStatus('error');
       return false;
     }
@@ -1589,6 +1658,7 @@ export const SessionProvider = ({ children }) => {
   // 6. AUTO-GUARDADO CONTINUO EN GOOGLE DRIVE (Debounce de 2.5s)
   useEffect(() => {
     if (!isDriveLinked || !driveFileId || !googleDriveService.isAuthenticated()) return;
+    if (driveSyncStatus === 'conflict') return; // Pausar auto-guardado si hay conflicto pendiente
 
     if (!isInitialSyncRef.current) {
       isInitialSyncRef.current = true;
@@ -1599,17 +1669,47 @@ export const SessionProvider = ({ children }) => {
     const debounceTimer = setTimeout(async () => {
       try {
         const snapshot = generarSnapshotSesion();
-        await googleDriveService.actualizarArchivoSesion(driveFileId, snapshot);
+        const updated = await googleDriveService.actualizarArchivoSesion(driveFileId, snapshot, {
+          checkConflict: true,
+          expectedModifiedTime: driveRemoteModifiedTimeRef.current
+        });
+        const modTime = updated?.modifiedTime || new Date().toISOString();
+        driveRemoteModifiedTimeRef.current = modTime;
+        setDriveRemoteModifiedTime(modTime);
         setDriveSyncStatus('synced');
         setDriveLastSync(new Date());
       } catch (err) {
-        console.warn('Error al auto-guardar en Google Drive:', err);
-        setDriveSyncStatus('error');
+        if (err.code === 'CONFLICT') {
+          console.warn('[Google Drive Conflict] Modificación remota detectada en auto-guardado. Auto-guardado en pausa.');
+          setDriveSyncStatus('conflict');
+        } else {
+          console.warn('[Google Drive Auto-Save Warning]:', err);
+          setDriveSyncStatus('error');
+          if (typeof window !== 'undefined' && (!navigator.onLine || err.name === 'TypeError')) {
+            window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+          }
+        }
       }
     }, 2500);
 
     return () => clearTimeout(debounceTimer);
-  }, [paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, isDriveLinked, driveFileId, generarSnapshotSesion]);
+  }, [paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, isDriveLinked, driveFileId, driveSyncStatus, generarSnapshotSesion]);
+
+  // 7. RESOLVER CONFLICTO DE GOOGLE DRIVE
+  const resolverConflictoDrive = async (accion = 'recargar') => {
+    if (!driveFileId) return false;
+    try {
+      if (accion === 'recargar') {
+        return await cargarSesionDesdeDrive(driveFileId, driveFileName);
+      } else if (accion === 'sobrescribir') {
+        return await sincronizarDriveManual(true);
+      }
+      return false;
+    } catch (err) {
+      console.error('[Google Drive Conflict Resolution Error]:', err);
+      return false;
+    }
+  };
 
   // 2. CARGAR sesion_activa.json
   const cargarSesionJSON = (rawSesionData, onConfigLoaded) => {
@@ -1624,9 +1724,13 @@ export const SessionProvider = ({ children }) => {
 
       if (sesionData.localStorageSnapshot && typeof sesionData.localStorageSnapshot === 'object') {
         Object.entries(sesionData.localStorageSnapshot).forEach(([key, val]) => {
-          if (val !== undefined && val !== null) {
-            const stringVal = typeof val === 'string' ? val : JSON.stringify(val);
-            localStorage.setItem(key, stringVal);
+          if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+            if (key.startsWith('openmun_') && !key.includes('__')) {
+              if (val !== undefined && val !== null) {
+                const stringVal = typeof val === 'string' ? val : JSON.stringify(val);
+                localStorage.setItem(key, stringVal);
+              }
+            }
           }
         });
       }
@@ -1746,9 +1850,11 @@ export const SessionProvider = ({ children }) => {
       }
 
       Object.keys(sesionData).forEach(key => {
-        if (key.startsWith('openmun_')) {
-          const val = sesionData[key];
-          localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
+        if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+          if (key.startsWith('openmun_') && !key.includes('__')) {
+            const val = sesionData[key];
+            localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
+          }
         }
       });
 
@@ -1918,6 +2024,8 @@ export const SessionProvider = ({ children }) => {
     driveLastSync,
     driveFileName,
     driveFilesList,
+    driveRemoteModifiedTime,
+    resolverConflictoDrive,
     conectarGoogleDrive,
     desconectarGoogleDrive,
     sincronizarDriveManual,
@@ -1997,6 +2105,8 @@ export const SessionProvider = ({ children }) => {
     driveLastSync,
     driveFileName,
     driveFilesList,
+    driveRemoteModifiedTime,
+    resolverConflictoDrive,
     conectarGoogleDrive,
     desconectarGoogleDrive,
     sincronizarDriveManual,

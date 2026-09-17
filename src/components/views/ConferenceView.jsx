@@ -643,6 +643,17 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     }
   };
 
+  // Escuchar petición global de exportación para la conferencia (ej. desde el toast de desconexión)
+  useEffect(() => {
+    const handleExportRequest = () => {
+      handleExportarConferenciaJSON();
+    };
+    window.addEventListener('openmun_export_conference_request', handleExportRequest);
+    return () => {
+      window.removeEventListener('openmun_export_conference_request', handleExportRequest);
+    };
+  });
+
   // Procesar archivo JSON de conferencia o comité individual (vía selector de archivo o Drag & Drop)
   const procesarArchivoConferenciaJSON = async (file, forceSingleComiteMode = false) => {
     if (!file) return;

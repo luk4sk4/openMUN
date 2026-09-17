@@ -16,7 +16,7 @@ const WidgetSidebar = lazyWithRetry(() => import('../components/panels/WidgetSid
 import ConferenceBanner from '../components/common/ConferenceBanner';
 import PermanentCrisisBanner from '../components/common/PermanentCrisisBanner';
 import LibreWidgetBanner from '../components/common/LibreWidgetBanner';
-import ToastNotification from '../components/common/ToastNotification';
+import { useToast } from '../context/ToastContext';
 import HomePage from '../components/pages/HomePage';
 
 // Componentes modulares del Dashboard
@@ -53,7 +53,7 @@ const Dashboard = () => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuickCountryOpen, setIsQuickCountryOpen] = useState(false);
   const [isAvisosModalOpen, setIsAvisosModalOpen] = useState(false);
-  const [toasts, setToasts] = useState([]);
+  const { addToast } = useToast();
 
   // Contextos globales
   const session = useSession();
@@ -108,50 +108,8 @@ const Dashboard = () => {
     updateDocumentTitleForTab(activeTab);
   }, [activeTab]);
 
-  // Sistema de Notificaciones Toast
-  const addToast = useCallback((toastData) => {
-    if (!toastData) return null;
-    const {
-      type = 'info',
-      title,
-      message,
-      duration = 4000,
-      onConfirm,
-      onCancel,
-      confirmText,
-      cancelText,
-      isLarge
-    } = toastData;
-    const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    setToasts(prev => [...prev, {
-      id,
-      type,
-      title,
-      message,
-      duration,
-      onConfirm,
-      onCancel,
-      confirmText,
-      cancelText,
-      isLarge
-    }]);
-    return id;
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  // Escuchar eventos globales de toast para que cualquier componente pueda dispararlos y verificar toasts/navegación pendientes
+  // Verificar si hay navegación pendiente (ej. entrar como Mesa desde Conferencia)
   useEffect(() => {
-    const handleCustomToast = (e) => {
-      if (e && e.detail) {
-        addToast(e.detail);
-      }
-    };
-    window.addEventListener('openmun_toast', handleCustomToast);
-
-    // Verificar si hay navegación pendiente (ej. entrar como Mesa desde Conferencia)
     try {
       const pendingNav = localStorage.getItem('openmun_pending_nav_tab');
       if (pendingNav) {
@@ -160,21 +118,10 @@ const Dashboard = () => {
           setActiveTab(pendingNav);
         }
       }
-
-      const pendingToast = localStorage.getItem('openmun_pending_toast');
-      if (pendingToast) {
-        localStorage.removeItem('openmun_pending_toast');
-        const parsed = JSON.parse(pendingToast);
-        addToast(parsed);
-      }
     } catch (e) {
       console.error('Error procesando navegación pendiente:', e);
     }
-
-    return () => {
-      window.removeEventListener('openmun_toast', handleCustomToast);
-    };
-  }, [addToast]);
+  }, []);
 
   // Manejador de importación de archivo JSON de sesión
   const handleFileUpload = (e) => {
@@ -329,7 +276,6 @@ const Dashboard = () => {
           onApplyTemplate={handleApplyTemplate}
         />
       </Suspense>
-      <ToastNotification toasts={toasts} onDismiss={removeToast} />
 
       {/* Menú flotante en pantalla completa */}
       {isMaximized && (

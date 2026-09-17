@@ -5,14 +5,15 @@ import {
   AlertTriangle,
   Info,
   X,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 import { useAccessibility } from '../../context/AccessibilityContext';
 
 /**
  * ToastNotification
  * Sistema de notificaciones toast estilizado, ultra-moderno y accesible.
- * Admite notificaciones estándar y toasts grandes interactivos de confirmación.
+ * Admite notificaciones estándar y toasts grandes interactivos de confirmación y acción.
  */
 export const ToastNotification = ({ toasts, onDismiss }) => {
   const { currentTheme } = useAccessibility();
@@ -20,7 +21,7 @@ export const ToastNotification = ({ toasts, onDismiss }) => {
 
   if (!toasts || toasts.length === 0) return null;
 
-  const hasLargeToast = toasts.some(t => t.isLarge || t.type === 'confirm' || t.onConfirm);
+  const hasLargeToast = toasts.some(t => t.isLarge || t.type === 'confirm' || t.onConfirm || t.action);
 
   return (
     <div
@@ -60,7 +61,8 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
     onCancel,
     confirmText = 'Confirmar',
     cancelText = 'Cancelar',
-    isLarge = false
+    isLarge = false,
+    action
   } = toast;
 
   const isConfirmation = type === 'confirm' || typeof onConfirm === 'function';
@@ -159,7 +161,7 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
     ? typeConfig.confirm
     : (typeConfig[type] || typeConfig.info);
 
-  const isExpandedLayout = isLarge || isConfirmation;
+  const isExpandedLayout = isLarge || isConfirmation || Boolean(action);
 
   return (
     <div
@@ -226,7 +228,8 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
                 fontSize: isExpandedLayout ? '0.82rem' : '0.78rem',
                 lineHeight: '1.45',
                 color: isLight ? '#334155' : '#94a3b8',
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
+                whiteSpace: 'pre-line'
               }}
             >
               {message}
@@ -345,6 +348,59 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
           >
             <Trash2 size={14} />
             <span>{confirmText}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Botón de Acción Opcional (ej. Descargar Archivo) */}
+      {!isConfirmation && action && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            marginTop: '0.75rem',
+            paddingTop: '0.65rem',
+            borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.08)'}`
+          }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (typeof action.onClick === 'function') {
+                action.onClick();
+              }
+              if (action.dismissOnClick !== false) {
+                onDismiss();
+              }
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '6px 14px',
+              borderRadius: '8px',
+              border: `1px solid ${config.borderColor}`,
+              backgroundColor: isLight ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.18)',
+              color: isLight ? '#b45309' : '#fde68a',
+              fontSize: '0.8rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              boxShadow: isLight ? '0 1px 3px rgba(0,0,0,0.06)' : '0 2px 8px rgba(0,0,0,0.3)',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = isLight ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = isLight ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.18)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            {action.icon || <Download size={14} />}
+            <span>{action.label}</span>
           </button>
         </div>
       )}

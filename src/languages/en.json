@@ -130,7 +130,14 @@
     "confirmClearSessionBtn": "Clear local data",
     "cancelBtn": "Cancel",
     "sessionClearedTitle": "Local data cleared!",
-    "sessionClearedDesc": "The local session has been completely reset."
+    "sessionClearedDesc": "The local session has been completely reset.",
+    "networkCrashTitle": "Connection lost, the application will continue working",
+    "networkCrashDrive": "To save the session offline and move it to another computer, download the file",
+    "networkCrashLive": "Connection with delegates lost",
+    "networkCrashConference": "Connection to conference lost. The session will be saved once connection is restored. Otherwise, downloading the file is recommended",
+    "networkCrashDownloadBtn": "Download file",
+    "networkRestoredTitle": "Connection restored",
+    "networkRestoredDesc": "Internet connection has been restored."
   },
   "home": {
     "libreWidgetBanner": "Use the widgets tab on the top left to add or remove any widgets you want!",

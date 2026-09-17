@@ -2,6 +2,8 @@ import React, { useEffect, Suspense } from 'react';
 import { SessionProvider } from './context/SessionContext';
 import { P2PProvider, useP2P } from './context/P2PContext';
 import { AccessibilityProvider, useAccessibility } from './context/AccessibilityContext';
+import { ToastProvider } from './context/ToastContext';
+import NetworkCrashMonitor from './components/common/NetworkCrashMonitor';
 import LegalBanner from './components/common/LegalBanner';
 import RootErrorBoundary from './components/common/RootErrorBoundary';
 import { lazyWithRetry } from './utils/lazyWithRetry';
@@ -159,10 +161,13 @@ function AppContent() {
   }
 
   return (
-    <Suspense fallback={viewFallback}>
-      {currentView}
-      <LegalBanner isLight={isLight} />
-    </Suspense>
+    <>
+      <NetworkCrashMonitor />
+      <Suspense fallback={viewFallback}>
+        {currentView}
+        <LegalBanner isLight={isLight} />
+      </Suspense>
+    </>
   );
 }
 
@@ -170,11 +175,13 @@ function App() {
   return (
     <RootErrorBoundary>
       <AccessibilityProvider>
-        <SessionProvider>
-          <P2PProvider>
-            <AppContent />
-          </P2PProvider>
-        </SessionProvider>
+        <ToastProvider>
+          <SessionProvider>
+            <P2PProvider>
+              <AppContent />
+            </P2PProvider>
+          </SessionProvider>
+        </ToastProvider>
       </AccessibilityProvider>
     </RootErrorBoundary>
   );

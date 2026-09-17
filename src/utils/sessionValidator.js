@@ -2,8 +2,70 @@
  * sessionValidator.js
  * Validador robusto de archivos de sesión JSON para OpenMUN.
  * Comprueba sintaxis, estructura requerida y tipos de datos antes de importar
- * para prevenir errores de ejecución y roturas de estado.
+ * para prevenir errores de ejecución, inyecciones XSS y roturas de estado.
  */
+
+export const ALLOWED_STORAGE_KEYS = new Set([
+  'openmun_paises',
+  'openmun_oradores',
+  'openmun_oradores_caucus',
+  'openmun_intervenciones',
+  'openmun_mociones',
+  'openmun_historico_mociones',
+  'openmun_caucus',
+  'openmun_votacion',
+  'openmun_agenda',
+  'openmun_comite',
+  'openmun_enmiendas',
+  'openmun_crisis_eventos',
+  'openmun_crisis_reloj',
+  'openmun_notes',
+  'openmun_room_settings',
+  'openmun_config',
+  'openmun_tipo_sesion',
+  'openmun_announcements',
+  'openmun_timer_dual_active'
+]);
+
+/**
+ * Sanea cadenas de texto eliminando scripts ejecutables y protocolos peligrosos,
+ * limitando además la longitud para prevenir ataques de denegación de servicio en memoria.
+ */
+export function sanitizeString(str, maxLength = 50000) {
+  if (typeof str !== 'string') return '';
+  let clean = str;
+  if (clean.length > maxLength) {
+    clean = clean.slice(0, maxLength);
+  }
+  clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  clean = clean.replace(/javascript\s*:/gi, '');
+  return clean;
+}
+
+/**
+ * Sanea recursivamente un objeto o array para neutralizar intentos de Prototype Pollution
+ * (__proto__, constructor, prototype) y sanear cadenas de texto anidadas.
+ */
+export function deepSanitize(val, depth = 0) {
+  if (depth > 20) return null;
+  if (val === null || typeof val !== 'object') {
+    if (typeof val === 'string') {
+      return sanitizeString(val);
+    }
+    return val;
+  }
+  if (Array.isArray(val)) {
+    return val.map(item => deepSanitize(item, depth + 1));
+  }
+  const cleanObj = {};
+  for (const [k, v] of Object.entries(val)) {
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') {
+      continue;
+    }
+    cleanObj[k] = deepSanitize(v, depth + 1);
+  }
+  return cleanObj;
+}
 
 export function validateSessionJSON(rawInput) {
   let parsed = null;
@@ -59,10 +121,19 @@ export function validateSessionJSON(rawInput) {
     };
   }
 
-  // 4. Comprobar si tiene claves representativas de openMUN
-  const snapshot = parsed.localStorageSnapshot && typeof parsed.localStorageSnapshot === 'object'
+  // 4. Comprobar si tiene claves representativas de openMUN y sanear snapshot
+  const rawSnapshot = parsed.localStorageSnapshot && typeof parsed.localStorageSnapshot === 'object'
     ? parsed.localStorageSnapshot
     : {};
+
+  const snapshot = {};
+  for (const [key, value] of Object.entries(rawSnapshot)) {
+    if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+      if (ALLOWED_STORAGE_KEYS.has(key) || (key.startsWith('openmun_') && !key.includes('__'))) {
+        snapshot[key] = typeof value === 'string' ? sanitizeString(value) : deepSanitize(value);
+      }
+    }
+  }
 
   const hasExplicitBackupTag = parsed.tipo === 'openmun_full_backup' || parsed.tipo === 'openmun_session';
   const hasSnapshotKey = Object.keys(snapshot).some(k => k.startsWith('openmun_'));
@@ -127,7 +198,8 @@ export function validateSessionJSON(rawInput) {
   }
 
   // 5. Validar y sanear estructuras internas para evitar crashes
-  const sanitized = { ...parsed };
+  const sanitized = deepSanitize(parsed) || {};
+  sanitized.localStorageSnapshot = snapshot;
 
   // Países
   const rawPaises = sanitized.paises || snapshot.openmun_paises;
@@ -141,12 +213,12 @@ export function validateSessionJSON(rawInput) {
     }
     // Asegurar que cada país tenga al menos un identificador y nombre válidos
     sanitized.paises = rawPaises.filter(p => p && typeof p === 'object').map((p, idx) => ({
-      id: p.id || `pais_${Date.now()}_${idx}`,
-      nombre: typeof p.nombre === 'string' ? p.nombre : (p.name || `Delegación ${idx + 1}`),
-      estatus: typeof p.estatus === 'string' ? p.estatus : 'Presente',
-      bandera: typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'),
+      ...p,
+      id: sanitizeString(p.id || `pais_${Date.now()}_${idx}`, 100),
+      nombre: sanitizeString(typeof p.nombre === 'string' ? p.nombre : (p.name || `Delegación ${idx + 1}`), 200),
+      estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Presente', 50),
+      bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 50),
       tieneVeto: Boolean(p.tieneVeto || p.veto),
-      ...p
     }));
   }
 
@@ -254,6 +326,7 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
   }
 
   if (!obj || typeof obj !== 'object') return null;
+  obj = deepSanitize(obj) || {};
 
   // 1. Desempaquetar si viene envuelto en datos_json, datos, state o tabla comites
   let inner = obj;
@@ -275,7 +348,7 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
 
   // 2. Extraer nombre de comisión/comité
   const rawNombre = inner.comision || inner.nombreComite || inner.nombre || inner.name || snapshot.openmun_comite || fallbackNombre || 'Comité MUN';
-  const cleanNombre = typeof rawNombre === 'string' ? rawNombre.trim() : 'Comité MUN';
+  const cleanNombre = sanitizeString(typeof rawNombre === 'string' ? rawNombre.trim() : 'Comité MUN', 200);
 
   // 3. Extraer y normalizar lista de países / delegaciones
   let rawPaises = inner.paises || inner.delegaciones || inner.countries || snapshot.openmun_paises;
@@ -285,11 +358,11 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
   if (!Array.isArray(rawPaises)) rawPaises = [];
 
   const paisesNormalizados = rawPaises.filter(p => p && typeof p === 'object').map((p, idx) => ({
-    id: p.id || `pais_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
-    nombre: typeof p.nombre === 'string' && p.nombre.trim() ? p.nombre.trim() : (p.name || `Delegación ${idx + 1}`),
-    bandera: typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'),
+    id: sanitizeString(p.id || `pais_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`, 100),
+    nombre: sanitizeString(typeof p.nombre === 'string' && p.nombre.trim() ? p.nombre.trim() : (p.name || `Delegación ${idx + 1}`), 200),
+    bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 50),
     veto: Boolean(p.veto !== undefined ? p.veto : (p.tieneVeto !== undefined ? p.tieneVeto : false)),
-    estatus: typeof p.estatus === 'string' ? p.estatus : 'Ausente'
+    estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Ausente', 50)
   }));
 
   // 4. Extraer Agenda

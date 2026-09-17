@@ -240,10 +240,61 @@ class GoogleDriveService {
   }
 
   /**
+   * Obtiene metadatos de un archivo específico (modificación, versión, nombre)
+   */
+  async obtenerMetadatosArchivo(fileId) {
+    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
+      throw new Error('ID de archivo de Google Drive inválido');
+    }
+
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,modifiedTime,version,size,parents`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` }
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[GoogleDriveService Metadatos Error]:', err);
+      throw new Error(err.error?.message || `Error al obtener metadatos (Status: ${res.status})`);
+    }
+
+    return await res.json();
+  }
+
+  /**
+   * Verifica si el archivo remoto fue modificado por otra fuente
+   * después de la fecha esperada.
+   */
+  async verificarModificacionRemota(fileId, expectedModifiedTime) {
+    if (!expectedModifiedTime) return { conflict: false };
+    try {
+      const meta = await this.obtenerMetadatosArchivo(fileId);
+      if (!meta || !meta.modifiedTime) return { conflict: false };
+
+      const remoteTime = new Date(meta.modifiedTime).getTime();
+      const localTime = new Date(expectedModifiedTime).getTime();
+
+      // Si la versión remota es más de 3 segundos posterior a la nuestra, hay conflicto
+      const hasConflict = (remoteTime - localTime) > 3000;
+      return {
+        conflict: hasConflict,
+        remoteModifiedTime: meta.modifiedTime,
+        remoteMeta: meta
+      };
+    } catch (e) {
+      console.warn('[GoogleDriveService] No se pudo verificar modificación remota:', e);
+      return { conflict: false };
+    }
+  }
+
+  /**
    * Descarga el contenido JSON del archivo desde Google Drive
    */
   async descargarSesion(fileId) {
     if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
+      throw new Error('ID de archivo de Google Drive inválido');
+    }
 
     const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
       headers: { Authorization: `Bearer ${this.accessToken}` }
@@ -251,6 +302,7 @@ class GoogleDriveService {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      console.error('[GoogleDriveService Descargar Error]:', err);
       throw new Error(err.error?.message || `Error al descargar sesión de Drive (Status: ${res.status})`);
     }
 
@@ -288,7 +340,7 @@ class GoogleDriveService {
       JSON.stringify(sesionData, null, 2) +
       closeDelimiter;
 
-    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime,size,webViewLink', {
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime,size,webViewLink,version', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -299,6 +351,7 @@ class GoogleDriveService {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      console.error('[GoogleDriveService Crear Error]:', err);
       throw new Error(err.error?.message || `Error al crear archivo en Drive (Status: ${res.status})`);
     }
 
@@ -306,12 +359,27 @@ class GoogleDriveService {
   }
 
   /**
-   * Actualiza el contenido del archivo en Google Drive (Auto-guardado)
+   * Actualiza el contenido del archivo en Google Drive (Auto-guardado y guardado manual)
+   * Soporta comprobación de conflictos por tiempo de modificación remota.
    */
-  async actualizarArchivoSesion(fileId, sesionData) {
+  async actualizarArchivoSesion(fileId, sesionData, options = {}) {
     if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
+      throw new Error('ID de archivo de Google Drive inválido');
+    }
 
-    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&fields=id,name,modifiedTime,size`, {
+    // Comprobación de conflicto si se especificó expectedModifiedTime y checkConflict !== false
+    if (options.checkConflict && options.expectedModifiedTime) {
+      const check = await this.verificarModificacionRemota(fileId, options.expectedModifiedTime);
+      if (check.conflict) {
+        const conflictErr = new Error('CONFLICT_REMOTE_MODIFIED');
+        conflictErr.code = 'CONFLICT';
+        conflictErr.remoteModifiedTime = check.remoteModifiedTime;
+        throw conflictErr;
+      }
+    }
+
+    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&fields=id,name,modifiedTime,size,version`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -322,6 +390,7 @@ class GoogleDriveService {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      console.error('[GoogleDriveService Actualizar Error]:', err);
       throw new Error(err.error?.message || `Error al actualizar archivo en Drive (Status: ${res.status})`);
     }
 
@@ -333,6 +402,9 @@ class GoogleDriveService {
    */
   async eliminarArchivo(fileId) {
     if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
+      throw new Error('ID de archivo de Google Drive inválido');
+    }
 
     const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
       method: 'DELETE',
@@ -341,6 +413,7 @@ class GoogleDriveService {
 
     if (!res.ok && res.status !== 204 && res.status !== 404) {
       const err = await res.json().catch(() => ({}));
+      console.error('[GoogleDriveService Eliminar Error]:', err);
       throw new Error(err.error?.message || `Error al eliminar archivo en Drive (Status: ${res.status})`);
     }
 

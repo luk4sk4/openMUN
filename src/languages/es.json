@@ -132,7 +132,14 @@
     "confirmClearSessionBtn": "Borrar datos locales",
     "cancelBtn": "Cancelar",
     "sessionClearedTitle": "¡Datos locales borrados!",
-    "sessionClearedDesc": "Se ha restablecido la sesión local por completo."
+    "sessionClearedDesc": "Se ha restablecido la sesión local por completo.",
+    "networkCrashTitle": "Conexión perdida, la aplicación seguirá funcionando",
+    "networkCrashDrive": "Para guardar la sesión sin conexión y moverla a otro ordenador, descarga el archivo",
+    "networkCrashLive": "Conexión con los delegados caída",
+    "networkCrashConference": "Conexión con la conferencia perdida. Se guardará la sesión cuando se recupere la conexión. Si no, se recomienda descargar el archivo",
+    "networkCrashDownloadBtn": "Descargar archivo",
+    "networkRestoredTitle": "Conexión restablecida",
+    "networkRestoredDesc": "Se ha restablecido la conexión a internet."
   },
   "home": {
     "libreWidgetBanner": "¡Usa la pestaña de widgets arriba a la izquierda para añadir o eliminar los widgets que desees!",

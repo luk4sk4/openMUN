@@ -28,10 +28,15 @@ export const NetworkCrashMonitor = () => {
   // 2. Participando o moderando una conferencia
   const inConference = Boolean(
     viewMode === 'conference' ||
-    conferenceService.obtenerSesionActiva()?.id ||
+    Boolean(conferenceService && conferenceService.obtenerSesionActiva()?.id) ||
     (typeof window !== 'undefined' && (
-      localStorage.getItem('openmun_current_conf_id') ||
-      localStorage.getItem('openmun_active_conference')
+      Boolean(localStorage.getItem('openmun_current_conf_id')) ||
+      Boolean(localStorage.getItem('openmun_active_conference')) ||
+      Boolean(localStorage.getItem('openmun_conf_id')) ||
+      Boolean(new URLSearchParams(window.location.search).get('conf')) ||
+      new URLSearchParams(window.location.search).get('mode') === 'conference' ||
+      window.location.pathname.includes('conferencia') ||
+      window.location.pathname.includes('conference')
     ))
   );
 
@@ -72,6 +77,7 @@ export const NetworkCrashMonitor = () => {
   }, [hasDrive, inConference, hasLive, needsNetwork, viewMode, descargarSesionJSON, sincronizarDriveManual]);
 
   const wasOfflineRef = useRef(false);
+  const lastRestoredToastRef = useRef(0);
 
   useEffect(() => {
     const handleNetworkLost = () => {
@@ -96,7 +102,8 @@ export const NetworkCrashMonitor = () => {
         );
       }
 
-      if (current.hasDrive) {
+      // Añadir la recomendación de descargar archivo si tiene Drive o sesión en vivo activa
+      if (current.hasDrive || current.hasLive) {
         messageParts.push(
           t(
             'toast.networkCrashDrive',
@@ -121,9 +128,10 @@ export const NetworkCrashMonitor = () => {
       const downloadAction = (current.hasDrive || current.inConference || current.hasLive) ? {
         label: t('toast.networkCrashDownloadBtn', 'Descargar archivo'),
         onClick: () => {
-          if (current.viewMode === 'conference') {
+          if (current.viewMode === 'conference' || current.inConference) {
             window.dispatchEvent(new CustomEvent('openmun_export_conference_request'));
-          } else if (typeof current.descargarSesionJSON === 'function') {
+          }
+          if (typeof current.descargarSesionJSON === 'function') {
             current.descargarSesionJSON();
           }
         }
@@ -146,18 +154,23 @@ export const NetworkCrashMonitor = () => {
 
       if (wasOfflineRef.current) {
         wasOfflineRef.current = false;
-        const current = stateRef.current;
+        const now = Date.now();
+        // Cooldown para evitar falsos positivos y bucles infinitos
+        if (now - lastRestoredToastRef.current > 5000) {
+          lastRestoredToastRef.current = now;
+          const current = stateRef.current;
 
-        addToast({
-          type: 'success',
-          title: t('toast.networkRestoredTitle', 'Conexión restablecida'),
-          message: t('toast.networkRestoredDesc', 'Se ha restablecido la conexión a internet.'),
-          duration: 4500
-        });
+          addToast({
+            type: 'success',
+            title: t('toast.networkRestoredTitle', 'Conexión restablecida'),
+            message: t('toast.networkRestoredDesc', 'Se ha restablecido la conexión a internet.'),
+            duration: 4500
+          });
 
-        // Si tiene Google Drive vinculado, intentar sincronizar en segundo plano
-        if (current.hasDrive && typeof current.sincronizarDriveManual === 'function') {
-          current.sincronizarDriveManual(false).catch(() => {});
+          // Si tiene Google Drive vinculado, intentar sincronizar en segundo plano
+          if (current.hasDrive && typeof current.sincronizarDriveManual === 'function') {
+            current.sincronizarDriveManual(false).catch(() => {});
+          }
         }
       }
     };
@@ -168,13 +181,10 @@ export const NetworkCrashMonitor = () => {
     }
 
     // Intervalo de seguridad para detectar caídas de red si el evento offline del navegador no se dispara
+    // NOTA: Nunca invocar handleNetworkRestored aquí automáticamente; solo se restaura mediante eventos reales verificados.
     const probeInterval = setInterval(() => {
-      if (typeof navigator !== 'undefined') {
-        if (!navigator.onLine && !wasOfflineRef.current) {
-          handleNetworkLost();
-        } else if (navigator.onLine && wasOfflineRef.current && (!stateRef.current.hasLive || connectionStatus !== 'reconnecting')) {
-          handleNetworkRestored();
-        }
+      if (typeof navigator !== 'undefined' && !navigator.onLine && !wasOfflineRef.current) {
+        handleNetworkLost();
       }
     }, 2500);
 
@@ -190,7 +200,7 @@ export const NetworkCrashMonitor = () => {
       window.removeEventListener('openmun_network_failure', handleNetworkLost);
       window.removeEventListener('openmun_network_restored', handleNetworkRestored);
     };
-  }, [addToast, removeToast, connectionStatus, t]);
+  }, [addToast, removeToast, t]);
 
   return null;
 };

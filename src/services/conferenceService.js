@@ -16,6 +16,18 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+async function safeFetch(url, options) {
+  try {
+    const res = await fetch(url, options);
+    return res;
+  } catch (err) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+    }
+    throw err;
+  }
+}
+
 async function handleResponse(response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -55,12 +67,15 @@ async function fetchWithDeduplication(url, ttlMs = 4000) {
 
   const promise = (async () => {
     try {
-      const res = await fetch(url);
+      const res = await safeFetch(url);
       const data = await handleResponse(res);
       requestCache.set(url, { data, timestamp: Date.now() });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('openmun_network_restored'));
+      }
       return data;
     } catch (err) {
-      if (typeof window !== 'undefined' && (!navigator.onLine || err.name === 'TypeError')) {
+      if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('openmun_network_failure'));
       }
       throw err;

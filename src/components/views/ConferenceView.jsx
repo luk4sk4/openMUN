@@ -411,7 +411,16 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       if (checklistResult.status === 'fulfilled' && checklistResult.value && Array.isArray(checklistResult.value.checklist)) {
         setChecklistStaff(checklistResult.value.checklist);
       }
+
+      if (resResult.status === 'rejected' && avisosResult.status === 'rejected') {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+        }
+      }
     } catch (err) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('openmun_network_failure'));
+      }
       console.warn('Error al actualizar datos de conferencia:', err);
     } finally {
       isFetchingRef.current = false;

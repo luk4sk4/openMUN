@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSession } from '../../context/SessionContext';
 import { useP2P } from '../../context/P2PContext';
 import { googleDriveService } from '../../services/googleDriveService';
+import peerService from '../../services/peerService';
 import conferenceService from '../../services/conferenceService';
 
 const TOAST_OFFLINE_ID = 'openmun_network_offline_alert';

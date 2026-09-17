@@ -55,6 +55,7 @@ import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import ConferenceBanner from '../common/ConferenceBanner';
 import conferenceService from '../../services/conferenceService';
+import useTopBarOverflow from '../../hooks/useTopBarOverflow';
 import { formatearMensajeAviso, correspondeAviso, obtenerEtiquetaDestino } from '../../utils/announcementHelpers';
 import MatrizPaises from '../widgets/MatrizPaises';
 import HistoricoDelegaciones from '../widgets/HistoricoDelegaciones';
@@ -72,6 +73,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const { isLight: contextIsLight, toggleThemeMode } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+
+  // Hook para detectar overflow en la barra de secretaría y compactar el logo automáticamente
+  const { containerRef: headerRef, isLogoCompact, isExtraCompact } = useTopBarOverflow();
 
   const {
     paises: sessionPaises,
@@ -301,22 +305,27 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
       {/* ── Topbar de Secretaría ── */}
-      <header style={{
-        padding: '0.85rem 1.5rem',
-        backgroundColor: 'var(--header-bg)',
-        borderBottom: '1px solid var(--border-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-          <OpenMunLogo height={32} isLight={isLight} />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+      <header
+        ref={headerRef}
+        style={{
+          padding: isExtraCompact ? '0.5rem 1rem' : '0.85rem 1.5rem',
+          backgroundColor: 'var(--header-bg)',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          maxWidth: '100vw',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: isLogoCompact ? '0.5rem' : '0.9rem', minWidth: 0, flexShrink: 1 }}>
+          <OpenMunLogo height={32} isLight={isLight} showText={!isLogoCompact} />
+          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'nowrap' }}>
+              <span style={{ fontWeight: '800', fontSize: isExtraCompact ? '0.9rem' : '1.05rem', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {t('views.secretariat.consoleTitle', 'Consola de Secretaría y Pajes')}
               </span>
               <span style={{
@@ -329,16 +338,17 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
-                border: '1px solid rgba(59, 130, 246, 0.3)'
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                flexShrink: 0
               }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#60a5fa' }} />
                 {t('liveSession.roomCode', 'Sala')}: {roomId || 'Local'}
               </span>
             </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span>{nombreComite}</span>
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{nombreComite}</span>
               <span>•</span>
-              <span style={{ color: 'var(--text-color)', fontWeight: '600' }}>{t('header.agenda', 'Tema')}: {temaActual}</span>
+              <span style={{ color: 'var(--text-color)', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('header.agenda', 'Tema')}: {temaActual}</span>
             </div>
           </div>
         </div>

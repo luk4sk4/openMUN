@@ -25,8 +25,6 @@ import {
   Users,
   X,
   Keyboard,
-  Minimize2,
-  Monitor,
   PictureInPicture2,
   FileSpreadsheet,
   FileText,
@@ -48,7 +46,7 @@ const CommandPaletteModal = ({
   openAvisosModal
 }) => {
   const { t } = useTranslation();
-  const { isLight, toggleThemeMode, densityMode, setDensityMode, cycleDensityMode } = useAccessibility();
+  const { isLight, toggleThemeMode } = useAccessibility();
   const { oradoresCola, oradoresCaucus, avanzarOradorCaucus, removerOrador, paises } = useSession();
 
   const [query, setQuery] = useState('');
@@ -243,15 +241,6 @@ const CommandPaletteModal = ({
         action: () => toggleThemeMode()
       },
       {
-        id: 'pref-density-cycle',
-        category: 'Preferencias',
-        title: t('palette.cycleDensity', 'Cambiar Densidad de Interfaz'),
-        desc: `Modo actual: ${densityMode === 'compact' ? 'Compacta' : (densityMode === 'projector' ? 'Proyección' : 'Estándar')}`,
-        icon: densityMode === 'compact' ? Minimize2 : (densityMode === 'projector' ? Monitor : LayoutGrid),
-        shortcut: 'Ctrl+Shift+D',
-        action: () => cycleDensityMode()
-      },
-      {
         id: 'pref-access',
         category: 'Preferencias',
         title: t('accessibility.title', 'Abrir Accesibilidad y Tema'),
@@ -279,7 +268,7 @@ const CommandPaletteModal = ({
         action: () => openExportModal?.()
       }
     ];
-  }, [t, setActiveTab, toggleThemeMode, cycleDensityMode, densityMode, isLight, openAccessModal, openLiveModal, openExportModal]);
+  }, [t, setActiveTab, toggleThemeMode, isLight, openAccessModal, openLiveModal, openExportModal]);
 
   // Filtrar comandos según texto de búsqueda
   const filteredCommands = useMemo(() => {

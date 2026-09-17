@@ -63,7 +63,6 @@ const Dashboard = () => {
     setConfig,
     isLight,
     toggleThemeMode,
-    cycleDensityMode,
     isAccessOpen,
     setIsAccessOpen
   } = useAccessibility();
@@ -73,7 +72,6 @@ const Dashboard = () => {
     onOpenCommandPalette: () => setIsCommandPaletteOpen(prev => !prev),
     onOpenQuickAddCountry: () => setIsQuickCountryOpen(prev => !prev),
     onSwitchTab: (tab) => setActiveTab(tab),
-    onCycleDensity: cycleDensityMode,
     activeTab
   });
 

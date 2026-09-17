@@ -1602,6 +1602,8 @@ const ControladorEnmiendas = () => {
             maxWidth: '480px',
             maxHeight: '90%',
             overflowY: 'auto',
+            overflowX: 'hidden',
+            boxSizing: 'border-box',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.85rem',
@@ -1623,12 +1625,21 @@ const ControladorEnmiendas = () => {
                 <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.3rem' }}>
                   Naturaleza de la Enmienda:
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem' }}>
+                <div 
+                  className="selector-tipo-enmienda"
+                  style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', 
+                    gap: '0.4rem',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setTipoEnmienda('adicion')}
                     style={{
-                      padding: '0.45rem',
+                      padding: '0.45rem 0.35rem',
                       borderRadius: '6px',
                       border: `1px solid ${tipoEnmienda === 'adicion' ? '#22c55e' : 'var(--subborder-color)'}`,
                       backgroundColor: tipoEnmienda === 'adicion' ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
@@ -1639,17 +1650,22 @@ const ControladorEnmiendas = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.25rem'
+                      gap: '0.25rem',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
                     }}
                   >
-                    <FilePlus size={13} /> Adición
+                    <FilePlus size={13} style={{ flexShrink: 0 }} /> <span>Adición</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setTipoEnmienda('supresion')}
                     style={{
-                      padding: '0.45rem',
+                      padding: '0.45rem 0.35rem',
                       borderRadius: '6px',
                       border: `1px solid ${tipoEnmienda === 'supresion' ? '#ef4444' : 'var(--subborder-color)'}`,
                       backgroundColor: tipoEnmienda === 'supresion' ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
@@ -1660,17 +1676,22 @@ const ControladorEnmiendas = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.25rem'
+                      gap: '0.25rem',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
                     }}
                   >
-                    <FileMinus size={13} /> Supresión
+                    <FileMinus size={13} style={{ flexShrink: 0 }} /> <span>Supresión</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setTipoEnmienda('modificacion')}
                     style={{
-                      padding: '0.45rem',
+                      padding: '0.45rem 0.35rem',
                       borderRadius: '6px',
                       border: `1px solid ${tipoEnmienda === 'modificacion' ? '#3b82f6' : 'var(--subborder-color)'}`,
                       backgroundColor: tipoEnmienda === 'modificacion' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
@@ -1681,10 +1702,15 @@ const ControladorEnmiendas = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.25rem'
+                      gap: '0.25rem',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
                     }}
                   >
-                    <Edit3 size={13} /> Modificación
+                    <Edit3 size={13} style={{ flexShrink: 0 }} /> <span>Modificación</span>
                   </button>
                 </div>
               </div>

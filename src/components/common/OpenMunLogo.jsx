@@ -22,6 +22,7 @@ const OpenMunLogo = ({ width = 180, height = 44, showText = true, isLight = fals
       }}
     >
       <svg
+        className="openmun-logo-icon"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 800 600"
         style={{
@@ -92,7 +93,7 @@ const OpenMunLogo = ({ width = 180, height = 44, showText = true, isLight = fals
       </svg>
 
       {showText && (
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+        <div className="openmun-logo-text" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
           <span style={{
             fontWeight: '900',
             fontSize: '1.25rem',

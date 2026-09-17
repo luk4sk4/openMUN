@@ -47,6 +47,7 @@ import CountryFlag from '../common/CountryFlag';
 import { playEmergencyPulse, playChimeAlert } from '../../utils/audioAlerts';
 import conferenceService from '../../services/conferenceService';
 import ConferenceBanner from '../common/ConferenceBanner';
+import useTopBarOverflow from '../../hooks/useTopBarOverflow';
 import {
   formatearMensajeAviso,
   correspondeAviso,
@@ -59,6 +60,9 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
   const { isLight: contextIsLight, toggleThemeMode } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+
+  // Hook para detectar overflow en la cabecera de Staff y compactar logo si es necesario
+  const { containerRef: headerRef, isLogoCompact, isExtraCompact } = useTopBarOverflow();
 
   const { tipoSesion, cambiarTipoSesion } = useSession();
 
@@ -339,22 +343,27 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
       {/* ── Cabecera de Staff ── */}
-      <header style={{
-        padding: '0.85rem 1.5rem',
-        backgroundColor: 'var(--header-bg)',
-        borderBottom: '1px solid var(--subborder-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-          <OpenMunLogo height={32} isLight={isLight} />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '-0.01em', color: '#10b981' }}>
+      <header
+        ref={headerRef}
+        style={{
+          padding: isExtraCompact ? '0.5rem 1rem' : '0.85rem 1.5rem',
+          backgroundColor: 'var(--header-bg)',
+          borderBottom: '1px solid var(--subborder-color)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          maxWidth: '100vw',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: isLogoCompact ? '0.5rem' : '0.9rem', minWidth: 0, flexShrink: 1 }}>
+          <OpenMunLogo height={32} isLight={isLight} showText={!isLogoCompact} />
+          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'nowrap' }}>
+              <span style={{ fontWeight: '800', fontSize: isExtraCompact ? '0.9rem' : '1.05rem', letterSpacing: '-0.01em', color: '#10b981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {t('views.staff.title', 'Consola de Staff y Logística')}
               </span>
               <span style={{
@@ -366,13 +375,14 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                 borderRadius: '6px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px'
+                gap: '4px',
+                flexShrink: 0
               }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
                 Sala: {roomId}
               </span>
             </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {comisionNombre} · {t('views.staff.subtitle', 'Gestión de sala, avisos oficiales, pajes y asistencia operativa')}
             </div>
           </div>

@@ -5,6 +5,7 @@ import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import SessionMenuDropdown from './SessionMenuDropdown';
 import { TAB_CONFIG } from '../../utils/dashboardTabs';
+import useTopBarOverflow from '../../hooks/useTopBarOverflow';
 
 const DashboardNavbar = ({
   setIsSidebarOpen,
@@ -44,23 +45,31 @@ const DashboardNavbar = ({
 
   const isLiveActive = connectionStatus === 'host_active';
 
+  // Hook de detección dinámica de overflow y compactación adaptativa de la barra superior
+  const { containerRef, isLogoCompact, isExtraCompact } = useTopBarOverflow([tabs, activeTab, roomId, connectionStatus]);
+
   return (
-    <nav style={{
-      position: 'relative',
-      zIndex: 1000,
-      display: 'flex',
-      padding: '0.75rem 1.5rem', // increased padding for larger layout
-      backgroundColor: 'var(--header-bg)',
-      borderBottom: '1px solid var(--subborder-color)',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '0.75rem',
-      transition: 'background-color 0.3s ease, border-color 0.3s ease',
-      userSelect: 'none'
-    }}>
+    <nav
+      ref={containerRef}
+      style={{
+        position: 'relative',
+        zIndex: 1000,
+        display: 'flex',
+        padding: isExtraCompact ? '0.4rem 0.75rem' : '0.75rem 1.5rem',
+        backgroundColor: 'var(--header-bg)',
+        borderBottom: '1px solid var(--subborder-color)',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: isExtraCompact ? '0.4rem' : '0.75rem',
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease',
+        userSelect: 'none'
+      }}
+    >
       {/* ── ZONA 1 (IZQUIERDA): Marca OpenMUN + Herramientas de Trabajo (Comandos & Widgets) ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
-        {/* Logo OpenMUN como ancla fija a la izquierda */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isExtraCompact ? '0.35rem' : '0.6rem', flexShrink: 0 }}>
+        {/* Logo OpenMUN como ancla fija a la izquierda: se reduce a solo icono si hay overflow */}
         <div
           onClick={() => setActiveTab('HOME')}
           style={{
@@ -72,7 +81,7 @@ const DashboardNavbar = ({
           }}
           title={t('header.homeTooltip', 'OpenMUN - Ir a Inicio')}
         >
-          <OpenMunLogo height={30} isLight={isLight} />
+          <OpenMunLogo height={30} isLight={isLight} showText={!isLogoCompact} />
         </div>
 
         {/* Separador vertical sutil */}
@@ -113,7 +122,7 @@ const DashboardNavbar = ({
             title={t('palette.buttonTooltip', 'Comandos y Acciones Rápidas (Ctrl+K)')}
           >
             <Search size={12} style={{ opacity: 0.7 }} />
-            <span style={{ opacity: 0.85 }}>{t('header.search', 'Buscar')}</span>
+            {!isExtraCompact && <span style={{ opacity: 0.85 }}>{t('header.search', 'Buscar')}</span>}
             <kbd
               style={{
                 fontSize: '0.62rem',
@@ -152,24 +161,31 @@ const DashboardNavbar = ({
             title={t('header.widgetsTooltip', 'Abrir Gestor de Widgets')}
           >
             <LayoutGrid size={13} style={{ opacity: 0.8 }} />
-            <span>{t('header.widgets', 'Widgets')}</span>
+            {!isExtraCompact && <span>{t('header.widgets', 'Widgets')}</span>}
           </button>
         </div>
       </div>
 
       {/* ── ZONA 2 (CENTRO): Pestañas de Navegación Segmentadas ── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '2px',
-        backgroundColor: 'var(--subnav-bg)',
-        padding: '2px',
-        borderRadius: '8px',
-        border: '1px solid var(--subborder-color)',
-        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
-        transition: 'background-color 0.3s ease',
-        flexShrink: 0
-      }}>
+      <div
+        className="dashboard-tabs-scroll"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2px',
+          backgroundColor: 'var(--subnav-bg)',
+          padding: '2px',
+          borderRadius: '8px',
+          border: '1px solid var(--subborder-color)',
+          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+          transition: 'background-color 0.3s ease',
+          flexShrink: 1,
+          minWidth: 0,
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
+      >
         {tabs.map(tab => {
           const TabIcon = TAB_CONFIG[tab]?.Icon;
           const label = t(TAB_CONFIG[tab]?.labelKey, TAB_CONFIG[tab]?.label || tab);
@@ -179,14 +195,14 @@ const DashboardNavbar = ({
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                padding: '0.28rem 0.55rem',
+                padding: isExtraCompact ? '0.24rem 0.45rem' : '0.28rem 0.55rem',
                 backgroundColor: isActiva ? 'var(--btn-bg)' : 'transparent',
                 color: isActiva ? 'var(--btn-text)' : 'var(--muted-text)',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 fontWeight: isActiva ? '700' : '500',
-                fontSize: '0.77rem',
+                fontSize: isExtraCompact ? '0.72rem' : '0.77rem',
                 letterSpacing: '0.01em',
                 transition: 'all 0.15s ease',
                 display: 'inline-flex',
@@ -204,7 +220,7 @@ const DashboardNavbar = ({
       </div>
 
       {/* ── ZONA 3 (DERECHA): Grupos de Conectividad, Sesión, Utilidades y Configuración ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isExtraCompact ? '0.35rem' : '0.5rem', justifyContent: 'flex-end', flexShrink: 0 }}>
         {/* Grupo 1: Sala en Vivo & Avisos Oficiales */}
         <div style={{
           display: 'flex',
@@ -236,14 +252,15 @@ const DashboardNavbar = ({
             }}
             title={t('liveSession.title', 'Sesión en Vivo')}
           >
-            <Radio size={12} className={isLiveActive ? 'animate-pulse' : ''} />
-            <span>
-              {isLiveActive
-                ? (roomSettings?.privacyMode === 'hidden'
-                  ? `${t('liveSession.live', 'En Vivo')} (${connectedPeers?.length || 0})`
-                  : `${roomId || t('liveSession.live', 'En Vivo')} (${connectedPeers?.length || 0})`)
-                : t('liveSession.live', 'En Vivo')}
-            </span>
+            {(!isExtraCompact || isLiveActive) && (
+              <span>
+                {isLiveActive
+                  ? (roomSettings?.privacyMode === 'hidden'
+                    ? (isExtraCompact ? `(${connectedPeers?.length || 0})` : `${t('liveSession.live', 'En Vivo')} (${connectedPeers?.length || 0})`)
+                    : (isExtraCompact ? `${roomId || 'Live'} (${connectedPeers?.length || 0})` : `${roomId || t('liveSession.live', 'En Vivo')} (${connectedPeers?.length || 0})`))
+                  : t('liveSession.live', 'En Vivo')}
+              </span>
+            )}
             {speakingRequests?.length > 0 && (
               <span style={{
                 width: '6px',
@@ -281,7 +298,7 @@ const DashboardNavbar = ({
             title="Centro de Avisos & Comunicados Oficiales"
           >
             <Megaphone size={12} color="#3b82f6" />
-            <span>{t('header.announcements', 'Avisos')}</span>
+            {!isExtraCompact && <span>{t('header.announcements', 'Avisos')}</span>}
           </button>
         </div>
 

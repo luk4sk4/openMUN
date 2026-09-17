@@ -762,7 +762,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
 
             {/* Botón de GitHub */}
             <a
-              href="https://github.com/luk4sk4/OPEN2MUN"
+              href="https://github.com/luk4sk4/OPENMUN"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -1127,7 +1127,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
               </button>
 
               <a
-                href="https://github.com/luk4sk4/OPEN2MUN"
+                href="https://github.com/luk4sk4/OPENMUN"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

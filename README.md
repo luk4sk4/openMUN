@@ -130,7 +130,7 @@ openMUN prioriza la inclusión en el entorno académico y de debate:
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/luk4sk4/OPEN2MUN.git
+   git clone https://github.com/luk4sk4/OPENMUN.git
    cd OPEN2MUN
    ```
 

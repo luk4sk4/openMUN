@@ -564,12 +564,17 @@ html.density-compact {
 }
 
 body.density-compact nav {
-  padding: 0.4rem 1rem !important;
+  padding: 0.35rem 0.75rem !important;
+  gap: 0.4rem !important;
 }
 
 body.density-compact nav button {
-  padding: 4px 7px !important;
-  font-size: 0.75rem !important;
+  padding: 3px 6px !important;
+  font-size: 0.72rem !important;
+}
+
+body.density-compact header {
+  padding: 0.4rem 0.85rem !important;
 }
 
 body.density-compact .react-grid-item {
@@ -599,13 +604,36 @@ html.density-projector {
 }
 
 body.density-projector nav {
-  padding: 1rem 2rem !important;
+  padding: 0.5rem 1rem !important;
+  gap: 0.5rem !important;
 }
 
 body.density-projector nav button {
-  padding: 8px 14px !important;
-  font-size: 0.95rem !important;
+  padding: 4px 8px !important;
+  font-size: 0.82rem !important;
   font-weight: 700 !important;
+}
+
+body.density-projector header {
+  padding: 0.55rem 1.2rem !important;
+}
+
+/* Reglas de contención de desbordamiento para cabeceras y barras de navegación */
+nav, header {
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+.dashboard-tabs-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.dashboard-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.openmun-logo-container {
+  transition: opacity 0.2s ease;
 }
 
 body.density-projector .react-grid-item {
@@ -631,6 +659,23 @@ body.density-projector .reloj-gsl-display {
   font-size: 1.35em !important;
   font-weight: 900 !important;
   letter-spacing: 0.05em !important;
+}
+
+/* Selector de Tipo de Enmienda - Prevención de desbordamiento horizontal */
+.selector-tipo-enmienda button,
+.selector-tipo-enmienda-del button {
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+body.density-projector .selector-tipo-enmienda button {
+  font-size: 0.76rem !important;
+  padding: 0.42rem 0.25rem !important;
+}
+
+body.density-projector .selector-tipo-enmienda-del button {
+  font-size: 0.76rem !important;
+  padding: 0.45rem 0.25rem !important;
 }
 
 /* ─────────────────────────────────────────────────────────────

@@ -2757,12 +2757,22 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   <label style={{ fontSize: '0.74rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
                     Tipo de Enmienda
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginTop: '0.35rem' }}>
+                  <div 
+                    className="selector-tipo-enmienda-del"
+                    style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', 
+                      gap: '0.45rem', 
+                      marginTop: '0.35rem',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}
+                  >
                     <button
                       type="button"
                       onClick={() => setTipoEnmiendaDel('modificacion')}
                       style={{
-                        padding: '0.55rem 0.4rem',
+                        padding: '0.5rem 0.3rem',
                         borderRadius: '8px',
                         border: `1.5px solid ${tipoEnmiendaDel === 'modificacion' ? '#3b82f6' : 'var(--subborder-color)'}`,
                         backgroundColor: tipoEnmiendaDel === 'modificacion' ? 'rgba(59, 130, 246, 0.2)' : 'var(--card-header-bg)',
@@ -2773,19 +2783,23 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '2px',
+                        minWidth: 0,
+                        boxSizing: 'border-box',
+                        overflow: 'hidden',
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <span>➔ Modificación</span>
-                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500' }}>Reemplazar texto</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>➔ Modificación</span>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>Reemplazar texto</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setTipoEnmiendaDel('adicion')}
                       style={{
-                        padding: '0.55rem 0.4rem',
+                        padding: '0.5rem 0.3rem',
                         borderRadius: '8px',
                         border: `1.5px solid ${tipoEnmiendaDel === 'adicion' ? '#22c55e' : 'var(--subborder-color)'}`,
                         backgroundColor: tipoEnmiendaDel === 'adicion' ? 'rgba(34, 197, 94, 0.2)' : 'var(--card-header-bg)',
@@ -2796,19 +2810,23 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '2px',
+                        minWidth: 0,
+                        boxSizing: 'border-box',
+                        overflow: 'hidden',
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <span>+ Adición</span>
-                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500' }}>Añadir nuevo texto</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>+ Adición</span>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>Añadir nuevo texto</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setTipoEnmiendaDel('supresion')}
                       style={{
-                        padding: '0.55rem 0.4rem',
+                        padding: '0.5rem 0.3rem',
                         borderRadius: '8px',
                         border: `1.5px solid ${tipoEnmiendaDel === 'supresion' ? '#ef4444' : 'var(--subborder-color)'}`,
                         backgroundColor: tipoEnmiendaDel === 'supresion' ? 'rgba(239, 68, 68, 0.2)' : 'var(--card-header-bg)',
@@ -2819,12 +2837,16 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '2px',
+                        minWidth: 0,
+                        boxSizing: 'border-box',
+                        overflow: 'hidden',
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <span>- Supresión</span>
-                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500' }}>Tachar / eliminar</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>- Supresión</span>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>Tachar / eliminar</span>
                     </button>
                   </div>
                 </div>

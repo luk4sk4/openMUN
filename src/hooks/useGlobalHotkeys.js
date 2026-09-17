@@ -11,7 +11,6 @@ export function useGlobalHotkeys({
   onNextSpeaker,
   onResetTimer,
   onSwitchTab,
-  onCycleDensity,
   activeTab
 }) {
   useEffect(() => {
@@ -33,13 +32,6 @@ export function useGlobalHotkeys({
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         onOpenCommandPalette?.();
-        return;
-      }
-
-      // 2. Ciclar modo de densidad (Ctrl+Shift+D o Alt+D)
-      if (((e.ctrlKey && e.shiftKey) || e.altKey) && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        onCycleDensity?.();
         return;
       }
 

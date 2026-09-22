@@ -641,42 +641,179 @@ app.post('/api/conferencias/:id/avisos', (req, res) => {
 	}
 });
 
+function normalizarComiteIdBackend(id) {
+	if (!id) return '';
+	let str = String(id).trim().toLowerCase();
+	let prev;
+	do {
+		prev = str;
+		str = str
+			.replace(/^(chair|mesa|staff_comite|staff|comite)[\s_-]+/i, '')
+			.replace(/^(comite|mesa)[\s_-]*/i, '');
+	} while (str !== prev && str.length > 0);
+	return str;
+}
+
+function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], currentComiteNombre = null) {
+	if (!aviso) return false;
+	const userRole = String(role || 'staff').trim().toLowerCase();
+
+	if (userRole === 'secretaria' || userRole === 'organizacion' || userRole === 'admin') {
+		return true;
+	}
+
+	const rawDestino = aviso.comite_id ? String(aviso.comite_id).trim() : '';
+	const destinoUpper = rawDestino.toUpperCase();
+
+	// Globales
+	if (!rawDestino || ['GLOBAL', 'ALL', 'TODOS'].includes(destinoUpper)) {
+		return true;
+	}
+
+	const normCurrent = normalizarComiteIdBackend(currentComiteId);
+	const normNombre = normalizarComiteIdBackend(currentComiteNombre);
+	const rawCurrent = currentComiteId ? String(currentComiteId).trim().toLowerCase() : '';
+
+	// Buscar comité coincidente en la lista de comités de la conferencia
+	const matchingComite = (comites || []).find(c => {
+		if (!c) return false;
+		const cid = String(c.id || '').trim().toLowerCase();
+		const cnom = String(c.nombre || '').trim().toLowerCase();
+		const normCid = normalizarComiteIdBackend(c.id);
+		const normCnom = normalizarComiteIdBackend(c.nombre);
+		return (
+			(rawCurrent && cid === rawCurrent) ||
+			(normCurrent && normCid === normCurrent) ||
+			(normCurrent && normCnom === normCurrent) ||
+			(normNombre && normCnom === normNombre) ||
+			(normNombre && normCid === normNombre)
+		);
+	});
+
+	const matchingIdNorm = matchingComite ? normalizarComiteIdBackend(matchingComite.id) : null;
+	const matchingNomNorm = matchingComite ? normalizarComiteIdBackend(matchingComite.nombre) : null;
+	const matchingRawId = matchingComite ? String(matchingComite.id).trim().toLowerCase() : null;
+
+	const coincideComite = (normTarget, rawTarget) => {
+		if (!normTarget && !rawTarget) return false;
+		const cleanTarget = (normTarget || '').toLowerCase();
+		const cleanRaw = (rawTarget || '').toLowerCase();
+
+		// 1. Coincidencia directa con ID o Nombre actual (bidireccional)
+		if (normCurrent && (cleanTarget === normCurrent || cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
+		if (rawCurrent && (cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
+		if (normNombre && (cleanTarget === normNombre || cleanRaw === normNombre || cleanRaw.includes(normNombre) || normNombre.includes(cleanTarget) || cleanTarget.includes(normNombre))) return true;
+
+		// 2. Coincidencia con datos de comité coincidente en la lista
+		if (matchingIdNorm && (cleanTarget === matchingIdNorm || cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
+		if (matchingNomNorm && (cleanTarget === matchingNomNorm || cleanRaw === matchingNomNorm || cleanRaw.includes(matchingNomNorm) || matchingNomNorm.includes(cleanTarget))) return true;
+		if (matchingRawId && (cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
+
+		// 3. Búsqueda directa del comité objetivo en la lista
+		const targetComiteObj = (comites || []).find(c => {
+			if (!c) return false;
+			const cid = String(c.id || '').trim().toLowerCase();
+			const cnom = String(c.nombre || '').trim().toLowerCase();
+			const nCid = normalizarComiteIdBackend(c.id);
+			const nCnom = normalizarComiteIdBackend(c.nombre);
+			return cleanTarget === cid || cleanTarget === nCid || cleanRaw === cid || cleanTarget === cnom || cleanTarget === nCnom || cleanRaw === cnom;
+		});
+
+		if (targetComiteObj) {
+			const tid = String(targetComiteObj.id || '').trim().toLowerCase();
+			const tnom = String(targetComiteObj.nombre || '').trim().toLowerCase();
+			const nTid = normalizarComiteIdBackend(targetComiteObj.id);
+			const nTnom = normalizarComiteIdBackend(targetComiteObj.nombre);
+			if (rawCurrent && (rawCurrent === tid || rawCurrent.endsWith(tid) || tid.endsWith(rawCurrent))) return true;
+			if (normCurrent && (normCurrent === nTid || normCurrent === nTnom)) return true;
+			if (normNombre && (normNombre === nTnom || normNombre === nTid)) return true;
+		}
+
+		return false;
+	};
+
+	// CHAIR / MESA DIRECTIVA
+	if (userRole === 'chair' || userRole === 'mesa' || userRole === 'secretariat' || userRole === 'dais') {
+		if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL', 'CHAIR_LOCAL'].includes(destinoUpper)) {
+			return true;
+		}
+		if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL' || destinoUpper.startsWith('STAFF_') || destinoUpper === 'SECRETARIA' || destinoUpper === 'ORGANIZACION') {
+			return false;
+		}
+		if ((!normCurrent && !normNombre) || normCurrent === 'todos') {
+			return false;
+		}
+		if (destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_')) {
+			const targetMesa = normalizarComiteIdBackend(destinoUpper);
+			const rawTarget = rawDestino.replace(/^(chair_|mesa_)/i, '');
+			return coincideComite(targetMesa, rawTarget);
+		}
+		const targetComite = normalizarComiteIdBackend(destinoUpper);
+		return coincideComite(targetComite, rawDestino);
+	}
+
+	// STAFF
+	if (userRole === 'staff' || userRole === 'staff_global') {
+		if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL' || destinoUpper === 'STAFF_LOCAL') {
+			return true;
+		}
+		if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL', 'CHAIR_LOCAL'].includes(destinoUpper) ||
+			destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_') ||
+			destinoUpper === 'SECRETARIA' || destinoUpper === 'ORGANIZACION') {
+			return false;
+		}
+		if (destinoUpper.startsWith('STAFF_COMITE_') || destinoUpper.startsWith('STAFF_')) {
+			const targetStaffComite = normalizarComiteIdBackend(destinoUpper);
+			const rawTarget = rawDestino.replace(/^(staff_comite_|staff_)/i, '');
+			if ((!normCurrent && !normNombre) || normCurrent === 'todos' || userRole === 'staff_global') {
+				return true;
+			}
+			return coincideComite(targetStaffComite, rawTarget);
+		}
+		if ((!normCurrent && !normNombre) || normCurrent === 'todos') {
+			return false;
+		}
+		const targetComite = normalizarComiteIdBackend(destinoUpper);
+		return coincideComite(targetComite, rawDestino);
+	}
+
+	// DELEGATE
+	if (userRole === 'delegate') {
+		if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL' || destinoUpper.startsWith('STAFF_')) return false;
+		if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(destinoUpper) ||
+			destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_')) return false;
+		if (destinoUpper === 'SECRETARIA' || destinoUpper === 'ORGANIZACION') return false;
+
+		if ((normCurrent || normNombre) && normCurrent !== 'todos') {
+			const targetComite = normalizarComiteIdBackend(destinoUpper);
+			return coincideComite(targetComite, rawDestino);
+		}
+		return false;
+	}
+
+	return false;
+}
+
 app.get('/api/conferencias/:id/avisos', (req, res) => {
 	const confId = req.params.id.toLowerCase().trim();
-	const { comite_id, role, rol, todos } = req.query;
+	const { comite_id, role, rol, todos, comite_nombre } = req.query;
 	const userRole = (role || rol || '').toLowerCase().trim();
-	const rawComiteId = comite_id && comite_id !== 'ALL' && comite_id !== 'GLOBAL' && comite_id !== 'TODOS'
-		? String(comite_id).trim().replace(/^(chair_|mesa_|staff_comite_|staff_)/i, '').replace(/^comite_/i, '')
-		: null;
 
 	try {
-		let avisos;
+		const todosAvisos = qGetAvisosActivos.all(confId) || [];
 		if (todos === 'true' || userRole === 'secretaria' || userRole === 'organizacion' || userRole === 'admin') {
-			avisos = qGetAvisosActivos.all(confId);
-		} else if (userRole === 'staff' || userRole === 'staff_global') {
-			if (rawComiteId) {
-				avisos = qGetAvisosStaffConComite.all(confId, rawComiteId, rawComiteId, rawComiteId, rawComiteId);
-			} else {
-				avisos = qGetAvisosStaffGlobales.all(confId);
-			}
-		} else if (userRole === 'chair' || userRole === 'mesa' || userRole === 'secretariat') {
-			if (rawComiteId) {
-				avisos = qGetAvisosChairConComite.all(confId, rawComiteId, rawComiteId, rawComiteId, rawComiteId);
-			} else {
-				avisos = qGetAvisosChairSinComite.all(confId);
-			}
-		} else if (userRole === 'delegate') {
-			if (rawComiteId) {
-				avisos = qGetAvisosDelegateConComite.all(confId, rawComiteId, rawComiteId);
-			} else {
-				avisos = qGetAvisosDelegateGlobales.all(confId);
-			}
-		} else if (rawComiteId) {
-			avisos = qGetAvisosChairConComite.all(confId, rawComiteId, rawComiteId, rawComiteId, rawComiteId);
-		} else {
-			avisos = qGetAvisosActivos.all(confId);
+			return res.json({ avisos: todosAvisos });
 		}
-		res.json({ avisos: avisos || [] });
+
+		let comitesConf = [];
+		try {
+			comitesConf = qGetComitesResumen.all(confId) || [];
+		} catch (e) {}
+
+		const avisosFiltrados = todosAvisos.filter(a =>
+			avisoCorrespondeBackend(a, userRole, comite_id, comitesConf, comite_nombre)
+		);
+		res.json({ avisos: avisosFiltrados });
 	} catch (err) {
 		res.status(500).json({ error: err.message });
 	}

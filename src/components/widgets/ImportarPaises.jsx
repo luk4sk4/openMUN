@@ -59,11 +59,21 @@ function autodetectarBanderaYVeto(nombre) {
 // ── Funciones detectoras de columnas para ignorar datos no requeridos ────────
 function esHeaderPais(header) {
   const norm = normalizarTexto(header);
-  // Descartar si menciona específicamente delegado, alumno, persona, etc.
-  if (/delegad|alumno|estudiante|student|persona|representante|participant|asistente/i.test(norm)) {
+  // Si dice expresamente delegado (sin decir pais/country), alumno, estudiante, email, colegio, comite, etc., descartar
+  if (/(?:^|\s)(delegad[oa]s?|alumn[oa]s?|estudiantes?|students?|personas?|representantes?|participantes?|correo|email|colegio|school|comit[eé])(?:\s|$)/i.test(norm) && !/(?:pais|pa[ií]s|country)/i.test(norm)) {
     return false;
   }
-  return /pais|pa[ií]s|country|delegaci[oó]n|delegation|estado|naci[oó]n|nation|representaci[oó]n/i.test(norm);
+  return /\b(pais|pa[ií]s|pa[ií]ses|country|countries|delegaci[oó]n|delegaciones|delegation|delegations|estado|estados|state|states|naci[oó]n|naciones|nation|nations|representaci[oó]n)\b/i.test(norm) ||
+         /(?:nombre\s*(?:del\s*)?)?(?:pais|pa[ií]s|country)/i.test(norm);
+}
+
+function esHeaderDelegadoONombre(header) {
+  const norm = normalizarTexto(header);
+  // Si ya es un header de país (ej. "Nombre del País", "País asignado"), NO es delegado/nombre de persona
+  if (esHeaderPais(header)) {
+    return false;
+  }
+  return /delegad|alumno|estudiante|student|persona|representante|participant|asistente|nombre|name/i.test(norm);
 }
 
 function esHeaderNombreGenerico(header) {
@@ -94,12 +104,66 @@ function esCeldaBandera(val) {
   return false;
 }
 
-// Analiza una tabla o matriz sin cabeceras para determinar qué columnas contienen el País, Bandera y Veto
+// Analiza una tabla o matriz para determinar qué columnas contienen el País, Delegado, Bandera y Veto
 function detectarColumnasTabla(filas) {
-  if (!filas || filas.length === 0) return { colPais: 0, colVeto: -1, colBandera: -1 };
+  if (!filas || filas.length === 0) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, filaInicio: 0 };
   const maxCols = Math.max(...filas.map(r => Array.isArray(r) ? r.length : 0));
-  if (maxCols <= 1) return { colPais: 0, colVeto: -1, colBandera: -1 };
+  if (maxCols <= 1) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, filaInicio: 0 };
 
+  // 1. Buscar si en las primeras 10 filas hay una fila con cabecera explícita
+  const limiteCabecera = Math.min(filas.length, 10);
+  for (let rIdx = 0; rIdx < limiteCabecera; rIdx++) {
+    const r = filas[rIdx];
+    if (!Array.isArray(r)) continue;
+
+    // Si la fila sólo tiene 1 celda con contenido y la tabla tiene 2 o más columnas, suele ser un título superior
+    const celdasLlenas = r.filter(c => c !== null && c !== undefined && String(c).trim() !== '');
+    if (celdasLlenas.length <= 1 && maxCols > 1) continue;
+
+    const indicesPais = [];
+    const indicesNombre = [];
+    let idxVeto = -1;
+    let idxBandera = -1;
+
+    r.forEach((cell, cIdx) => {
+      const val = String(cell ?? '').trim();
+      if (!val) return;
+      if (esHeaderPais(val)) {
+        indicesPais.push(cIdx);
+      } else if (esHeaderDelegadoONombre(val)) {
+        indicesNombre.push(cIdx);
+      }
+      if (esHeaderVeto(val)) idxVeto = cIdx;
+      if (esHeaderBandera(val)) idxBandera = cIdx;
+    });
+
+    // Si encontramos una columna explícita de PAÍS
+    if (indicesPais.length > 0) {
+      const colPais = indicesPais[0];
+      // Si hay columna NOMBRE o DELEGADO, se asume que es el nombre del delegado y no del país
+      const colDelegado = indicesNombre.find(idx => idx !== colPais) ?? -1;
+      return {
+        colPais,
+        colVeto: idxVeto !== colPais ? idxVeto : -1,
+        colBandera: idxBandera !== colPais ? idxBandera : -1,
+        colDelegado,
+        filaInicio: rIdx + 1
+      };
+    }
+
+    // Si no hay columna 'PAIS', pero hay columna NOMBRE genérica junto con veto o bandera u otros headers MUN
+    if (indicesNombre.length > 0 && (idxVeto >= 0 || idxBandera >= 0 || r.some(c => esHeaderNombreGenerico(c)))) {
+      return {
+        colPais: indicesNombre[0],
+        colVeto: idxVeto,
+        colBandera: idxBandera,
+        colDelegado: -1,
+        filaInicio: rIdx + 1
+      };
+    }
+  }
+
+  // 2. Si no hay fila de cabecera clara, detección por scoring estadístico de celdas
   const scorePais = new Array(maxCols).fill(0);
   const scoreVeto = new Array(maxCols).fill(0);
   const scoreBandera = new Array(maxCols).fill(0);
@@ -111,7 +175,7 @@ function detectarColumnasTabla(filas) {
       if (!val) return;
       const norm = normalizarTexto(val);
       if (DICCIONARIO_PAISES_ISO[norm] !== undefined || P5_SET.has(norm)) {
-        scorePais[colIdx] += 3;
+        scorePais[colIdx] += 4; // Fuerte preferencia para países reconocidos en diccionario
       } else if (!/^\d+$/.test(val) && !/@/.test(val) && !/^(true|false|si|no)$/i.test(val) && val.length > 2) {
         scorePais[colIdx] += 1;
       }
@@ -133,7 +197,28 @@ function detectarColumnasTabla(filas) {
   let colBandera = -1, maxB = 0;
   scoreBandera.forEach((s, idx) => { if (idx !== colPais && idx !== colVeto && s > maxB) { maxB = s; colBandera = idx; } });
 
-  return { colPais, colVeto, colBandera };
+  // Si se detectó una columna de país por scoring, buscar columna de delegado si hay otra columna de texto
+  let colDelegado = -1;
+  if (maxP > 0) {
+    let maxTextoDelegado = 0;
+    for (let cIdx = 0; cIdx < maxCols; cIdx++) {
+      if (cIdx === colPais || cIdx === colVeto || cIdx === colBandera) continue;
+      let scoreTexto = 0;
+      filas.forEach(r => {
+        if (!Array.isArray(r)) return;
+        const val = String(r[cIdx] ?? '').trim();
+        if (val.length > 2 && !/^\d+$/.test(val) && !/@/.test(val) && !esCeldaBandera(val) && !/^(true|false|si|sí|no|yes|p5|p-5)$/i.test(val)) {
+          scoreTexto++;
+        }
+      });
+      if (scoreTexto > maxTextoDelegado) {
+        maxTextoDelegado = scoreTexto;
+        colDelegado = cIdx;
+      }
+    }
+  }
+
+  return { colPais, colVeto, colBandera, colDelegado, filaInicio: 0 };
 }
 
 function procesarFilaArray(fila, index, indicesCol = null) {
@@ -147,6 +232,7 @@ function procesarFilaArray(fila, index, indicesCol = null) {
 
     const rawBandera = indicesCol.colBandera >= 0 ? String(fila[indicesCol.colBandera] ?? '').trim() : '';
     const rawVeto = indicesCol.colVeto >= 0 ? String(fila[indicesCol.colVeto] ?? '').trim() : undefined;
+    const rawDelegado = indicesCol.colDelegado >= 0 ? String(fila[indicesCol.colDelegado] ?? '').trim() : '';
 
     const auto = autodetectarBanderaYVeto(nombre);
     const bandera = rawBandera ? normalizarBandera(rawBandera, nombre) : auto.bandera;
@@ -159,6 +245,7 @@ function procesarFilaArray(fila, index, indicesCol = null) {
       nombre,
       bandera,
       veto: Boolean(veto),
+      delegado: rawDelegado || undefined,
       estatus: 'Ausente'
     };
   }
@@ -210,11 +297,24 @@ function procesarFilaArray(fila, index, indicesCol = null) {
     ? ['true', '1', 'si', 'sí', 'yes', 'p5', 'p-5'].includes(rawVeto.toLowerCase())
     : auto.veto;
 
+  // Buscar delegado en las celdas restantes si no hay cabecera explícita
+  const cellDelegado = celdas.find(c =>
+    c.col !== paisCol &&
+    (cellVeto ? c.col !== cellVeto.col : true) &&
+    (cellBandera ? c.col !== cellBandera.col : true) &&
+    !/^\d+$/.test(c.val) &&
+    !/@/.test(c.val) &&
+    !/^(true|false|si|sí|no|yes|p5|p-5)$/i.test(c.val) &&
+    !esCeldaBandera(c.val) &&
+    c.val.length > 2
+  );
+
   return {
     id: `pais_${Date.now()}_${index}`,
     nombre,
     bandera,
     veto: Boolean(veto),
+    delegado: cellDelegado ? cellDelegado.val : undefined,
     estatus: 'Ausente'
   };
 }
@@ -243,21 +343,25 @@ function filaAPais(fila, index, indicesCol = null) {
 
   // Si fila es un Objeto (con cabeceras como claves):
   // Se seleccionan ÚNICAMENTE las columnas requeridas (País, Bandera, Veto, ID) e IGNORAN las demás
-  const keys = Object.keys(fila).filter(k => k && String(fila[k]).trim() !== '');
+  const allKeys = Object.keys(fila).filter(k => k && String(fila[k]).trim() !== '');
 
-  // 1. Columna País / Delegación
-  let colNombre = keys.find(k => esHeaderPais(k));
-  if (!colNombre) {
-    colNombre = keys.find(k => esHeaderNombreGenerico(k));
+  // Regla crítica: Si existen tanto clave PAIS como clave NOMBRE / DELEGADO,
+  // la columna que lee como país es estrictamente 'PAIS', asumiendo que 'NOMBRE' es el delegado
+  const keyPais = allKeys.find(k => esHeaderPais(k));
+  const keyDelegado = allKeys.find(k => k !== keyPais && esHeaderDelegadoONombre(k));
+
+  let colNombre = keyPais;
+  if (!colNombre && !keyPais) {
+    colNombre = allKeys.find(k => esHeaderNombreGenerico(k));
   }
-  if (!colNombre) {
-    colNombre = keys.find(k => {
+  if (!colNombre && !keyPais) {
+    colNombre = allKeys.find(k => {
       const val = normalizarTexto(fila[k]);
       return DICCIONARIO_PAISES_ISO[val] !== undefined || P5_SET.has(val);
     });
   }
-  if (!colNombre) {
-    colNombre = keys.find(k => {
+  if (!colNombre && !keyPais) {
+    colNombre = allKeys.find(k => {
       const norm = normalizarTexto(k);
       return !/id|email|correo|mail|telefono|phone|comit|coleg|escuela|school|fecha|date|hora|time|precio|pago|status|estatus|observa|notas/i.test(norm);
     });
@@ -267,16 +371,18 @@ function filaAPais(fila, index, indicesCol = null) {
   const nombre = String(fila[colNombre]).trim();
   if (!nombre) return null;
 
+  const rawDelegado = keyDelegado ? String(fila[keyDelegado] || '').trim() : '';
+
   // 2. Columna Bandera / ISO (si existe, ignorando el resto)
-  const colBandera = keys.find(k => k !== colNombre && esHeaderBandera(k));
+  const colBandera = allKeys.find(k => k !== colNombre && k !== keyDelegado && esHeaderBandera(k));
   const rawBandera = colBandera ? String(fila[colBandera]).trim() : '';
 
   // 3. Columna Veto (si existe, ignorando el resto)
-  const colVeto = keys.find(k => k !== colNombre && k !== colBandera && esHeaderVeto(k));
+  const colVeto = allKeys.find(k => k !== colNombre && k !== keyDelegado && k !== colBandera && esHeaderVeto(k));
   const rawVeto = colVeto ? String(fila[colVeto]).trim() : undefined;
 
   // 4. Columna ID (si existe)
-  const colId = keys.find(k => k !== colNombre && k !== colBandera && k !== colVeto && /^(id|codigo|c[oó]digo|code|iso)$/i.test(normalizarTexto(k)));
+  const colId = allKeys.find(k => k !== colNombre && k !== keyDelegado && k !== colBandera && k !== colVeto && /^(id|codigo|c[oó]digo|code|iso)$/i.test(normalizarTexto(k)));
   const id = colId ? String(fila[colId]).trim() : `pais_${Date.now()}_${index}`;
 
   const auto = autodetectarBanderaYVeto(nombre);
@@ -290,6 +396,7 @@ function filaAPais(fila, index, indicesCol = null) {
     nombre,
     bandera,
     veto: Boolean(veto),
+    delegado: rawDelegado || undefined,
     estatus: 'Ausente'
   };
 }
@@ -335,17 +442,18 @@ function parsearTexto(texto) {
   const separador = primera.includes('\t') ? '\t' : primera.includes(';') ? ';' : primera.includes(',') ? ',' : null;
 
   if (separador) {
-    const celdasPrimera = dividirLineaCSV(primera, separador);
-    const esCabecera = celdasPrimera.some(t => esHeaderPais(t) || esHeaderNombreGenerico(t));
-
-    if (esCabecera) {
-      const cabeceras = celdasPrimera;
-      return lineas.slice(1).map((linea, index) => {
-        const celdas = dividirLineaCSV(linea, separador);
-        const fila = {};
-        cabeceras.forEach((h, i) => { fila[h] = celdas[i] !== undefined ? celdas[i] : ''; });
-        return filaAPais(fila, index);
-      }).filter(Boolean);
+    const lineasMatriz = lineas.map(l => dividirLineaCSV(l, separador));
+    if (lineasMatriz.length > 0) {
+      const infoCols = detectarColumnasTabla(lineasMatriz);
+      if (infoCols.filaInicio > 0) {
+        return lineasMatriz.slice(infoCols.filaInicio)
+          .map((fila, index) => filaAPais(fila, index, infoCols))
+          .filter(Boolean);
+      } else if (lineasMatriz.length > 1 && lineasMatriz.every(parts => parts.length >= 2)) {
+        return lineasMatriz
+          .map((celdas, index) => filaAPais(celdas, index, infoCols))
+          .filter(Boolean);
+      }
     }
 
     // Si sólo hay 1 línea y el separador es coma: es una lista simple de nombres separados por coma
@@ -353,17 +461,6 @@ function parsearTexto(texto) {
       return primera.split(',').map((item, i) => {
         const limpio = limpiarLineaTexto(item);
         return limpio ? filaAPais(limpio, i) : null;
-      }).filter(Boolean);
-    }
-
-    // Si son múltiples líneas y tienen estructura tabular (CUALQUIER número de columnas >= 2)
-    const lineasMatriz = lineas.map(l => dividirLineaCSV(l, separador));
-    const tieneEstructuraTabular = lineasMatriz.length > 1 && lineasMatriz.every(parts => parts.length >= 2);
-
-    if (tieneEstructuraTabular) {
-      const indicesCol = detectarColumnasTabla(lineasMatriz);
-      return lineasMatriz.map((celdas, index) => {
-        return filaAPais(celdas, index, indicesCol);
       }).filter(Boolean);
     }
   }
@@ -462,22 +559,16 @@ async function parsearXLSX(archivo) {
     throw new Error('No se detectaron delegaciones válidas en el archivo Excel.');
   }
 
-  const primeraFila = filasMatriz[0];
-  const tieneCabecera = primeraFila.some(c => esHeaderPais(c) || esHeaderNombreGenerico(c));
+  // Detectar columnas y fila de inicio revisando cabeceras en las primeras filas
+  const infoCols = detectarColumnasTabla(filasMatriz);
 
-  if (tieneCabecera) {
-    return filasMatriz.slice(1).map((fila, index) => {
-      const obj = {};
-      primeraFila.forEach((h, colIdx) => {
-        if (h) obj[h] = fila[colIdx] || '';
-      });
-      return filaAPais(obj, index);
-    }).filter(Boolean);
+  if (infoCols.filaInicio > 0) {
+    const filasDatos = filasMatriz.slice(infoCols.filaInicio);
+    return filasDatos.map((fila, index) => filaAPais(fila, index, infoCols)).filter(Boolean);
   }
 
-  // Si no tiene cabecera explícita, detectar columnas globales ignorando las sobrantes
-  const indicesCol = detectarColumnasTabla(filasMatriz);
-  return filasMatriz.map((fila, index) => filaAPais(fila, index, indicesCol)).filter(Boolean);
+  // Si no tiene cabecera explícita, procesar con las columnas detectadas por scoring
+  return filasMatriz.map((fila, index) => filaAPais(fila, index, infoCols)).filter(Boolean);
 }
 
 const parsearExcel = parsearXLSX;
@@ -2311,6 +2402,27 @@ const ImportarPaises = () => {
                         outline: 'none'
                       }}
                     />
+
+                    {/* Badge de Delegado (si existe en el Excel/tabla) */}
+                    {p.delegado && (
+                      <span
+                        title={`Delegado asignado: ${p.delegado}`}
+                        style={{
+                          fontSize: '0.66rem',
+                          color: '#60a5fa',
+                          backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                          border: '1px solid rgba(59, 130, 246, 0.25)',
+                          padding: '0.1rem 0.4rem',
+                          borderRadius: '4px',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '180px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        Delegado: {p.delegado}
+                      </span>
+                    )}
 
                     {/* Botón Veto (P5) */}
                     <button

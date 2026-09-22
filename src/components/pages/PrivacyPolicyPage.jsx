@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { ShieldCheck, ArrowLeft, Cookie, HardDrive, Cpu, Cloud, Lock, CheckCircle2, Mail, BarChart3, UserCheck, Database } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Cookie, HardDrive, Cpu, Cloud, Lock, CheckCircle2, Mail, BarChart3, UserCheck, Database, ExternalLink, ShieldAlert, KeyRound, Ban } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import OpenMunLogo from '../common/OpenMunLogo';
+import LanguageSelector from '../common/LanguageSelector';
 
 export default function PrivacyPolicyPage({ isLight = false, onBack }) {
   const { t } = useTranslation();
@@ -27,33 +28,36 @@ export default function PrivacyPolicyPage({ isLight = false, onBack }) {
 
       {/* Header Bar */}
       <header style={{ position: 'sticky', top: 0, zIndex: 30, backgroundColor: headerBg, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: `1px solid ${cardBorder}` }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <OpenMunLogo className="h-8 text-blue-500" style={{ height: '32px' }} />
             <span style={{ fontWeight: '800', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>OpenMUN</span>
           </div>
 
-          <button
-            onClick={onBack}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.5rem 1.1rem',
-              borderRadius: '10px',
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
-              fontWeight: '600',
-              fontSize: '0.875rem',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <ArrowLeft size={16} />
-            <span>{t('common.backToApp', 'Volver a la App')}</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <LanguageSelector isLight={isLight} />
+            <button
+              onClick={onBack}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1.1rem',
+                borderRadius: '10px',
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                fontWeight: '600',
+                fontSize: '0.875rem',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <ArrowLeft size={16} />
+              <span>{t('common.backToApp', 'Volver a la App')}</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -221,22 +225,145 @@ export default function PrivacyPolicyPage({ isLight = false, onBack }) {
             </p>
           </div>
 
-          {/* Section 4: Google Drive */}
+          {/* Section 4: Google Drive & Google User Data */}
           <div style={{ padding: '1.75rem', borderRadius: '16px', backgroundColor: cardBg, border: `1px solid ${cardBorder}`, backdropFilter: 'blur(12px)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem' }}>
               <div style={{ padding: '0.6rem', borderRadius: '12px', backgroundColor: 'rgba(14, 165, 233, 0.15)', color: '#0ea5e9', border: '1px solid rgba(14, 165, 233, 0.25)' }}>
                 <Cloud size={22} />
               </div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                {t('privacy.sec4Title', '4. Sincronización Opcional con Google Drive')}
-              </h3>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+                  {t('privacy.sec4Title', '4. Sincronización Opcional con Google Drive y Uso de Datos de Google')}
+                </h3>
+              </div>
             </div>
-            <p style={{ fontSize: '0.92rem', lineHeight: '1.6', color: textMuted, margin: 0 }}>
+            <p style={{ fontSize: '0.92rem', lineHeight: '1.6', color: textMuted, margin: '0 0 1.25rem 0' }}>
               {t(
                 'privacy.sec4Desc',
-                'Si decides vincular voluntariamente tu cuenta de Google Drive para realizar copias de seguridad personales, el token de autorización se almacena de forma segura en tu navegador. Las copias se transfieren de forma directa entre tu navegador y tu almacenamiento en la nube de Google, sin intermediación de nuestros servidores.'
+                'OpenMUN ofrece una integración opcional con Google Drive para permitir a los usuarios guardar y sincronizar copias de seguridad de sus comités sin tener que transferir archivos manualmente entre dispositivos.'
               )}
             </p>
+
+            {/* Subsections Grid */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* 4.1 Permisos / Scopes */}
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: innerCardBg, border: `1px solid ${cardBorder}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <KeyRound size={16} style={{ color: '#0ea5e9' }} />
+                  <strong style={{ fontSize: '0.92rem', color: textPrimary }}>
+                    {t('privacy.sec4ScopeTitle', '4.1 Permisos Solicitados (OAuth Scopes)')}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.88rem', lineHeight: '1.55', color: textMuted, margin: 0 }}>
+                  {t('privacy.sec4ScopeDesc', 'Solicitamos el alcance https://www.googleapis.com/auth/drive estrictamente necesario para crear, leer y actualizar los archivos de sesión (.json) y la carpeta de trabajo "openMUN" en el Google Drive personal del usuario.')}
+                </p>
+              </div>
+
+              {/* 4.2 Datos accedidos */}
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: innerCardBg, border: `1px solid ${cardBorder}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <Database size={16} style={{ color: '#3b82f6' }} />
+                  <strong style={{ fontSize: '0.92rem', color: textPrimary }}>
+                    {t('privacy.sec4DataTitle', '4.2 Datos Accedidos y Recopilados')}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.88rem', lineHeight: '1.55', color: textMuted, margin: 0 }}>
+                  {t('privacy.sec4DataDesc', 'OpenMUN accede única y exclusivamente a los archivos de configuración y respaldo generados por la propia aplicación (archivos de formato JSON con agendas, listas de países, mociones, notas y cronómetros) y a la información básica de perfil (nombre y dirección de correo electrónico) proporcionada por Google Identity Services únicamente para indicar en la interfaz qué cuenta está conectada.')}
+                </p>
+              </div>
+
+              {/* 4.3 Finalidad */}
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: innerCardBg, border: `1px solid ${cardBorder}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <CheckCircle2 size={16} style={{ color: '#10b981' }} />
+                  <strong style={{ fontSize: '0.92rem', color: textPrimary }}>
+                    {t('privacy.sec4PurposeTitle', '4.3 Finalidad del Tratamiento de Datos de Google')}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.88rem', lineHeight: '1.55', color: textMuted, margin: 0 }}>
+                  {t('privacy.sec4PurposeDesc', 'La finalidad exclusiva de acceder a los datos de Google es prestar el servicio solicitado por el usuario: guardar, respaldar, restaurar y sincronizar configuraciones de sesiones de debate MUN. OpenMUN no utiliza los datos de Google para ninguna otra finalidad secundaria.')}
+                </p>
+              </div>
+
+              {/* 4.4 Seguridad y Client-Side */}
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: innerCardBg, border: `1px solid ${cardBorder}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <Lock size={16} style={{ color: '#8b5cf6' }} />
+                  <strong style={{ fontSize: '0.92rem', color: textPrimary }}>
+                    {t('privacy.sec4SecurityTitle', '4.4 Arquitectura del Lado del Cliente y Seguridad')}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.88rem', lineHeight: '1.55', color: textMuted, margin: 0 }}>
+                  {t('privacy.sec4SecurityDesc', 'OpenMUN funciona íntegramente del lado del cliente (en el navegador web del usuario). El token de acceso OAuth se mantiene únicamente en la memoria de sesión del navegador (sessionStorage) y se comunica directamente mediante conexiones seguras cifradas (HTTPS/TLS) con las APIs oficiales de Google. En ningún momento tus credenciales, tokens ni archivos de Google Drive son enviados, registrados ni almacenados en servidores de OpenMUN ni en bases de datos externas.')}
+                </p>
+              </div>
+
+              {/* 4.5 No venta, no publicidad, no IA */}
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: innerCardBg, border: `1px solid ${cardBorder}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <Ban size={16} style={{ color: '#ef4444' }} />
+                  <strong style={{ fontSize: '0.92rem', color: textPrimary }}>
+                    {t('privacy.sec4SharingTitle', '4.5 Prohibición de Venta, Publicidad y Entrenamiento de IA')}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.88rem', lineHeight: '1.55', color: textMuted, margin: 0 }}>
+                  {t('privacy.sec4SharingDesc', 'OpenMUN NO comercializa, no vende, no transfiere ni cede datos de usuarios de Google a terceros, intermediarios de datos ni empresas de publicidad bajo ninguna circunstancia. Los datos de Google nunca se utilizan para mostrar anuncios personalizados, elaborar perfiles de usuario, evaluar solvencia ni para entrenar, optimizar o desarrollar modelos generalizados de Inteligencia Artificial (IA) o Aprendizaje Automático (Machine Learning).')}
+                </p>
+              </div>
+
+              {/* 4.6 Conservación, eliminación y revocación */}
+              <div style={{ padding: '1rem', borderRadius: '12px', backgroundColor: innerCardBg, border: `1px solid ${cardBorder}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                  <UserCheck size={16} style={{ color: '#f59e0b' }} />
+                  <strong style={{ fontSize: '0.92rem', color: textPrimary }}>
+                    {t('privacy.sec4RetentionTitle', '4.6 Conservación, Eliminación y Revocación de Permisos')}
+                  </strong>
+                </div>
+                <p style={{ fontSize: '0.88rem', lineHeight: '1.55', color: textMuted, margin: 0 }}>
+                  {t('privacy.sec4RetentionDesc', 'Los archivos guardados en Google Drive permanecen en el almacenamiento del usuario por el tiempo que este decida conservarlos y pueden ser eliminados en cualquier momento directamente desde Google Drive o desde OpenMUN. El usuario puede desvincular la cuenta en cualquier momento pulsando el botón "Desconectar" en el menú de sesión de la app (lo que borra inmediatamente el token local). Asimismo, el acceso puede revocarse en cualquier instante desde los ajustes de seguridad de Google en https://myaccount.google.com/permissions.')}
+                </p>
+              </div>
+
+              {/* 4.7 Prominent Google Limited Use Disclosure Box */}
+              <div
+                style={{
+                  padding: '1.25rem',
+                  borderRadius: '14px',
+                  background: isLight ? 'rgba(37, 99, 235, 0.08)' : 'rgba(37, 99, 235, 0.15)',
+                  border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.1)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <ShieldCheck size={20} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                  <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: '800', color: textPrimary }}>
+                    {t('privacy.sec4LimitedUseTitle', '4.7 Declaración de Cumplimiento de la Política de Datos de Usuario de Google (Uso Limitado)')}
+                  </h4>
+                </div>
+                <blockquote style={{ margin: '0 0 0.85rem 0', padding: '0.75rem 1rem', borderLeft: '3px solid #3b82f6', backgroundColor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(15, 23, 42, 0.6)', borderRadius: '0 8px 8px 0', fontSize: '0.9rem', lineHeight: '1.6', fontStyle: 'italic', color: textPrimary }}>
+                  "{t('privacy.sec4LimitedUseDesc', 'El uso y la transferencia por parte de OpenMUN a cualquier otra aplicación de la información recibida de las API de Google cumplirán con la Política de datos de usuario de los servicios de las API de Google, incluidos los requisitos de uso limitado.')}"
+                </blockquote>
+                <a
+                  href="https://developers.google.com/terms/api-services-user-data-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    color: '#3b82f6',
+                    fontSize: '0.85rem',
+                    fontWeight: '700',
+                    textDecoration: 'none'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                >
+                  <span>{t('privacy.sec4LimitedUseLinkText', 'Consultar la Política de Datos de Usuario de las API de Google')}</span>
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Section 5: Cloudflare Web Analytics */}

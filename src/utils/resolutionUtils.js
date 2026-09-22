@@ -72,8 +72,34 @@ export function reemplazarTextoConTolerancia(textoBase = '', textoOriginal = '',
   return base;
 }
 
+function romanoAEntero(str) {
+  const romanMap = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
+  const s = String(str || '').toLowerCase().trim();
+  if (!/^[ivxlcdm]+$/.test(s)) return null;
+  let total = 0;
+  for (let i = 0; i < s.length; i++) {
+    const curr = romanMap[s[i]];
+    const next = romanMap[s[i + 1]];
+    if (next && curr < next) {
+      total -= curr;
+    } else {
+      total += curr;
+    }
+  }
+  return total > 0 ? total : null;
+}
+
+const REGEX_CABECERA_PREAMBULO = /^(?:#+\s*|\*{1,2}|_{1,2})?\s*(?:CL[AÁ]USULAS\s+PREAMBULATORIAS|SECCI[OÓ]N\s+PREAMBULAR|PRE[AÁ]MBULO|PREAMBLE|ANTECEDENTES|CONSIDERANDO|P[AÁ]RRAFOS\s+PREAMBULATORIOS)\b/i;
+const REGEX_CABECERA_OPERATIVAS = /^(?:#+\s*|\*{1,2}|_{1,2})?\s*(?:CL[AÁ]USULAS\s+(?:OPERATIVAS|RESOLUTIVAS|DISPOSITIVAS)|SECCI[OÓ]N\s+(?:OPERATIVA|RESOLUTIVA)|OPERATIVE\s+(?:CLAUSES|SECTION|PARAGRAPHS)|DISPOSITIVAS|RESUELVE:|DECLARA:|ACUERDA:|HA RESUELTO:|DECIDE:)\b/i;
+
+const REGEX_VERBO_OPERATIVO = /^(?:(?:\*\*|\*|#+|_{1,2})\s*)?(Decide|Condena|Insta|Exhorta|Recomienda|Pide|Solicita|Afirma|Aprueba|Autoriza|Confirma|Declara|Designa|Enfatiza|Expresa|Llama|Proclama|Reafirma|Reconoce|Resuelve|Subraya|Toma nota|Invita|Reitera|Felicita|Lamenta|Recuerda|Determina|Exige|Instruye|Establece|Condemns|Decides|Declares|Encourages|Endorses|Emphasizes|Expresses|Invites|Notes|Recommends|Reminds|Requests|Resolves|Stresses|Urges|Calls upon|Affirms|Approves|Authorizes|Congratulates|Deplores|Designates|Draws attention|Proclaims|Reaffirms|Supports|Takes note|Transmits|Trusts|Demands|Establishes)(?:(?:\*\*|\*|_{1,2}))?\b(.*)/i;
+
+const REGEX_SUBINCISO = /^\s*(?:[a-z]\)|\([a-z]\)|\([0-9]+\)|[0-9]+\.[0-9]+|[ivxlcdm]+\)|\([ivxlcdm]+\)|[-•*+])\s+/i;
+const REGEX_METADATOS = /^(?:Comit[eé]|Tema|T[oó]pico|Patrocinadores|Firmantes|Sponsors|Signatories|Topic|Committee|Draft Resolution|Proyecto de Resoluci[oó]n|Asunto):\s*/i;
+
 /**
- * Parsea un texto de resolución completo en cláusulas preambulatorias y operativas.
+ * Parsea un texto de resolución completo en cláusulas preambulatorias y operativas
+ * con alta tolerancia a diferentes estilos de redacción MUN.
  */
 export function parsearResolucion(textoCompleto = '') {
   if (!textoCompleto || !textoCompleto.trim()) return [];
@@ -84,78 +110,152 @@ export function parsearResolucion(textoCompleto = '') {
   let numArticulo = 1;
   let enPreambulo = true;
   let textoPreambulo = [];
+  let prefijoActual = '';
 
-  for (let i = 0; i < lineas.length; i++) {
-    const linea = lineas[i];
-    const matchArticulo = linea.match(/^(?:(?:\*\*|\*|#+)?\s*(?:Artículo|Art\.|Cláusula|Operative Clause)\s*(\d+)[\.:\*\s]*)(.*)/i) ||
-                          linea.match(/^(\d+)[\.\)]\s+(.*)/);
+  const flushBuffer = () => {
+    if (buffer.length > 0) {
+      articulos.push({
+        id: `art_${numArticulo - 1}`,
+        numero: numArticulo - 1,
+        prefijo: prefijoActual || `Artículo ${numArticulo - 1}.`,
+        texto: buffer.join('\n').trim()
+      });
+      buffer = [];
+    }
+  };
 
-    if (matchArticulo) {
-      if (enPreambulo && textoPreambulo.length > 0) {
+  const flushPreambulo = () => {
+    if (textoPreambulo.length > 0) {
+      const contenido = textoPreambulo.join('\n').trim();
+      if (contenido) {
         articulos.push({
           id: 'preambulo',
           numero: 0,
           prefijo: 'Preámbulo / Antecedentes',
-          texto: textoPreambulo.join('\n').trim(),
+          texto: contenido,
           esPreambulo: true
         });
-        textoPreambulo = [];
+      }
+      textoPreambulo = [];
+    }
+  };
+
+  for (let i = 0; i < lineas.length; i++) {
+    const linea = lineas[i];
+    const lineaTrim = linea.trim();
+    if (!lineaTrim) {
+      if (!enPreambulo && buffer.length > 0) buffer.push('');
+      else if (enPreambulo && textoPreambulo.length > 0) textoPreambulo.push('');
+      continue;
+    }
+
+    // Omitir líneas de metadatos al inicio si aún estamos en preámbulo vacío
+    if (enPreambulo && textoPreambulo.length === 0 && REGEX_METADATOS.test(lineaTrim)) {
+      continue;
+    }
+
+    // Cabeceras de preámbulo explícitas
+    if (REGEX_CABECERA_PREAMBULO.test(lineaTrim)) {
+      enPreambulo = true;
+      continue;
+    }
+
+    // Cabeceras operativas explícitas (mayúsculas, minúsculas, markdown, sin acento)
+    if (REGEX_CABECERA_OPERATIVAS.test(lineaTrim)) {
+      flushPreambulo();
+      flushBuffer();
+      enPreambulo = false;
+      continue;
+    }
+
+    // Si es un subinciso sangrado dentro de un artículo, mantenerlo dentro del buffer
+    if (!enPreambulo && buffer.length > 0 && REGEX_SUBINCISO.test(lineaTrim)) {
+      buffer.push(linea);
+      continue;
+    }
+
+    // Comprobar si la línea inicia un nuevo artículo operativo
+    let matchNumero = null;
+    let restoTexto = '';
+    let prefijoDetectado = '';
+
+    // Patrón 1: "Artículo 1.", "Art. 1:", "Cláusula 1", "Operative Clause 1", "OP 1:", "OP1.", "Párrafo 1"
+    const mArt = lineaTrim.match(/^(?:(?:\*\*|\*|#+|_{1,2})\s*)?(?:Art[ií]culo|Art\.|Cl[aá]usula|Clause|Operative Clause|OP\b|OP\.|P[aá]rrafo Operativo|P[aá]rrafo|P[aá]r\.)\s*([0-9]+|[IVXLCDM]+)[\.:\*\s\)\-]*(.*)/i);
+    if (mArt) {
+      const rawNum = mArt[1];
+      const parsedNum = /^\d+$/.test(rawNum) ? parseInt(rawNum, 10) : (romanoAEntero(rawNum) || numArticulo);
+      matchNumero = parsedNum;
+      prefijoDetectado = `Artículo ${rawNum}.`;
+      restoTexto = mArt[2] || '';
+    } else {
+      // Patrón 2: Número arábigo al inicio: "1.", "**1.**", "1)", "1.-", "1: "
+      const mNum = lineaTrim.match(/^(?:(?:\*\*|\*|#+|_{1,2})\s*)?(\d+)[\.\)\-:]\s*(?:\*\*|\*|_{1,2})?\s*(.*)/) ||
+                   lineaTrim.match(/^(?:(?:\*\*|\*|#+|_{1,2})\s*)?(\d+)(?:\*\*|\*|_{1,2})[\.\)\-:]\s*(.*)/);
+      if (mNum && (mNum[2].trim().length > 0 || !enPreambulo)) {
+        matchNumero = parseInt(mNum[1], 10);
+        prefijoDetectado = `Artículo ${matchNumero}.`;
+        restoTexto = mNum[2] || '';
+      } else {
+        // Patrón 3: Número romano al inicio: "I.", "**I.**", "II)"
+        const mRom = lineaTrim.match(/^(?:(?:\*\*|\*|#+|_{1,2})\s*)([IVXLCDM]+)[\.\)\-:]\s*(?:\*\*|\*|_{1,2})?\s*(.*)/i) ||
+                     lineaTrim.match(/^([IVXLCDM]{1,6})[\.\)\-:]\s+(.*)/i);
+        if (mRom && romanoAEntero(mRom[1])) {
+          matchNumero = romanoAEntero(mRom[1]);
+          prefijoDetectado = `Artículo ${mRom[1].toUpperCase()}.`;
+          restoTexto = mRom[2] || '';
+        } else {
+          // Patrón 4: Verbo operativo MUN (permite transicionar a operativo incluso sin cabecera)
+          const mVerbo = lineaTrim.match(REGEX_VERBO_OPERATIVO);
+          if (mVerbo) {
+            matchNumero = numArticulo;
+            prefijoDetectado = `Artículo ${numArticulo}.`;
+            restoTexto = lineaTrim;
+          }
+        }
+      }
+    }
+
+    if (matchNumero !== null) {
+      if (enPreambulo) {
+        flushPreambulo();
         enPreambulo = false;
-      } else if (buffer.length > 0) {
-        articulos.push({
-          id: `art_${numArticulo - 1}`,
-          numero: numArticulo - 1,
-          prefijo: `Artículo ${numArticulo - 1}.`,
-          texto: buffer.join('\n').trim()
-        });
-        buffer = [];
+      } else {
+        flushBuffer();
       }
 
-      const numParsed = parseInt(matchArticulo[1], 10) || numArticulo;
-      numArticulo = numParsed + 1;
-      const contenidoRestante = matchArticulo[2] || '';
-      if (contenidoRestante.trim()) {
-        buffer.push(contenidoRestante.trim());
+      numArticulo = matchNumero + 1;
+      prefijoActual = prefijoDetectado;
+      if (restoTexto.trim()) {
+        buffer.push(restoTexto.trim());
       }
     } else if (enPreambulo) {
-      if (linea.includes('CLÁUSULAS OPERATIVAS') || linea.includes('OPERATIVE CLAUSES')) {
-        enPreambulo = false;
-        if (textoPreambulo.length > 0) {
-          articulos.push({
-            id: 'preambulo',
-            numero: 0,
-            prefijo: 'Preámbulo / Antecedentes',
-            texto: textoPreambulo.join('\n').trim(),
-            esPreambulo: true
-          });
-          textoPreambulo = [];
-        }
-      } else {
-        textoPreambulo.push(linea);
-      }
+      textoPreambulo.push(linea);
     } else {
       buffer.push(linea);
     }
   }
 
-  if (enPreambulo && textoPreambulo.length > 0) {
-    articulos.push({
-      id: 'preambulo',
-      numero: 0,
-      prefijo: 'Preámbulo / Antecedentes',
-      texto: textoPreambulo.join('\n').trim(),
-      esPreambulo: true
-    });
-  } else if (buffer.length > 0) {
-    articulos.push({
-      id: `art_${numArticulo - 1}`,
-      numero: numArticulo - 1,
-      prefijo: `Artículo ${numArticulo - 1}.`,
-      texto: buffer.join('\n').trim()
-    });
+  if (enPreambulo) {
+    flushPreambulo();
+  }
+  flushBuffer();
+
+  // Si sólo quedó un preámbulo pero no hay cabecera explícita de preámbulo y hay varios párrafos
+  if (articulos.length === 1 && articulos[0].esPreambulo) {
+    const txt = articulos[0].texto;
+    const tieneCabeceraPreambulo = REGEX_CABECERA_PREAMBULO.test(textoCompleto);
+    const parrafos = txt.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    if (!tieneCabeceraPreambulo && parrafos.length > 1) {
+      return parrafos.map((p, idx) => ({
+        id: `art_${idx + 1}`,
+        numero: idx + 1,
+        prefijo: `Artículo ${idx + 1}.`,
+        texto: p.trim()
+      }));
+    }
   }
 
-  // Fallback si no hay artículos numerados explícitos: segmentar por párrafos
+  // Fallback si no hay artículos reconocidos
   if (articulos.length === 0 && textoCompleto.trim().length > 0) {
     const parrafos = textoCompleto.split(/\n\s*\n/).filter(p => p.trim().length > 0);
     return parrafos.map((p, idx) => ({

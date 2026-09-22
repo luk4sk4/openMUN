@@ -72,9 +72,11 @@ const AvisosModal = ({
     }
   });
 
+  const effectiveComiteNombre = currentComiteNombre || (typeof window !== 'undefined' ? (localStorage.getItem('openmun_current_comite_nombre') || localStorage.getItem('openmun_p2p_room_name')) : null);
+
   // Determinar nombre por defecto del emisor según el rol
   const getEmisorDefecto = useCallback(() => {
-    const nombreSala = currentComiteNombre || (listaComites.find(c => String(c.id).toLowerCase() === String(currentComiteId).toLowerCase())?.nombre) || currentComiteId;
+    const nombreSala = effectiveComiteNombre || (listaComites.find(c => String(c.id).toLowerCase() === String(currentComiteId).toLowerCase())?.nombre) || currentComiteId;
 
     if (currentRole === 'secretaria' || currentRole === 'organizacion' || currentRole === 'admin') {
       return 'Organización / Secretaría';
@@ -89,34 +91,23 @@ const AvisosModal = ({
       return nombreSala ? `Mesa de ${nombreSala}` : 'Mesa Directiva';
     }
     return 'Mesa Directiva';
-  }, [currentRole, currentComiteNombre, currentComiteId, listaComites]);
+  }, [currentRole, effectiveComiteNombre, currentComiteId, listaComites]);
 
   // Inicializar emisor y destino por defecto al abrir
   useEffect(() => {
     if (isOpen) {
       setEmisor(getEmisorDefecto());
-      setFeedback(null);
-      setMensaje('');
-      setTitulo('');
-
-      // Destino por defecto inteligente según rol
+      // Destino sugerido según rol
       if (currentRole === 'chair' || currentRole === 'mesa') {
-        if (currentComiteId) {
-          setDestino(`STAFF_COMITE_${currentComiteId}`);
-        } else {
-          setDestino('SECRETARIA');
-        }
-      } else if (currentRole === 'staff') {
-        if (currentComiteId) {
-          setDestino(`CHAIR_${currentComiteId}`);
-        } else {
-          setDestino('STAFF_ALL');
-        }
+        setDestino('SECRETARIA');
       } else {
         setDestino('GLOBAL');
       }
+      setTitulo('');
+      setMensaje('');
+      setFeedback(null);
     }
-  }, [isOpen, currentRole, currentComiteId, getEmisorDefecto]);
+  }, [isOpen, getEmisorDefecto, currentRole]);
 
   // Cargar comités si no vienen por props
   useEffect(() => {
@@ -143,7 +134,7 @@ const AvisosModal = ({
 
     setCargandoAvisos(true);
     try {
-      const res = await conferenceService.obtenerAvisos(targetConfId, currentComiteId, currentRole);
+      const res = await conferenceService.obtenerAvisos(targetConfId, currentComiteId, currentRole, effectiveComiteNombre);
       if (res && Array.isArray(res.avisos)) {
         setAvisos(res.avisos);
       }
@@ -152,7 +143,7 @@ const AvisosModal = ({
     } finally {
       setCargandoAvisos(false);
     }
-  }, [confActiva?.id, conferenciaId, currentComiteId, currentRole]);
+  }, [confActiva?.id, conferenciaId, currentComiteId, currentRole, effectiveComiteNombre]);
 
   useEffect(() => {
     if (isOpen) {
@@ -263,7 +254,7 @@ const AvisosModal = ({
   // Avisos correspondientes al rol y sala actual
   const avisosParaMi = avisos.filter(av => {
     if (descartadosLocales.includes(av.id)) return false;
-    return correspondeAviso(av, { role: currentRole, currentComiteId });
+    return correspondeAviso(av, { role: currentRole, currentComiteId, currentComiteNombre: effectiveComiteNombre, comites: listaComites });
   });
 
   // Avisos globales de toda la conferencia
@@ -362,10 +353,10 @@ const AvisosModal = ({
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.12rem', fontWeight: '800', color: textCol }}>
-                Centro de Avisos & Comunicados
+                {t('avisos.title', 'Centro de Avisos & Comunicados')}
               </h2>
               <p style={{ margin: 0, fontSize: '0.76rem', color: textMuted }}>
-                Emisión y recepción bidireccional entre Mesas, Staff y Organización
+                {t('avisos.subtitle', 'Emisión y recepción bidireccional entre Mesas, Staff y Organización')}
               </p>
             </div>
           </div>
@@ -416,7 +407,7 @@ const AvisosModal = ({
                 gap: '0.45rem'
               }}
             >
-              <Send size={15} /> Emitir Aviso
+              <Send size={15} /> {t('avisos.emitTab', 'Emitir Aviso')}
             </button>
 
             <button
@@ -435,7 +426,7 @@ const AvisosModal = ({
                 gap: '0.45rem'
               }}
             >
-              <Radio size={15} /> Recibidos para Mí
+              <Radio size={15} /> {t('avisos.inboxTab', 'Recibidos para Mí')}
               {avisosParaMi.length > 0 && (
                 <span style={{
                   fontSize: '0.7rem',
@@ -467,7 +458,7 @@ const AvisosModal = ({
                   gap: '0.45rem'
                 }}
               >
-                <Globe size={15} /> Todos los Avisos ({avisos.length})
+                <Globe size={15} /> {t('avisos.allTab', 'Todos los Avisos')} ({avisos.length})
               </button>
             )}
           </div>
@@ -491,7 +482,7 @@ const AvisosModal = ({
                 marginBottom: '0.3rem'
               }}
             >
-              <Radio size={12} className={cargandoAvisos ? 'animate-spin' : ''} /> {cargandoAvisos ? 'Cargando...' : 'Refrescar'}
+              <Radio size={12} className={cargandoAvisos ? 'animate-spin' : ''} /> {cargandoAvisos ? t('avisos.loading', 'Cargando...') : t('avisos.refresh', 'Refrescar')}
             </button>
           )}
         </div>
@@ -526,7 +517,7 @@ const AvisosModal = ({
                 {/* Emisor */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: textMuted, marginBottom: '0.35rem' }}>
-                    Remitente / Emisor
+                    {t('avisos.sender', 'Remitente / Emisor')}
                   </label>
                   <input
                     type="text"
@@ -549,7 +540,7 @@ const AvisosModal = ({
                 {/* Destinatario */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: textMuted, marginBottom: '0.35rem' }}>
-                    Destinatario
+                    {t('avisos.recipient', 'Destinatario')}
                   </label>
                   <select
                     value={destino}
@@ -565,7 +556,7 @@ const AvisosModal = ({
                     }}
                   >
                     {/* Generales */}
-                    <optgroup label="🌐 Canales Generales">
+                    <optgroup label={t('avisos.generalChannels', '🌐 Canales Generales')}>
                       {opcionesGenerales.map(op => (
                         <option key={op.value} value={op.value}>{op.label}</option>
                       ))}
@@ -573,7 +564,7 @@ const AvisosModal = ({
 
                     {/* Locales rápidos */}
                     {opcionesLocales.length > 0 && (
-                      <optgroup label="📍 Mi Sala Actual">
+                      <optgroup label={t('avisos.myRoom', '📍 Mi Sala Actual')}>
                         {opcionesLocales.map(op => (
                           <option key={op.value} value={op.value}>{op.label}</option>
                         ))}
@@ -582,7 +573,7 @@ const AvisosModal = ({
 
                     {/* Mesas Directivas */}
                     {gruposMesas.length > 0 && (
-                      <optgroup label="🏛️ Mesas Directivas (Chairs)">
+                      <optgroup label={t('avisos.chairsDais', '🏛️ Mesas Directivas (Chairs)')}>
                         {gruposMesas.map(op => (
                           <option key={op.value} value={op.value}>{op.label}</option>
                         ))}
@@ -591,7 +582,7 @@ const AvisosModal = ({
 
                     {/* Staff de Salas */}
                     {gruposStaff.length > 0 && (
-                      <optgroup label="👥 Staff de Salas Específicas">
+                      <optgroup label={t('avisos.roomStaff', '👥 Staff de Salas Específicas')}>
                         {gruposStaff.map(op => (
                           <option key={op.value} value={op.value}>{op.label}</option>
                         ))}
@@ -600,7 +591,7 @@ const AvisosModal = ({
 
                     {/* Salas Completas */}
                     {gruposSalas.length > 0 && (
-                      <optgroup label="🌐 Comités Completos (Sala + Delegaciones)">
+                      <optgroup label={t('avisos.fullCommittees', '🌐 Comités Completos (Sala + Delegaciones)')}>
                         {gruposSalas.map(op => (
                           <option key={op.value} value={op.value}>{op.label}</option>
                         ))}
@@ -613,13 +604,13 @@ const AvisosModal = ({
               {/* Selector de Prioridad */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: textMuted, marginBottom: '0.35rem' }}>
-                  Nivel de Urgencia / Prioridad
+                  {t('avisos.priority', 'Nivel de Urgencia / Prioridad')}
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem' }}>
                   {[
-                    { id: 'info', label: 'Informativo', desc: 'Avisos ordinarios', color: '#3b82f6', icon: Info },
-                    { id: 'alerta', label: 'Alerta / Logística', desc: 'Peticiones y apoyo', color: '#f59e0b', icon: AlertTriangle },
-                    { id: 'urgente', label: 'Urgente / Crisis', desc: 'Atención inmediata', color: '#ef4444', icon: AlertCircle }
+                    { id: 'info', label: t('avisos.priorityInfo', 'Informativo'), desc: t('avisos.priorityInfoDesc', 'Avisos ordinarios'), color: '#3b82f6', icon: Info },
+                    { id: 'alerta', label: t('avisos.priorityAlert', 'Alerta / Logística'), desc: t('avisos.priorityAlertDesc', 'Peticiones y apoyo'), color: '#f59e0b', icon: AlertTriangle },
+                    { id: 'urgente', label: t('avisos.priorityUrgent', 'Urgente / Crisis'), desc: t('avisos.priorityUrgentDesc', 'Atención inmediata'), color: '#ef4444', icon: AlertCircle }
                   ].map(p => {
                     const isSelected = tipo === p.id;
                     const IconComp = p.icon;
@@ -657,7 +648,7 @@ const AvisosModal = ({
               {/* Título opcional */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: textMuted, marginBottom: '0.35rem' }}>
-                  Título del Aviso <span style={{ fontWeight: '400', opacity: 0.8 }}>(Opcional)</span>
+                  {t('avisos.noticeTitleOptional', 'Título del Aviso (Opcional)')}
                 </label>
                 <input
                   type="text"
@@ -679,7 +670,7 @@ const AvisosModal = ({
               {/* Mensaje */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: textMuted, marginBottom: '0.35rem' }}>
-                  Mensaje del Comunicado
+                  {t('avisos.noticeMessage', 'Mensaje del Comunicado')}
                 </label>
                 <textarea
                   value={mensaje}
@@ -722,7 +713,7 @@ const AvisosModal = ({
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Send size={16} /> {enviando ? 'Transmitiendo aviso...' : 'Emitir Aviso Oficial'}
+                <Send size={16} /> {enviando ? t('avisos.transmitting', 'Transmitiendo aviso...') : t('avisos.emitBtn', 'Emitir Aviso Oficial')}
               </button>
             </form>
           )}
@@ -733,7 +724,7 @@ const AvisosModal = ({
               {/* Filtro de prioridad */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: textMuted }}>
-                  <Filter size={14} /> Filtrar prioridad:
+                  <Filter size={14} /> {t('avisos.filterPriority', 'Filtrar prioridad:')}
                 </div>
                 <div style={{ display: 'flex', gap: '0.35rem' }}>
                   {['TODAS', 'urgente', 'alerta', 'info'].map(p => (
@@ -751,7 +742,7 @@ const AvisosModal = ({
                         cursor: 'pointer'
                       }}
                     >
-                      {p === 'TODAS' ? 'Todas' : p.toUpperCase()}
+                      {p === 'TODAS' ? t('avisos.filterAll', 'Todas') : p.toUpperCase()}
                     </button>
                   ))}
                 </div>
@@ -773,11 +764,11 @@ const AvisosModal = ({
                   <Megaphone size={36} style={{ opacity: 0.3 }} />
                   <div style={{ fontSize: '0.9rem', fontWeight: '700', color: textCol }}>
                     {activeTab === 'BUZON'
-                      ? 'No hay avisos pendientes dirigidos a tu sala o rol.'
-                      : 'No hay avisos registrados en este momento.'}
+                      ? t('avisos.noPendingNotices', 'No hay avisos pendientes dirigidos a tu sala o rol.')
+                      : t('avisos.noNoticesRegistered', 'No hay avisos registrados en este momento.')}
                   </div>
                   <div style={{ fontSize: '0.76rem' }}>
-                    Los comunicados emitidos aparecerán aquí automáticamente en tiempo real.
+                    {t('avisos.noticesAppearHere', 'Los comunicados emitidos aparecerán aquí automáticamente en tiempo real.')}
                   </div>
                 </div>
               ) : (
@@ -855,7 +846,7 @@ const AvisosModal = ({
                               fontWeight: '600'
                             }}
                           >
-                            <EyeOff size={14} /> Descartar
+                            <EyeOff size={14} /> {t('avisos.dismiss', 'Descartar')}
                           </button>
 
                           {(currentRole === 'secretaria' || currentRole === 'organizacion' || currentRole === 'admin' || currentRole === 'staff_global') && (
@@ -875,7 +866,7 @@ const AvisosModal = ({
                                 fontWeight: '700'
                               }}
                             >
-                              <Trash2 size={14} /> Retirar BD
+                              <Trash2 size={14} /> {t('avisos.withdrawDB', 'Retirar BD')}
                             </button>
                           )}
                         </div>

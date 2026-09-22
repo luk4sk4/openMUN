@@ -163,7 +163,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     const fetchAvisos = async () => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       try {
-        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'chair');
+        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'secretaria');
         if (res && Array.isArray(res.avisos)) {
           setAvisosDB(res.avisos);
         }
@@ -229,9 +229,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     return !isSec && !isBack;
   });
 
-  // Avisos de Conferencia filtrados estrictamente para la Mesa
+  // Avisos de Conferencia para Secretaría General
   const avisosDBFiltrados = avisosDB.filter(a => {
-    if (!correspondeAviso(a, { role: 'chair', currentComiteId })) return false;
+    if (!correspondeAviso(a, { role: 'secretaria', currentComiteId, comites: comitesConf })) return false;
     if (!filtroTexto) return true;
     return a.mensaje?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
            a.emisor?.toLowerCase().includes(filtroTexto.toLowerCase());
@@ -258,21 +258,40 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     e.preventDefault();
     if (!notaMesaTexto.trim()) return;
 
-    if (notaMesaDestino === 'GLOBAL' || notaMesaDestino === 'STAFF_ALL') {
-      if (confActiva?.id) {
-        try {
-          await conferenceService.crearAviso(confActiva.id, {
-            comite_id: notaMesaDestino === 'STAFF_ALL' ? 'STAFF_ALL' : '',
-            emisor: 'Secretaría General',
-            tipo: tipoNota === 'urgente' ? 'urgente' : 'info',
-            mensaje: notaMesaTexto.trim()
-          });
-          const res = await conferenceService.obtenerAvisos(confActiva.id);
-          if (res?.avisos) setAvisosDB(res.avisos);
-        } catch (err) {}
+    // Detectar si el destinatario seleccionado corresponde a la Conferencia Central
+    const esDestinoConferencia =
+      notaMesaDestino === 'GLOBAL' ||
+      notaMesaDestino === 'CHAIRS_ALL' ||
+      notaMesaDestino === 'STAFF_ALL' ||
+      (notaMesaDestino.startsWith('CHAIR_') && notaMesaDestino !== 'CHAIR_LOCAL') ||
+      notaMesaDestino.startsWith('STAFF_COMITE_') ||
+      (comitesConf || []).some(c => String(c.id) === String(notaMesaDestino));
+
+    if (esDestinoConferencia && confActiva?.id) {
+      try {
+        const targetComiteId = notaMesaDestino === 'GLOBAL' ? '' : notaMesaDestino;
+        await conferenceService.crearAviso(confActiva.id, {
+          comite_id: targetComiteId,
+          emisor: 'Secretaría General',
+          tipo: tipoNota === 'urgente' ? 'urgente' : 'info',
+          mensaje: notaMesaTexto.trim()
+        });
+        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'secretaria');
+        if (res?.avisos) setAvisosDB(res.avisos);
+      } catch (err) {
+        console.error('Error al emitir aviso de secretaría a la conferencia:', err);
+      }
+      // Si la sala local coincide con el comité de destino o es global, enviar también nota local para inmediatez P2P
+      if (typeof sendNote === 'function') {
+        const esParaEstaMesa = notaMesaDestino === 'GLOBAL' || notaMesaDestino === 'CHAIRS_ALL' ||
+          (currentComiteId && (notaMesaDestino === `CHAIR_${currentComiteId}` || notaMesaDestino === currentComiteId));
+        if (esParaEstaMesa) {
+          try { sendNote('CHAIR', notaMesaTexto.trim(), tipoNota); } catch (e) {}
+        }
       }
     } else {
-      sendNote(notaMesaDestino, notaMesaTexto.trim(), tipoNota);
+      const targetLocal = notaMesaDestino === 'CHAIR_LOCAL' ? 'CHAIR' : notaMesaDestino;
+      sendNote(targetLocal, notaMesaTexto.trim(), tipoNota);
     }
     setNotaMesaTexto('');
   };
@@ -498,7 +517,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       </header>
 
       {/* Banner de Avisos Oficiales */}
-      <ConferenceBanner isLight={isLight} role="chair" comiteId={currentComiteId} />
+      <ConferenceBanner isLight={isLight} role="secretaria" comiteId={currentComiteId} comites={comitesConf} />
 
       {/* ── Sub-navegación por Pestañas ── */}
       <div style={{
@@ -1469,26 +1488,68 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                       outline: 'none'
                     }}
                   >
-                    <optgroup label="── 🌐 Conferencia Central (Base de Datos) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#3b82f6', fontWeight: 'bold' }}>
+                    <optgroup label="── 🌐 Conferencia Central (Canales Generales) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#3b82f6', fontWeight: 'bold' }}>
                       <option value="GLOBAL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                         📢 Toda la Conferencia (Aviso Global)
                       </option>
+                      <option value="CHAIRS_ALL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
+                        🏛️ Todas las Mesas Directivas
+                      </option>
                       <option value="STAFF_ALL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        👥 Todo el Staff de la Conferencia
+                        👥 Todo el Personal de Staff
                       </option>
                     </optgroup>
-                    <optgroup label="── ⚡ Sala Local (WebSockets) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#f59e0b', fontWeight: 'bold' }}>
+                    {comitesConf && comitesConf.length > 0 && (
+                      <optgroup label="── 🏛️ Mesas Directivas por Sala (Chairs) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#10b981', fontWeight: 'bold' }}>
+                        {comitesConf.map(c => (
+                          <option
+                            key={`SEC_CHAIR_${c.id}`}
+                            value={`CHAIR_${c.id}`}
+                            style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
+                          >
+                            🏛️ Mesa de {c.nombre || c.id}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {comitesConf && comitesConf.length > 0 && (
+                      <optgroup label="── 👥 Staff Asignado por Sala ──" style={{ backgroundColor: 'var(--panel-color)', color: '#f59e0b', fontWeight: 'bold' }}>
+                        {comitesConf.map(c => (
+                          <option
+                            key={`SEC_STAFF_${c.id}`}
+                            value={`STAFF_COMITE_${c.id}`}
+                            style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
+                          >
+                            👥 Staff de {c.nombre || c.id}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {comitesConf && comitesConf.length > 0 && (
+                      <optgroup label="── 🌐 Comités Completos (Sala + Delegaciones) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#3b82f6', fontWeight: 'bold' }}>
+                        {comitesConf.map(c => (
+                          <option
+                            key={`SEC_ALL_${c.id}`}
+                            value={c.id}
+                            style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
+                          >
+                            🌐 Sala Completa de {c.nombre || c.id}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="── ⚡ Sala Local (WebSockets P2P) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#ec4899', fontWeight: 'bold' }}>
                       <option value="TODOS" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                         📢 Toda la Sala Local (General)
                       </option>
-                      <option value="CHAIR" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        🏛️ Mesa Directiva Local (Chair)
+                      <option value="CHAIR_LOCAL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
+                        🏛️ Mesa Directiva Local de esta Sala
                       </option>
                       <option value="BACKROOM" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                         🚨 Consola de Crisis (Backroom)
                       </option>
                     </optgroup>
-                    <optgroup label="── Delegaciones ──" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)', fontWeight: 'bold' }}>
+                    <optgroup label="── Delegaciones de Sala Local ──" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)', fontWeight: 'bold' }}>
                       {paises.map(p => (
                         <option 
                           key={p.id || p.nombre} 

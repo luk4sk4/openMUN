@@ -331,6 +331,7 @@ const Dashboard = () => {
             isLight={isLight}
             role="chair"
             comiteId={(typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || p2p.roomId || null}
+            comiteNombre={session.nombreComite}
           />
 
           {/* Banner Permanente de Alerta de Crisis Activa */}

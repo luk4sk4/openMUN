@@ -7,11 +7,13 @@ import { formatearMensajeAviso, correspondeAviso, obtenerEtiquetaDestino } from 
 const ConferenceBanner = ({
   isLight,
   role = null,
-  comiteId = null
+  comiteId = null,
+  comiteNombre = null,
+  comites: propComites = null
 }) => {
   const { t } = useTranslation();
   const [avisos, setAvisos] = useState([]);
-  const [comites, setComites] = useState([]);
+  const [comites, setComites] = useState(propComites || []);
   const [avisoActualIndex, setAvisoActualIndex] = useState(0);
   const [descartados, setDescartados] = useState(() => {
     try {
@@ -24,20 +26,37 @@ const ConferenceBanner = ({
 
   const effectiveComiteId = comiteId || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null);
   const effectiveRole = role || (typeof window !== 'undefined' ? (localStorage.getItem('openmun_user_role') || 'chair') : 'chair');
+  const effectiveComiteNombre = comiteNombre || (typeof window !== 'undefined' ? (localStorage.getItem('openmun_current_comite_nombre') || localStorage.getItem('openmun_p2p_room_name')) : null);
+
+  // Cargar comités de la conferencia si no se proporcionan por props
+  useEffect(() => {
+    if (propComites && propComites.length > 0) {
+      setComites(propComites);
+      return;
+    }
+    const confData = conferenceService.obtenerSesionActiva();
+    if (confData?.id) {
+      conferenceService.obtenerResumen(confData.id).then(res => {
+        if (res?.comites && Array.isArray(res.comites)) {
+          setComites(res.comites);
+        }
+      }).catch(() => {});
+    }
+  }, [propComites]);
 
   const fetchAvisos = useCallback(async () => {
     try {
       const confData = conferenceService.obtenerSesionActiva();
       if (!confData?.id) return;
 
-      const res = await conferenceService.obtenerAvisos(confData.id, effectiveComiteId, effectiveRole);
+      const res = await conferenceService.obtenerAvisos(confData.id, effectiveComiteId, effectiveRole, effectiveComiteNombre);
       if (res && Array.isArray(res.avisos)) {
         setAvisos(res.avisos);
       }
     } catch (e) {
       // En modo offline o sin servidor simplemente silenciar
     }
-  }, [effectiveComiteId, effectiveRole]);
+  }, [effectiveComiteId, effectiveRole, effectiveComiteNombre]);
 
   useEffect(() => {
     fetchAvisos();
@@ -68,10 +87,17 @@ const ConferenceBanner = ({
     };
   }, []);
 
+  const listaComitesEfectiva = (propComites && propComites.length > 0) ? propComites : comites;
+
   // Filtrar avisos correspondientes al rol y comité actual
   const avisosVisibles = avisos.filter(a => {
     if (descartados.includes(a.id)) return false;
-    return correspondeAviso(a, { role: effectiveRole, currentComiteId: effectiveComiteId });
+    return correspondeAviso(a, {
+      role: effectiveRole,
+      currentComiteId: effectiveComiteId,
+      currentComiteNombre: effectiveComiteNombre,
+      comites: listaComitesEfectiva
+    });
   });
 
   if (avisosVisibles.length === 0) return null;
@@ -122,7 +148,7 @@ const ConferenceBanner = ({
 
   const styleConfig = getTipoStyle(aviso.tipo);
   const IconComponent = styleConfig.Icon;
-  const metaDestino = obtenerEtiquetaDestino(aviso.comite_id, comites);
+  const metaDestino = obtenerEtiquetaDestino(aviso.comite_id, listaComitesEfectiva);
 
   return (
     <div style={{

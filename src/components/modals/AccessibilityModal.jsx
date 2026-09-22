@@ -109,13 +109,13 @@ const AccessibilityModal = ({
   };
 
   const colorItems = [
-    { key: 'subnavColor', label: 'Menú de Pestañas', desc: 'Fondo de la barra de menú superior' },
-    { key: 'headerColor', label: 'Barra Superior', desc: 'Fondo del encabezado superior' },
-    { key: 'backgroundColor', label: 'Fondo Principal', desc: 'Fondo general de la app' },
-    { key: 'panelColor', label: 'Paneles y Widgets', desc: 'Fondo de tarjetas y paneles' },
-    { key: 'cardHeaderColor', label: 'Cabecera Widgets', desc: 'Fondo superior de las tarjetas' },
-    { key: 'primaryColor', label: 'Color Primario', desc: 'Pestaña activa y botones' },
-    { key: 'textColor', label: 'Color de Texto', desc: 'Texto principal' }
+    { key: 'subnavColor', label: t('accessibility.colorTabMenu', 'Menú de Pestañas'), desc: t('accessibility.colorTabMenuDesc', 'Fondo de la barra de menú superior') },
+    { key: 'headerColor', label: t('accessibility.colorTopBar', 'Barra Superior'), desc: t('accessibility.colorTopBarDesc', 'Fondo del encabezado superior') },
+    { key: 'backgroundColor', label: t('accessibility.colorMainBg', 'Fondo Principal'), desc: t('accessibility.colorMainBgDesc', 'Fondo general de la app') },
+    { key: 'panelColor', label: t('accessibility.colorPanels', 'Paneles y Widgets'), desc: t('accessibility.colorPanelsDesc', 'Fondo de tarjetas y paneles') },
+    { key: 'cardHeaderColor', label: t('accessibility.colorWidgetHeader', 'Cabecera Widgets'), desc: t('accessibility.colorWidgetHeaderDesc', 'Fondo superior de las tarjetas') },
+    { key: 'primaryColor', label: t('accessibility.colorPrimary', 'Color Primario'), desc: t('accessibility.colorPrimaryDesc', 'Pestaña activa y botones') },
+    { key: 'textColor', label: t('accessibility.colorText', 'Color de Texto'), desc: t('accessibility.colorTextDesc', 'Texto principal') }
   ];
 
   return (

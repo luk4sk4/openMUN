@@ -121,37 +121,58 @@
   </head>
   <body>
     <div id="root">
-      <!-- Pre-renderizado estático legible para buscadores (SEO Crawlers & Social Bots) -->
-      <header style="padding: 2rem; font-family: sans-serif; text-align: center;">
-        <h1 style="font-size: 2.2rem; color: #2563eb;">OpenMUN — Software Libre para Modelos de Naciones Unidas (MUN)</h1>
-        <p style="font-size: 1.1rem; max-width: 800px; margin: 1rem auto; color: #475569;">
-          Plataforma integral, modular y de latencia cero para mesas directivas (Chairs), delegaciones, secretarías y gabinetes de crisis en comités de Model United Nations (MUN).
+      <!-- Pre-renderizado estático legible para buscadores y auditores de verificación (SEO & Google OAuth Crawlers) -->
+      <header style="padding: 2rem 1.5rem; font-family: system-ui, -apple-system, sans-serif; text-align: center; max-width: 900px; margin: 0 auto;">
+        <h1 style="font-size: 2.2rem; color: #2563eb; margin-bottom: 0.5rem;">OpenMUN — Plataforma Educativa Libre para Modelos de Naciones Unidas</h1>
+        <p style="font-size: 1.05rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem;">
+          OpenMUN es una aplicación web educativa desarrollada para estudiantes, profesores y colegios que participan en simulaciones diplomáticas y Modelos de Naciones Unidas (MUN). Permite a las Mesas de Presidencia moderar debates, cronometrar caucuses, gestionar listas de oradores y realizar votaciones parlamentarias en tiempo real sin coste alguno.
         </p>
+        <nav style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; font-size: 0.95rem;">
+          <a href="https://openmun.app/" style="color: #2563eb; font-weight: 600; text-decoration: underline;">Inicio / Home</a>
+          <a href="https://openmun.app/privacy" style="color: #2563eb; font-weight: 600; text-decoration: underline;">Política de Privacidad / Privacy Policy</a>
+          <a href="https://openmun.app/terms" style="color: #2563eb; font-weight: 600; text-decoration: underline;">Términos y Condiciones / Terms of Service</a>
+        </nav>
       </header>
-      <main style="padding: 1rem 2rem; font-family: sans-serif; max-width: 1000px; margin: 0 auto;">
-        <section>
+      <main style="padding: 1rem 1.5rem 3rem 1.5rem; font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 0 auto; line-height: 1.6; color: #334155;">
+        <section style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc;">
+          <h2 style="color: #0f172a; margin-top: 0;">Propósito de la Aplicación y Caso de Uso</h2>
+          <p>
+            Los Modelos de Naciones Unidas (MUN) son simulaciones académicas donde los alumnos representan delegaciones diplomáticas de países de la ONU para debatir retos globales. OpenMUN proporciona las herramientas digitales necesarias para moderar estas simulaciones de forma ágil, eliminando la necesidad de servidores complejos o papel físico.
+          </p>
+        </section>
+
+        <section style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc;">
+          <h2 style="color: #0f172a; margin-top: 0;">Integración con Google Drive y Uso de Datos de Google</h2>
+          <p>
+            OpenMUN incluye una funcionalidad opcional de sincronización y respaldo con Google Drive. La finalidad exclusiva de esta integración es permitir a los usuarios guardar y recuperar copias de seguridad de sus comités (archivos en formato JSON con listas de países y configuraciones de debate) en su propio almacenamiento en la nube de Google Drive.
+          </p>
+          <ul>
+            <li><strong>Seguridad del lado del cliente:</strong> La app funciona íntegramente en el navegador web (client-side). Los tokens y archivos nunca se almacenan en servidores de OpenMUN.</li>
+            <li><strong>Privacidad garantizada:</strong> No vendemos datos de usuarios ni los compartimos con terceros. Los datos de Google nunca se utilizan para publicidad ni para entrenar modelos de Inteligencia Artificial.</li>
+            <li><strong>Cumplimiento estricto:</strong> El uso de la información recibida de las API de Google se ajusta a la Política de datos del usuario de los servicios de las API de Google, incluidos los requisitos de Uso Limitado (Limited Use).</li>
+          </ul>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
           <h2>Características Principales para Comités MUN</h2>
           <ul>
             <li><strong>Lista General de Oradores (GSL):</strong> Gestión fluida de delegaciones con tiempos configurables por orador, cesiones de palabra y cola en tiempo real.</li>
             <li><strong>Cronómetros Dinámicos:</strong> Control preciso de debates moderados e inmoderados con alertas visuales y sonoras.</li>
             <li><strong>Gestión de Quórum y Asistencia:</strong> Matriz de países con cálculo automático de mayorías simples, 2/3 y cualificadas.</li>
             <li><strong>Pizarra de Mociones y Votación Oficial:</strong> Registro jerárquico de mociones, votaciones procedimentales/sustantivas y mapa de votos.</li>
-            <li><strong>Sincronización P2P en Tiempo Real:</strong> Comunicación Peer-to-Peer mediante WebRTC y códigos QR para conectar proyectores, secretarías y delegaciones sin servidor intermediario.</li>
-            <li><strong>Gabinete de Crisis y Noticiero TV:</strong> Emisión de noticias en directo, alertas urgentes y cintillo permanente de noticias.</li>
-            <li><strong>Privacidad y Sincronización Nube:</strong> Datos guardados localmente con opción de respaldo en Google Drive. 100% libre bajo licencia AGPLv3.</li>
+            <li><strong>Sincronización en Tiempo Real:</strong> Comunicación WebSocket cifrada para conectar proyectores, secretarías y delegaciones.</li>
+            <li><strong>100% Software Libre y Gratuito:</strong> Licencia libre GNU AGPLv3 para su uso en cualquier escuela o universidad.</li>
           </ul>
         </section>
-        <section style="margin-top: 2rem;">
-          <h2>Preguntas Frecuentes (FAQ)</h2>
-          <article>
-            <h3>¿Qué es OpenMUN y para qué sirve?</h3>
-            <p>OpenMUN es una plataforma web de código abierto diseñada para facilitar la moderación y gestión de simulaciones de Modelos de Naciones Unidas (MUN). Permite a las Mesas de Presidencia llevar el control de oradores, cronómetros, mociones, votaciones, cálculo de quorum y transmitir el estado de la sesión en vivo a delegados y pantallas de proyección.</p>
-          </article>
-          <article>
-            <h3>¿Es realmente 100% gratuito y de código abierto?</h3>
-            <p>Sí, totalmente. OpenMUN es software libre bajo licencia GNU AGPLv3. No incluye pagos, suscripciones premium ni publicidad.</p>
-          </article>
-        </section>
+
+        <footer style="margin-top: 2.5rem; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; font-size: 0.9rem; color: #64748b;">
+          <p>
+            <a href="https://openmun.app/privacy" style="color: #2563eb; font-weight: 600;">Política de Privacidad</a> · 
+            <a href="https://openmun.app/terms" style="color: #2563eb; font-weight: 600;">Términos y Condiciones</a> · 
+            <a href="https://github.com/luk4sk4/OPENMUN" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 600;">Código Fuente en GitHub</a>
+          </p>
+          <p>OpenMUN — Software Libre para la Educación y la Diplomacia Académica</p>
+        </footer>
       </main>
     </div>
 

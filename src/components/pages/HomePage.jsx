@@ -29,7 +29,10 @@ import {
   Building2,
   Sparkles,
   Shield,
-  Layers
+  Layers,
+  GraduationCap,
+  Cloud,
+  Lock
 } from 'lucide-react';
 import OpenMunLogo from '../common/OpenMunLogo';
 import YoutubeIcon from '../common/YoutubeIcon';
@@ -145,7 +148,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
   const [isCreateConfModalOpen, setIsCreateConfModalOpen] = useState(false);
   // Estado para visibilidad del banner de donaciones (oculto temporalmente)
   const [showDonationBanner, setShowDonationBanner] = useState(false);
-  
+
   // Sincronizar si cambia en storage
   useEffect(() => {
     const handleStorageUpdate = () => {
@@ -255,14 +258,14 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             gap: '1.25rem',
             padding: '1rem 1.25rem',
             borderRadius: '14px',
-            background: isLight 
-              ? 'linear-gradient(135deg, rgba(254, 243, 199, 0.95) 0%, rgba(253, 230, 138, 0.75) 100%)' 
+            background: isLight
+              ? 'linear-gradient(135deg, rgba(254, 243, 199, 0.95) 0%, rgba(253, 230, 138, 0.75) 100%)'
               : 'linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(180, 83, 9, 0.1) 100%)',
-            border: isLight 
-              ? '1px solid rgba(245, 158, 11, 0.4)' 
+            border: isLight
+              ? '1px solid rgba(245, 158, 11, 0.4)'
               : '1px solid rgba(245, 158, 11, 0.3)',
-            boxShadow: isLight 
-              ? '0 4px 16px rgba(245, 158, 11, 0.12)' 
+            boxShadow: isLight
+              ? '0 4px 16px rgba(245, 158, 11, 0.12)'
               : '0 4px 20px rgba(0, 0, 0, 0.25)',
             backdropFilter: 'blur(10px)',
             position: 'relative',
@@ -398,29 +401,6 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             gap: '0.75rem'
           }}>
             <OpenMunLogo height={80} isLight={isLight} />
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              padding: '0.28rem 0.8rem',
-              borderRadius: '9999px',
-              backgroundColor: isLight ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.18)',
-              border: '1px solid rgba(59, 130, 246, 0.35)',
-              color: isLight ? '#2563eb' : '#93c5fd',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              letterSpacing: '0.04em',
-              boxShadow: isLight ? '0 2px 8px rgba(59, 130, 246, 0.08)' : '0 2px 10px rgba(0, 0, 0, 0.2)'
-            }}>
-              <span style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: '#3b82f6',
-                boxShadow: '0 0 6px #3b82f6'
-              }} />
-              Beta 1.2
-            </div>
           </div>
 
           {/* Título principal */}
@@ -436,15 +416,16 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             {t('home.heroTitle', 'La plataforma abierta y definitiva para Modelos de Naciones Unidas')}
           </h1>
 
-          {/* Subtítulo sobrio y directo */}
+          {/* Propósito Educativo Principal */}
           <p style={{
             fontSize: '1.05rem',
             lineHeight: '1.6',
-            maxWidth: '680px',
-            color: textMuted,
-            fontWeight: '400'
+            maxWidth: '750px',
+            color: textPrimary,
+            fontWeight: '500',
+            margin: '0 0 0.6rem 0'
           }}>
-            {t('home.heroSubtitle', 'Diseñada para Mesas de Presidencia, Delegados, Secretaría y Equipos de Crisis. Sincronización en tiempo real en sesiones en vivo, cronómetros de alta precisión, mapas dinámicos y cero configuraciones de servidor.')}
+            {t('home.heroPurpose', 'Plataforma educativa web diseñada para estudiantes, docentes y comités que participan en simulaciones de Modelos de Naciones Unidas (MUN). Modera debates diplomáticos, gestiona oradores, cronómetros y votaciones en tiempo real de forma inmediata y sin barreras.')}
           </p>
 
           {/* Accesos Rápidos Principales (Hub de Acción Directa) */}
@@ -479,11 +460,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
                     <Play size={18} style={{ color: accentColor }} />
                     <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                      {t('home.chairCardTitle', 'Mesa de Presidencia')}
+                      {t('home.chairCardTitle', 'Iniciar Mesa de Presidencia')}
                     </h3>
                   </div>
                   <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0, lineHeight: '1.45' }}>
-                    {t('home.chairCardDesc', 'Panel de control completo para moderar debate, oradores, caucuses y votaciones.')}
+                    {t('home.chairCardDesc', 'Panel de control completo para moderar oradores, caucuses y votaciones. Acceso libre e inmediato sin cuenta.')}
                   </p>
                 </div>
                 <button
@@ -527,11 +508,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
                       <Radio size={18} style={{ color: '#10b981' }} />
                       <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                        {t('home.joinCardTitle', 'Unirse a Sesión')}
+                        {t('home.joinCardTitle', 'Unirse como Delegación')}
                       </h3>
                     </div>
                     <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0, lineHeight: '1.45' }}>
-                      {t('home.joinCardDesc', 'Conéctate en directo mediante código de sala o QR para seguir la sesión.')}
+                      {t('home.joinCardDesc', 'Conéctate a una sala activa con el código o QR compartido por la Mesa para seguir el debate en vivo.')}
                     </p>
                   </div>
                   <button
@@ -814,7 +795,88 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           </div>
         </section>
 
-        {/* ── 2. MOSTRADOR DE HERRAMIENTAS (GRID LIMPIO Y HOMOGÉNEO) ── */}
+        {/* ── 2. SECCIÓN: PROPÓSITO EDUCATIVO DE OPENMUN ── */}
+        <section style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          padding: '2.5rem 2rem',
+          borderRadius: '16px',
+          backgroundColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(22, 25, 34, 0.92)',
+          border: `1px solid ${borderColor}`,
+          backdropFilter: 'blur(12px)'
+        }}>
+          <div style={{ textAlign: 'center', maxWidth: '750px', margin: '0 auto 0.5rem auto' }}>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', margin: '0 0 0.5rem 0', color: textPrimary, letterSpacing: '-0.02em' }}>
+              {t('home.purposeSectionTitle', 'Propósito Educativo de OpenMUN')}
+            </h2>
+            <p style={{ fontSize: '0.95rem', color: textMuted, margin: 0, lineHeight: '1.6' }}>
+              {t('home.purposeSectionSubtitle', 'Fomentando el debate diplomático, la oratoria y la resolución constructiva de controversias internacionales en colegios y universidades.')}
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1.25rem'
+          }}>
+            {/* Card 1: Qué es MUN */}
+            <div style={{
+              padding: '1.5rem',
+              borderRadius: '14px',
+              backgroundColor: headerBg,
+              border: `1px solid ${subBorderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+                {t('home.purposeMunTitle', '¿Qué es un Modelo de Naciones Unidas (MUN)?')}
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+                {t('home.purposeMunDesc', 'Un Modelo de Naciones Unidas es una actividad pedagógica donde estudiantes asumen el papel de diplomáticos de Estados Miembros de la ONU para debatir problemas globales reales, redactar resoluciones y negociar acuerdos siguiendo procedimientos parlamentarios formales.')}
+              </p>
+            </div>
+
+            {/* Card 2: Cómo ayuda OpenMUN */}
+            <div style={{
+              padding: '1.5rem',
+              borderRadius: '14px',
+              backgroundColor: headerBg,
+              border: `1px solid ${subBorderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+                {t('home.purposeRoleTitle', '¿Cómo ayuda OpenMUN a la educación?')}
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+                {t('home.purposeRoleDesc', 'OpenMUN digitaliza y simplifica las herramientas de moderación. Permite a las Mesas calcular quórums, gestionar listas de oradores (GSL), cronometrar discursos y registrar votaciones en tiempo real, transmitiendo a delegados y proyectores sin costes ni servidores.')}
+              </p>
+            </div>
+
+            {/* Card 3: 100% Libre */}
+            <div style={{
+              padding: '1.5rem',
+              borderRadius: '14px',
+              backgroundColor: headerBg,
+              border: `1px solid ${subBorderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+                {t('home.purposeOpenTitle', '100% Gratuito y Libre (AGPLv3)')}
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+                {t('home.purposeOpenDesc', 'OpenMUN es software libre accesible para cualquier institución educativa del mundo. Sin muros de pago, sin suscripciones, sin publicidad y sin recopilación de datos invasiva.')}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 4. MOSTRADOR DE HERRAMIENTAS (GRID LIMPIO Y HOMOGÉNEO) ── */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
             <h2 style={{
@@ -1150,6 +1212,154 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           </div>
         </section>
 
+        {/* ── SECCIÓN: INTEGRACIÓN GOOGLE DRIVE Y TRANSPARENCIA DE DATOS (AL FINAL) ── */}
+        <section style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem',
+          padding: '2.5rem 2rem',
+          borderRadius: '16px',
+          backgroundColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(22, 25, 34, 0.92)',
+          border: `1px solid ${borderColor}`,
+          backdropFilter: 'blur(12px)'
+        }}>
+          <div style={{ textAlign: 'center', maxWidth: '750px', margin: '0 auto 0.5rem auto' }}>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', margin: '0 0 0.5rem 0', color: textPrimary, letterSpacing: '-0.02em' }}>
+              {t('home.driveSectionTitle', 'Integración Opcional con Google Drive')}
+            </h2>
+            <p style={{ fontSize: '0.95rem', color: textMuted, margin: 0, lineHeight: '1.6' }}>
+              {t('home.driveSectionSubtitle', 'Respalda tus comités de debate directamente en tu propio almacenamiento en la nube con total seguridad y control.')}
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1.25rem'
+          }}>
+            {/* Drive Feature 1 */}
+            <div style={{
+              padding: '1.5rem',
+              borderRadius: '14px',
+              backgroundColor: headerBg,
+              border: `1px solid ${subBorderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(14, 165, 233, 0.15)',
+                color: '#0ea5e9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Save size={20} />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+                {t('home.driveFeature1Title', 'Copia de Seguridad Personal')}
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+                {t('home.driveFeature1Desc', 'Almacena la configuración de comités, listas de países, notas y resoluciones en tu carpeta personal "openMUN" de Google Drive.')}
+              </p>
+            </div>
+
+            {/* Drive Feature 2 */}
+            <div style={{
+              padding: '1.5rem',
+              borderRadius: '14px',
+              backgroundColor: headerBg,
+              border: `1px solid ${subBorderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Lock size={20} />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+                {t('home.driveFeature2Title', 'Arquitectura Segura en Cliente (Zero-Server)')}
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+                {t('home.driveFeature2Desc', 'OpenMUN se ejecuta íntegramente en tu navegador. Tus credenciales de Google y archivos jamás pasan ni se almacenan en servidores externos.')}
+              </p>
+            </div>
+
+            {/* Drive Feature 3 */}
+            <div style={{
+              padding: '1.5rem',
+              borderRadius: '14px',
+              backgroundColor: headerBg,
+              border: `1px solid ${subBorderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                color: '#3b82f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ShieldCheck size={20} />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+                {t('home.driveFeature3Title', 'Privacidad y Cumplimiento Estricto')}
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+                {t('home.driveFeature3Desc', 'No vendemos datos ni los usamos para entrenar modelos de IA. Cumplimos con los requisitos de Uso Limitado de Google y puedes desconectar tu cuenta en cualquier momento.')}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+            <button
+              onClick={() => navigateTo('/privacy')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.65rem 1.35rem',
+                borderRadius: '10px',
+                backgroundColor: isLight ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.18)',
+                border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                color: '#3b82f6',
+                fontWeight: '700',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2563eb';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isLight ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.18)';
+                e.currentTarget.style.color = '#3b82f6';
+              }}
+            >
+              <ShieldCheck size={16} />
+              <span>{t('home.drivePolicyBtn', 'Consultar Política de Privacidad')}</span>
+            </button>
+          </div>
+        </section>
+
         {/* ── 6. FOOTER SOBRIO Y ELEGANTE ── */}
         <footer style={{
           paddingTop: '1.25rem',
@@ -1199,12 +1409,12 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             </button>
             <span>•</span>
             <span style={{ color: '#10b981', fontWeight: '700', fontSize: '0.8rem' }}>
-              🍪 0 Cookies / 100% LocalStorage
+              0 Cookies / 100% LocalStorage
             </span>
           </div>
 
           <div>
-            OpenMUN Beta 1.2 © {new Date().getFullYear()} — {t('home.footerDesc', 'Software Libre para Modelos de Naciones Unidas')}
+            OpenMUN 1.3 © {new Date().getFullYear()} — {t('home.footerDesc', 'Software Libre para Modelos de Naciones Unidas')}
           </div>
           <div>
             {t('home.footerTagline', 'Por una cultura accesible para todos')}

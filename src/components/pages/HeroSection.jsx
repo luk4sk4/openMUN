@@ -36,17 +36,17 @@ const HeroSection = ({ isLight, t, onNavigateToComienzo, onNavigateToJoin, heade
     >
       {t('home.heroTitle', 'La plataforma abierta y definitiva para Modelos de Naciones Unidas')}
     </h1>
-    {/* Subtítulo */}
+    {/* Subtítulo / Propósito Educativo */}
     <p
       style={{
         fontSize: '1.05rem',
         lineHeight: '1.6',
-        maxWidth: '680px',
-        color: textMuted,
-        fontWeight: '400',
+        maxWidth: '750px',
+        color: textPrimary,
+        fontWeight: '500',
       }}
     >
-      {t('home.heroSubtitle', 'Diseñada para Mesas de Presidencia, Delegados, Secretaría y Equipos de Crisis. Sincronización en tiempo real en sesiones en vivo, cronómetros de alta precisión, mapas dinámicos y cero configuraciones de servidor.')}
+      {t('home.heroPurpose', 'Plataforma educativa web diseñada para estudiantes, docentes y comités que participan en simulaciones de Modelos de Naciones Unidas (MUN). Modera debates diplomáticos, gestiona oradores, cronómetros y votaciones en tiempo real de forma inmediata y sin barreras.')}
     </p>
 
     {/* Accesos Rápidos Principales */}

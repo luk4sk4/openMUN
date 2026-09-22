@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Cookie, ShieldCheck, X, Check, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { navigateTo } from '../../utils/router';
+import { navigateTo, getNormalizedRoute } from '../../utils/router';
 
 const LEGAL_STORAGE_KEY = 'openmun_legal_accepted_v1';
 
@@ -38,6 +38,8 @@ export default function LegalBanner({ isLight = false }) {
     navigateTo('/terms');
   };
 
+  const currentRoute = getNormalizedRoute();
+  if (currentRoute === 'privacy' || currentRoute === 'terms') return null;
   if (!isVisible) return null;
 
   // Visual Theme Colors
@@ -59,10 +61,9 @@ export default function LegalBanner({ isLight = false }) {
         position: 'fixed',
         bottom: '20px',
         right: '20px',
-        left: '20px',
-        maxWidth: '580px',
-        margin: '0 auto',
-        zIndex: 99999,
+        maxWidth: '520px',
+        width: 'calc(100% - 40px)',
+        zIndex: 9999,
         animation: 'slideUp 0.35s ease-out'
       }}
     >

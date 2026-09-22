@@ -113,7 +113,6 @@ function AppContent() {
     return (
       <Suspense fallback={<PageSkeleton isLight={isLight} />}>
         <PrivacyPolicyPage isLight={isLight} onBack={() => navigateTo('/')} />
-        <LegalBanner isLight={isLight} />
       </Suspense>
     );
   }
@@ -122,7 +121,6 @@ function AppContent() {
     return (
       <Suspense fallback={<PageSkeleton isLight={isLight} />}>
         <TermsConditionsPage isLight={isLight} onBack={() => navigateTo('/')} />
-        <LegalBanner isLight={isLight} />
       </Suspense>
     );
   }

@@ -2748,7 +2748,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Megaphone size={18} color="#f59e0b" /> Buzón de Avisos y Comunicados Recibidos ({avisosActivos.filter(a => correspondeAviso(a, { role: 'staff', currentComiteId: (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist })).length})
+                    <Megaphone size={18} color="#f59e0b" /> Buzón de Avisos y Comunicados Recibidos ({avisosActivos.filter(a => correspondeAviso(a, { role: 'staff', currentComiteId: (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist, comites: listaComitesConsolidada })).length})
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>
                     Visualiza los avisos oficiales dirigidos al personal de Staff {filtroComiteChecklist !== 'TODOS' && filtroComiteChecklist !== 'GLOBAL' ? `de la sala seleccionada (${filtroComiteChecklist})` : 'de toda la conferencia'}.
@@ -2777,7 +2777,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
               {(() => {
                 const comiteFiltradoAviso = (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist;
-                const avisosParaStaff = avisosActivos.filter(a => correspondeAviso(a, { role: 'staff', currentComiteId: comiteFiltradoAviso }));
+                const avisosParaStaff = avisosActivos.filter(a => correspondeAviso(a, { role: 'staff', currentComiteId: comiteFiltradoAviso, comites: listaComitesConsolidada }));
 
                 if (avisosParaStaff.length === 0) {
                   return (

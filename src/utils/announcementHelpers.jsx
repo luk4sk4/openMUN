@@ -90,12 +90,17 @@ export const obtenerOpcionesDestino = (comites = [], rolActual = 'mesa', current
  */
 export const normalizarIdComite = (id) => {
   if (!id) return '';
-  return String(id)
-    .trim()
-    .toLowerCase()
-    .replace(/^(chair_|mesa_|staff_comite_|staff_)/i, '')
-    .replace(/^comite_/i, '');
+  let str = String(id).trim().toLowerCase();
+  let prev;
+  do {
+    prev = str;
+    str = str
+      .replace(/^(chair|mesa|staff_comite|staff|comite)[\s_-]+/i, '')
+      .replace(/^(comite|mesa)[\s_-]*/i, '');
+  } while (str !== prev && str.length > 0);
+  return str;
 };
+
 
 /**
  * Obtiene la etiqueta descriptiva, icono y colores asociados a un código de destino.
@@ -306,7 +311,7 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
  * @param {object} context - Contexto del visor { role: 'secretaria'|'staff'|'staff_global'|'chair'|'delegate', currentComiteId: string }
  * @returns {boolean}
  */
-export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null } = {}) => {
+export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null, currentComiteNombre = null, comites = [] } = {}) => {
   if (!aviso) return false;
 
   const userRole = String(role || 'staff').trim().toLowerCase();
@@ -326,11 +331,71 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
   }
 
   const normCurrent = normalizarIdComite(currentComiteId);
+  const normNombre = normalizarIdComite(currentComiteNombre);
+  const rawCurrent = currentComiteId ? String(currentComiteId).trim().toLowerCase() : '';
+
+  // Buscar comité coincidente en la lista de comités si está disponible
+  const matchingComite = (comites || []).find(c => {
+    if (!c) return false;
+    const cid = String(c.id || '').trim().toLowerCase();
+    const cnom = String(c.nombre || '').trim().toLowerCase();
+    const normCid = normalizarIdComite(c.id);
+    const normCnom = normalizarIdComite(c.nombre);
+    return (
+      (rawCurrent && cid === rawCurrent) ||
+      (normCurrent && normCid === normCurrent) ||
+      (normCurrent && normCnom === normCurrent) ||
+      (normNombre && normCnom === normNombre) ||
+      (normNombre && normCid === normNombre)
+    );
+  });
+
+  const matchingIdNorm = matchingComite ? normalizarIdComite(matchingComite.id) : null;
+  const matchingNomNorm = matchingComite ? normalizarIdComite(matchingComite.nombre) : null;
+  const matchingRawId = matchingComite ? String(matchingComite.id).trim().toLowerCase() : null;
+
+  const coincideComite = (normTarget, rawTarget) => {
+    if (!normTarget && !rawTarget) return false;
+    const cleanTarget = (normTarget || '').toLowerCase();
+    const cleanRaw = (rawTarget || '').toLowerCase();
+
+    // 1. Coincidencia con ID actual o Nombre actual normalizado (bidireccional)
+    if (normCurrent && (cleanTarget === normCurrent || cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
+    if (rawCurrent && (cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
+    if (normNombre && (cleanTarget === normNombre || cleanRaw === normNombre || cleanRaw.includes(normNombre) || normNombre.includes(cleanTarget) || cleanTarget.includes(normNombre))) return true;
+
+    // 2. Coincidencia con datos del comité en la lista de comités de la conferencia
+    if (matchingIdNorm && (cleanTarget === matchingIdNorm || cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
+    if (matchingNomNorm && (cleanTarget === matchingNomNorm || cleanRaw === matchingNomNorm || cleanRaw.includes(matchingNomNorm) || matchingNomNorm.includes(cleanTarget))) return true;
+    if (matchingRawId && (cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
+
+    // 3. Búsqueda directa del comité objetivo en la lista
+    const targetComiteObj = (comites || []).find(c => {
+      if (!c) return false;
+      const cid = String(c.id || '').trim().toLowerCase();
+      const cnom = String(c.nombre || '').trim().toLowerCase();
+      const nCid = normalizarIdComite(c.id);
+      const nCnom = normalizarIdComite(c.nombre);
+      return cleanTarget === cid || cleanTarget === nCid || cleanRaw === cid || cleanTarget === cnom || cleanTarget === nCnom || cleanRaw === cnom;
+    });
+
+    if (targetComiteObj) {
+      const tid = String(targetComiteObj.id || '').trim().toLowerCase();
+      const tnom = String(targetComiteObj.nombre || '').trim().toLowerCase();
+      const nTid = normalizarIdComite(targetComiteObj.id);
+      const nTnom = normalizarIdComite(targetComiteObj.nombre);
+      if (rawCurrent && (rawCurrent === tid || rawCurrent.endsWith(tid) || tid.endsWith(rawCurrent))) return true;
+      if (normCurrent && (normCurrent === nTid || normCurrent === nTnom)) return true;
+      if (normNombre && (normNombre === nTnom || normNombre === nTid)) return true;
+    }
+
+    return false;
+  };
 
   // 3. CHAIR / MESA DIRECTIVA (y consola de secretaría de sala)
   if (userRole === 'chair' || userRole === 'mesa' || userRole === 'secretariat' || userRole === 'dais') {
-    // a) Mesa global
-    if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(destinoUpper)) {
+    // a) Mesa global o local directa
+    if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL', 'CHAIR_LOCAL'].includes(destinoUpper)) {
       return true;
     }
 
@@ -339,31 +404,32 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
       return false;
     }
 
-    // c) Si la mesa no tiene sala asignada, solo ve Global y Mesa Global (ya evaluados arriba)
-    if (!normCurrent || normCurrent === 'todos') {
+    // c) Si la mesa no tiene sala asignada ni por ID ni por Nombre, solo ve Global y Mesa Global (ya evaluados arriba)
+    if ((!normCurrent && !normNombre) || normCurrent === 'todos') {
       return false;
     }
 
     // d) Su mesa: ej. CHAIR_<comiteId> o MESA_<comiteId>
     if (destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_')) {
       const targetMesa = normalizarIdComite(destinoUpper);
-      return targetMesa === normCurrent;
+      const rawTarget = rawDestino.replace(/^(chair_|mesa_)/i, '');
+      return coincideComite(targetMesa, rawTarget);
     }
 
     // e) Su comité completo: ej. <comiteId> o COMITE_<comiteId>
     const targetComite = normalizarIdComite(destinoUpper);
-    return targetComite === normCurrent;
+    return coincideComite(targetComite, rawDestino);
   }
 
   // 4. STAFF (y STAFF GLOBAL)
   if (userRole === 'staff' || userRole === 'staff_global') {
-    // a) Staff global
-    if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL') {
+    // a) Staff global o local directo
+    if (destinoUpper === 'STAFF_ALL' || destinoUpper === 'STAFF_GLOBAL' || destinoUpper === 'STAFF_LOCAL') {
       return true;
     }
 
     // b) El Staff NUNCA debe ver avisos dirigidos a Mesas Directivas ni a Secretaría General
-    if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(destinoUpper) ||
+    if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL', 'CHAIR_LOCAL'].includes(destinoUpper) ||
         destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_') ||
         destinoUpper === 'SECRETARIA' || destinoUpper === 'ORGANIZACION') {
       return false;
@@ -372,20 +438,21 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
     // c) Staff de su comité: ej. STAFF_COMITE_<comiteId> o STAFF_<comiteId>
     if (destinoUpper.startsWith('STAFF_COMITE_') || destinoUpper.startsWith('STAFF_')) {
       const targetStaffComite = normalizarIdComite(destinoUpper);
+      const rawTarget = rawDestino.replace(/^(staff_comite_|staff_)/i, '');
       // Si el staff es global o no tiene sala fija ('TODOS' o null), ve avisos a staff de cualquier sala para soporte
-      if (!normCurrent || normCurrent === 'todos' || userRole === 'staff_global') {
+      if ((!normCurrent && !normNombre) || normCurrent === 'todos' || userRole === 'staff_global') {
         return true;
       }
-      return targetStaffComite === normCurrent;
+      return coincideComite(targetStaffComite, rawTarget);
     }
 
     // d) Su comité: ej. <comiteId> o COMITE_<comiteId>
-    if (!normCurrent || normCurrent === 'todos') {
+    if ((!normCurrent && !normNombre) || normCurrent === 'todos') {
       // Si no tiene sala fija, no ve mensajes a salas específicas completas
       return false;
     }
     const targetComite = normalizarIdComite(destinoUpper);
-    return targetComite === normCurrent;
+    return coincideComite(targetComite, rawDestino);
   }
 
   // 5. DELEGATE (Delegaciones de un comité)
@@ -399,7 +466,7 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
     // Su comité
     if (normCurrent && normCurrent !== 'todos') {
       const targetComite = normalizarIdComite(destinoUpper);
-      return targetComite === normCurrent;
+      return coincideComite(targetComite, rawDestino);
     }
     return false;
   }
@@ -407,3 +474,4 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
   // Usuario general: solo ve comunicados globales
   return false;
 };
+

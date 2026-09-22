@@ -58,99 +58,11 @@ import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import ConferenceBanner from '../common/ConferenceBanner';
 
-// Parser inteligente de resolución para la vista de delegado
-const parsearResolucionTexto = (textoCompleto = '') => {
-  if (!textoCompleto.trim()) return [];
+import { parsearResolucion } from '../../utils/resolutionUtils';
 
-  const lineas = textoCompleto.split('\n');
-  const articulos = [];
-  let buffer = [];
-  let numArticulo = 1;
-  let enPreambulo = true;
-  let textoPreambulo = [];
+// Parser inteligente de resolución para la vista de delegado (utiliza el motor unificado de resolutionUtils)
+const parsearResolucionTexto = parsearResolucion;
 
-  for (let i = 0; i < lineas.length; i++) {
-    const linea = lineas[i];
-    const matchArticulo = linea.match(/^(?:(?:\*\*|\*|#+)?\s*(?:Artículo|Art\.|Cláusula|Operative Clause)\s*(\d+)[\.:\*\s]*)(.*)/i) ||
-                          linea.match(/^(\d+)[\.\)]\s+(.*)/);
-
-    if (matchArticulo) {
-      if (enPreambulo && textoPreambulo.length > 0) {
-        articulos.push({
-          id: 'preambulo',
-          numero: 0,
-          prefijo: 'Preámbulo / Antecedentes',
-          texto: textoPreambulo.join('\n').trim(),
-          esPreambulo: true
-        });
-        textoPreambulo = [];
-        enPreambulo = false;
-      } else if (buffer.length > 0) {
-        articulos.push({
-          id: `art_${numArticulo - 1}`,
-          numero: numArticulo - 1,
-          prefijo: `Artículo ${numArticulo - 1}.`,
-          texto: buffer.join('\n').trim()
-        });
-        buffer = [];
-      }
-
-      const numParsed = parseInt(matchArticulo[1], 10) || numArticulo;
-      numArticulo = numParsed + 1;
-      const contenidoRestante = matchArticulo[2] || '';
-      if (contenidoRestante.trim()) {
-        buffer.push(contenidoRestante.trim());
-      }
-    } else if (enPreambulo) {
-      if (linea.includes('CLÁUSULAS OPERATIVAS') || linea.includes('OPERATIVE CLAUSES')) {
-        enPreambulo = false;
-        if (textoPreambulo.length > 0) {
-          articulos.push({
-            id: 'preambulo',
-            numero: 0,
-            prefijo: 'Preámbulo / Antecedentes',
-            texto: textoPreambulo.join('\n').trim(),
-            esPreambulo: true
-          });
-          textoPreambulo = [];
-        }
-      } else {
-        textoPreambulo.push(linea);
-      }
-    } else {
-      buffer.push(linea);
-    }
-  }
-
-  if (enPreambulo && textoPreambulo.length > 0) {
-    articulos.push({
-      id: 'preambulo',
-      numero: 0,
-      prefijo: 'Preámbulo / Antecedentes',
-      texto: textoPreambulo.join('\n').trim(),
-      esPreambulo: true
-    });
-  } else if (buffer.length > 0) {
-    articulos.push({
-      id: `art_${numArticulo - 1}`,
-      numero: numArticulo - 1,
-      prefijo: `Artículo ${numArticulo - 1}.`,
-      texto: buffer.join('\n').trim()
-    });
-  }
-
-  if (articulos.length === 0 && textoCompleto.trim().length > 0) {
-    const parrafos = textoCompleto.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-    return parrafos.map((p, idx) => ({
-      id: `art_${idx + 1}`,
-      numero: idx + 1,
-      prefijo: `Artículo ${idx + 1}.`,
-      texto: p.trim()
-    }));
-  }
-
-  return articulos;
-};
 
 const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();

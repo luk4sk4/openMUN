@@ -295,7 +295,7 @@ const DashboardNavbar = ({
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
-            title="Centro de Avisos & Comunicados Oficiales"
+            title={t('avisos.navTitle', 'Centro de Avisos & Comunicados Oficiales')}
           >
             <Megaphone size={12} color="#3b82f6" />
             {!isExtraCompact && <span>{t('header.announcements', 'Avisos')}</span>}

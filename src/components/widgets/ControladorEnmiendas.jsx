@@ -32,7 +32,12 @@ import {
   ShieldCheck,
   CheckCircle2,
   Loader2,
-  FileDown
+  FileDown,
+  Scissors,
+  Link2,
+  ArrowUp,
+  ArrowDown,
+  Wand2
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useP2P } from '../../context/P2PContext';
@@ -136,6 +141,22 @@ const ControladorEnmiendas = () => {
   const [errorArchivo, setErrorArchivo] = useState(null);
   const [descargandoFormato, setDescargandoFormato] = useState(null);
   const fileInputRef = useRef(null);
+  const rawTextareaRef = useRef(null);
+
+  // Estados del Editor / Segmentador Manual de Apartados
+  const [modoEditorApartados, setModoEditorApartados] = useState(false);
+  const [apartadosEditables, setApartadosEditables] = useState([]);
+  const [textoSeleccionadoRaw, setTextoSeleccionadoRaw] = useState('');
+
+  // Estados para edición directa de artículo en la pestaña 'articulos'
+  const [editingArticuloId, setEditingArticuloId] = useState(null);
+  const [editTextoArticulo, setEditTextoArticulo] = useState('');
+  const [editPrefijoArticulo, setEditPrefijoArticulo] = useState('');
+
+  // Estados para modal de añadir artículo directamente
+  const [modalNuevoArticuloOpen, setModalNuevoArticuloOpen] = useState(false);
+  const [nuevoArticuloPrefijo, setNuevoArticuloPrefijo] = useState('');
+  const [nuevoArticuloTexto, setNuevoArticuloTexto] = useState('');
 
   // Países asistentes para el selector de proponentes y cronómetro
   const paisesAsistentes = useMemo(() => {
@@ -310,6 +331,250 @@ const ControladorEnmiendas = () => {
       articulos: parsed
     });
     setTabInterna('articulos');
+  };
+
+  // Activar editor manual de apartados desde el texto actual
+  const handleAbrirEditorApartados = (textoAUsar = null, tituloAUsar = null) => {
+    const texto = textoAUsar !== null ? textoAUsar : rawInputTexto;
+    const titulo = tituloAUsar !== null ? tituloAUsar : rawInputTitulo;
+    if (!texto || !texto.trim()) {
+      alert('Pega o escribe texto antes de configurar los apartados.');
+      return;
+    }
+    const parsed = parsearResolucion(texto);
+    const adaptados = parsed.map((art, idx) => ({
+      ...art,
+      id: art.id || `manual_apartado_${Date.now()}_${idx}`
+    }));
+    setApartadosEditables(adaptados);
+    setModoEditorApartados(true);
+    if (titulo) setRawInputTitulo(titulo);
+  };
+
+  // Abrir editor manual desde la pestaña de artículos
+  const handleAbrirEditorApartadosDesdeArticulos = () => {
+    setApartadosEditables(articulosActuales.map(a => ({ ...a })));
+    setModoEditorApartados(true);
+    setTabInterna('importar');
+  };
+
+  // Cambiar tipo de apartado (Preámbulo vs Artículo Operativo)
+  const handleToggleTipoApartado = (id) => {
+    setApartadosEditables(prev => prev.map(ap => {
+      if (ap.id !== id) return ap;
+      const nuevoEsPreambulo = !ap.esPreambulo;
+      return {
+        ...ap,
+        esPreambulo: nuevoEsPreambulo,
+        prefijo: nuevoEsPreambulo ? 'Preámbulo / Antecedentes' : `Artículo ${ap.numero || 1}.`
+      };
+    }));
+  };
+
+  // Modificar prefijo o texto de un apartado en el editor manual
+  const handleUpdateApartado = (id, campo, valor) => {
+    setApartadosEditables(prev => prev.map(ap => {
+      if (ap.id !== id) return ap;
+      return { ...ap, [campo]: valor };
+    }));
+  };
+
+  // Dividir un apartado en dos partes
+  const handleDividirApartado = (id) => {
+    setApartadosEditables(prev => {
+      const idx = prev.findIndex(a => a.id === id);
+      if (idx === -1) return prev;
+      const actual = prev[idx];
+      const lineas = actual.texto.split(/\n/);
+      const mitad = Math.max(1, Math.floor(lineas.length / 2));
+      const parte1 = lineas.slice(0, mitad).join('\n').trim();
+      const parte2 = lineas.slice(mitad).join('\n').trim() || '[Nuevo fragmento]';
+
+      const ap1 = { ...actual, texto: parte1 };
+      const ap2 = {
+        id: `manual_apartado_${Date.now()}_split`,
+        esPreambulo: actual.esPreambulo,
+        numero: (actual.numero || 1) + 1,
+        prefijo: actual.esPreambulo ? 'Preámbulo / Antecedentes' : `Artículo ${(actual.numero || 1) + 1}.`,
+        texto: parte2
+      };
+
+      const copia = [...prev];
+      copia.splice(idx, 1, ap1, ap2);
+      return copia;
+    });
+  };
+
+  // Unir apartado con el siguiente
+  const handleUnirConSiguiente = (index) => {
+    setApartadosEditables(prev => {
+      if (index >= prev.length - 1) return prev;
+      const act = prev[index];
+      const sig = prev[index + 1];
+      const fusionado = {
+        ...act,
+        texto: `${act.texto.trim()}\n\n${sig.texto.trim()}`
+      };
+      const copia = [...prev];
+      copia.splice(index, 2, fusionado);
+      return copia;
+    });
+  };
+
+  // Mover apartado arriba o abajo
+  const handleMoverApartado = (index, direccion) => {
+    setApartadosEditables(prev => {
+      const target = index + direccion;
+      if (target < 0 || target >= prev.length) return prev;
+      const copia = [...prev];
+      const [item] = copia.splice(index, 1);
+      copia.splice(target, 0, item);
+      return copia;
+    });
+  };
+
+  // Eliminar apartado del editor manual
+  const handleEliminarApartado = (id) => {
+    setApartadosEditables(prev => prev.filter(a => a.id !== id));
+  };
+
+  // Añadir un nuevo apartado en blanco al final
+  const handleAnadirApartadoEnBlanco = () => {
+    const num = apartadosEditables.filter(a => !a.esPreambulo).length + 1;
+    const nuevo = {
+      id: `manual_apartado_${Date.now()}_nuevo`,
+      esPreambulo: false,
+      numero: num,
+      prefijo: `Artículo ${num}.`,
+      texto: ''
+    };
+    setApartadosEditables(prev => [...prev, nuevo]);
+  };
+
+  // Capturar selección de texto en el textarea raw para asignación manual
+  const handleCapturarSeleccionRaw = () => {
+    if (rawTextareaRef.current) {
+      const start = rawTextareaRef.current.selectionStart;
+      const end = rawTextareaRef.current.selectionEnd;
+      const sel = rawInputTexto.substring(start, end).trim();
+      if (sel) {
+        setTextoSeleccionadoRaw(sel);
+      }
+    }
+  };
+
+  // Asignar texto seleccionado como Preámbulo o Artículo
+  const handleAsignarSeleccion = (tipo = 'articulo') => {
+    if (!textoSeleccionadoRaw.trim()) {
+      alert('Primero selecciona con el ratón el fragmento de texto en el área de texto.');
+      return;
+    }
+    const esPreambulo = tipo === 'preambulo';
+    const num = apartadosEditables.filter(a => !a.esPreambulo).length + 1;
+    const nuevo = {
+      id: `manual_apartado_${Date.now()}_sel`,
+      esPreambulo,
+      numero: esPreambulo ? 0 : num,
+      prefijo: esPreambulo ? 'Preámbulo / Antecedentes' : `Artículo ${num}.`,
+      texto: textoSeleccionadoRaw.trim()
+    };
+    setApartadosEditables(prev => [...prev, nuevo]);
+    setTextoSeleccionadoRaw('');
+  };
+
+  // Guardar definitivamente los apartados manuales
+  const handleGuardarApartadosManuales = () => {
+    if (apartadosEditables.length === 0) {
+      alert('Debes definir al menos un apartado para guardar la resolución.');
+      return;
+    }
+    let contadorOperativo = 1;
+    const apartadosNormalizados = apartadosEditables.map(ap => {
+      if (ap.esPreambulo) {
+        return { ...ap, numero: 0, prefijo: 'Preámbulo / Antecedentes' };
+      }
+      const num = contadorOperativo++;
+      return {
+        ...ap,
+        numero: num,
+        prefijo: ap.prefijo?.trim() || `Artículo ${num}.`
+      };
+    });
+
+    const textoReconstruido = reconstruirTextoResolucion(apartadosNormalizados);
+    guardarResolucionEnmiendas({
+      titulo: rawInputTitulo.trim() || 'Proyecto de Resolución',
+      texto: textoReconstruido,
+      articulos: apartadosNormalizados
+    });
+
+    setRawInputTexto(textoReconstruido);
+    setModoEditorApartados(false);
+    setTabInterna('articulos');
+  };
+
+  // Handlers para edición directa en pestaña 'articulos'
+  const handleStartEditArticulo = (art) => {
+    setEditingArticuloId(art.id);
+    setEditPrefijoArticulo(art.prefijo || (art.esPreambulo ? 'Preámbulo' : `Artículo ${art.numero}.`));
+    setEditTextoArticulo(art.texto || '');
+  };
+
+  const handleSaveEditArticulo = () => {
+    if (!editingArticuloId) return;
+    const updated = articulosActuales.map(a => {
+      if (a.id !== editingArticuloId) return a;
+      return {
+        ...a,
+        prefijo: editPrefijoArticulo.trim() || a.prefijo,
+        texto: editTextoArticulo.trim(),
+        modificado: true
+      };
+    });
+    const nuevoTexto = reconstruirTextoResolucion(updated);
+    guardarResolucionEnmiendas({
+      articulos: updated,
+      texto: nuevoTexto
+    });
+    setEditingArticuloId(null);
+  };
+
+  const handleCancelEditArticulo = () => {
+    setEditingArticuloId(null);
+    setEditTextoArticulo('');
+    setEditPrefijoArticulo('');
+  };
+
+  const handleEliminarArticulo = (artId) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este apartado de la resolución?')) return;
+    const updated = articulosActuales.filter(a => a.id !== artId);
+    const nuevoTexto = reconstruirTextoResolucion(updated);
+    guardarResolucionEnmiendas({
+      articulos: updated,
+      texto: nuevoTexto
+    });
+  };
+
+  const handleGuardarNuevoArticulo = (e) => {
+    e.preventDefault();
+    if (!nuevoArticuloTexto.trim()) return;
+    const num = articulosOperativos.length + 1;
+    const nuevo = {
+      id: `art_${Date.now()}_nuevo`,
+      numero: num,
+      prefijo: nuevoArticuloPrefijo.trim() || `Artículo ${num}.`,
+      texto: nuevoArticuloTexto.trim(),
+      modificado: true
+    };
+    const updated = [...articulosActuales, nuevo];
+    const nuevoTexto = reconstruirTextoResolucion(updated);
+    guardarResolucionEnmiendas({
+      articulos: updated,
+      texto: nuevoTexto
+    });
+    setModalNuevoArticuloOpen(false);
+    setNuevoArticuloTexto('');
+    setNuevoArticuloPrefijo('');
   };
 
   // Abrir modal de enmienda con contexto de artículo
@@ -1009,24 +1274,72 @@ const ControladorEnmiendas = () => {
                 </select>
               </div>
 
-              <button
-                onClick={() => handleOpenProponer(null)}
-                style={{
-                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  color: '#3b82f6',
-                  padding: '0.3rem 0.65rem',
-                  borderRadius: '5px',
-                  fontSize: '0.74rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
-                }}
-              >
-                <Plus size={14} /> Proponer Enmienda / Nuevo Artículo
-              </button>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleAbrirEditorApartadosDesdeArticulos}
+                  style={{
+                    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    color: '#a855f7',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}
+                  title="Configurar y reclasificar los apartados manualmente"
+                >
+                  <Layers size={13} /> Ajustar Apartados
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextNum = articulosActuales.filter(a => !a.esPreambulo).length + 1;
+                    setNuevoArticuloPrefijo(`Artículo ${nextNum}.`);
+                    setNuevoArticuloTexto('');
+                    setModalNuevoArticuloOpen(true);
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    color: '#10b981',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}
+                >
+                  <Plus size={13} /> Añadir Artículo
+                </button>
+
+                <button
+                  onClick={() => handleOpenProponer(null)}
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    color: '#3b82f6',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}
+                >
+                  <FilePlus size={13} /> Proponer Enmienda
+                </button>
+              </div>
             </div>
 
             {/* Listado de Artículos Existentes */}
@@ -1053,7 +1366,7 @@ const ControladorEnmiendas = () => {
                   }}
                 >
                   {/* Cabecera del Artículo */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{
                         fontSize: '0.74rem',
@@ -1063,7 +1376,7 @@ const ControladorEnmiendas = () => {
                         padding: '0.15rem 0.5rem',
                         borderRadius: '4px'
                       }}>
-                        {art.prefijo || `Artículo ${art.numero}`}
+                        {art.prefijo || (art.esPreambulo ? 'Preámbulo' : `Artículo ${art.numero}`)}
                       </span>
                       {art.modificado && (
                         <span style={{
@@ -1079,42 +1392,173 @@ const ControladorEnmiendas = () => {
                       )}
                     </div>
 
-                    <button
-                      onClick={() => handleOpenProponer(art.id)}
-                      style={{
-                        background: 'transparent',
-                        border: '1px solid var(--subborder-color)',
-                        color: 'var(--text-color)',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.68rem',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem'
-                      }}
-                    >
-                      <Plus size={12} /> Proponer Enmienda
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {editingArticuloId !== art.id ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditArticulo(art)}
+                            title="Editar texto o prefijo de este apartado"
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--subborder-color)',
+                              color: 'var(--text-color)',
+                              padding: '0.25rem 0.45rem',
+                              borderRadius: '4px',
+                              fontSize: '0.68rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.2rem'
+                            }}
+                          >
+                            <Edit2 size={11} /> Editar
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleEliminarArticulo(art.id)}
+                            title="Eliminar este apartado"
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--subborder-color)',
+                              color: '#ef4444',
+                              padding: '0.25rem 0.45rem',
+                              borderRadius: '4px',
+                              fontSize: '0.68rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.2rem'
+                            }}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </>
+                      ) : null}
+
+                      <button
+                        onClick={() => handleOpenProponer(art.id)}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid var(--subborder-color)',
+                          color: 'var(--text-color)',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.68rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
+                        }}
+                      >
+                        <Plus size={12} /> Proponer Enmienda
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Texto Oficial del Artículo */}
-                  <div
-                    style={{
-                      fontSize: '0.8rem',
-                      lineHeight: 1.5,
-                      color: 'var(--text-color)',
+                  {/* Texto Oficial o Editor Inline del Artículo */}
+                  {editingArticuloId === art.id ? (
+                    <div style={{
                       backgroundColor: 'var(--panel-bg)',
                       padding: '0.6rem 0.75rem',
                       borderRadius: '6px',
-                      border: '1px solid var(--subborder-color)',
-                      whiteSpace: 'pre-wrap',
-                      userSelect: 'text'
-                    }}
-                  >
-                    {art.texto}
-                  </div>
+                      border: '1px solid #3b82f6',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <label style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--muted-text)' }}>Prefijo / Título:</label>
+                        <input
+                          type="text"
+                          value={editPrefijoArticulo}
+                          onChange={e => setEditPrefijoArticulo(e.target.value)}
+                          style={{
+                            flex: 1,
+                            padding: '0.25rem 0.45rem',
+                            backgroundColor: inputBgColor,
+                            border: `1px solid ${inputBorderColor}`,
+                            borderRadius: '4px',
+                            color: 'var(--text-color)',
+                            fontSize: '0.74rem'
+                          }}
+                          placeholder="Ej. Artículo 1. o Preámbulo"
+                        />
+                      </div>
+                      <textarea
+                        value={editTextoArticulo}
+                        onChange={e => setEditTextoArticulo(e.target.value)}
+                        rows={4}
+                        style={{
+                          width: '100%',
+                          padding: '0.45rem',
+                          backgroundColor: inputBgColor,
+                          border: `1px solid ${inputBorderColor}`,
+                          borderRadius: '4px',
+                          color: 'var(--text-color)',
+                          fontSize: '0.78rem',
+                          lineHeight: 1.4,
+                          resize: 'vertical'
+                        }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                        <button
+                          type="button"
+                          onClick={handleCancelEditArticulo}
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--subborder-color)',
+                            color: 'var(--muted-text)',
+                            padding: '0.25rem 0.55rem',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveEditArticulo}
+                          style={{
+                            backgroundColor: '#16a34a',
+                            border: 'none',
+                            color: '#ffffff',
+                            padding: '0.25rem 0.65rem',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.2rem'
+                          }}
+                        >
+                          <Check size={12} /> Guardar Cambios
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        lineHeight: 1.5,
+                        color: 'var(--text-color)',
+                        backgroundColor: 'var(--panel-bg)',
+                        padding: '0.6rem 0.75rem',
+                        borderRadius: '6px',
+                        border: '1px solid var(--subborder-color)',
+                        whiteSpace: 'pre-wrap',
+                        userSelect: 'text'
+                      }}
+                    >
+                      {art.texto}
+                    </div>
+                  )}
 
                   {/* Feed de Enmiendas Propuestas para este Artículo */}
                   {enmiendasArticulo.length > 0 && (
@@ -1297,6 +1741,348 @@ const ControladorEnmiendas = () => {
                 : (textoResolucion || 'Sin contenido')}
             </div>
           </div>
+        ) : modoEditorApartados ? (
+          /* ── CONFIGURADOR MANUAL DE APARTADOS (PREÁMBULO Y ARTÍCULOS) ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+              flexWrap: 'wrap',
+              borderBottom: '1px solid var(--subborder-color)',
+              paddingBottom: '0.6rem'
+            }}>
+              <div>
+                <div style={{ fontSize: '0.9rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Layers size={16} color="#a855f7" /> Configurador Manual de Apartados
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '0.15rem' }}>
+                  Asigna manualmente qué secciones son Preámbulo o Artículos Operativos, divide, une o edita cláusulas con total control.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleAnadirApartadoEnBlanco}
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    color: '#3b82f6',
+                    padding: '0.35rem 0.65rem',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}
+                >
+                  <Plus size={13} /> Añadir Apartado
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModoEditorApartados(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--subborder-color)',
+                    color: 'var(--muted-text)',
+                    padding: '0.35rem 0.65rem',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Volver al Texto
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGuardarApartadosManuales}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    border: 'none',
+                    color: '#ffffff',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)'
+                  }}
+                >
+                  <Check size={14} /> Guardar y Aplicar Resolución
+                </button>
+              </div>
+            </div>
+
+            {/* Asistente interactivo de texto original: seleccionar texto y asignar */}
+            {rawInputTexto && rawInputTexto.trim() && (
+              <details style={{
+                backgroundColor: 'var(--card-hover, rgba(255,255,255,0.02))',
+                border: '1px solid var(--subborder-color)',
+                borderRadius: '6px',
+                padding: '0.5rem 0.75rem'
+              }}>
+                <summary style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--text-color)', cursor: 'pointer', userSelect: 'none' }}>
+                  🔍 Asistente de Selección desde el Borrador Original (Haz clic para desplegar)
+                </summary>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
+                    Selecciona cualquier párrafo o fragmento con el ratón en el cuadro inferior y asígnalo con un clic:
+                  </div>
+                  <textarea
+                    ref={rawTextareaRef}
+                    defaultValue={rawInputTexto}
+                    onMouseUp={handleCapturarSeleccionRaw}
+                    onKeyUp={handleCapturarSeleccionRaw}
+                    rows={5}
+                    style={{
+                      width: '100%',
+                      padding: '0.45rem',
+                      backgroundColor: inputBgColor,
+                      border: `1px solid ${inputBorderColor}`,
+                      borderRadius: '5px',
+                      color: 'var(--text-color)',
+                      fontSize: '0.72rem',
+                      fontFamily: 'monospace',
+                      lineHeight: 1.3
+                    }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.7rem', color: textoSeleccionadoRaw ? '#10b981' : 'var(--muted-text)' }}>
+                      {textoSeleccionadoRaw ? `Seleccionados ${textoSeleccionadoRaw.length} caracteres` : 'Ningún texto seleccionado actualmente.'}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleAsignarSeleccion('preambulo')}
+                        disabled={!textoSeleccionadoRaw}
+                        style={{
+                          backgroundColor: textoSeleccionadoRaw ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                          border: '1px solid var(--subborder-color)',
+                          color: textoSeleccionadoRaw ? '#a855f7' : 'var(--muted-text)',
+                          padding: '0.25rem 0.55rem',
+                          borderRadius: '4px',
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          cursor: textoSeleccionadoRaw ? 'pointer' : 'not-allowed'
+                        }}
+                      >
+                        + Añadir Selección como Preámbulo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAsignarSeleccion('articulo')}
+                        disabled={!textoSeleccionadoRaw}
+                        style={{
+                          backgroundColor: textoSeleccionadoRaw ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                          border: '1px solid var(--subborder-color)',
+                          color: textoSeleccionadoRaw ? '#3b82f6' : 'var(--muted-text)',
+                          padding: '0.25rem 0.55rem',
+                          borderRadius: '4px',
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          cursor: textoSeleccionadoRaw ? 'pointer' : 'not-allowed'
+                        }}
+                      >
+                        + Añadir Selección como Artículo Operativo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            )}
+
+            {/* Listado de tarjetas de apartados editables */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {apartadosEditables.map((ap, idx) => {
+                const esPreambulo = ap.esPreambulo;
+                return (
+                  <div
+                    key={ap.id}
+                    style={{
+                      backgroundColor: 'var(--card-header-bg)',
+                      border: `1px solid ${esPreambulo ? 'rgba(168, 85, 247, 0.35)' : 'rgba(59, 130, 246, 0.35)'}`,
+                      borderLeft: `4px solid ${esPreambulo ? '#a855f7' : '#3b82f6'}`,
+                      borderRadius: '8px',
+                      padding: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    {/* Fila 1: Selector de tipo, input de prefijo y controles de posición/división */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        {/* Botón conmutador Preámbulo vs Artículo */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTipoApartado(ap.id)}
+                          title="Haz clic para alternar entre Preámbulo y Artículo Operativo"
+                          style={{
+                            backgroundColor: esPreambulo ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                            border: `1px solid ${esPreambulo ? '#a855f7' : '#3b82f6'}`,
+                            color: esPreambulo ? '#a855f7' : '#3b82f6',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.72rem',
+                            fontWeight: '800',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}
+                        >
+                          <Wand2 size={11} /> {esPreambulo ? 'Preámbulo' : 'Artículo Operativo'} ⇄
+                        </button>
+
+                        <input
+                          type="text"
+                          value={ap.prefijo || ''}
+                          onChange={e => handleUpdateApartado(ap.id, 'prefijo', e.target.value)}
+                          placeholder={esPreambulo ? 'Preámbulo / Considerando' : `Artículo ${idx + 1}.`}
+                          style={{
+                            padding: '0.2rem 0.45rem',
+                            backgroundColor: inputBgColor,
+                            border: `1px solid ${inputBorderColor}`,
+                            borderRadius: '4px',
+                            color: 'var(--text-color)',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
+                            width: '180px'
+                          }}
+                        />
+                      </div>
+
+                      {/* Botones de acción del apartado: Subir, Bajar, Dividir, Unir, Eliminar */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleMoverApartado(idx, -1)}
+                          disabled={idx === 0}
+                          title="Subir posición"
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--subborder-color)',
+                            color: idx === 0 ? 'var(--muted-text)' : 'var(--text-color)',
+                            padding: '0.2rem 0.35rem',
+                            borderRadius: '3px',
+                            cursor: idx === 0 ? 'default' : 'pointer'
+                          }}
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleMoverApartado(idx, 1)}
+                          disabled={idx === apartadosEditables.length - 1}
+                          title="Bajar posición"
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--subborder-color)',
+                            color: idx === apartadosEditables.length - 1 ? 'var(--muted-text)' : 'var(--text-color)',
+                            padding: '0.2rem 0.35rem',
+                            borderRadius: '3px',
+                            cursor: idx === apartadosEditables.length - 1 ? 'default' : 'pointer'
+                          }}
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDividirApartado(ap.id)}
+                          title="Dividir este apartado en dos por la mitad"
+                          style={{
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                            color: '#3b82f6',
+                            padding: '0.2rem 0.45rem',
+                            borderRadius: '3px',
+                            fontSize: '0.68rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.2rem'
+                          }}
+                        >
+                          <Scissors size={11} /> Dividir
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleUnirConSiguiente(idx)}
+                          disabled={idx === apartadosEditables.length - 1}
+                          title="Unir con el siguiente apartado"
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--subborder-color)',
+                            color: idx === apartadosEditables.length - 1 ? 'var(--muted-text)' : 'var(--text-color)',
+                            padding: '0.2rem 0.45rem',
+                            borderRadius: '3px',
+                            fontSize: '0.68rem',
+                            fontWeight: '600',
+                            cursor: idx === apartadosEditables.length - 1 ? 'default' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.2rem'
+                          }}
+                        >
+                          <Link2 size={11} /> Unir
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleEliminarApartado(ap.id)}
+                          title="Eliminar este apartado"
+                          style={{
+                            backgroundColor: 'transparent',
+                            border: '1px solid rgba(239, 68, 68, 0.25)',
+                            color: '#ef4444',
+                            padding: '0.2rem 0.35rem',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Fila 2: Texto del apartado */}
+                    <textarea
+                      value={ap.texto}
+                      onChange={e => handleUpdateApartado(ap.id, 'texto', e.target.value)}
+                      rows={Math.min(8, Math.max(3, (ap.texto || '').split('\n').length))}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        backgroundColor: inputBgColor,
+                        border: `1px solid ${inputBorderColor}`,
+                        borderRadius: '5px',
+                        color: 'var(--text-color)',
+                        fontSize: '0.78rem',
+                        lineHeight: 1.4,
+                        resize: 'vertical',
+                        outline: 'none'
+                      }}
+                      placeholder={esPreambulo ? 'Escribe las cláusulas preambulatorias aquí...' : 'Escribe el contenido de esta cláusula operativa aquí...'}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         ) : (
           /* ── VISTA DE IMPORTACIÓN Y PEGADO CON DROPZONE ── */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -1395,7 +2181,28 @@ const ControladorEnmiendas = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => handleAbrirEditorApartados()}
+                  style={{
+                    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    color: '#a855f7',
+                    padding: '0.45rem 0.85rem',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                  title="Ajustar y definir manualmente qué partes son preámbulo o artículos"
+                >
+                  <Layers size={14} /> Ajustar Apartados Manualmente
+                </button>
+
                 <button
                   type="button"
                   onClick={handleCargarEjemplo}
@@ -1914,6 +2721,134 @@ const ControladorEnmiendas = () => {
                   }}
                 >
                   Registrar Moción
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL PARA AÑADIR NUEVO ARTÍCULO O CLÁUSULA DIRECTAMENTE ── */}
+      {modalNuevoArticuloOpen && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(5px)',
+          zIndex: 120,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--panel-color)',
+            border: '1px solid var(--subborder-color)',
+            borderRadius: '10px',
+            padding: '1.25rem',
+            width: '100%',
+            maxWidth: '500px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.85rem',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: '800' }}>
+                <Plus size={16} color="#10b981" /> Añadir Nueva Cláusula a la Resolución
+              </div>
+              <button
+                onClick={() => setModalNuevoArticuloOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleGuardarNuevoArticulo} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.2rem' }}>
+                  Prefijo / Numeración de la Cláusula:
+                </label>
+                <input
+                  type="text"
+                  value={nuevoArticuloPrefijo}
+                  onChange={e => setNuevoArticuloPrefijo(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 0.65rem',
+                    backgroundColor: inputBgColor,
+                    border: `1px solid ${inputBorderColor}`,
+                    borderRadius: '6px',
+                    color: 'var(--text-color)',
+                    fontSize: '0.78rem',
+                    outline: 'none'
+                  }}
+                  placeholder="Ej. Artículo 5. o Cláusula 5."
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.2rem' }}>
+                  Texto de la Cláusula:
+                </label>
+                <textarea
+                  value={nuevoArticuloTexto}
+                  onChange={e => setNuevoArticuloTexto(e.target.value)}
+                  rows={5}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 0.65rem',
+                    backgroundColor: inputBgColor,
+                    border: `1px solid ${inputBorderColor}`,
+                    borderRadius: '6px',
+                    color: 'var(--text-color)',
+                    fontSize: '0.78rem',
+                    fontFamily: 'inherit',
+                    lineHeight: 1.4,
+                    resize: 'vertical',
+                    outline: 'none'
+                  }}
+                  placeholder="Escribe el texto de la nueva cláusula..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.3rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalNuevoArticuloOpen(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--subborder-color)',
+                    borderRadius: '6px',
+                    color: 'var(--text-color)',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    backgroundColor: '#10b981',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#ffffff',
+                    fontSize: '0.78rem',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Añadir Cláusula
                 </button>
               </div>
             </form>

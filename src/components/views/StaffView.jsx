@@ -132,7 +132,8 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
   const confActiva = conferenceService.obtenerSesionActiva();
   const [comiteAsignado, setComiteAsignado] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || roomId || 'TODOS');
   const currentComiteId = comiteAsignado === 'TODOS' ? null : comiteAsignado;
-  const avisosDBFiltrados = avisosDB.filter(av => correspondeAviso(av, { role: 'staff', currentComiteId }));
+  const currentComiteNombre = currentComiteId ? (comitesConf.find(c => String(c.id).toLowerCase() === String(currentComiteId).toLowerCase())?.nombre || null) : null;
+  const avisosDBFiltrados = avisosDB.filter(av => correspondeAviso(av, { role: 'staff', currentComiteId, currentComiteNombre, comites: comitesConf }));
 
   // Cargar comités de la conferencia para selector completo de destinos
   useEffect(() => {
@@ -150,7 +151,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     const fetchAvisos = async () => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       try {
-        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'staff');
+        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'staff', currentComiteNombre);
         if (res && Array.isArray(res.avisos)) {
           setAvisosDB(res.avisos);
         }
@@ -504,7 +505,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
       </header>
 
       {/* Banner de Avisos Oficiales de la Conferencia y Sala */}
-      <ConferenceBanner isLight={isLight} role="staff" comiteId={currentComiteId} />
+      <ConferenceBanner isLight={isLight} role="staff" comiteId={currentComiteId} comiteNombre={currentComiteNombre} comites={comitesConf} />
 
       {/* ── Barra de Pestañas de Navegación (4 Secciones) ── */}
       <nav style={{
@@ -1337,7 +1338,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                     type="button"
                     onClick={async () => {
                       if (confActiva?.id) {
-                        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'staff');
+                        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'staff', currentComiteNombre);
                         if (res?.avisos) setAvisosDB(res.avisos);
                         showToast('Buzón de conferencia actualizado');
                       }

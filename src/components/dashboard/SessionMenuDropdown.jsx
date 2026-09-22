@@ -8,9 +8,11 @@ import {
   Trash2,
   Cloud,
   FolderOpen,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { navigateTo } from '../../utils/router';
 
 const SessionMenuDropdown = ({
   sessionMenuOpen,
@@ -493,6 +495,36 @@ const SessionMenuDropdown = ({
               </button>
             </div>
           )}
+
+          <div style={{ height: '1px', backgroundColor: 'var(--subborder-color)', margin: '0.4rem 0' }} />
+
+          <button
+            onClick={() => {
+              setSessionMenuOpen(false);
+              navigateTo('/privacy');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: '5px',
+              color: 'var(--muted-text)',
+              padding: '5px 8px',
+              fontSize: '0.74rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              textAlign: 'left',
+              width: '100%',
+              transition: 'color 0.15s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-text)'}
+          >
+            <ShieldCheck size={12} color="#10b981" />
+            <span>{t('legalBanner.privacyLink', 'Política de Privacidad')}</span>
+          </button>
         </div>
       )}
     </div>

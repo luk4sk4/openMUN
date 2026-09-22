@@ -307,7 +307,7 @@ export const conferenceService = {
     return data;
   },
 
-  async obtenerAvisos(conferenciaId, comiteId = null, role = null) {
+  async obtenerAvisos(conferenciaId, comiteId = null, role = null, comiteNombre = null) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
     let url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/avisos`;
     const params = [];
@@ -316,6 +316,9 @@ export const conferenceService = {
     }
     if (role) {
       params.push(`role=${encodeURIComponent(String(role).trim())}`);
+    }
+    if (comiteNombre) {
+      params.push(`comite_nombre=${encodeURIComponent(String(comiteNombre).trim())}`);
     }
     if (params.length > 0) {
       url += `?${params.join('&')}`;

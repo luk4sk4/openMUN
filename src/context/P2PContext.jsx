@@ -560,8 +560,13 @@ export const P2PProvider = ({ children }) => {
         setRoomId(finalTargetId);
         if (typeof window !== 'undefined') {
           localStorage.setItem('openmun_last_room_id', finalTargetId);
-          localStorage.setItem('openmun_current_comite_id', finalTargetId);
-          localStorage.setItem('openmun_user_role', targetRole);
+          // Solo asignar openmun_current_comite_id si no es una conexión secundaria local y no hay un comite_id previo fijado
+          if (!isLocalBroadcast && !localStorage.getItem('openmun_current_comite_id')) {
+            localStorage.setItem('openmun_current_comite_id', finalTargetId);
+          }
+          if (!isLocalBroadcast) {
+            localStorage.setItem('openmun_user_role', targetRole);
+          }
         }
       }
       setRole(targetRole);

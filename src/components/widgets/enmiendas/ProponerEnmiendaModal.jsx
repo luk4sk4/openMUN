@@ -65,6 +65,16 @@ const ProponerEnmiendaModal = ({
   const paisObj = (paises || []).find(p => p.nombre?.toLowerCase() === paisProponente?.toLowerCase());
   const artTarget = articulos.find(a => a.id === selectedArticuloId);
 
+  const handleCambiarTipo = (nuevoTipo) => {
+    setTipoEnmienda(nuevoTipo);
+    if (nuevoTipo !== 'adicion' && selectedArticuloId && !textoOriginal) {
+      const art = articulos.find(a => a.id === selectedArticuloId);
+      if (art) {
+        setTextoOriginal(art.texto);
+      }
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (tipoEnmienda !== 'supresion' && !textoPropuesto.trim()) {
@@ -112,8 +122,8 @@ const ProponerEnmiendaModal = ({
         borderRadius: '12px',
         padding: '1.25rem',
         width: '100%',
-        maxWidth: '520px',
-        maxHeight: '92%',
+        maxWidth: '680px',
+        maxHeight: '94%',
         overflowY: 'auto',
         boxSizing: 'border-box',
         display: 'flex',
@@ -156,7 +166,7 @@ const ProponerEnmiendaModal = ({
             }}>
               <button
                 type="button"
-                onClick={() => setTipoEnmienda('adicion')}
+                onClick={() => handleCambiarTipo('adicion')}
                 style={{
                   padding: '0.45rem 0.3rem',
                   borderRadius: '6px',
@@ -178,7 +188,7 @@ const ProponerEnmiendaModal = ({
 
               <button
                 type="button"
-                onClick={() => setTipoEnmienda('supresion')}
+                onClick={() => handleCambiarTipo('supresion')}
                 style={{
                   padding: '0.45rem 0.3rem',
                   borderRadius: '6px',
@@ -200,7 +210,7 @@ const ProponerEnmiendaModal = ({
 
               <button
                 type="button"
-                onClick={() => setTipoEnmienda('modificacion')}
+                onClick={() => handleCambiarTipo('modificacion')}
                 style={{
                   padding: '0.45rem 0.3rem',
                   borderRadius: '6px',
@@ -235,6 +245,8 @@ const ProponerEnmiendaModal = ({
                 const art = articulos.find(a => a.id === val);
                 if (art && tipoEnmienda !== 'adicion') {
                   setTextoOriginal(art.texto);
+                } else if (!val && tipoEnmienda !== 'adicion') {
+                  setTextoOriginal('');
                 }
               }}
               style={{
@@ -254,7 +266,7 @@ const ProponerEnmiendaModal = ({
               </option>
               {articulos.map(art => (
                 <option key={art.id} value={art.id} style={{ backgroundColor: optionBgColor, color: optionTextColor }}>
-                  {art.prefijo || `Artículo ${art.numero}`} - {art.texto.substring(0, 50)}...
+                  {art.prefijo || `Artículo ${art.numero}`} - {art.texto.substring(0, 90)}{art.texto.length > 90 ? '...' : ''}
                 </option>
               ))}
             </select>
@@ -314,23 +326,34 @@ const ProponerEnmiendaModal = ({
           {/* Campo Texto Original (para Supresión o Modificación) */}
           {(tipoEnmienda === 'supresion' || tipoEnmienda === 'modificacion') && (
             <div>
-              <label style={{ fontSize: '0.72rem', fontWeight: '700', color: '#ef4444', display: 'block', marginBottom: '0.2rem' }}>
-                {tipoEnmienda === 'supresion' ? 'Texto o cláusula a suprimir:' : 'Texto original a reemplazar:'}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.74rem', fontWeight: '700', color: '#ef4444' }}>
+                  {tipoEnmienda === 'supresion' ? 'Texto o cláusula a suprimir:' : 'Texto original a reemplazar:'}
+                </label>
+                {artTarget && (
+                  <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)', fontStyle: 'italic' }}>
+                    {artTarget.prefijo || `Artículo ${artTarget.numero}`}
+                  </span>
+                )}
+              </div>
               <textarea
                 value={textoOriginal}
                 onChange={e => setTextoOriginal(e.target.value)}
-                rows={2}
+                rows={6}
                 style={{
                   width: '100%',
-                  padding: '0.45rem 0.6rem',
+                  minHeight: '130px',
+                  maxHeight: '280px',
+                  padding: '0.6rem 0.75rem',
                   backgroundColor: 'rgba(239, 68, 68, 0.05)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   borderRadius: '6px',
                   color: 'var(--text-color)',
-                  fontSize: '0.76rem',
+                  fontSize: '0.82rem',
+                  lineHeight: '1.45',
                   fontFamily: 'inherit',
-                  resize: 'vertical'
+                  resize: 'vertical',
+                  boxSizing: 'border-box'
                 }}
                 placeholder="Pega o escribe el fragmento a eliminar/modificar..."
               />
@@ -340,24 +363,49 @@ const ProponerEnmiendaModal = ({
           {/* Campo Texto Propuesto (para Adición o Modificación) */}
           {(tipoEnmienda === 'adicion' || tipoEnmienda === 'modificacion') && (
             <div>
-              <label style={{ fontSize: '0.72rem', fontWeight: '700', color: '#22c55e', display: 'block', marginBottom: '0.2rem' }}>
-                {tipoEnmienda === 'adicion' ? 'Texto nuevo a añadir:' : 'Nueva redacción propuesta:'}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.74rem', fontWeight: '700', color: '#22c55e' }}>
+                  {tipoEnmienda === 'adicion' ? 'Texto nuevo a añadir:' : 'Nueva redacción propuesta:'}
+                </label>
+                {tipoEnmienda === 'modificacion' && textoOriginal && (
+                  <button
+                    type="button"
+                    onClick={() => setTextoPropuesto(textoOriginal)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#3b82f6',
+                      fontSize: '0.72rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      padding: '0.1rem 0.2rem',
+                      textDecoration: 'underline'
+                    }}
+                    title="Copiar el texto original para editarlo directamente"
+                  >
+                    Copiar original a propuesta
+                  </button>
+                )}
+              </div>
               <textarea
                 value={textoPropuesto}
                 onChange={e => setTextoPropuesto(e.target.value)}
-                rows={3}
+                rows={6}
                 required
                 style={{
                   width: '100%',
-                  padding: '0.45rem 0.6rem',
+                  minHeight: '130px',
+                  maxHeight: '280px',
+                  padding: '0.6rem 0.75rem',
                   backgroundColor: 'rgba(34, 197, 94, 0.05)',
                   border: '1px solid rgba(34, 197, 94, 0.3)',
                   borderRadius: '6px',
                   color: 'var(--text-color)',
-                  fontSize: '0.76rem',
+                  fontSize: '0.82rem',
+                  lineHeight: '1.45',
                   fontFamily: 'inherit',
-                  resize: 'vertical'
+                  resize: 'vertical',
+                  boxSizing: 'border-box'
                 }}
                 placeholder="Escribe aquí la redacción propuesta..."
               />

@@ -37,6 +37,7 @@ import LanguageSelector from '../common/LanguageSelector';
 import peerService from '../../services/peerService';
 import GestorCrisis from '../widgets/GestorCrisis';
 import TeleNoticiasCrisis from '../widgets/TeleNoticiasCrisis';
+import MensajeriaComite from '../messaging/MensajeriaComite';
 import { playBreakingNewsAlert, playEmergencyPulse } from '../../utils/audioAlerts';
 import { getFlagEmoji } from '../../utils/flags';
 
@@ -59,8 +60,6 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
   } = useP2P();
 
   const [activeTab, setActiveTab] = useState('CRISIS'); // 'CRISIS' | 'TV_PREVIEW' | 'DELEGADOS' | 'CHAIR' | 'AJUSTES'
-  const [destinatario, setDestinatario] = useState('TODOS');
-  const [mensajeTexto, setMensajeTexto] = useState('');
   
   // Ajustes de Backroom
   const [nuevaPassBackroom, setNuevaPassBackroom] = useState(backroomPassword || 'crisis123');
@@ -84,14 +83,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
     setTimeout(() => setFeedbackAjustes(null), 2500);
   };
 
-  const handleEnviarNota = (e) => {
-    e.preventDefault();
-    if (!mensajeTexto.trim()) return;
 
-    const destino = activeTab === 'CHAIR' ? 'CHAIR' : destinatario;
-    sendNote(destino, mensajeTexto.trim(), 'backroom');
-    setMensajeTexto('');
-  };
 
   const handleGuardarPassBackroom = (e) => {
     e.preventDefault();
@@ -543,139 +535,16 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
 
         {/* PESTAÑA: MENSAJERÍA / DELEGADOS / CHAIR */}
         {(activeTab === 'DELEGADOS' || activeTab === 'CHAIR') && (
-          <div style={{ maxWidth: '850px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Formulario de envío */}
-            <form onSubmit={handleEnviarNota} style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '16px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.85rem',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>
-                  {activeTab === 'CHAIR' ? 'Comunicación Confidencial con la Mesa' : 'Filtración o Nota Clasificada'}
-                </div>
-                {activeTab !== 'CHAIR' && (
-                  <select
-                    value={destinatario}
-                    onChange={e => setDestinatario(e.target.value)}
-                    style={{
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--subborder-color)',
-                      borderRadius: '8px',
-                      padding: '0.45rem 0.75rem',
-                      color: 'var(--text-color)',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="TODOS" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                      📢 Todas las Delegaciones
-                    </option>
-                    {paises.map(p => (
-                      <option 
-                        key={p.id || p.nombre} 
-                        value={p.nombre}
-                        style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
-                      >
-                        {getFlagEmoji(p.bandera, p.nombre)} {p.nombre}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                  Contenido
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder={activeTab === 'CHAIR' ? 'Escribe instrucciones secretas para la Mesa...' : 'Escribe información clasificada o filtración...'}
-                  value={mensajeTexto}
-                  onChange={e => setMensajeTexto(e.target.value)}
-                  style={{
-                    width: '100%',
-                    marginTop: '0.35rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
-                    padding: '0.65rem',
-                    color: 'var(--text-color)',
-                    fontSize: '0.85rem'
-                  }}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!mensajeTexto.trim()}
-                style={{
-                  backgroundColor: 'var(--btn-bg)',
-                  color: 'var(--btn-text)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.65rem',
-                  fontWeight: '800',
-                  fontSize: '0.85rem',
-                  cursor: mensajeTexto.trim() ? 'pointer' : 'not-allowed',
-                  opacity: mensajeTexto.trim() ? 1 : 0.5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.4rem'
-                }}
-              >
-                <Send size={14} /> Despachar
-              </button>
-            </form>
-
-            {/* Feed de notas */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              <div style={{ fontSize: '0.85rem', fontWeight: '800' }}>
-                Historial de Mensajes ({notasBackroom.length})
-              </div>
-
-              {notasBackroom.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-text)', fontSize: '0.82rem' }}>
-                  No hay mensajes registrados.
-                </div>
-              ) : (
-                notasBackroom.map(n => (
-                  <div
-                    key={n.id}
-                    style={{
-                      backgroundColor: 'var(--panel-color)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '10px',
-                      padding: '0.85rem 1rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.35rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                      <span style={{ fontWeight: '800', color: '#f97316' }}>
-                        {n.from} → {n.to}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
-                        {new Date(n.timestamp || Date.now()).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
-                      {n.text}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <MensajeriaComite
+            currentRole="backroom"
+            defaultType="crisis"
+            defaultDestination={activeTab === 'CHAIR' ? 'CHAIR' : 'TODOS'}
+            currentComiteId={roomId}
+            currentComiteNombre={nombreComite}
+            paises={paises}
+            layout="split"
+            showHeader={false}
+          />
         )}
       </main>
     </div>

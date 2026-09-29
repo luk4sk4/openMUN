@@ -43,6 +43,7 @@ import { useTranslation } from 'react-i18next';
 import CountryFlag from '../common/CountryFlag';
 import { useP2P } from '../../context/P2PContext';
 import { useSession } from '../../context/SessionContext';
+import MensajeriaComite from '../messaging/MensajeriaComite';
 
 const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
   const { t } = useTranslation();
@@ -64,7 +65,8 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
     kickPeer,
     speakingRequests,
     approveSpeakingRequest,
-    rejectSpeakingRequest
+    rejectSpeakingRequest,
+    unreadNotesCount = 0
   } = useP2P();
 
   const [copiado, setCopiado] = useState(false);
@@ -356,6 +358,39 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 backgroundColor: '#ef4444',
                 boxShadow: '0 0 8px #ef4444'
               }} />
+            )}
+          </button>
+
+          <button
+            onClick={() => setTabActiva('NOTAS')}
+            style={{
+              padding: '0.5rem 0.9rem',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: tabActiva === 'NOTAS' ? 'var(--btn-bg)' : 'transparent',
+              color: tabActiva === 'NOTAS' ? 'var(--btn-text)' : 'var(--muted-text)',
+              fontWeight: '700',
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              position: 'relative',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Mail size={15} /> Notas & Pajes
+            {unreadNotesCount > 0 && (
+              <span style={{
+                backgroundColor: tabActiva === 'NOTAS' ? '#ffffff' : '#ef4444',
+                color: tabActiva === 'NOTAS' ? '#3b82f6' : '#ffffff',
+                fontSize: '0.65rem',
+                fontWeight: '800',
+                padding: '0.1rem 0.45rem',
+                borderRadius: '100px'
+              }}>
+                {unreadNotesCount}
+              </span>
             )}
           </button>
         </div>
@@ -1678,6 +1713,18 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 </div>
               )}
             </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════ */}
+          {/* PESTAÑA 5: MENSAJERÍA DE SALA & NOTAS                   */}
+          {/* ═══════════════════════════════════════════════════════ */}
+          {tabActiva === 'NOTAS' && (
+            <MensajeriaComite
+              currentRole="chair"
+              currentComiteId={roomId}
+              layout="split"
+              showHeader={false}
+            />
           )}
         </div>
       </div>

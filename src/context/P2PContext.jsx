@@ -648,7 +648,9 @@ export const P2PProvider = ({ children }) => {
       let senderName = role;
       if (role === 'backroom') {
         senderName = 'Backroom';
-      } else if (role === 'secretariat' || role === 'chair') {
+      } else if (role === 'chair') {
+        senderName = 'Mesa de Presidencia';
+      } else if (role === 'secretariat') {
         senderName = 'Secretaría';
       } else if (role === 'staff') {
         senderName = 'Staff';

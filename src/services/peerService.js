@@ -953,7 +953,9 @@ class NetworkService {
     let fromName = senderMeta?.country || fromRole;
     if (fromRole === 'backroom') {
       fromName = 'Backroom';
-    } else if (fromRole === 'secretariat' || fromRole === 'chair') {
+    } else if (fromRole === 'chair') {
+      fromName = 'Mesa de Presidencia';
+    } else if (fromRole === 'secretariat') {
       fromName = 'Secretaría';
     } else if (fromRole === 'staff') {
       fromName = 'Staff';
@@ -1228,8 +1230,16 @@ class NetworkService {
   }
 
   sendNoteAsClient(to, text, type = 'general', customId = null) {
+    const finalId = customId || `note-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    if (this.isHost) {
+      this.routeNoteMessage(
+        { role: 'chair', country: null },
+        { payload: { id: finalId, to, text, type, timestamp: Date.now() } }
+      );
+      return true;
+    }
     return this.sendToServer(MSG_TYPES.SEND_NOTE, {
-      id: customId || `note-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: finalId,
       to,
       text,
       type,

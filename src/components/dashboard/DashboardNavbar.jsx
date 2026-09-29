@@ -25,6 +25,7 @@ const DashboardNavbar = ({
   speakingRequests,
   roomSettings,
   roomId,
+  unreadNotesCount = 0,
   // Props Session Dropdown
   sessionMenuOpen,
   setSessionMenuOpen,
@@ -35,6 +36,8 @@ const DashboardNavbar = ({
   fileInputRef,
   setIsExportModalOpen,
   setIsDriveModalOpen,
+  isCloudModalOpen,
+  setIsCloudModalOpen,
   conectarGoogleDrive,
   desconectarGoogleDrive,
   sincronizarDriveManual,
@@ -293,12 +296,34 @@ const DashboardNavbar = ({
               fontSize: '0.75rem',
               fontWeight: '600',
               cursor: 'pointer',
+              position: 'relative',
               transition: 'all 0.15s ease'
             }}
-            title={t('avisos.navTitle', 'Centro de Avisos & Comunicados Oficiales')}
+            title={t('avisos.navTitle', 'Centro de Mensajería & Avisos')}
           >
             <Megaphone size={12} color="#3b82f6" />
-            {!isExtraCompact && <span>{t('header.announcements', 'Avisos')}</span>}
+            {!isExtraCompact && <span>{t('header.announcements', 'Mensajería')}</span>}
+            {unreadNotesCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-3px',
+                right: '-3px',
+                backgroundColor: '#ef4444',
+                color: '#ffffff',
+                borderRadius: '100px',
+                fontSize: '0.62rem',
+                fontWeight: '800',
+                padding: '0 4px',
+                minWidth: '14px',
+                height: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 6px #ef4444'
+              }}>
+                {unreadNotesCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -314,6 +339,8 @@ const DashboardNavbar = ({
           fileInputRef={fileInputRef}
           setIsExportModalOpen={setIsExportModalOpen}
           setIsDriveModalOpen={setIsDriveModalOpen}
+          isCloudModalOpen={isCloudModalOpen}
+          setIsCloudModalOpen={setIsCloudModalOpen}
           conectarGoogleDrive={conectarGoogleDrive}
           desconectarGoogleDrive={desconectarGoogleDrive}
           sincronizarDriveManual={sincronizarDriveManual}

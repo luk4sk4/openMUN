@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { googleDriveService } from '../services/googleDriveService';
 import { conferenceService } from '../services/conferenceService';
+import {
+  registrarConferencia,
+  loginConferencia,
+  cerrarSesionConferencia,
+  guardarComite,
+  listarComites,
+  cargarComite,
+  eliminarComite,
+  obtenerCuentaActiva
+} from '../services/supabaseService';
 import { validateSessionJSON, normalizarDatosComite } from '../utils/sessionValidator';
 import { getFlagEmoji } from '../utils/flags';
 import { parsearResolucion, reconstruirTextoResolucion, aplicarEnmiendaAArticulos } from '../utils/resolutionUtils';
@@ -113,6 +123,16 @@ export const SessionProvider = ({ children }) => {
   const [driveRemoteModifiedTime, setDriveRemoteModifiedTime] = useState(null);
   const driveRemoteModifiedTimeRef = useRef(null);
   const isInitialSyncRef = useRef(false);
+
+  // Estados de Supabase Cloud
+  const [cloudAccount, setCloudAccount] = useState(() => obtenerCuentaActiva());
+  const [isCloudLinked, setIsCloudLinked] = useState(() => Boolean(obtenerCuentaActiva()));
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'error'
+  const [cloudComitesList, setCloudComitesList] = useState([]);
+  const [cloudLastSync, setCloudLastSync] = useState(null);
+  const [cloudActiveComiteName, setCloudActiveComiteName] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('openmun_cloud_active_comite') : '') || '';
+  });
 
   // Mantener referencias actualizadas para lectura en callbacks
   const stateRef = useRef({
@@ -1711,6 +1731,116 @@ export const SessionProvider = ({ children }) => {
     }
   };
 
+  // ─────────────────────────────────────────────────────────────
+  // MÉTODOS DE SUPABASE CLOUD (RESPALDOS DE CONFERENCIA)
+  // ─────────────────────────────────────────────────────────────
+  const conectarCloud = async (nombre, password, isRegister = false) => {
+    try {
+      setCloudSyncStatus('syncing');
+      const account = isRegister
+        ? await registrarConferencia(nombre, password)
+        : await loginConferencia(nombre, password);
+      setCloudAccount(account);
+      setIsCloudLinked(true);
+      setCloudSyncStatus('synced');
+      setCloudLastSync(new Date());
+
+      // Cargar comités de esta conferencia
+      try {
+        const list = await listarComites();
+        setCloudComitesList(list || []);
+      } catch {}
+
+      return { success: true, account };
+    } catch (err) {
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
+  const desconectarCloud = async () => {
+    await cerrarSesionConferencia();
+    setCloudAccount(null);
+    setIsCloudLinked(false);
+    setCloudSyncStatus('idle');
+    setCloudComitesList([]);
+    setCloudActiveComiteName('');
+    localStorage.removeItem('openmun_cloud_active_comite');
+  };
+
+  const listarComitesCloud = async () => {
+    try {
+      if (!isCloudLinked && !obtenerCuentaActiva()) return [];
+      const list = await listarComites();
+      setCloudComitesList(list || []);
+      return list || [];
+    } catch (err) {
+      console.warn('Error al listar comités de Supabase:', err);
+      return [];
+    }
+  };
+
+  const guardarComiteCloud = async (customName) => {
+    try {
+      setCloudSyncStatus('syncing');
+      const finalName = (customName || nombreComite || 'Comité Principal').trim();
+      const snapshot = generarSnapshotSesion();
+      const res = await guardarComite(finalName, snapshot);
+      setCloudActiveComiteName(finalName);
+      localStorage.setItem('openmun_cloud_active_comite', finalName);
+      setCloudSyncStatus('synced');
+      setCloudLastSync(new Date());
+
+      // Actualizar lista
+      await listarComitesCloud();
+      return { success: true, name: finalName, res };
+    } catch (err) {
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
+  const cargarComiteCloud = async (comiteId, comiteName) => {
+    try {
+      setCloudSyncStatus('syncing');
+      const data = await cargarComite(comiteId);
+      if (!data) throw new Error('No se encontraron datos para este comité.');
+      const ok = cargarSesionJSON(data);
+      if (ok) {
+        if (comiteName) {
+          setCloudActiveComiteName(comiteName);
+          localStorage.setItem('openmun_cloud_active_comite', comiteName);
+        }
+        setCloudSyncStatus('synced');
+        setCloudLastSync(new Date());
+        return true;
+      } else {
+        setCloudSyncStatus('error');
+        throw new Error('El archivo del comité no contiene una estructura válida de sesión para OpenMUN.');
+      }
+    } catch (err) {
+      setCloudSyncStatus('error');
+      throw err;
+    }
+  };
+
+  const eliminarComiteCloud = async (comiteId) => {
+    try {
+      await eliminarComite(comiteId);
+      await listarComitesCloud();
+      return true;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Cargar comités guardados al montar si ya está autenticado
+  useEffect(() => {
+    if (isCloudLinked) {
+      listarComitesCloud();
+    }
+  }, [isCloudLinked]);
+
   // 2. CARGAR sesion_activa.json
   const cargarSesionJSON = (rawSesionData, onConfigLoaded) => {
     try {
@@ -2033,7 +2163,20 @@ export const SessionProvider = ({ children }) => {
     cargarSesionDesdeDrive,
     guardarNuevaSesionEnDrive,
     vincularArchivoDrive,
-    eliminarSesionDrive
+    eliminarSesionDrive,
+    // Supabase Cloud
+    cloudAccount,
+    isCloudLinked,
+    cloudSyncStatus,
+    cloudComitesList,
+    cloudLastSync,
+    cloudActiveComiteName,
+    conectarCloud,
+    desconectarCloud,
+    listarComitesCloud,
+    guardarComiteCloud,
+    cargarComiteCloud,
+    eliminarComiteCloud
   }), [
     tipoSesion,
     cambiarTipoSesion,
@@ -2114,7 +2257,19 @@ export const SessionProvider = ({ children }) => {
     cargarSesionDesdeDrive,
     guardarNuevaSesionEnDrive,
     vincularArchivoDrive,
-    eliminarSesionDrive
+    eliminarSesionDrive,
+    cloudAccount,
+    isCloudLinked,
+    cloudSyncStatus,
+    cloudComitesList,
+    cloudLastSync,
+    cloudActiveComiteName,
+    conectarCloud,
+    desconectarCloud,
+    listarComitesCloud,
+    guardarComiteCloud,
+    cargarComiteCloud,
+    eliminarComiteCloud
   ]);
 
   return (

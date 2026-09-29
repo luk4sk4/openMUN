@@ -57,6 +57,8 @@ import AccessibilityModal from '../modals/AccessibilityModal';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import ConferenceBanner from '../common/ConferenceBanner';
+import MensajeriaComite from '../messaging/MensajeriaComite';
+import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
 
 import { parsearResolucion } from '../../utils/resolutionUtils';
 
@@ -320,14 +322,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     setTimeout(() => setSolicitudPuntoHecha(false), 5000);
   };
 
-  const handleEnviarNota = (e) => {
-    e.preventDefault();
-    if (!textoNota.trim()) return;
 
-    sendNote(destinatario, textoNota.trim(), tipoNota);
-    setTextoNota('');
-    setSubTabNotas('BUZON');
-  };
 
   const handleEmitirVoto = (opcion) => {
     castVote(opcion);
@@ -1591,218 +1586,18 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA: PAJES / NOTAS                                  */}
         {/* ═══════════════════════════════════════════════════════ */}
+        {/* PESTAÑA: MENSAJERÍA & NOTAS AL COMITÉ                   */}
+        {/* ═══════════════════════════════════════════════════════ */}
         {activeTab === 'NOTAS' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Subtabs de Notas */}
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={() => setSubTabNotas('BUZON')}
-                style={{
-                  flex: 1,
-                  padding: '0.5rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: subTabNotas === 'BUZON' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-                  color: subTabNotas === 'BUZON' ? 'var(--btn-text)' : 'var(--muted-text)',
-                  fontWeight: '700',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Buzón de Mensajes ({misNotas.length})
-              </button>
-
-              <button
-                onClick={() => setSubTabNotas('REDACTAR')}
-                style={{
-                  flex: 1,
-                  padding: '0.5rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: subTabNotas === 'REDACTAR' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-                  color: subTabNotas === 'REDACTAR' ? 'var(--btn-text)' : 'var(--muted-text)',
-                  fontWeight: '700',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer'
-                }}
-              >
-                + Redactar Nota
-              </button>
-            </div>
-
-            {subTabNotas === 'BUZON' ? (
-              misNotas.length === 0 ? (
-                <div style={{
-                  padding: '3rem 1.5rem',
-                  textAlign: 'center',
-                  backgroundColor: 'var(--panel-color)',
-                  borderRadius: '12px',
-                  border: '1px dashed var(--subborder-color)',
-                  color: 'var(--muted-text)'
-                }}>
-                  <Inbox size={32} style={{ opacity: 0.35, marginBottom: '0.5rem' }} />
-                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Buzón Vacío</div>
-                  <div style={{ fontSize: '0.75rem', marginTop: '3px' }}>
-                    No has recibido ni enviado notas todavía.
-                  </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                  {misNotas.map(n => {
-                    const isOutgoing = n.from?.toLowerCase() === clientCountry?.toLowerCase();
-                    return (
-                      <div
-                        key={n.id}
-                        style={{
-                          backgroundColor: isOutgoing ? 'rgba(59, 130, 246, 0.08)' : 'var(--panel-color)',
-                          border: `1px solid ${isOutgoing ? 'rgba(59, 130, 246, 0.25)' : 'var(--border-color)'}`,
-                          borderRadius: '10px',
-                          padding: '0.85rem 1rem',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.4rem'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: '800', color: isOutgoing ? '#60a5fa' : '#22c55e' }}>
-                            {isOutgoing ? `Para: ${n.to}` : `De: ${n.from}`}
-                          </span>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
-                            {new Date(n.timestamp || Date.now()).toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
-                          {n.text}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            ) : (
-              /* Formulario Redactar Nota */
-              <form onSubmit={handleEnviarNota} style={{
-                backgroundColor: 'var(--panel-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
-                padding: '1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.85rem'
-              }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Destinatario
-                  </label>
-                  <select
-                    value={destinatario}
-                    onChange={e => setDestinatario(e.target.value)}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--subborder-color)',
-                      borderRadius: '8px',
-                      padding: '0.65rem 0.8rem',
-                      color: 'var(--text-color)',
-                      fontWeight: '700',
-                      fontSize: '0.86rem',
-                      cursor: 'pointer',
-                      outline: 'none'
-                    }}
-                  >
-                    {settings.allowChairNotes !== false && (
-                      <option value="CHAIR" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        🏛️ Mesa Directiva (Chair)
-                      </option>
-                    )}
-                    {settings.allowDelegateNotes !== false && (
-                      <optgroup label="── Delegaciones ──" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)', fontWeight: 'bold' }}>
-                        {paisesDisponibles.filter(p => p.nombre?.toLowerCase() !== clientCountry?.toLowerCase()).map(p => (
-                          <option 
-                            key={p.id || p.nombre} 
-                            value={p.nombre}
-                            style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
-                          >
-                            {getFlagEmoji(p.bandera, p.nombre)} {p.nombre}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Tipo de Nota
-                  </label>
-                  <select
-                    value={tipoNota}
-                    onChange={e => setTipoNota(e.target.value)}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--subborder-color)',
-                      borderRadius: '8px',
-                      padding: '0.55rem',
-                      color: 'var(--text-color)',
-                      fontSize: '0.82rem'
-                    }}
-                  >
-                    <option value="general">General / Mensaje</option>
-                    <option value="urgente">Urgente</option>
-                    <option value="pregunta">Pregunta de Procedimiento</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Mensaje
-                  </label>
-                  <textarea
-                    rows={4}
-                    placeholder="Escribe el mensaje para el paje..."
-                    value={textoNota}
-                    onChange={e => setTextoNota(e.target.value)}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--subborder-color)',
-                      borderRadius: '8px',
-                      padding: '0.65rem',
-                      color: 'var(--text-color)',
-                      fontSize: '0.85rem',
-                      resize: 'vertical'
-                    }}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!textoNota.trim()}
-                  style={{
-                    backgroundColor: 'var(--btn-bg)',
-                    color: 'var(--btn-text)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.65rem',
-                    fontWeight: '800',
-                    fontSize: '0.85rem',
-                    cursor: textoNota.trim() ? 'pointer' : 'not-allowed',
-                    opacity: textoNota.trim() ? 1 : 0.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem'
-                  }}
-                >
-                  <Send size={15} /> Enviar Nota
-                </button>
-              </form>
-            )}
-          </div>
+          <MensajeriaComite
+            currentRole="delegate"
+            clientCountry={clientCountry}
+            paises={paisesDisponibles}
+            currentComiteId={roomId}
+            currentComiteNombre={state.comision || state.nombreComite || 'Comité'}
+            layout="split"
+            showHeader={false}
+          />
         )}
 
         {/* ── PESTAÑA DE ENMIENDAS Y RESOLUCIONES ── */}
@@ -3181,102 +2976,93 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         )}
 
         {/* ══════════════════════════════════════════════════════════════
-            PESTAÑA DEDICADA: AVISOS IMPORTANTES (SECRETARÍA & STAFF)
+            PESTAÑA DEDICADA: AVISOS IMPORTANTES (SALA & CONFERENCIA)
            ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'AVISOS' && (
-          <div style={{
-            backgroundColor: 'var(--panel-color)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '14px',
-            padding: '1.25rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Megaphone size={20} color="#f59e0b" />
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800' }}>
-                  {t('views.announcements.holderTitle', 'Avisos Importantes de Secretaría & Staff')} ({announcements.length})
-                </h3>
-              </div>
-            </div>
-
-            {announcements.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Si existen avisos de sala local P2P prioritarios emitidos por Chair/Staff, se muestran al frente */}
+            {announcements.length > 0 && (
               <div style={{
-                padding: '3rem 1.5rem',
-                textAlign: 'center',
-                color: 'var(--muted-text)',
-                border: '1px dashed var(--subborder-color)',
-                borderRadius: '12px',
+                backgroundColor: 'var(--panel-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '14px',
+                padding: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.75rem'
+                gap: '1rem',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
               }}>
-                <Megaphone size={36} style={{ opacity: 0.3 }} />
-                <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                  {t('views.announcements.noActive', 'Sin avisos importantes pendientes')}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Megaphone size={20} color="#f59e0b" />
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800' }}>
+                    {t('views.announcements.holderTitle', 'Avisos Inmediatos de Sala')} ({announcements.length})
+                  </h3>
                 </div>
-                <div style={{ fontSize: '0.78rem' }}>
-                  Cualquier comunicado oficial emitido por la Secretaría o el Staff aparecerá aquí en tiempo real.
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {announcements.map(ann => {
-                  const badge = getPriorityBadge(ann.priority);
-                  return (
-                    <div
-                      key={ann.id}
-                      style={{
-                        backgroundColor: 'var(--card-header-bg)',
-                        border: `1px solid ${badge.border}`,
-                        borderLeft: `4px solid ${badge.text}`,
-                        borderRadius: '12px',
-                        padding: '1.1rem 1.25rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.55rem'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{
-                            fontSize: '0.68rem',
-                            fontWeight: '800',
-                            backgroundColor: badge.bg,
-                            color: badge.text,
-                            padding: '0.15rem 0.5rem',
-                            borderRadius: '6px',
-                            letterSpacing: '0.04em'
-                          }}>
-                            {badge.label}
-                          </span>
-                          <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                            De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Staff'}</strong>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {announcements.map(ann => {
+                    const badge = getPriorityBadge(ann.priority);
+                    return (
+                      <div
+                        key={ann.id}
+                        style={{
+                          backgroundColor: 'var(--card-header-bg)',
+                          border: `1px solid ${badge.border}`,
+                          borderLeft: `4px solid ${badge.text}`,
+                          borderRadius: '12px',
+                          padding: '1.1rem 1.25rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.55rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              fontWeight: '800',
+                              backgroundColor: badge.bg,
+                              color: badge.text,
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '6px',
+                              letterSpacing: '0.04em'
+                            }}>
+                              {badge.label}
+                            </span>
+                            <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '600' }}>
+                              De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Staff'}</strong>
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
+                            {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
-                          {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
 
-                      <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-color)' }}>
-                        {ann.title}
-                      </div>
-
-                      {ann.text && (
-                        <div style={{ fontSize: '0.86rem', color: 'var(--muted-text)', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
-                          {ann.text}
+                        <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-color)' }}>
+                          {ann.title}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+
+                        {ann.text && (
+                          <div style={{ fontSize: '0.86rem', color: 'var(--muted-text)', lineHeight: '1.45', whiteSpace: 'pre-wrap' }}>
+                            {ann.text}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
+
+            {/* Canal Central de Avisos de la Conferencia */}
+            <MensajeriaConferencia
+              currentRole="delegate"
+              currentComiteId={roomId}
+              currentComiteNombre={state.comision || state.nombreComite || 'Comité'}
+              readOnly={true}
+              layout="split"
+              showHeader={true}
+            />
           </div>
         )}
       </main>

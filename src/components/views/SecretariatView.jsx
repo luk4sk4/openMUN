@@ -67,6 +67,8 @@ import MapaVotacion from '../widgets/MapaVotacion';
 import AnadirPaises from '../widgets/AnadirPaises';
 import PizarraMociones from '../widgets/PizarraMociones';
 import SelectorAleatorio from '../widgets/SelectorAleatorio';
+import MensajeriaComite from '../messaging/MensajeriaComite';
+import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
 
 const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
@@ -125,15 +127,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   }, [registerSessionHandlers, aplicarEstadoExterno, ejecutarAccion]);
 
   const [activeTab, setActiveTab] = useState('NOTAS'); // 'NOTAS' | 'AVISOS' | 'SOLICITUDES' | 'DEBATE' | 'VOTACION' | 'INFO' | 'CRISIS' | 'AJUSTES' | 'CONEXIONES'
-  const [subTabNotas, setSubTabNotas] = useState('CONFERENCIA_DB'); // 'CONFERENCIA_DB' | 'SECRETARIA' | 'DELEGACIONES'
+  const [subTabNotas, setSubTabNotas] = useState('COMITE'); // 'COMITE' | 'CONFERENCIA'
   const [subTabInfo, setSubTabInfo] = useState('MATRIZ'); // 'MATRIZ' | 'ANADIR' | 'HISTORICO' | 'AGENDA' | 'IMPORTAR' | 'MOCIONES' | 'RULETA'
   const [subTabVotacion, setSubTabVotacion] = useState('OFICIAL'); // 'OFICIAL' | 'MAPA'
   const [subTabDebate, setSubTabDebate] = useState('MONITOR'); // 'MONITOR' | 'ANADIR'
-  const [filtroTexto, setFiltroTexto] = useState('');
-  const [filtroSubTipo, setFiltroSubTipo] = useState('TODOS'); // 'TODOS' | 'DELEGADOS' | 'BACKROOM' | 'URGENTES'
-  const [notaMesaTexto, setNotaMesaTexto] = useState('');
-  const [notaMesaDestino, setNotaMesaDestino] = useState('TODOS');
-  const [tipoNota, setTipoNota] = useState('general');
 
   // Estados para Emisión de Avisos desde Secretaría
   const [tituloAvisoSec, setTituloAvisoSec] = useState('');
@@ -211,90 +208,6 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const caucusActivo = (sessionCaucusActivo && sessionCaucusActivo.activo !== undefined) ? sessionCaucusActivo : (state.caucusActivo || {});
   const oradorActual = caucusActivo.activo ? (oradoresCaucus[0]?.nombre || 'Sin orador') : (oradoresGSL[0]?.nombre || 'Sin orador');
   const paises = sessionPaises?.length > 0 ? sessionPaises : (state.paises || []);
-
-  // Clasificación de notas para Secretaría
-  const notasSecretaria = notes.filter(n => {
-    const toUpper = (n.to || '').toUpperCase();
-    const fromUpper = (n.from || '').toUpperCase();
-    const isToSec = toUpper === 'CHAIR' || toUpper === 'SECRETARIAT' || toUpper === 'SECRETARÍA' || toUpper === 'MESA' || toUpper === 'TODOS';
-    const isFromSec = n.fromRole === 'secretariat' || n.fromRole === 'chair' || fromUpper === 'SECRETARÍA' || fromUpper === 'CHAIR';
-    return isToSec || isFromSec;
-  });
-
-  const notasDelegaciones = notes.filter(n => {
-    const toUpper = (n.to || '').toUpperCase();
-    const fromUpper = (n.from || '').toUpperCase();
-    const isSec = toUpper === 'CHAIR' || toUpper === 'SECRETARIAT' || toUpper === 'SECRETARÍA' || toUpper === 'MESA' || toUpper === 'TODOS' || n.fromRole === 'secretariat' || n.fromRole === 'chair' || fromUpper === 'SECRETARÍA' || fromUpper === 'CHAIR';
-    const isBack = toUpper === 'BACKROOM' || n.fromRole === 'backroom' || fromUpper === 'BACKROOM' || n.type === 'crisis';
-    return !isSec && !isBack;
-  });
-
-  // Avisos de Conferencia para Secretaría General
-  const avisosDBFiltrados = avisosDB.filter(a => {
-    if (!correspondeAviso(a, { role: 'secretaria', currentComiteId, comites: comitesConf })) return false;
-    if (!filtroTexto) return true;
-    return a.mensaje?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-           a.emisor?.toLowerCase().includes(filtroTexto.toLowerCase());
-  });
-
-  // Filtrado de Notas según sub-pestaña activa y búsqueda/filtro
-  const notasMostradas = (subTabNotas === 'SECRETARIA' ? notasSecretaria : notasDelegaciones).filter(n => {
-    const coincideTexto = !filtroTexto || 
-      n.from?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-      n.to?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-      n.text?.toLowerCase().includes(filtroTexto.toLowerCase());
-
-    if (!coincideTexto) return false;
-
-    if (filtroSubTipo === 'URGENTES') return n.type === 'urgente';
-    if (subTabNotas === 'SECRETARIA') {
-      if (filtroSubTipo === 'DELEGADOS') return n.fromRole === 'delegate' || (n.fromRole !== 'backroom' && n.fromRole !== 'chair' && n.fromRole !== 'secretariat');
-      if (filtroSubTipo === 'BACKROOM') return n.fromRole === 'backroom' || n.from?.toUpperCase() === 'BACKROOM' || n.to?.toUpperCase() === 'BACKROOM';
-    }
-    return true;
-  });
-
-  const handleEnviarNotaSecretaria = async (e) => {
-    e.preventDefault();
-    if (!notaMesaTexto.trim()) return;
-
-    // Detectar si el destinatario seleccionado corresponde a la Conferencia Central
-    const esDestinoConferencia =
-      notaMesaDestino === 'GLOBAL' ||
-      notaMesaDestino === 'CHAIRS_ALL' ||
-      notaMesaDestino === 'STAFF_ALL' ||
-      (notaMesaDestino.startsWith('CHAIR_') && notaMesaDestino !== 'CHAIR_LOCAL') ||
-      notaMesaDestino.startsWith('STAFF_COMITE_') ||
-      (comitesConf || []).some(c => String(c.id) === String(notaMesaDestino));
-
-    if (esDestinoConferencia && confActiva?.id) {
-      try {
-        const targetComiteId = notaMesaDestino === 'GLOBAL' ? '' : notaMesaDestino;
-        await conferenceService.crearAviso(confActiva.id, {
-          comite_id: targetComiteId,
-          emisor: 'Secretaría General',
-          tipo: tipoNota === 'urgente' ? 'urgente' : 'info',
-          mensaje: notaMesaTexto.trim()
-        });
-        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'secretaria');
-        if (res?.avisos) setAvisosDB(res.avisos);
-      } catch (err) {
-        console.error('Error al emitir aviso de secretaría a la conferencia:', err);
-      }
-      // Si la sala local coincide con el comité de destino o es global, enviar también nota local para inmediatez P2P
-      if (typeof sendNote === 'function') {
-        const esParaEstaMesa = notaMesaDestino === 'GLOBAL' || notaMesaDestino === 'CHAIRS_ALL' ||
-          (currentComiteId && (notaMesaDestino === `CHAIR_${currentComiteId}` || notaMesaDestino === currentComiteId));
-        if (esParaEstaMesa) {
-          try { sendNote('CHAIR', notaMesaTexto.trim(), tipoNota); } catch (e) {}
-        }
-      }
-    } else {
-      const targetLocal = notaMesaDestino === 'CHAIR_LOCAL' ? 'CHAIR' : notaMesaDestino;
-      sendNote(targetLocal, notaMesaTexto.trim(), tipoNota);
-    }
-    setNotaMesaTexto('');
-  };
 
   const handleExportarNotasCSV = () => {
     let csv = 'ID,Fecha,De,Rol,Para,Tipo,Mensaje\n';
@@ -1027,619 +940,113 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA 1: BANDEJA DE NOTAS / PAJES                     */}
         {/* ═══════════════════════════════════════════════════════ */}
+        {/* PESTAÑA 1: MENSAJERÍA Y NOTAS (COMITÉ Y CONFERENCIA)     */}
+        {/* ═══════════════════════════════════════════════════════ */}
         {activeTab === 'NOTAS' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
-            {/* Columna Izquierda: Pestañas de Mensajes, Feed de Notas y Filtros */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Selector de Sub-Pestañas: Conferencia vs Secretaría vs Delegaciones */}
-              <div style={{
-                backgroundColor: 'var(--panel-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '14px',
-                padding: '0.5rem',
-                display: 'grid',
-                gridTemplateColumns: '1.2fr 1fr 1fr',
-                gap: '0.5rem',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-              }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+            {/* Sub-pestañas: Comité vs Conferencia */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: 'var(--panel-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              padding: '0.45rem 0.75rem',
+              flexWrap: 'wrap',
+              gap: '0.6rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
-                  onClick={() => {
-                    setSubTabNotas('CONFERENCIA_DB');
-                    setFiltroSubTipo('TODOS');
-                  }}
+                  type="button"
+                  onClick={() => setSubTabNotas('COMITE')}
                   style={{
-                    backgroundColor: subTabNotas === 'CONFERENCIA_DB' ? '#3b82f6' : 'transparent',
-                    color: subTabNotas === 'CONFERENCIA_DB' ? '#ffffff' : 'var(--muted-text)',
+                    backgroundColor: subTabNotas === 'COMITE' ? 'var(--btn-bg)' : 'transparent',
+                    color: subTabNotas === 'COMITE' ? 'var(--btn-text)' : 'var(--muted-text)',
                     border: 'none',
-                    borderRadius: '10px',
-                    padding: '0.75rem 0.6rem',
-                    fontSize: '0.82rem',
+                    borderRadius: '8px',
+                    padding: '0.5rem 0.95rem',
+                    fontSize: '0.84rem',
                     fontWeight: '800',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem',
+                    gap: '0.45rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <MessageSquare size={15} />
+                  <span>Notas del Comité</span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    padding: '0.1rem 0.45rem',
+                    borderRadius: '10px',
+                    backgroundColor: subTabNotas === 'COMITE' ? 'rgba(255,255,255,0.22)' : 'var(--card-header-bg)',
+                    color: subTabNotas === 'COMITE' ? '#ffffff' : 'var(--text-color)',
+                    fontWeight: '800'
+                  }}>
+                    {notes.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSubTabNotas('CONFERENCIA')}
+                  style={{
+                    backgroundColor: subTabNotas === 'CONFERENCIA' ? '#3b82f6' : 'transparent',
+                    color: subTabNotas === 'CONFERENCIA' ? '#ffffff' : 'var(--muted-text)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.5rem 0.95rem',
+                    fontSize: '0.84rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
                     transition: 'all 0.15s ease'
                   }}
                 >
                   <Globe size={15} />
-                  <span>Avisos Conferencia</span>
-                  <span style={{
-                    fontSize: '0.72rem',
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '20px',
-                    backgroundColor: subTabNotas === 'CONFERENCIA_DB' ? 'rgba(255, 255, 255, 0.25)' : 'var(--card-header-bg)',
-                    color: subTabNotas === 'CONFERENCIA_DB' ? '#ffffff' : 'var(--text-color)',
-                    fontWeight: '800'
-                  }}>
-                    {avisosDBFiltrados.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSubTabNotas('SECRETARIA');
-                    setFiltroSubTipo('TODOS');
-                  }}
-                  style={{
-                    backgroundColor: subTabNotas === 'SECRETARIA' ? 'var(--btn-bg)' : 'transparent',
-                    color: subTabNotas === 'SECRETARIA' ? 'var(--btn-text)' : 'var(--muted-text)',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '0.75rem 0.6rem',
-                    fontSize: '0.82rem',
-                    fontWeight: '800',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Building2 size={15} />
-                  <span>Notas a Secretaría (WS)</span>
-                  <span style={{
-                    fontSize: '0.72rem',
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '20px',
-                    backgroundColor: subTabNotas === 'SECRETARIA' ? 'rgba(255, 255, 255, 0.2)' : 'var(--card-header-bg)',
-                    color: subTabNotas === 'SECRETARIA' ? '#ffffff' : 'var(--text-color)',
-                    fontWeight: '800'
-                  }}>
-                    {notasSecretaria.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSubTabNotas('DELEGACIONES');
-                    setFiltroSubTipo('TODOS');
-                  }}
-                  style={{
-                    backgroundColor: subTabNotas === 'DELEGACIONES' ? 'var(--btn-bg)' : 'transparent',
-                    color: subTabNotas === 'DELEGACIONES' ? 'var(--btn-text)' : 'var(--muted-text)',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '0.75rem 0.6rem',
-                    fontSize: '0.82rem',
-                    fontWeight: '800',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Users size={15} />
-                  <span>Delegaciones (WS)</span>
-                  <span style={{
-                    fontSize: '0.72rem',
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '20px',
-                    backgroundColor: subTabNotas === 'DELEGACIONES' ? 'rgba(255, 255, 255, 0.2)' : 'var(--card-header-bg)',
-                    color: subTabNotas === 'DELEGACIONES' ? '#ffffff' : 'var(--text-color)',
-                    fontWeight: '800'
-                  }}>
-                    {notasDelegaciones.length}
-                  </span>
+                  <span>Avisos de Conferencia</span>
+                  {avisosDB.length > 0 && (
+                    <span style={{
+                      fontSize: '0.72rem',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '10px',
+                      backgroundColor: subTabNotas === 'CONFERENCIA' ? 'rgba(255,255,255,0.25)' : 'rgba(59, 130, 246, 0.15)',
+                      color: subTabNotas === 'CONFERENCIA' ? '#ffffff' : '#60a5fa',
+                      fontWeight: '800'
+                    }}>
+                      {avisosDB.length}
+                    </span>
+                  )}
                 </button>
               </div>
-
-              {/* Barra de Filtros y Búsqueda */}
-              <div style={{
-                backgroundColor: 'var(--panel-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
-                padding: '0.85rem 1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '1rem',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: '200px' }}>
-                  <Search size={16} style={{ color: 'var(--muted-text)' }} />
-                  <input
-                    type="text"
-                    placeholder={subTabNotas === 'CONFERENCIA_DB' ? "Buscar en avisos de base de datos..." : subTabNotas === 'SECRETARIA' ? "Buscar en notas a secretaría..." : "Buscar entre delegaciones..."}
-                    value={filtroTexto}
-                    onChange={e => setFiltroTexto(e.target.value)}
-                    style={{
-                      backgroundColor: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-color)',
-                      fontSize: '0.85rem',
-                      outline: 'none',
-                      width: '100%'
-                    }}
-                  />
-                  {filtroTexto && (
-                    <button
-                      onClick={() => setFiltroTexto('')}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer' }}
-                      aria-label={t('common.clearSearch', 'Limpiar búsqueda')}
-                      title={t('common.clearSearch', 'Limpiar búsqueda')}
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-
-                {subTabNotas !== 'CONFERENCIA_DB' && (
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
-                    {(subTabNotas === 'SECRETARIA' ? ['TODOS', 'DELEGADOS', 'BACKROOM', 'URGENTES'] : ['TODOS', 'URGENTES']).map(tipo => (
-                      <button
-                        key={tipo}
-                        onClick={() => setFiltroSubTipo(tipo)}
-                        style={{
-                          backgroundColor: filtroSubTipo === tipo ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-                          color: filtroSubTipo === tipo ? 'var(--btn-text)' : 'var(--muted-text)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '6px',
-                          padding: '0.35rem 0.7rem',
-                          fontSize: '0.74rem',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        {tipo === 'DELEGADOS' ? 'Delegaciones' : tipo === 'BACKROOM' ? 'Backroom / Crisis' : tipo === 'URGENTES' ? '⚡ Urgentes' : 'Todos'}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Lista de Avisos BD o Notas WebSockets */}
-              {subTabNotas === 'CONFERENCIA_DB' ? (
-                avisosDBFiltrados.length === 0 ? (
-                  <div style={{
-                    padding: '4rem 1.5rem',
-                    textAlign: 'center',
-                    backgroundColor: 'var(--panel-color)',
-                    borderRadius: '14px',
-                    border: '1px dashed var(--border-color)',
-                    color: 'var(--muted-text)'
-                  }}>
-                    <Globe size={38} style={{ opacity: 0.35, marginBottom: '0.6rem' }} />
-                    <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>No hay avisos de conferencia en base de datos</div>
-                    <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-                      Los comunicados oficiales y avisos de staff persistidos en base de datos aparecerán aquí.
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {avisosDBFiltrados.map((av) => (
-                      <div
-                        key={av.id}
-                        style={{
-                          backgroundColor: 'var(--panel-color)',
-                          border: '1px solid var(--border-color)',
-                          borderLeft: `4px solid ${av.tipo === 'urgente' ? '#ef4444' : av.tipo === 'alerta' ? '#f59e0b' : '#3b82f6'}`,
-                          borderRadius: '12px',
-                          padding: '1rem 1.25rem',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.55rem',
-                          boxShadow: '0 4px 14px rgba(0,0,0,0.12)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{
-                              fontSize: '0.68rem',
-                              fontWeight: '800',
-                              backgroundColor: 'rgba(59, 130, 246, 0.18)',
-                              color: '#3b82f6',
-                              border: '1px solid rgba(59, 130, 246, 0.35)',
-                              padding: '0.12rem 0.45rem',
-                              borderRadius: '4px'
-                            }}>
-                              Conferencia
-                            </span>
-
-                            <span style={{
-                              fontSize: '0.68rem',
-                              fontWeight: '800',
-                              backgroundColor: av.tipo === 'urgente' ? '#ef4444' : (av.tipo === 'alerta' ? '#f59e0b' : '#3b82f6'),
-                              color: '#ffffff',
-                              padding: '0.12rem 0.45rem',
-                              borderRadius: '4px',
-                              textTransform: 'uppercase'
-                            }}>
-                              {av.emisor}
-                            </span>
-
-                            <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                              Destino: <strong style={{ color: 'var(--text-color)' }}>
-                                {obtenerEtiquetaDestino(av.comite_id, comitesConf).label}
-                              </strong>
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-                              {av.creado_en || ''}
-                            </span>
-                            <button
-                              onClick={() => {
-                                conferenceService.desactivarAviso(av.id);
-                                setAvisosDB(prev => prev.filter(a => a.id !== av.id));
-                              }}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#ef4444',
-                                fontSize: '0.72rem',
-                                fontWeight: '700',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Descartar
-                            </button>
-                          </div>
-                        </div>
-
-                        <div style={{ fontSize: '0.88rem', color: 'var(--text-color)', lineHeight: '1.4' }}>
-                          {formatearMensajeAviso(av.mensaje, null, comitesConf)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              ) : notasMostradas.length === 0 ? (
-                <div style={{
-                  padding: '4rem 1.5rem',
-                  textAlign: 'center',
-                  backgroundColor: 'var(--panel-color)',
-                  borderRadius: '14px',
-                  border: '1px dashed var(--border-color)',
-                  color: 'var(--muted-text)'
-                }}>
-                  {subTabNotas === 'SECRETARIA' ? (
-                    <>
-                      <Building2 size={38} style={{ opacity: 0.35, marginBottom: '0.6rem' }} />
-                      <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>No hay mensajes para la Secretaría</div>
-                      <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-                        Las dudas de procedimiento, notas a la Mesa y avisos oficiales aparecerán aquí en vivo.
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Users size={38} style={{ opacity: 0.35, marginBottom: '0.6rem' }} />
-                      <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>No hay mensajes entre delegaciones</div>
-                      <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-                        La mensajería y notas diplomáticas intercambiadas entre países se registrarán aquí en tiempo real.
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {notasMostradas.map(nota => {
-                    const isFromSec = nota.fromRole === 'secretariat' || nota.fromRole === 'chair' || nota.from === 'Secretaría';
-                    const isFromBck = nota.fromRole === 'backroom' || nota.from === 'Backroom';
-                    const isToSec = nota.to === 'CHAIR' || nota.to === 'SECRETARIAT' || nota.to === 'MESA' || nota.to === 'TODOS';
-
-                    return (
-                      <div
-                        key={nota.id}
-                        style={{
-                          backgroundColor: 'var(--panel-color)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '12px',
-                          padding: '1rem 1.25rem',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.55rem',
-                          boxShadow: '0 4px 14px rgba(0,0,0,0.12)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {/* Remitente */}
-                            <span style={{
-                              fontWeight: '800',
-                              fontSize: '0.92rem',
-                              color: isFromBck ? '#f97316' : isFromSec ? '#a855f7' : '#60a5fa',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              {isFromBck ? '🚨 Backroom' : isFromSec ? '🏛️ Secretaría' : nota.from}
-                            </span>
-
-                            <span style={{ color: 'var(--muted-text)', fontSize: '0.8rem' }}>➔</span>
-
-                            {/* Destinatario */}
-                            <span style={{
-                              fontWeight: '800',
-                              fontSize: '0.92rem',
-                              color: isToSec ? '#a855f7' : '#22c55e',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              {nota.to === 'TODOS' ? '📢 Toda la Sala' : nota.to === 'CHAIR' ? '🏛️ Mesa / Secretaría' : nota.to === 'BACKROOM' ? '🚨 Backroom' : nota.to}
-                            </span>
-
-                            {/* Badge de tipo */}
-                            <span style={{
-                              fontSize: '0.68rem',
-                              fontWeight: '700',
-                              padding: '0.1rem 0.45rem',
-                              borderRadius: '4px',
-                              backgroundColor: nota.type === 'urgente' ? 'rgba(239, 68, 68, 0.15)' : nota.type === 'backroom' || nota.type === 'crisis' ? 'rgba(249, 115, 22, 0.15)' : 'var(--card-header-bg)',
-                              color: nota.type === 'urgente' ? '#ef4444' : nota.type === 'backroom' || nota.type === 'crisis' ? '#f97316' : 'var(--muted-text)',
-                              border: `1px solid ${nota.type === 'urgente' ? 'rgba(239, 68, 68, 0.3)' : nota.type === 'backroom' || nota.type === 'crisis' ? 'rgba(249, 115, 22, 0.3)' : 'var(--border-color)'}`
-                            }}>
-                              {nota.type?.toUpperCase() || 'GENERAL'}
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-                              {new Date(nota.timestamp || Date.now()).toLocaleTimeString()}
-                            </span>
-                            {/* Botón rápido para responder */}
-                            {nota.from && !isFromSec && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setNotaMesaDestino(isFromBck ? 'BACKROOM' : nota.from);
-                                  const textEl = document.getElementById('secretariat-note-input');
-                                  if (textEl) textEl.focus();
-                                }}
-                                style={{
-                                  background: 'rgba(59, 130, 246, 0.12)',
-                                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                                  borderRadius: '5px',
-                                  color: '#60a5fa',
-                                  fontSize: '0.7rem',
-                                  fontWeight: '700',
-                                  padding: '0.15rem 0.45rem',
-                                  cursor: 'pointer'
-                                }}
-                                title={`Responder a ${nota.from}`}
-                              >
-                                Responder
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{
-                          fontSize: '0.88rem',
-                          lineHeight: '1.45',
-                          backgroundColor: 'var(--card-header-bg)',
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: '8px',
-                          border: '1px solid var(--border-color)',
-                          wordBreak: 'break-word'
-                        }}>
-                          {nota.text}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
-            {/* Columna Derecha: Redactar Nota Oficial */}
-            <div style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-              position: 'sticky',
-              top: '80px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                <Send size={16} color="#60a5fa" /> Enviar Nota Oficial
-              </div>
-
-              <form onSubmit={handleEnviarNotaSecretaria} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Destinatario
-                  </label>
-                  <select
-                    value={notaMesaDestino}
-                    onChange={e => setNotaMesaDestino(e.target.value)}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      padding: '0.65rem 0.8rem',
-                      color: 'var(--text-color)',
-                      fontWeight: '700',
-                      fontSize: '0.86rem',
-                      cursor: 'pointer',
-                      outline: 'none'
-                    }}
-                  >
-                    <optgroup label="── 🌐 Conferencia Central (Canales Generales) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#3b82f6', fontWeight: 'bold' }}>
-                      <option value="GLOBAL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        📢 Toda la Conferencia (Aviso Global)
-                      </option>
-                      <option value="CHAIRS_ALL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        🏛️ Todas las Mesas Directivas
-                      </option>
-                      <option value="STAFF_ALL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        👥 Todo el Personal de Staff
-                      </option>
-                    </optgroup>
-                    {comitesConf && comitesConf.length > 0 && (
-                      <optgroup label="── 🏛️ Mesas Directivas por Sala (Chairs) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#10b981', fontWeight: 'bold' }}>
-                        {comitesConf.map(c => (
-                          <option
-                            key={`SEC_CHAIR_${c.id}`}
-                            value={`CHAIR_${c.id}`}
-                            style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
-                          >
-                            🏛️ Mesa de {c.nombre || c.id}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {comitesConf && comitesConf.length > 0 && (
-                      <optgroup label="── 👥 Staff Asignado por Sala ──" style={{ backgroundColor: 'var(--panel-color)', color: '#f59e0b', fontWeight: 'bold' }}>
-                        {comitesConf.map(c => (
-                          <option
-                            key={`SEC_STAFF_${c.id}`}
-                            value={`STAFF_COMITE_${c.id}`}
-                            style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
-                          >
-                            👥 Staff de {c.nombre || c.id}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {comitesConf && comitesConf.length > 0 && (
-                      <optgroup label="── 🌐 Comités Completos (Sala + Delegaciones) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#3b82f6', fontWeight: 'bold' }}>
-                        {comitesConf.map(c => (
-                          <option
-                            key={`SEC_ALL_${c.id}`}
-                            value={c.id}
-                            style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
-                          >
-                            🌐 Sala Completa de {c.nombre || c.id}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    <optgroup label="── ⚡ Sala Local (WebSockets P2P) ──" style={{ backgroundColor: 'var(--panel-color)', color: '#ec4899', fontWeight: 'bold' }}>
-                      <option value="TODOS" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        📢 Toda la Sala Local (General)
-                      </option>
-                      <option value="CHAIR_LOCAL" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        🏛️ Mesa Directiva Local de esta Sala
-                      </option>
-                      <option value="BACKROOM" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
-                        🚨 Consola de Crisis (Backroom)
-                      </option>
-                    </optgroup>
-                    <optgroup label="── Delegaciones de Sala Local ──" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)', fontWeight: 'bold' }}>
-                      {paises.map(p => (
-                        <option 
-                          key={p.id || p.nombre} 
-                          value={p.nombre}
-                          style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}
-                        >
-                          {getFlagEmoji(p.bandera, p.nombre)} {p.nombre}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Tipo de Nota
-                  </label>
-                  <select
-                    value={tipoNota}
-                    onChange={e => setTipoNota(e.target.value)}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      padding: '0.55rem',
-                      color: 'var(--text-color)',
-                      fontSize: '0.82rem'
-                    }}
-                  >
-                    <option value="general">Mensaje Oficial</option>
-                    <option value="urgente">Urgente / Procedimental</option>
-                    <option value="paje">Instrucción de Paje</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Mensaje
-                  </label>
-                  <textarea
-                    id="secretariat-note-input"
-                    rows={4}
-                    placeholder="Escribe el comunicado o mensaje..."
-                    value={notaMesaTexto}
-                    onChange={e => setNotaMesaTexto(e.target.value)}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      padding: '0.65rem',
-                      color: 'var(--text-color)',
-                      fontSize: '0.85rem',
-                      resize: 'vertical'
-                    }}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!notaMesaTexto.trim()}
-                  style={{
-                    backgroundColor: 'var(--btn-bg)',
-                    color: 'var(--btn-text)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.65rem',
-                    fontWeight: '800',
-                    fontSize: '0.85rem',
-                    cursor: notaMesaTexto.trim() ? 'pointer' : 'not-allowed',
-                    opacity: notaMesaTexto.trim() ? 1 : 0.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.45rem',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                  }}
-                >
-                  <Send size={15} /> Despachar Nota
-                </button>
-              </form>
-            </div>
+            {subTabNotas === 'COMITE' ? (
+              <MensajeriaComite
+                currentRole="secretariat"
+                currentComiteId={currentComiteId}
+                currentComiteNombre={nombreComite}
+                paises={paises}
+                layout="split"
+                showHeader={false}
+              />
+            ) : (
+              <MensajeriaConferencia
+                currentRole="secretaria"
+                currentComiteId={currentComiteId}
+                currentComiteNombre={nombreComite}
+                comites={comitesConf}
+                layout="split"
+                showHeader={false}
+              />
+            )}
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PESTAÑA 2: SOLICITUDES DE ORADORES Y PUNTOS             */}
         {/* ═══════════════════════════════════════════════════════ */}
         {activeTab === 'SOLICITUDES' && (() => {
           const puntosParlamentarios = speakingRequests.filter(r => r.speechType === 'POINT');

@@ -6,6 +6,7 @@ import { lazyWithRetry } from '../utils/lazyWithRetry';
 const AccessibilityModal = lazyWithRetry(() => import('../components/modals/AccessibilityModal'), 'AccessibilityModal');
 const LiveSessionModal = lazyWithRetry(() => import('../components/modals/LiveSessionModal'), 'LiveSessionModal');
 const DriveSessionsModal = lazyWithRetry(() => import('../components/modals/DriveSessionsModal'), 'DriveSessionsModal');
+const CloudSessionsModal = lazyWithRetry(() => import('../components/modals/CloudSessionsModal'), 'CloudSessionsModal');
 const ExportSessionModal = lazyWithRetry(() => import('../components/modals/ExportSessionModal'), 'ExportSessionModal');
 const CommandPaletteModal = lazyWithRetry(() => import('../components/modals/CommandPaletteModal'), 'CommandPaletteModal');
 const QuickAddCountryModal = lazyWithRetry(() => import('../components/modals/QuickAddCountryModal'), 'QuickAddCountryModal');
@@ -49,6 +50,7 @@ const Dashboard = () => {
   const [showLibreBanner, setShowLibreBanner] = useState(true);
   const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
   const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuickCountryOpen, setIsQuickCountryOpen] = useState(false);
@@ -235,6 +237,10 @@ const Dashboard = () => {
           isOpen={isDriveModalOpen}
           onClose={() => setIsDriveModalOpen(false)}
         />
+        <CloudSessionsModal
+          isOpen={isCloudModalOpen}
+          onClose={() => setIsCloudModalOpen(false)}
+        />
         <ExportSessionModal
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
@@ -310,6 +316,7 @@ const Dashboard = () => {
             speakingRequests={p2p.speakingRequests}
             roomSettings={p2p.roomSettings}
             roomId={p2p.roomId}
+            unreadNotesCount={p2p.unreadNotesCount}
             sessionMenuOpen={sessionMenuOpen}
             setSessionMenuOpen={setSessionMenuOpen}
             isDriveLinked={session.isDriveLinked}
@@ -319,6 +326,8 @@ const Dashboard = () => {
             fileInputRef={fileInputRef}
             setIsExportModalOpen={setIsExportModalOpen}
             setIsDriveModalOpen={setIsDriveModalOpen}
+            isCloudModalOpen={isCloudModalOpen}
+            setIsCloudModalOpen={setIsCloudModalOpen}
             conectarGoogleDrive={session.conectarGoogleDrive}
             desconectarGoogleDrive={session.desconectarGoogleDrive}
             sincronizarDriveManual={session.sincronizarDriveManual}

@@ -1,0 +1,5 @@
+# AI Crawler Policy for OpenMUN
+# OpenMUN is open-source educational software licensed under GNU AGPLv3.
+User-agent: *
+Allow: /
+Crawl-delay: 1

@@ -1,0 +1,23 @@
+# OpenMUN
+
+> OpenMUN is a free, open-source, serverless web application for Model United Nations (MUN) simulations and academic debate committees.
+
+OpenMUN enables Chairs, Secretariats, and Delegates to moderate committee debates in real time without paper or backend servers. It runs entirely in the browser using client-side state, WebRTC/WebSocket synchronization, and optional Google Drive cloud backup.
+
+## Key Capabilities
+- General Speakers List (GSL): Order management, speaker countdowns, yields, and real-time speaking queues.
+- Dynamic Debate Timers: Moderated and unmoderated caucus timers with visual and audio chime alerts.
+- Roll Call & Quorum: Attendance matrix tracking Present and Present & Voting delegations with automatic simple and 2/3 majority calculations.
+- Motions & Amendments: Formal caucus motions, amendment proposal mailboxes, and substantive/procedural voting boards with veto tracking.
+- Multi-Role Live Sync: Peer-to-peer and WebSocket synchronization between Chair consoles, Secretariat oversight, and Delegate live projection screens.
+- Privacy & Offline-First: 0 tracking cookies, 100% local storage persistence, AGPLv3 licensed.
+
+## Core URLs
+- [Application Home](https://openmun.app/)
+- [Chair Console](https://openmun.app/?mode=chair)
+- [Secretariat Monitor](https://openmun.app/?mode=secretariat)
+- [Delegate Live Screen](https://openmun.app/?mode=delegate)
+- [Join Session](https://openmun.app/?mode=join)
+- [Privacy Policy](https://openmun.app/privacy)
+- [Terms & Conditions](https://openmun.app/terms)
+- [GitHub Repository](https://github.com/luk4sk4/OPENMUN)

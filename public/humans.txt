@@ -1,0 +1,13 @@
+/* TEAM */
+Project: OpenMUN
+Creator & Maintainer: Lucas P. (luk4sk4)
+Repository: https://github.com/luk4sk4/OPENMUN
+Contact: contact@openmun.app
+Location: Spain / Global
+
+/* SITE */
+Standards: HTML5, CSS3, ESNext
+Components: React 19, Vite, Lucide Icons, Socket.IO, i18next
+Hosting: Cloudflare Pages / Workers
+License: GNU Affero General Public License v3.0 (AGPLv3)
+Philosophy: 100% Free & Open Source, 0 Tracking Cookies, Privacy-First

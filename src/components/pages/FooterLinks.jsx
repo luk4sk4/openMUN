@@ -3,8 +3,12 @@ import React from 'react';
 const FooterLinks = ({ navigateTo, accentColor, textPrimary }) => (
   <>
     <div style={{ display: 'flex', gap: '0.5rem' }}>
-      <button
-        onClick={() => navigateTo('/privacy')}
+      <a
+        href="/privacy"
+        onClick={(e) => {
+          e.preventDefault();
+          navigateTo('/privacy');
+        }}
         style={{
           background: 'none',
           border: 'none',
@@ -17,10 +21,14 @@ const FooterLinks = ({ navigateTo, accentColor, textPrimary }) => (
         }}
       >
         {/* i18n key placeholder */}Privacy Policy
-      </button>
+      </a>
       <span>•</span>
-      <button
-        onClick={() => navigateTo('/terms')}
+      <a
+        href="/terms"
+        onClick={(e) => {
+          e.preventDefault();
+          navigateTo('/terms');
+        }}
         style={{
           background: 'none',
           border: 'none',
@@ -33,7 +41,7 @@ const FooterLinks = ({ navigateTo, accentColor, textPrimary }) => (
         }}
       >
         {/* i18n key placeholder */}Terms &amp; Conditions
-      </button>
+      </a>
       <span>•</span>
       <span style={{ color: '#10b981', fontWeight: '700', fontSize: '0.8rem' }}>
         🍪 0 Cookies / 100% LocalStorage

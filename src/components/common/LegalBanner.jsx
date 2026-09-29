@@ -196,8 +196,12 @@ export default function LegalBanner({ isLight = false }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={handleOpenPrivacy}
+            <a
+              href="/privacy"
+              onClick={(e) => {
+                e.preventDefault();
+                handleOpenPrivacy();
+              }}
               onMouseEnter={() => setHoveredBtn('privacy')}
               onMouseLeave={() => setHoveredBtn(null)}
               style={{
@@ -212,15 +216,20 @@ export default function LegalBanner({ isLight = false }) {
                 fontSize: '0.8rem',
                 fontWeight: '600',
                 cursor: 'pointer',
+                textDecoration: 'none',
                 transition: 'all 0.2s ease'
               }}
             >
               <ShieldCheck size={14} style={{ color: '#10b981' }} />
               <span>{t('legalBanner.privacyLink', 'Política de Privacidad')}</span>
-            </button>
+            </a>
 
-            <button
-              onClick={handleOpenTerms}
+            <a
+              href="/terms"
+              onClick={(e) => {
+                e.preventDefault();
+                handleOpenTerms();
+              }}
               onMouseEnter={() => setHoveredBtn('terms')}
               onMouseLeave={() => setHoveredBtn(null)}
               style={{
@@ -235,12 +244,13 @@ export default function LegalBanner({ isLight = false }) {
                 fontSize: '0.8rem',
                 fontWeight: '600',
                 cursor: 'pointer',
+                textDecoration: 'none',
                 transition: 'all 0.2s ease'
               }}
             >
               <FileText size={14} style={{ color: '#3b82f6' }} />
               <span>{t('legalBanner.termsLink', 'Términos y Condiciones')}</span>
-            </button>
+            </a>
           </div>
 
           <button

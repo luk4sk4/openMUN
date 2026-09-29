@@ -11,7 +11,7 @@ import {
   eliminarComite,
   obtenerCuentaActiva
 } from '../services/supabaseService';
-import { validateSessionJSON, normalizarDatosComite } from '../utils/sessionValidator';
+import { validateSessionJSON, normalizarDatosComite, SESSION_STORAGE_KEYS } from '../utils/sessionValidator';
 import { getFlagEmoji } from '../utils/flags';
 import { parsearResolucion, reconstruirTextoResolucion, aplicarEnmiendaAArticulos } from '../utils/resolutionUtils';
 
@@ -1307,9 +1307,51 @@ export const SessionProvider = ({ children }) => {
       }
     };
 
+    const handleSessionCleared = () => {
+      setPaisesState(PAISES_INICIALES);
+      setOradoresColaState([]);
+      setOradoresCaucusState([]);
+      setRegistroIntervencionesState([]);
+      setMocionesState([]);
+      setHistoricoMocionesState([]);
+      setCaucusActivoState({
+        activo: false,
+        proponente: '',
+        posicionProponente: 'Primero',
+        tipo: 'Caucus Moderado',
+        varianteConsulta: '',
+        tema: '',
+        tiempoTotal: 600,
+        tiempoOrador: 45
+      });
+      setVotacionSesionState({
+        asunto: 'Proyecto de Resolución / Moción',
+        tipoVotacion: 'procedural',
+        tipoMayoria: 'simple',
+        aplicarVeto: true,
+        votos: {}
+      });
+      setAgendaSesionState({
+        establecida: false,
+        temaActual: '',
+        temasPropuestos: []
+      });
+      setNombreComiteState('');
+      setEnmiendasSesionState({
+        tituloProyecto: 'Proyecto de Resolución A/RES/79/1',
+        textoResolucion: '',
+        articulos: [],
+        enmiendas: []
+      });
+      setTipoSesionState('formal');
+      setRelojGSLState({ segundosRestantes: 60, tiempoInicial: 60, corriendo: false });
+      setYieldEvento(null);
+    };
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('openmun_session_sync_external', handleExternalSync);
     window.addEventListener('openmun_execute_action_external', handleExternalAction);
+    window.addEventListener('openmun_session_cleared', handleSessionCleared);
 
     return () => {
       if (broadcastChannelRef.current) {
@@ -1319,6 +1361,7 @@ export const SessionProvider = ({ children }) => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('openmun_session_sync_external', handleExternalSync);
       window.removeEventListener('openmun_execute_action_external', handleExternalAction);
+      window.removeEventListener('openmun_session_cleared', handleSessionCleared);
     };
   }, [ejecutarAccion, aplicarEstadoExterno, tabInstanceId]);
 
@@ -2042,29 +2085,7 @@ export const SessionProvider = ({ children }) => {
     setRelojGSLState({ segundosRestantes: 60, tiempoInicial: 60, corriendo: false });
     setYieldEvento(null);
 
-    const keysToRemove = [
-      'openmun_tipo_sesion',
-      'openmun_paises',
-      'openmun_oradores',
-      'openmun_oradores_caucus',
-      'openmun_intervenciones',
-      'openmun_mociones',
-      'openmun_historico_mociones',
-      'openmun_caucus',
-      'openmun_votacion',
-      'openmun_agenda',
-      'openmun_comite',
-      'openmun_enmiendas',
-      'sesion_activa.json',
-      'openmun_crisis_eventos',
-      'openmun_crisis_reloj',
-      'openmun_cronometros',
-      'openmun_oradores_historial',
-      'openmun_cronometro_enmiendas',
-      'openmun_mesa_activa',
-      'openmun_current_comite_id',
-      'openmun_current_conf_id'
-    ];
+    const keysToRemove = SESSION_STORAGE_KEYS;
     keysToRemove.forEach(k => {
       try {
         localStorage.removeItem(k);

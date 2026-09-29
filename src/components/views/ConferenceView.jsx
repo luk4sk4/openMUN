@@ -53,7 +53,7 @@ import {
   obtenerEtiquetaDestino,
   obtenerOpcionesDestino
 } from '../../utils/announcementHelpers';
-import { normalizarDatosComite } from '../../utils/sessionValidator';
+import { normalizarDatosComite, SESSION_STORAGE_KEYS } from '../../utils/sessionValidator';
 import EstablecerAgenda from '../widgets/EstablecerAgenda';
 import ImportarPaises from '../widgets/ImportarPaises';
 import MatrizPaises from '../widgets/MatrizPaises';
@@ -1477,10 +1477,23 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         } catch (e) {}
       }
 
+      const prevComiteId = localStorage.getItem('openmun_current_comite_id') || localStorage.getItem('openmun_last_room_id');
+      if (prevComiteId && prevComiteId !== comite.id) {
+        SESSION_STORAGE_KEYS.forEach(k => {
+          // No borrar el PIN que acabamos de guardar
+          if (k !== `openmun_comite_pin_${comite.id}`) {
+            try { localStorage.removeItem(k); } catch (e) {}
+          }
+        });
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('openmun_session_cleared'));
+      }
+
       localStorage.setItem('openmun_current_comite_id', comite.id);
       localStorage.setItem('openmun_current_conf_id', conferencia.id);
       localStorage.setItem('openmun_mesa_activa', 'true');
       localStorage.setItem('openmun_user_role', 'chair');
+      localStorage.setItem('openmun_last_room_id', comite.id);
 
       // Cargar JSON aislado del comité
       let datosComite = comite.datos_json;
@@ -1548,6 +1561,15 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
   // Entrar directamente como Staff a un comité específico
   const handleEntrarComoStaff = (comite) => {
+    const prevComiteId = localStorage.getItem('openmun_current_comite_id') || localStorage.getItem('openmun_last_room_id');
+    if (prevComiteId && prevComiteId !== comite.id) {
+      SESSION_STORAGE_KEYS.forEach(k => {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('openmun_session_cleared'));
+    }
+
     localStorage.setItem('openmun_current_comite_id', comite.id);
     localStorage.setItem('openmun_current_conf_id', conferencia.id);
     localStorage.setItem('openmun_user_role', 'staff');

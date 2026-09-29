@@ -66,8 +66,12 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
     speakingRequests,
     approveSpeakingRequest,
     rejectSpeakingRequest,
+    enmiendasPropuestas = [],
+    eliminarEnmiendaPropuesta,
     unreadNotesCount = 0
   } = useP2P();
+  const { agregarEnmiendaResolucion } = useSession();
+  const totalSolicitudes = (speakingRequests?.length || 0) + (enmiendasPropuestas?.length || 0);
 
   const [copiado, setCopiado] = useState(false);
   const [mostrarPassSecreto, setMostrarPassSecreto] = useState(false);
@@ -349,8 +353,8 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               transition: 'all 0.15s ease'
             }}
           >
-            <MessageSquare size={15} /> {t('liveSession.requests', 'Solicitudes')} ({speakingRequests.length})
-            {speakingRequests.length > 0 && (
+            <MessageSquare size={15} /> {t('liveSession.requests', 'Solicitudes')} ({totalSolicitudes})
+            {totalSolicitudes > 0 && (
               <span style={{
                 width: '8px',
                 height: '8px',
@@ -1081,7 +1085,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 </div>
               </div>
 
-              {/* Sección 2: Solicitudes de Caucus Moderado */}
+              {/* Sección 2: Solicitudes de Debate */}
               <div style={{
                 backgroundColor: 'var(--card-header-bg)',
                 border: '1px solid var(--subborder-color)',
@@ -1093,10 +1097,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                    <Clock size={18} color="#a855f7" /> {t('liveSession.caucusRequestMode', 'Modo de Solicitudes a Caucus Moderado')}
+                    <Clock size={18} color="#a855f7" /> {t('liveSession.caucusRequestMode', 'Modo de Solicitudes a Debate')}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                    {t('liveSession.caucusRequestModeDesc', 'Control de incorporación de delegados a la lista de oradores durante un debate moderado.')}
+                    {t('liveSession.caucusRequestModeDesc', 'Control de incorporación de delegados a la lista de oradores durante un debate.')}
                   </div>
                 </div>
 
@@ -1609,7 +1613,127 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
           {/* PESTAÑA 4: COLA DE SOLICITUDES DE ORADORES               */}
           {/* ═══════════════════════════════════════════════════════ */}
           {tabActiva === 'SOLICITUDES' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* Sección de Propuestas de Enmienda */}
+              {enmiendasPropuestas.length > 0 && (
+                <div style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                  border: '1.5px solid rgba(59, 130, 246, 0.4)',
+                  borderRadius: '14px',
+                  padding: '1.25rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                    <FileText size={18} color="#60a5fa" />
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#60a5fa' }}>
+                      Propuestas de Enmienda ({enmiendasPropuestas.length})
+                    </h4>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {enmiendasPropuestas.map(prop => (
+                      <div
+                        key={prop.id}
+                        style={{
+                          backgroundColor: 'var(--card-header-bg)',
+                          border: '1px solid var(--subborder-color)',
+                          borderRadius: '10px',
+                          padding: '0.85rem 1rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <CountryFlag nombre={prop.paisProponente} size="sm" />
+                            <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>{prop.paisProponente}</span>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              fontWeight: '800',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '4px',
+                              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                              color: '#60a5fa'
+                            }}>
+                              {prop.tipoEnmienda?.toUpperCase() || 'ENMIENDA'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <button
+                              onClick={() => {
+                                if (agregarEnmiendaResolucion) {
+                                  agregarEnmiendaResolucion({
+                                    articuloId: prop.articuloId,
+                                    tipo: prop.tipoEnmienda,
+                                    proponente: prop.paisProponente,
+                                    textoOriginal: prop.textoOriginal || '',
+                                    textoPropuesto: prop.textoPropuesto || '',
+                                    justificacion: prop.justificacion || ''
+                                  });
+                                }
+                                if (eliminarEnmiendaPropuesta) {
+                                  eliminarEnmiendaPropuesta(prop.id);
+                                }
+                              }}
+                              style={{
+                                backgroundColor: '#22c55e',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '0.35rem 0.75rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                              }}
+                            >
+                              <Check size={13} /> Incorporar
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (eliminarEnmiendaPropuesta) {
+                                  eliminarEnmiendaPropuesta(prop.id);
+                                }
+                              }}
+                              style={{
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--subborder-color)',
+                                color: 'var(--muted-text)',
+                                borderRadius: '6px',
+                                padding: '0.35rem 0.65rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Descartar
+                            </button>
+                          </div>
+                        </div>
+
+                        {prop.textoPropuesto && (
+                          <div style={{ fontSize: '0.8rem', color: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.08)', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
+                            <strong>Propuesto:</strong> {prop.textoPropuesto}
+                          </div>
+                        )}
+                        {prop.justificacion && (
+                          <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontStyle: 'italic' }}>
+                            {prop.justificacion}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{ fontSize: '0.85rem', fontWeight: '700' }}>
                 {t('liveSession.pendingRequestsTitle', 'Solicitudes de Turno y Mociones Pendientes')} ({speakingRequests.length})
               </div>
@@ -1657,7 +1781,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                             backgroundColor: req.speechType === 'GSL' ? 'rgba(59, 130, 246, 0.2)' : (req.speechType === 'CAUCUS' ? 'rgba(168, 85, 247, 0.2)' : (req.speechType === 'POINT' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.2)')),
                             color: req.speechType === 'GSL' ? '#60a5fa' : (req.speechType === 'CAUCUS' ? '#c084fc' : (req.speechType === 'POINT' ? '#facc15' : '#facc15'))
                           }}>
-                            {req.speechType === 'GSL' ? 'Lista GSL' : (req.speechType === 'CAUCUS' ? 'Caucus' : (req.speechType === 'POINT' ? 'Punto Parlamentario' : 'Moción'))}
+                            {req.speechType === 'GSL' ? 'Lista GSL' : (req.speechType === 'CAUCUS' ? 'Debate' : (req.speechType === 'POINT' ? 'Punto Parlamentario (POI)' : (req.details?.tipo === 'Caucus Moderado' ? 'Debate' : (req.details?.tipo || 'Moción'))))}
                           </span>
                           <span style={{ fontWeight: '800', fontSize: '0.95rem' }}>
                             {req.country}

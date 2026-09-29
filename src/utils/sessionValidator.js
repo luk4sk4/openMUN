@@ -5,6 +5,36 @@
  * para prevenir errores de ejecución, inyecciones XSS y roturas de estado.
  */
 
+export const SESSION_STORAGE_KEYS = [
+  'openmun_tipo_sesion',
+  'openmun_paises',
+  'openmun_oradores',
+  'openmun_oradores_caucus',
+  'openmun_intervenciones',
+  'openmun_mociones',
+  'openmun_historico_mociones',
+  'openmun_caucus',
+  'openmun_votacion',
+  'openmun_agenda',
+  'openmun_comite',
+  'openmun_enmiendas',
+  'sesion_activa.json',
+  'openmun_crisis_eventos',
+  'openmun_crisis_reloj',
+  'openmun_cronometros',
+  'openmun_oradores_historial',
+  'openmun_cronometro_enmiendas',
+  'openmun_mesa_activa',
+  'openmun_notes',
+  'openmun_announcements',
+  'openmun_enmiendas_propuestas',
+  'openmun_room_settings',
+  'openmun_last_country',
+  'openmun_current_comite_id',
+  'openmun_current_comite_nombre',
+  'openmun_current_conf_id'
+];
+
 export const ALLOWED_STORAGE_KEYS = new Set([
   'openmun_paises',
   'openmun_oradores',

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Radio, 
   Send, 
@@ -130,9 +130,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const [tiempoOradorMocion, setTiempoOradorMocion] = useState(45);
   const [solicitudMocionHecha, setSolicitudMocionHecha] = useState(false);
 
-  // Estados para Puntos Parlamentarios
+  // Estados para Puntos Parlamentarios & POI
   const [pedirPuntoOpen, setPedirPuntoOpen] = useState(false);
-  const [tipoPunto, setTipoPunto] = useState('Punto de Privilegio Personal');
+  const [tipoPunto, setTipoPunto] = useState('Punto de Información (POI)');
   const [motivoPunto, setMotivoPunto] = useState('');
   const [solicitudPuntoHecha, setSolicitudPuntoHecha] = useState(false);
 
@@ -155,6 +155,16 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const [justificacionDel, setJustificacionDel] = useState('');
   const [enmiendaEnviadaFeedback, setEnmiendaEnviadaFeedback] = useState(false);
   const [misEnmiendasEnviadas, setMisEnmiendasEnviadas] = useState([]);
+
+  // Si cambia el roomId de la sesión, limpiar estados y selecciones locales del delegado
+  useEffect(() => {
+    setMiVotoEmitido(null);
+    setSolicitudGSLHecha(false);
+    setSolicitudCaucusHecha(false);
+    setSolicitudMocionHecha(false);
+    setSolicitudPuntoHecha(false);
+    setMisEnmiendasEnviadas([]);
+  }, [roomId]);
 
   // Estado sincronizado desde el Chair
   const state = remoteSessionState || {};
@@ -1045,30 +1055,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             transition: 'all 0.15s ease'
           }}
         >
-          <Mic size={14} /> {t('views.delegate.debateTab', 'Sala de Debate')}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('NOTAS')}
-          style={{
-            flex: 1,
-            padding: '0.5rem',
-            borderRadius: '6px',
-            border: 'none',
-            backgroundColor: activeTab === 'NOTAS' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'NOTAS' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.4rem',
-            position: 'relative',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <MessageSquare size={14} /> {t('views.delegate.notesTab', 'Notas')} ({misNotas.length})
+          <Mic size={14} /> Debate en Vivo
         </button>
 
         <button
@@ -1091,6 +1078,29 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           }}
         >
           <FileText size={14} /> Enmiendas
+        </button>
+
+        <button
+          onClick={() => setActiveTab('NOTAS')}
+          style={{
+            flex: 1,
+            padding: '0.5rem',
+            borderRadius: '6px',
+            border: 'none',
+            backgroundColor: activeTab === 'NOTAS' ? 'var(--btn-bg)' : 'transparent',
+            color: activeTab === 'NOTAS' ? 'var(--btn-text)' : 'var(--muted-text)',
+            fontWeight: '700',
+            fontSize: '0.82rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.4rem',
+            position: 'relative',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <MessageSquare size={14} /> Mensajes ({misNotas.length})
         </button>
 
         <button
@@ -1419,7 +1429,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 )}
               </div>
 
-              {/* Botón / Estado Caucus Moderado */}
+              {/* Botón / Estado Debate */}
               <div style={{
                 backgroundColor: 'var(--panel-color)',
                 border: '1px solid var(--border-color)',
@@ -1432,7 +1442,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <Clock size={16} color="#a855f7" /> Caucus Moderado
+                    <Clock size={16} color="#a855f7" /> Debate
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '3px' }}>
                     {settings.caucusRequestMode === 'direct'
@@ -1458,7 +1468,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     justifyContent: 'center',
                     gap: '0.35rem'
                   }}>
-                    <CheckCircle size={14} /> ¡En lista de Caucus!
+                    <CheckCircle size={14} /> ¡En lista de Debate!
                   </div>
                 ) : (
                   <button
@@ -1486,7 +1496,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     {settings.caucusRequestMode === 'disabled' ? (
                       <><Lock size={14} /> Cerrado</>
                     ) : (
-                      solicitudCaucusHecha ? <><Check size={14} /> Solicitud Enviada</> : <><Mic size={14} /> Pedir Turno Caucus</>
+                      solicitudCaucusHecha ? <><Check size={14} /> Solicitud Enviada</> : <><Mic size={14} /> Pedir Turno de Debate</>
                     )}
                   </button>
                 )}
@@ -1512,7 +1522,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '4px', lineHeight: '1.4' }}>
                     {settings.allowMotions
-                      ? 'Propón Caucus Moderado, No Moderado, Consulta o Tour de Table.'
+                      ? 'Propón Debate, Caucus No Moderado, Consulta o Tour de Table.'
                       : 'Mociones deshabilitadas por la Mesa.'}
                   </div>
                 </div>
@@ -1539,7 +1549,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 </button>
               </div>
 
-              {/* Card B: Puntos Parlamentarios */}
+              {/* Card B: Puntos Parlamentarios & POI */}
               <div style={{
                 backgroundColor: 'var(--panel-color)',
                 border: '1px solid var(--border-color)',
@@ -1552,10 +1562,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#eab308' }}>
-                    <HelpCircle size={16} /> Punto Parlamentario
+                    <HelpCircle size={16} /> Puntos & POI
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '4px', lineHeight: '1.4' }}>
-                    Privilegio personal, Orden, Duda de procedimiento o Información a la Mesa.
+                    Punto de Información (POI), Privilegio personal, Orden o Duda de procedimiento.
                   </div>
                 </div>
 
@@ -1576,7 +1586,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     gap: '0.35rem'
                   }}
                 >
-                  <Sparkles size={14} /> Levantar Punto
+                  <Sparkles size={14} /> Levantar Punto / POI
                 </button>
               </div>
             </div>
@@ -3123,7 +3133,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     fontWeight: '700'
                   }}
                 >
-                  <option value="Caucus Moderado">Caucus Moderado</option>
+                  <option value="Caucus Moderado">Debate</option>
                   <option value="Caucus No Moderado">Caucus No Moderado</option>
                   <option value="Consulta General">Consulta General</option>
                   <option value="Tour de Table">Tour de Table</option>
@@ -3280,7 +3290,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', fontSize: '1.1rem', color: '#eab308' }}>
-                <HelpCircle size={18} /> Levantar Punto Parlamentario
+                <HelpCircle size={18} /> Levantar Punto Parlamentario / POI
               </div>
               <button
                 onClick={() => setPedirPuntoOpen(false)}
@@ -3292,7 +3302,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
             <form onSubmit={handleEnviarPunto} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Tipo de Punto</label>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Tipo de Punto o POI</label>
                 <select
                   value={tipoPunto}
                   onChange={e => setTipoPunto(e.target.value)}
@@ -3307,19 +3317,20 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     fontWeight: '700'
                   }}
                 >
-                  <option value="Punto de Privilegio Personal">Punto de Privilegio Personal (Sonido, visibilidad, malestar)</option>
-                  <option value="Punto de Orden">Punto de Orden (Violación de reglamento)</option>
-                  <option value="Punto de Duda Parlamentaria">Punto de Duda Parlamentaria (Cuestión de procedimiento)</option>
+                  <option value="Punto de Información (POI)">Punto de Información (POI) - Pregunta al orador en curso</option>
                   <option value="Punto de Información a la Mesa">Punto de Información a la Mesa Directiva</option>
+                  <option value="Punto de Privilegio Personal">Punto de Privilegio Personal (Sonido, visibilidad, malestar)</option>
+                  <option value="Punto de Orden">Punto de Orden (Violación del reglamento)</option>
+                  <option value="Punto de Duda Parlamentaria">Punto de Duda Parlamentaria (Cuestión de procedimiento)</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Motivo / Explicación a la Mesa</label>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Motivo / Pregunta / Explicación a la Mesa</label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="Explica brevemente a la presidencia el motivo del punto..."
+                  placeholder="Detalla tu pregunta (POI) o el motivo de tu punto a la Mesa Directiva..."
                   value={motivoPunto}
                   onChange={e => setMotivoPunto(e.target.value)}
                   style={{
@@ -3350,7 +3361,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   boxShadow: '0 4px 14px rgba(234, 179, 8, 0.3)'
                 }}
               >
-                Transmitir Punto a la Presidencia
+                Transmitir Punto / POI a la Presidencia
               </button>
             </form>
           </div>

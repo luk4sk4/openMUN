@@ -9,14 +9,17 @@ export const getSupabaseUrl = () => {
   return DEFAULT_SUPABASE_URL;
 };
 
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_5mjhzXAUOefuSmi8sfHheg_vvaaIlJ_';
+
 export const getSupabaseAnonKey = () => {
   if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) {
     return import.meta.env.VITE_SUPABASE_ANON_KEY;
   }
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('openmun_supabase_anon_key') || '';
+    const saved = localStorage.getItem('openmun_supabase_anon_key');
+    if (saved) return saved;
   }
-  return '';
+  return DEFAULT_SUPABASE_ANON_KEY;
 };
 
 export const setSupabaseAnonKey = (key) => {

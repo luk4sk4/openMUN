@@ -3,7 +3,6 @@ import {
   FolderArchive,
   RefreshCw,
   ChevronDown,
-  ChevronUp,
   Upload,
   Download,
   Trash2,
@@ -46,21 +45,14 @@ const SessionMenuDropdown = ({
     cloudSyncStatus,
     cloudComitesList,
     cloudActiveComiteName,
-    conectarCloud,
     desconectarCloud,
     guardarComiteCloud,
     nombreComite
   } = useSession();
 
-  // Estados del desplegable de conexión a la nube
-  const [cloudDropdownOpen, setCloudDropdownOpen] = useState(false);
-  const [cloudAuthMode, setCloudAuthMode] = useState('login'); // 'login' | 'register'
-  const [cloudNameInput, setCloudNameInput] = useState('');
-  const [cloudPasswordInput, setCloudPasswordInput] = useState('');
-  const [cloudLoading, setCloudLoading] = useState(false);
-  const [cloudError, setCloudError] = useState('');
   const [quickSaveOpen, setQuickSaveOpen] = useState(false);
   const [quickSaveName, setQuickSaveName] = useState('');
+  const [cloudLoading, setCloudLoading] = useState(false);
 
   // Cerrar al hacer clic fuera del menú
   useEffect(() => {
@@ -377,7 +369,10 @@ const SessionMenuDropdown = ({
           {!isCloudLinked ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <button
-                onClick={() => setCloudDropdownOpen(!cloudDropdownOpen)}
+                onClick={() => {
+                  setSessionMenuOpen(false);
+                  if (setIsCloudModalOpen) setIsCloudModalOpen(true);
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -401,182 +396,12 @@ const SessionMenuDropdown = ({
                       Guardar en la nube (Supabase)
                     </span>
                     <span style={{ fontSize: '0.66rem', opacity: 0.85 }}>
-                      Vincular o registrar conferencia
+                      Abrir gestor para vincular o guardar comités
                     </span>
                   </div>
                 </div>
-                {cloudDropdownOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                <FolderOpen size={15} />
               </button>
-
-              {/* Desplegable en línea con formulario de nombre y contraseña hasheada */}
-              {cloudDropdownOpen && (
-                <div style={{
-                  padding: '0.65rem',
-                  borderRadius: '7px',
-                  backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(62, 207, 142, 0.25)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem'
-                }}>
-                  {/* Selector rápido Login / Registro */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '2px',
-                    backgroundColor: isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
-                    borderRadius: '5px',
-                    padding: '2px'
-                  }}>
-                    <button
-                      type="button"
-                      onClick={() => { setCloudAuthMode('login'); setCloudError(''); }}
-                      style={{
-                        padding: '3px 6px',
-                        border: 'none',
-                        borderRadius: '4px',
-                        backgroundColor: cloudAuthMode === 'login' ? '#3ecf8e' : 'transparent',
-                        color: cloudAuthMode === 'login' ? '#000' : 'var(--muted-text)',
-                        fontSize: '0.68rem',
-                        fontWeight: '700',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Iniciar Sesión
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setCloudAuthMode('register'); setCloudError(''); }}
-                      style={{
-                        padding: '3px 6px',
-                        border: 'none',
-                        borderRadius: '4px',
-                        backgroundColor: cloudAuthMode === 'register' ? '#3ecf8e' : 'transparent',
-                        color: cloudAuthMode === 'register' ? '#000' : 'var(--muted-text)',
-                        fontSize: '0.68rem',
-                        fontWeight: '700',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Nueva Cuenta
-                    </button>
-                  </div>
-
-                  {cloudError && (
-                    <div style={{
-                      fontSize: '0.68rem',
-                      color: '#ef4444',
-                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                      padding: '4px 6px',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(239, 68, 68, 0.25)'
-                    }}>
-                      {cloudError}
-                    </div>
-                  )}
-
-                  <input
-                    type="text"
-                    value={cloudNameInput}
-                    onChange={(e) => setCloudNameInput(e.target.value)}
-                    placeholder="Nombre de la conferencia"
-                    style={{
-                      width: '100%',
-                      padding: '5px 8px',
-                      borderRadius: '5px',
-                      border: '1px solid var(--subborder-color)',
-                      backgroundColor: 'var(--input-bg, rgba(255,255,255,0.06))',
-                      color: 'var(--text-color)',
-                      fontSize: '0.74rem',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-
-                  <input
-                    type="password"
-                    value={cloudPasswordInput}
-                    onChange={(e) => setCloudPasswordInput(e.target.value)}
-                    placeholder="Contraseña"
-                    style={{
-                      width: '100%',
-                      padding: '5px 8px',
-                      borderRadius: '5px',
-                      border: '1px solid var(--subborder-color)',
-                      backgroundColor: 'var(--input-bg, rgba(255,255,255,0.06))',
-                      color: 'var(--text-color)',
-                      fontSize: '0.74rem',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-
-                  <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
-                    <button
-                      type="button"
-                      disabled={cloudLoading}
-                      onClick={async () => {
-                        if (!cloudNameInput.trim() || !cloudPasswordInput) {
-                          setCloudError('Ingresa nombre y contraseña');
-                          return;
-                        }
-                        setCloudLoading(true);
-                        setCloudError('');
-                        try {
-                          await conectarCloud(cloudNameInput.trim(), cloudPasswordInput, cloudAuthMode === 'register');
-                          setCloudPasswordInput('');
-                          setCloudDropdownOpen(false);
-                          if (addToast) addToast(`Conferencia "${cloudNameInput.trim()}" vinculada`, 'success');
-                          if (setIsCloudModalOpen) {
-                            setSessionMenuOpen(false);
-                            setIsCloudModalOpen(true);
-                          }
-                        } catch (err) {
-                          setCloudError(err.message || 'Error al conectar');
-                        } finally {
-                          setCloudLoading(false);
-                        }
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        borderRadius: '5px',
-                        backgroundColor: '#3ecf8e',
-                        color: '#000000',
-                        border: 'none',
-                        fontWeight: '700',
-                        fontSize: '0.74rem',
-                        cursor: cloudLoading ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.35rem'
-                      }}
-                    >
-                      {cloudLoading && <RefreshCw size={12} className="spin-animation" />}
-                      <span>{cloudAuthMode === 'login' ? 'Conectar' : 'Crear y Conectar'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSessionMenuOpen(false);
-                        if (setIsCloudModalOpen) setIsCloudModalOpen(true);
-                      }}
-                      title="Abrir gestor completo"
-                      style={{
-                        padding: '6px 8px',
-                        borderRadius: '5px',
-                        backgroundColor: 'transparent',
-                        color: 'var(--muted-text)',
-                        border: '1px solid var(--subborder-color)',
-                        fontSize: '0.72rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Gestor ↗
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             /* Vista cuando la conferencia ya está vinculada */

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import peerService, { MSG_TYPES, generateRoomCode, DEFAULT_ROOM_SETTINGS } from '../services/peerService';
 import { applyStateDelta } from '../utils/deltaSync';
+import { SESSION_STORAGE_KEYS } from '../utils/sessionValidator';
 
 const P2PContext = createContext();
 
@@ -208,6 +209,13 @@ export const P2PProvider = ({ children }) => {
 
       if (event === 'session_action') {
         const { action, payload } = data;
+        if (action === 'eliminar_propuesta_enmienda' && payload?.id) {
+          setEnmiendasPropuestas(prev => {
+            const next = prev.filter(p => p.id !== payload.id);
+            peerService.broadcastAmendments(next);
+            return next;
+          });
+        }
         if (sessionActionHandlersRef.current.onSessionAction) {
           sessionActionHandlersRef.current.onSessionAction(action, payload);
         }
@@ -315,7 +323,11 @@ export const P2PProvider = ({ children }) => {
 
       // Recepción de Propuesta de Enmienda desde Delegado en Host
       if (event === 'amendment_proposed_by_delegate') {
-        setEnmiendasPropuestas(prev => [data, ...prev]);
+        setEnmiendasPropuestas(prev => {
+          const next = [data, ...prev.filter(a => a.id !== data.id)];
+          peerService.broadcastAmendments(next);
+          return next;
+        });
         addNotification(`Nueva propuesta de enmienda de ${data.paisProponente}`, 'info');
       }
 
@@ -345,9 +357,10 @@ export const P2PProvider = ({ children }) => {
       if (event === 'message_received_by_host') {
         const { senderMeta, message } = data;
         if (message.type === MSG_TYPES.REQUEST_SPEAKING) {
+          const targetCountry = message.payload?.details?.country || senderMeta?.country || message.senderMeta?.country || 'Delegación';
           const req = {
             id: `req-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-            country: senderMeta.country,
+            country: targetCountry,
             speechType: message.payload.speechType,
             details: message.payload.details,
             timestamp: Date.now()
@@ -357,8 +370,8 @@ export const P2PProvider = ({ children }) => {
             peerService.broadcastSpeakingRequests(next);
             return next;
           });
-          const typeLabel = req.speechType === 'POINT' ? 'Punto Parlamentario' : (req.speechType === 'MOTION' ? 'Moción' : req.speechType);
-          addNotification(`${senderMeta.country} ha solicitado turno (${typeLabel})`, 'info');
+          const typeLabel = req.speechType === 'POINT' ? 'Punto Parlamentario (POI)' : (req.speechType === 'MOTION' ? 'Moción' : req.speechType);
+          addNotification(`${targetCountry} ha solicitado turno (${typeLabel})`, 'info');
         }
       }
 
@@ -375,6 +388,12 @@ export const P2PProvider = ({ children }) => {
             }
             if (message.payload.speakingRequests) {
               setSpeakingRequests(message.payload.speakingRequests);
+            }
+            if (Array.isArray(message.payload.enmiendasPropuestas)) {
+              setEnmiendasPropuestas(message.payload.enmiendasPropuestas);
+            }
+            if (Array.isArray(message.payload.connectedPeers)) {
+              setConnectedPeers(message.payload.connectedPeers);
             }
             if (Array.isArray(message.payload.announcements)) {
               setAnnouncements(message.payload.announcements);
@@ -448,6 +467,10 @@ export const P2PProvider = ({ children }) => {
           });
         } else if (message.type === MSG_TYPES.SPEAKING_REQUESTS_UPDATED) {
           setSpeakingRequests(message.payload || []);
+        } else if (message.type === MSG_TYPES.PEER_LIST_UPDATED) {
+          setConnectedPeers(message.payload || []);
+        } else if (message.type === MSG_TYPES.AMENDMENTS_PROPOSALS_UPDATED) {
+          setEnmiendasPropuestas(message.payload || []);
         } else if (message.type === MSG_TYPES.ROOM_SETTINGS_UPDATED) {
           setRoomSettings(message.payload);
           addNotification('Ajustes de sala y permisos actualizados por la Mesa', 'info');
@@ -557,8 +580,34 @@ export const P2PProvider = ({ children }) => {
       });
       const finalTargetId = (targetRoomId || roomId || '').trim();
       if (finalTargetId) {
-        setRoomId(finalTargetId);
         if (typeof window !== 'undefined') {
+          const previousRoomId = localStorage.getItem('openmun_last_room_id');
+          // Si el código de la sesión es distinto al guardado previamente, limpiar datos de la sesión anterior
+          if (previousRoomId && previousRoomId.trim().toUpperCase() !== finalTargetId.toUpperCase()) {
+            console.log(`[openMUN] Nueva sesión detectada (${finalTargetId} != ${previousRoomId}). Limpiando datos de sesión antigua...`);
+            SESSION_STORAGE_KEYS.forEach(key => {
+              try {
+                localStorage.removeItem(key);
+              } catch (e) {
+                console.warn('Error limpiando clave:', key, e);
+              }
+            });
+            // Restablecer notas y avisos en memoria del contexto P2P
+            setNotes([]);
+            setAnnouncements([]);
+            setSpeakingRequests([]);
+            setEnmiendasPropuestas([]);
+            setRemoteSessionState(null);
+            if (peerService) {
+              peerService.latestNotes = [];
+              peerService.latestAnnouncements = [];
+              peerService.latestSpeakingRequests = [];
+              peerService.latestSessionState = null;
+            }
+            window.dispatchEvent(new Event('storage'));
+            window.dispatchEvent(new CustomEvent('openmun_session_cleared'));
+          }
+
           localStorage.setItem('openmun_last_room_id', finalTargetId);
           // Solo asignar openmun_current_comite_id si no es una conexión secundaria local y no hay un comite_id previo fijado
           if (!isLocalBroadcast && !localStorage.getItem('openmun_current_comite_id')) {
@@ -568,6 +617,7 @@ export const P2PProvider = ({ children }) => {
             localStorage.setItem('openmun_user_role', targetRole);
           }
         }
+        setRoomId(finalTargetId);
       }
       setRole(targetRole);
       setViewMode(targetRole);
@@ -833,8 +883,16 @@ export const P2PProvider = ({ children }) => {
   }, [connectionStatus, role, clientCountry, addNotification]);
 
   const eliminarEnmiendaPropuesta = useCallback((propId) => {
-    setEnmiendasPropuestas(prev => prev.filter(p => p.id !== propId));
-  }, []);
+    setEnmiendasPropuestas(prev => {
+      const next = prev.filter(p => p.id !== propId);
+      if (connectionStatus === 'host_active') {
+        peerService.broadcastAmendments(next);
+      } else {
+        peerService.sendSessionActionAsClient('eliminar_propuesta_enmienda', { id: propId });
+      }
+      return next;
+    });
+  }, [connectionStatus]);
 
   const openLiveModal = useCallback(() => setIsLiveModalOpen(true), []);
   const closeLiveModal = useCallback(() => setIsLiveModalOpen(false), []);

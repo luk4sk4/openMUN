@@ -92,7 +92,8 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     removerOradorCaucus,
     avanzarOradorCaucus,
     ejecutarAccion,
-    aplicarEstadoExterno
+    aplicarEstadoExterno,
+    agregarEnmiendaResolucion
   } = useSession();
 
   const {
@@ -106,6 +107,8 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     roomSettings,
     updateRoomSettings,
     speakingRequests,
+    enmiendasPropuestas = [],
+    eliminarEnmiendaPropuesta,
     approveSpeakingRequest,
     rejectSpeakingRequest,
     respondToPointWithNote,
@@ -500,8 +503,8 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             transition: 'all 0.15s ease'
           }}
         >
-          <Zap size={15} /> {t('liveSession.requests', 'Solicitudes')} ({speakingRequests.length})
-          {speakingRequests.length > 0 && (
+          <Zap size={15} /> {t('liveSession.requests', 'Solicitudes')} ({speakingRequests.length + enmiendasPropuestas.length})
+          {(speakingRequests.length + enmiendasPropuestas.length) > 0 && (
             <span style={{
               width: '8px',
               height: '8px',
@@ -1253,6 +1256,172 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 </div>
               )}
 
+              {/* ── SECCIÓN PRIORITARIA: SOLICITUDES DE ENMIENDAS DE DELEGACIONES ── */}
+              {enmiendasPropuestas.length > 0 && (
+                <div style={{
+                  backgroundColor: 'rgba(168, 85, 247, 0.08)',
+                  border: '1.5px solid rgba(168, 85, 247, 0.45)',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  boxShadow: '0 8px 24px rgba(168, 85, 247, 0.12)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                      <div style={{
+                        backgroundColor: '#a855f7',
+                        color: '#ffffff',
+                        padding: '0.35rem',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FileText size={18} />
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#c084fc' }}>
+                          Solicitudes de Enmiendas de Delegaciones ({enmiendasPropuestas.length})
+                        </h3>
+                        <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--muted-text)' }}>
+                          Propuestas de enmienda enviadas en tiempo real. Puedes incorporarlas a la resolución o descartarlas.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    {enmiendasPropuestas.map(prop => (
+                      <div
+                        key={prop.id}
+                        style={{
+                          backgroundColor: 'var(--panel-color)',
+                          border: '1px solid rgba(168, 85, 247, 0.35)',
+                          borderRadius: '12px',
+                          padding: '1.1rem 1.25rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem',
+                          boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                            <CountryFlag nombre={prop.paisProponente} size="sm" />
+                            <span style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-color)' }}>
+                              {prop.paisProponente || 'Delegación'}
+                            </span>
+                            <span style={{
+                              fontSize: '0.72rem',
+                              fontWeight: '800',
+                              padding: '0.15rem 0.55rem',
+                              borderRadius: '6px',
+                              backgroundColor: prop.tipo === 'supresion' ? 'rgba(239, 68, 68, 0.18)' : (prop.tipo === 'adicion' ? 'rgba(34, 197, 94, 0.18)' : 'rgba(59, 130, 246, 0.18)'),
+                              color: prop.tipo === 'supresion' ? '#ef4444' : (prop.tipo === 'adicion' ? '#22c55e' : '#60a5fa'),
+                              border: '1px solid currentColor'
+                            }}>
+                              {prop.tipo?.toUpperCase()} · {prop.articuloNumero || 'Cláusula'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button
+                              onClick={() => {
+                                if (agregarEnmiendaResolucion) {
+                                  agregarEnmiendaResolucion({
+                                    tipo: prop.tipo || 'modificacion',
+                                    articuloId: prop.articuloId || null,
+                                    articuloNumero: prop.articuloNumero || 'Artículo',
+                                    paisProponente: prop.paisProponente || 'Delegación',
+                                    textoOriginal: prop.textoOriginal || '',
+                                    textoPropuesto: prop.textoPropuesto || '',
+                                    justificacion: prop.justificacion || ''
+                                  });
+                                }
+                                if (eliminarEnmiendaPropuesta) {
+                                  eliminarEnmiendaPropuesta(prop.id);
+                                }
+                              }}
+                              style={{
+                                backgroundColor: '#22c55e',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '0.45rem 0.95rem',
+                                fontSize: '0.8rem',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
+                              }}
+                            >
+                              <Check size={14} /> Incorporar a Resolución
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                if (eliminarEnmiendaPropuesta) {
+                                  eliminarEnmiendaPropuesta(prop.id);
+                                }
+                              }}
+                              style={{
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--subborder-color)',
+                                color: 'var(--muted-text)',
+                                borderRadius: '8px',
+                                padding: '0.45rem 0.75rem',
+                                fontSize: '0.78rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                              }}
+                              title="Descartar esta propuesta de enmienda"
+                            >
+                              <X size={13} /> Descartar
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Texto Original vs Propuesto */}
+                        <div style={{
+                          backgroundColor: 'var(--card-header-bg)',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid var(--subborder-color)',
+                          fontSize: '0.86rem',
+                          lineHeight: '1.45',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.4rem'
+                        }}>
+                          {prop.textoOriginal && (
+                            <div style={{ color: '#ef4444', textDecoration: 'line-through', opacity: 0.9 }}>
+                              <strong>Texto original:</strong> {prop.textoOriginal}
+                            </div>
+                          )}
+                          {prop.textoPropuesto && (
+                            <div style={{ color: '#22c55e', fontWeight: '600' }}>
+                              <strong>Texto propuesto:</strong> {prop.textoPropuesto}
+                            </div>
+                          )}
+                          {prop.justificacion && (
+                            <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '0.2rem', fontStyle: 'italic' }}>
+                              Motivación: {prop.justificacion}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* ── SECCIÓN GENERAL: COLA DE ORADORES Y MOCIONES ── */}
               <div style={{
                 backgroundColor: 'var(--panel-color)',
@@ -1328,7 +1497,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                             color: req.speechType === 'GSL' ? '#60a5fa' : (req.speechType === 'CAUCUS' ? '#c084fc' : '#facc15'),
                             border: `1px solid ${req.speechType === 'GSL' ? '#3b82f644' : (req.speechType === 'CAUCUS' ? '#a855f744' : '#eab30844')}`
                           }}>
-                            {req.speechType === 'GSL' ? 'Lista GSL' : (req.speechType === 'CAUCUS' ? 'Caucus Moderado' : (req.details?.tipo || 'Moción'))}
+                            {req.speechType === 'GSL' ? 'Lista GSL' : (req.speechType === 'CAUCUS' ? 'Debate' : (req.details?.tipo === 'Caucus Moderado' ? 'Debate' : (req.details?.tipo || 'Moción')))}
                           </span>
                           <span style={{ fontWeight: '800', fontSize: '1.05rem' }}>
                             {req.country}

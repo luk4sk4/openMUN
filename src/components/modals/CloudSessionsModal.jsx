@@ -14,17 +14,10 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Key,
   Save
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import ConfirmModal from './ConfirmModal';
-import {
-  isSupabaseConfigured,
-  setSupabaseAnonKey,
-  getSupabaseAnonKey,
-  getSupabaseUrl
-} from '../../services/supabaseClient';
 
 const CloudSessionsModal = ({ isOpen, onClose }) => {
   const {
@@ -53,15 +46,8 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Anon key config
-  const [hasAnonKey, setHasAnonKey] = useState(() => isSupabaseConfigured());
-  const [anonKeyInput, setAnonKeyInput] = useState(() => getSupabaseAnonKey());
-  const [showKeyConfig, setShowKeyConfig] = useState(false);
-
   useEffect(() => {
     if (isOpen) {
-      setHasAnonKey(isSupabaseConfigured());
-      setAnonKeyInput(getSupabaseAnonKey());
       const sanitized = (nombreComite || 'Asamblea General').trim();
       const fecha = new Date().toISOString().slice(0, 10);
       setNuevoNombre(`${sanitized} - ${fecha}`);
@@ -78,22 +64,8 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
     setTimeout(() => setFeedback(null), 3500);
   };
 
-  const handleSaveAnonKey = (e) => {
-    e.preventDefault();
-    if (!anonKeyInput.trim()) return;
-    setSupabaseAnonKey(anonKeyInput.trim());
-    setHasAnonKey(true);
-    setShowKeyConfig(false);
-    showNotification('Clave pública de Supabase guardada correctamente');
-  };
-
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    if (!hasAnonKey) {
-      setShowKeyConfig(true);
-      showNotification('Por favor ingresa primero la Anon Key de tu proyecto Supabase.', 'error');
-      return;
-    }
     if (!nombreConferencia.trim()) {
       showNotification('Ingresa el nombre de la conferencia o cuenta.', 'error');
       return;
@@ -315,25 +287,6 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
-              onClick={() => setShowKeyConfig(!showKeyConfig)}
-              title="Configurar Supabase Key"
-              style={{
-                background: showKeyConfig ? 'rgba(62, 207, 142, 0.2)' : 'transparent',
-                border: '1px solid var(--subborder-color)',
-                color: showKeyConfig ? '#3ecf8e' : 'var(--muted-text)',
-                cursor: 'pointer',
-                padding: '5px 7px',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: '0.72rem',
-                gap: '0.3rem'
-              }}
-            >
-              <Key size={13} />
-              <span>Config API</span>
-            </button>
-            <button
               onClick={onClose}
               style={{
                 background: 'transparent',
@@ -350,58 +303,6 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
             </button>
           </div>
         </div>
-
-        {/* Panel Desplegable de Configuración de Clave Supabase */}
-        {showKeyConfig && (
-          <div
-            style={{
-              padding: '0.8rem 1.25rem',
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              borderBottom: '1px solid var(--subborder-color)',
-              fontSize: '0.78rem'
-            }}
-          >
-            <div style={{ fontWeight: '600', marginBottom: '0.4rem', color: '#3ecf8e', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Key size={14} />
-              Configurar Supabase Anon Key
-            </div>
-            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-              Proyecto: <strong>{getSupabaseUrl()}</strong>. Ingresa la clave pública anónima de tu proyecto (Supabase &gt; Project Settings &gt; API &gt; anon public).
-            </p>
-            <form onSubmit={handleSaveAnonKey} style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="password"
-                value={anonKeyInput}
-                onChange={(e) => setAnonKeyInput(e.target.value)}
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                style={{
-                  flex: 1,
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--subborder-color)',
-                  backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
-                  color: 'var(--text-color)',
-                  fontSize: '0.74rem'
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  backgroundColor: '#3ecf8e',
-                  color: '#000000',
-                  border: 'none',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  fontSize: '0.74rem'
-                }}
-              >
-                Guardar Clave
-              </button>
-            </form>
-          </div>
-        )}
 
         {/* Notificación Feedback */}
         {mensajeFeedback && (
@@ -555,38 +456,6 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     </button>
                   </div>
                 </div>
-
-                {!hasAnonKey && (
-                  <div style={{
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '6px',
-                    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    fontSize: '0.72rem',
-                    color: '#f59e0b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}>
-                    <span>⚠️ Clave pública de Supabase no configurada</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowKeyConfig(true)}
-                      style={{
-                        background: '#f59e0b',
-                        color: '#000',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '3px 8px',
-                        fontSize: '0.68rem',
-                        fontWeight: '700',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Configurar
-                    </button>
-                  </div>
-                )}
 
                 <button
                   type="submit"

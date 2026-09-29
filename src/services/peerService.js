@@ -59,7 +59,7 @@ export function sanitizeStateForBroadcast(state) {
     });
   }
 
-  // 4. Sanitizar solicitudes de palabra
+  // 4. Sanitizar solicitudes de palabra preservando speechType y details
   if (Array.isArray(sanitized.speakingRequests)) {
     sanitized.speakingRequests = sanitized.speakingRequests.map(r => {
       if (!r) return r;
@@ -68,7 +68,9 @@ export function sanitizeStateForBroadcast(state) {
         country: r.country,
         bandera: r.bandera || r.flag,
         timestamp: r.timestamp,
-        type: r.type,
+        speechType: r.speechType || r.type,
+        type: r.type || r.speechType,
+        details: r.details,
         peerId: r.peerId
       };
     });
@@ -118,6 +120,7 @@ export const MSG_TYPES = {
   DELETE_ANNOUNCEMENT: 'DELETE_ANNOUNCEMENT',
   CAST_VOTE: 'CAST_VOTE',
   SUBMIT_AMENDMENT: 'SUBMIT_AMENDMENT',
+  AMENDMENTS_PROPOSALS_UPDATED: 'AMENDMENTS_PROPOSALS_UPDATED',
   REQUEST_FULL_SYNC: 'REQUEST_FULL_SYNC',
   KICK: 'KICK',
   KICK_PEER: 'KICK_PEER',
@@ -150,6 +153,7 @@ class NetworkService {
     this.staffPassword = 'staff123';
     this.roomSettings = { ...DEFAULT_ROOM_SETTINGS };
     this.latestSpeakingRequests = [];
+    this.latestEnmiendasPropuestas = [];
     this.latestSessionState = null;
     this.latestNotes = [];
     this.latestAnnouncements = [];
@@ -161,6 +165,8 @@ class NetworkService {
         if (savedNotes) this.latestNotes = JSON.parse(savedNotes);
         const savedAnn = localStorage.getItem('openmun_announcements');
         if (savedAnn) this.latestAnnouncements = JSON.parse(savedAnn);
+        const savedEnm = localStorage.getItem('openmun_enmiendas_propuestas');
+        if (savedEnm) this.latestEnmiendasPropuestas = JSON.parse(savedEnm);
       }
     } catch (e) {}
   }
@@ -373,10 +379,21 @@ class NetworkService {
         // Notificar al Chair que se ha unido una pantalla secreta local
         this.broadcastLocal({
           type: MSG_TYPES.AUTH,
-          payload: { role: 'secretariat', country: 'Secretaría Local', isLocal: true },
+          payload: {
+            role: role || 'secretariat',
+            country: country || (role === 'staff' ? 'Staff Local' : 'Secretaría Local'),
+            isLocal: true
+          },
           id: `auth-${Date.now()}`
         });
-        this.emit('connected', { role: 'secretariat', isLocal: true, roomSettings: this.roomSettings });
+        this.emit('connected', {
+          role: role || 'secretariat',
+          country: country || (role === 'staff' ? 'Staff Local' : 'Secretaría Local'),
+          isLocal: true,
+          roomSettings: this.roomSettings,
+          speakingRequests: this.latestSpeakingRequests || [],
+          enmiendasPropuestas: this.latestEnmiendasPropuestas || []
+        });
         return true;
       }
       throw new Error('BroadcastChannel no soportado en este navegador');
@@ -623,6 +640,11 @@ class NetworkService {
 
           const roleNotes = meta.country ? this.getNotesForRole(role, meta.country) : (role === 'backroom' ? this.getNotesForRole('backroom') : (role === 'staff' ? this.getNotesForRole('staff') : []));
 
+          const currentPeerList = Array.from(this.peerMetadata.entries()).map(([id, pmeta]) => ({
+            peerId: id,
+            ...pmeta
+          }));
+
           // Enviar respuesta de autenticación dirigida al socket solicitante
           this.emitSocketMessage({
             type: MSG_TYPES.AUTH_RESULT,
@@ -633,9 +655,11 @@ class NetworkService {
               country: meta.country,
               roomSettings: this.roomSettings,
               speakingRequests: this.latestSpeakingRequests || [],
+              enmiendasPropuestas: this.latestEnmiendasPropuestas || [],
               sessionState: this.latestSessionState || null,
               notes: roleNotes,
-              announcements: this.latestAnnouncements || []
+              announcements: this.latestAnnouncements || [],
+              connectedPeers: currentPeerList
             }
           });
 
@@ -649,19 +673,38 @@ class NetworkService {
           });
         }
       } else if (isLocal && authorized) {
+        const localRole = role || 'secretariat';
+        const localCountry = country || (localRole === 'staff' ? 'Staff Local' : 'Secretaría Local');
+        const localId = `local-${localRole}-${Date.now().toString(36)}`;
+        this.peerMetadata.set(localId, {
+          role: localRole,
+          country: localCountry,
+          connectedAt: Date.now(),
+          isLocal: true,
+          socketId: localId
+        });
+
+        const currentPeerList = Array.from(this.peerMetadata.entries()).map(([id, pmeta]) => ({
+          peerId: id,
+          ...pmeta
+        }));
+
         this.broadcastLocal({
           type: MSG_TYPES.AUTH_RESULT,
           payload: {
             success: true,
-            role: 'secretariat',
-            country: 'Secretaría Local',
+            role: localRole,
+            country: localCountry,
             roomSettings: this.roomSettings,
             speakingRequests: this.latestSpeakingRequests || [],
+            enmiendasPropuestas: this.latestEnmiendasPropuestas || [],
             sessionState: this.latestSessionState || null,
             notes: this.latestNotes || [],
-            announcements: this.latestAnnouncements || []
+            announcements: this.latestAnnouncements || [],
+            connectedPeers: currentPeerList
           }
         });
+        this.broadcastPeerList();
       }
       return;
     }
@@ -714,8 +757,10 @@ class NetworkService {
       return;
     }
 
-    // Obtener metadatos del remitente
-    const senderMeta = isLocal ? { role: 'secretariat', country: 'Secretaría Local' } : (this.peerMetadata.get(senderSocketId) || message.senderMeta);
+    // Obtener metadatos del remitente respetando senderMeta explícito si viene en el mensaje
+    const senderMeta = (message.senderMeta?.country || message.senderMeta?.role)
+      ? message.senderMeta
+      : (isLocal ? { role: 'secretariat', country: 'Secretaría Local' } : (this.peerMetadata.get(senderSocketId) || message.senderMeta));
     if (!isLocal && !senderMeta) {
       return;
     }
@@ -760,16 +805,20 @@ class NetworkService {
     // 5.1 Envío de Enmienda desde Delegado
     if (message.type === MSG_TYPES.SUBMIT_AMENDMENT) {
       const amendmentData = {
-        id: `prop_del_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        paisProponente: senderMeta.country,
+        id: message.payload?.id || `prop_del_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        paisProponente: message.payload?.paisProponente || senderMeta?.country || message.senderMeta?.country || 'Delegación',
         tipo: message.payload?.tipo || 'modificacion',
         articuloId: message.payload?.articuloId || null,
         articuloNumero: message.payload?.articuloNumero || '',
         textoOriginal: message.payload?.textoOriginal || '',
         textoPropuesto: message.payload?.textoPropuesto || '',
         justificacion: message.payload?.justificacion || '',
-        timestamp: Date.now()
+        timestamp: message.payload?.timestamp || Date.now()
       };
+
+      if (!this.latestEnmiendasPropuestas) this.latestEnmiendasPropuestas = [];
+      this.latestEnmiendasPropuestas = [amendmentData, ...this.latestEnmiendasPropuestas.filter(a => a.id !== amendmentData.id)];
+      this.broadcastAmendments(this.latestEnmiendasPropuestas);
 
       this.emit('amendment_proposed_by_delegate', amendmentData);
 
@@ -781,10 +830,10 @@ class NetworkService {
       return;
     }
 
-    // 6. Solicitudes de Orador / Moción (desde Delegado)
+    // 6. Solicitudes de Orador / Moción / POI (desde Delegado)
     if (message.type === MSG_TYPES.REQUEST_SPEAKING) {
-      const speechType = message.payload?.speechType; // 'GSL' | 'CAUCUS' | 'POINT_MOTION'
-      const country = senderMeta.country;
+      const speechType = message.payload?.speechType; // 'GSL' | 'CAUCUS' | 'POINT_MOTION' | 'POINT' | 'MOTION'
+      const country = message.payload?.details?.country || senderMeta?.country || message.senderMeta?.country || 'Delegación';
 
       if (speechType === 'GSL') {
         const mode = this.roomSettings.speakerRequestMode;
@@ -1077,7 +1126,9 @@ class NetworkService {
         country: r.country,
         bandera: r.bandera || r.flag,
         timestamp: r.timestamp,
-        type: r.type,
+        speechType: r.speechType || r.type,
+        type: r.type || r.speechType,
+        details: r.details,
         peerId: r.peerId
       };
     });
@@ -1172,6 +1223,22 @@ class NetworkService {
     };
     this.emit('peer_list_updated', list);
     this.emitSocketMessage(msg);
+    this.broadcastLocal(msg);
+  }
+
+  broadcastAmendments(proposals) {
+    this.latestEnmiendasPropuestas = proposals || [];
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('openmun_enmiendas_propuestas', JSON.stringify(this.latestEnmiendasPropuestas));
+      }
+    } catch (e) {}
+    const msg = {
+      type: MSG_TYPES.AMENDMENTS_PROPOSALS_UPDATED,
+      payload: this.latestEnmiendasPropuestas
+    };
+    this.emitSocketMessage(msg);
+    this.broadcastLocal(msg);
   }
 
   async broadcastLocal(data) {

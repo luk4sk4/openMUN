@@ -765,8 +765,9 @@ function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], cur
 		if (destinoUpper.startsWith('STAFF_COMITE_') || destinoUpper.startsWith('STAFF_')) {
 			const targetStaffComite = normalizarComiteIdBackend(destinoUpper);
 			const rawTarget = rawDestino.replace(/^(staff_comite_|staff_)/i, '');
+			// El staff de conferencia (global) o sin sala fija NO debe ver los mensajes internos dirigidos a staff de comités individuales
 			if ((!normCurrent && !normNombre) || normCurrent === 'todos' || userRole === 'staff_global') {
-				return true;
+				return false;
 			}
 			return coincideComite(targetStaffComite, rawTarget);
 		}

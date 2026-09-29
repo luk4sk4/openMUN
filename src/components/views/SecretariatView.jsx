@@ -42,7 +42,8 @@ import {
   Moon,
   SkipForward,
   Megaphone,
-  AlertTriangle
+  AlertTriangle,
+  HelpCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CountryFlag from '../common/CountryFlag';
@@ -56,7 +57,7 @@ import LanguageSelector from '../common/LanguageSelector';
 import ConferenceBanner from '../common/ConferenceBanner';
 import conferenceService from '../../services/conferenceService';
 import useTopBarOverflow from '../../hooks/useTopBarOverflow';
-import { formatearMensajeAviso, correspondeAviso, obtenerEtiquetaDestino } from '../../utils/announcementHelpers';
+import { formatearMensajeAviso, correspondeAviso, obtenerEtiquetaDestino, ignorarAviso, obtenerAvisosIgnorados } from '../../utils/announcementHelpers';
 import MatrizPaises from '../widgets/MatrizPaises';
 import HistoricoDelegaciones from '../widgets/HistoricoDelegaciones';
 import EstablecerAgenda from '../widgets/EstablecerAgenda';
@@ -145,7 +146,44 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const [avisosDB, setAvisosDB] = useState([]);
   const [comitesConf, setComitesConf] = useState([]);
   const confActiva = conferenceService.obtenerSesionActiva();
-  const currentComiteId = (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || roomId || null;
+  const currentComiteId = roomId || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || null;
+
+  const [descartadosAnnouncements, setDescartadosAnnouncements] = useState(() => obtenerAvisosIgnorados());
+
+  useEffect(() => {
+    const handleSessionCleared = () => {
+      setDescartadosAnnouncements(obtenerAvisosIgnorados());
+      setAvisosDB([]);
+    };
+    window.addEventListener('openmun_session_cleared', handleSessionCleared);
+    return () => window.removeEventListener('openmun_session_cleared', handleSessionCleared);
+  }, []);
+
+  useEffect(() => {
+    const handleIgnorado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosAnnouncements(prev => [...new Set([...prev, String(e.detail.id)])]);
+      }
+    };
+    const handleRestaurado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosAnnouncements(prev => prev.filter(id => String(id) !== String(e.detail.id)));
+      }
+    };
+    window.addEventListener('openmun_aviso_ignorado', handleIgnorado);
+    window.addEventListener('openmun_aviso_restaurado', handleRestaurado);
+    return () => {
+      window.removeEventListener('openmun_aviso_ignorado', handleIgnorado);
+      window.removeEventListener('openmun_aviso_restaurado', handleRestaurado);
+    };
+  }, []);
+
+  const visibleAnnouncements = (announcements || []).filter(ann => !descartadosAnnouncements.map(String).includes(String(ann.id)));
+
+  const handleIgnorarAnnouncement = (id) => {
+    ignorarAviso(id);
+    setDescartadosAnnouncements(prev => [...new Set([...prev, String(id)])]);
+  };
 
   // Cargar comités de la conferencia si está vinculada
   useEffect(() => {
@@ -163,9 +201,15 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     const fetchAvisos = async () => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       try {
-        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'secretaria');
+        const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'secretariat', nombreComite);
         if (res && Array.isArray(res.avisos)) {
-          setAvisosDB(res.avisos);
+          const filtrados = res.avisos.filter(a => correspondeAviso(a, {
+            role: 'secretariat',
+            currentComiteId,
+            currentComiteNombre: nombreComite,
+            comites: comitesConf
+          }));
+          setAvisosDB(filtrados);
         }
       } catch (e) {}
     };
@@ -433,7 +477,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       </header>
 
       {/* Banner de Avisos Oficiales */}
-      <ConferenceBanner isLight={isLight} role="secretaria" comiteId={currentComiteId} comites={comitesConf} />
+      <ConferenceBanner isLight={isLight} role="secretariat" comiteId={currentComiteId} comiteNombre={nombreComite} comites={comitesConf} />
 
       {/* ── Sub-navegación por Pestañas ── */}
       <div style={{
@@ -482,7 +526,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             transition: 'all 0.15s ease'
           }}
         >
-          <Megaphone size={15} /> Avisos Oficiales ({announcements.length})
+          <Megaphone size={15} /> Avisos Oficiales ({visibleAnnouncements.length})
         </button>
 
         <button
@@ -836,12 +880,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
                   <Megaphone size={20} color="#f59e0b" />
                   <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800' }}>
-                    {t('views.staff.activeAnnouncements', 'Avisos Activos en Sala')} ({announcements.length})
+                    {t('views.staff.activeAnnouncements', 'Avisos Activos en Sala')} ({visibleAnnouncements.length})
                   </h3>
                 </div>
               </div>
 
-              {announcements.length === 0 ? (
+              {visibleAnnouncements.length === 0 ? (
                 <div style={{
                   padding: '3rem 1.5rem',
                   textAlign: 'center',
@@ -863,7 +907,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  {announcements.map((ann) => {
+                  {visibleAnnouncements.map((ann) => {
                     const isUrgent = ann.priority === 'urgente';
                     return (
                       <div
@@ -901,25 +945,53 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                             </span>
                           </div>
 
-                          <button
-                            onClick={() => deleteAnnouncement(ann.id)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--muted-text)',
-                              cursor: 'pointer',
-                              padding: '4px',
-                              borderRadius: '6px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.25rem',
-                              fontSize: '0.72rem'
-                            }}
-                            title={t('views.staff.deleteAnnouncement', 'Retirar Aviso')}
-                              aria-label={t('views.staff.deleteAnnouncement', 'Retirar Aviso')}
-                          >
-                            <Trash2 size={15} color="#ef4444" />
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                                  deleteAnnouncement(ann.id);
+                                }
+                              }}
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: '3px 8px',
+                                borderRadius: '5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                fontSize: '0.72rem',
+                                fontWeight: '800',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={t('avisos.deleteNoticeTooltip', 'Eliminar aviso para toda la sala')}
+                              aria-label={t('avisos.deleteNotice', 'Eliminar')}
+                            >
+                              <Trash2 size={13} color="#ef4444" /> {t('avisos.deleteNotice', 'Eliminar')}
+                            </button>
+                            <button
+                              onClick={() => handleIgnorarAnnouncement(ann.id)}
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid var(--subborder-color)',
+                                color: 'var(--muted-text)',
+                                cursor: 'pointer',
+                                padding: '3px 8px',
+                                borderRadius: '5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={t('avisos.dismissTooltip', 'Descartar este aviso (ocultarlo de tu vista)')}
+                            >
+                              <EyeOff size={13} /> {t('avisos.dismiss', 'Descartar')}
+                            </button>
+                          </div>
                         </div>
 
                         <div style={{ fontSize: '0.98rem', fontWeight: '800', color: 'var(--text-color)' }}>
@@ -1039,10 +1111,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
               />
             ) : (
               <MensajeriaConferencia
-                currentRole="secretaria"
+                currentRole="secretariat"
+                conferenciaId={confActiva?.id || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null)}
                 currentComiteId={currentComiteId}
                 currentComiteNombre={nombreComite}
                 comites={comitesConf}
+                initialAvisos={avisosDB}
                 layout="split"
                 showHeader={false}
               />

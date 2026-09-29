@@ -263,7 +263,7 @@ const Dashboard = () => {
           currentRole="chair"
           currentComiteId={(typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || p2p.roomId || null}
           currentComiteNombre={session.nombreComite}
-          conferenciaId={(typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null) || conferenceService.obtenerSesionActiva()?.id || (p2p.roomId ? (p2p.roomId.includes('_') ? p2p.roomId.split('_')[0] : p2p.roomId) : null)}
+          conferenciaId={(typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null) || conferenceService.obtenerSesionActiva()?.id || null}
         />
         <QuickAddCountryModal
           isOpen={isQuickCountryOpen}
@@ -335,13 +335,15 @@ const Dashboard = () => {
             addToast={addToast}
           />
 
-          {/* Banner de Avisos Oficiales de la Conferencia y Sala */}
-          <ConferenceBanner
-            isLight={isLight}
-            role="chair"
-            comiteId={(typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || p2p.roomId || null}
-            comiteNombre={session.nombreComite}
-          />
+          {/* Banner de Avisos Oficiales de la Conferencia y Sala (Fuera de HOME / Vista Principal) */}
+          {activeTab !== 'HOME' && (
+            <ConferenceBanner
+              isLight={isLight}
+              role="chair"
+              comiteId={(typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || p2p.roomId || null}
+              comiteNombre={session.nombreComite}
+            />
+          )}
 
           {/* Banner Permanente de Alerta de Crisis Activa */}
           <PermanentCrisisBanner isLight={isLight} />

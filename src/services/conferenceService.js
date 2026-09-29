@@ -4,6 +4,7 @@
  */
 
 import { SOCKET_SERVER_URL } from './peerService.js';
+import { registrarAvisoPropio } from '../utils/announcementHelpers.jsx';
 
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -43,6 +44,29 @@ async function handleResponse(response) {
 // Caché en memoria para optimizar peticiones repetitivas a la base de datos
 const requestCache = new Map();
 const inFlightRequests = new Map();
+
+// Caché en memoria de avisos activos sincronizados
+let _avisosMemoria = [];
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('openmun_nuevo_aviso', (e) => {
+    if (e.detail) {
+      const nuevo = e.detail;
+      if (nuevo.conferencia_id && !localStorage.getItem('openmun_current_conf_id')) {
+        try {
+          localStorage.setItem('openmun_current_conf_id', String(nuevo.conferencia_id).toLowerCase());
+        } catch {}
+      }
+      _avisosMemoria = [nuevo, ..._avisosMemoria.filter(a => a.id !== nuevo.id)];
+    }
+  });
+
+  window.addEventListener('openmun_aviso_desactivado', (e) => {
+    if (e.detail?.id) {
+      _avisosMemoria = _avisosMemoria.filter(a => String(a.id) !== String(e.detail.id));
+    }
+  });
+}
 
 function invalidateConferenceCache(conferenciaId) {
   if (!conferenciaId) return;
@@ -304,10 +328,14 @@ export const conferenceService = {
     });
     const data = await handleResponse(res);
     invalidateConferenceCache(cleanConfId);
+    const avisoId = data?.aviso?.id || data?.id;
+    if (avisoId) {
+      registrarAvisoPropio(avisoId);
+    }
     return data;
   },
 
-  async obtenerAvisos(conferenciaId, comiteId = null, role = null, comiteNombre = null) {
+  async obtenerAvisos(conferenciaId, comiteId = null, role = null, comiteNombre = null, todos = false) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
     let url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/avisos`;
     const params = [];
@@ -320,10 +348,26 @@ export const conferenceService = {
     if (comiteNombre) {
       params.push(`comite_nombre=${encodeURIComponent(String(comiteNombre).trim())}`);
     }
+    if (todos) {
+      params.push('todos=true');
+    }
     if (params.length > 0) {
       url += `?${params.join('&')}`;
     }
-    return fetchWithDeduplication(url, 4000);
+    try {
+      const data = await fetchWithDeduplication(url, 4000);
+      const items = Array.isArray(data) ? data : (data?.avisos && Array.isArray(data.avisos) ? data.avisos : []);
+      if (items.length > 0) {
+        this.guardarAvisosEnMemoria(items);
+      }
+      return data;
+    } catch (err) {
+      // Si falla la red, intentar devolver avisos en memoria para mantener la UI funcionando
+      if (_avisosMemoria.length > 0) {
+        return { avisos: _avisosMemoria };
+      }
+      throw err;
+    }
   },
 
   async desactivarAviso(avisoId, conferenciaId = null) {
@@ -335,6 +379,9 @@ export const conferenceService = {
       invalidateConferenceCache(conferenciaId);
     } else {
       requestCache.clear();
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openmun_aviso_desactivado', { detail: { id: avisoId } }));
     }
     return data;
   },
@@ -555,7 +602,20 @@ export const conferenceService = {
     }
   },
 
-  // ── 4. GESTIÓN LOCAL DE CONFERENCIA ACTIVA ──
+  // ── 4. GESTIÓN LOCAL DE CONFERENCIA ACTIVA Y AVISOS ──
+  guardarAvisosEnMemoria(avisos) {
+    if (Array.isArray(avisos)) {
+      const map = new Map();
+      avisos.forEach(a => { if (a && a.id) map.set(String(a.id), a); });
+      _avisosMemoria.forEach(a => { if (a && a.id && !map.has(String(a.id))) map.set(String(a.id), a); });
+      _avisosMemoria = Array.from(map.values());
+    }
+  },
+
+  obtenerAvisosEnMemoria() {
+    return _avisosMemoria;
+  },
+
   guardarSesionActiva(conferenciaData) {
     try {
       const actual = this.obtenerSesionActiva() || {};
@@ -564,6 +624,7 @@ export const conferenceService = {
       
       if (merged.id) {
         const cleanId = String(merged.id).trim().toLowerCase();
+        localStorage.setItem('openmun_current_conf_id', cleanId);
         if (merged.pin_admin) {
           localStorage.setItem(`openmun_conf_admin_pin_${cleanId}`, String(merged.pin_admin).trim());
         }
@@ -579,7 +640,15 @@ export const conferenceService = {
   obtenerSesionActiva() {
     try {
       const saved = localStorage.getItem('openmun_active_conference');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id) return parsed;
+      }
+      const fallbackConfId = localStorage.getItem('openmun_current_conf_id');
+      if (fallbackConfId && fallbackConfId.trim()) {
+        return { id: fallbackConfId.trim().toLowerCase() };
+      }
+      return null;
     } catch (e) {
       return null;
     }

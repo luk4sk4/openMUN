@@ -439,9 +439,9 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
     if (destinoUpper.startsWith('STAFF_COMITE_') || destinoUpper.startsWith('STAFF_')) {
       const targetStaffComite = normalizarIdComite(destinoUpper);
       const rawTarget = rawDestino.replace(/^(staff_comite_|staff_)/i, '');
-      // Si el staff es global o no tiene sala fija ('TODOS' o null), ve avisos a staff de cualquier sala para soporte
+      // El staff de conferencia (global) o sin sala fija NO debe ver los mensajes internos dirigidos a staff de comités individuales
       if ((!normCurrent && !normNombre) || normCurrent === 'todos' || userRole === 'staff_global') {
-        return true;
+        return false;
       }
       return coincideComite(targetStaffComite, rawTarget);
     }
@@ -474,4 +474,108 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
   // Usuario general: solo ve comunicados globales
   return false;
 };
+
+// ── GESTIÓN DE AVISOS PROPIOS (QUIÉN LO ENVIÓ) ──
+export const STORAGE_MIS_AVISOS = 'openmun_mis_avisos';
+export const STORAGE_AVISOS_IGNORADOS = 'openmun_descartados_avisos';
+
+/**
+ * Obtiene la lista de IDs de avisos que este usuario / cliente ha emitido
+ */
+export const obtenerAvisosPropios = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_MIS_AVISOS);
+    return raw ? JSON.parse(raw).map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Registra que este usuario / cliente emitió un aviso
+ */
+export const registrarAvisoPropio = (avisoId) => {
+  if (!avisoId || typeof window === 'undefined') return;
+  try {
+    const actuales = obtenerAvisosPropios();
+    const strId = String(avisoId);
+    if (!actuales.includes(strId)) {
+      const actualizados = [...actuales, strId];
+      localStorage.setItem(STORAGE_MIS_AVISOS, JSON.stringify(actualizados));
+    }
+  } catch {}
+};
+
+/**
+ * Comprueba si el aviso fue emitido por el usuario actual o si tiene privilegios de borrado
+ */
+export const puedeBorrarAviso = (aviso, rolActual = null) => {
+  if (!aviso) return false;
+  const strId = String(aviso.id || aviso);
+
+  // 1. Roles administrativos con capacidad de borrado global
+  const normRole = String(rolActual || '').toLowerCase().trim();
+  if (['secretaria', 'secretariat', 'admin', 'organizacion'].includes(normRole)) {
+    return true;
+  }
+
+  // 2. Si el ID del aviso está registrado como emitido por este cliente
+  const propios = obtenerAvisosPropios();
+  if (propios.includes(strId)) {
+    return true;
+  }
+
+  return false;
+};
+
+// ── GESTIÓN DE AVISOS IGNORADOS (OCULTAR DE LA VISTA DEL USUARIO) ──
+
+/**
+ * Obtiene la lista de IDs de avisos ignorados por el usuario
+ */
+export const obtenerAvisosIgnorados = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const local = localStorage.getItem(STORAGE_AVISOS_IGNORADOS);
+    if (local) return JSON.parse(local).map(String);
+    const session = sessionStorage.getItem(STORAGE_AVISOS_IGNORADOS);
+    return session ? JSON.parse(session).map(String) : [];
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Ignora un aviso para no verlo más en la vista del usuario
+ */
+export const ignorarAviso = (avisoId) => {
+  if (!avisoId || typeof window === 'undefined') return;
+  try {
+    const strId = String(avisoId);
+    const actuales = obtenerAvisosIgnorados();
+    if (!actuales.includes(strId)) {
+      const actualizados = [...actuales, strId];
+      localStorage.setItem(STORAGE_AVISOS_IGNORADOS, JSON.stringify(actualizados));
+      sessionStorage.setItem(STORAGE_AVISOS_IGNORADOS, JSON.stringify(actualizados));
+      window.dispatchEvent(new CustomEvent('openmun_aviso_ignorado', { detail: { id: strId } }));
+    }
+  } catch {}
+};
+
+/**
+ * Restaura un aviso ignorado para volver a verlo
+ */
+export const restaurarAvisoIgnorado = (avisoId) => {
+  if (!avisoId || typeof window === 'undefined') return;
+  try {
+    const strId = String(avisoId);
+    const actuales = obtenerAvisosIgnorados();
+    const actualizados = actuales.filter(id => id !== strId);
+    localStorage.setItem(STORAGE_AVISOS_IGNORADOS, JSON.stringify(actualizados));
+    sessionStorage.setItem(STORAGE_AVISOS_IGNORADOS, JSON.stringify(actualizados));
+    window.dispatchEvent(new CustomEvent('openmun_aviso_restaurado', { detail: { id: strId } }));
+  } catch {}
+};
+
 

@@ -66,6 +66,32 @@ export const obtenerCuentaActiva = () => {
 };
 
 /**
+ * Formatea errores de Supabase y traduce errores de red o autenticación a mensajes claros
+ */
+export const formatSupabaseError = (err) => {
+  if (!err) return 'Error desconocido al conectar con Supabase';
+  const str = String(err?.message || err?.error_description || err || '');
+  if (
+    str.toLowerCase().includes('networkerror') ||
+    str.toLowerCase().includes('failed to fetch') ||
+    str.toLowerCase().includes('fetch failed')
+  ) {
+    return 'Error de red al conectar con Supabase. Tu navegador, un bloqueador de publicidad (uBlock Origin, AdBlock, Brave Shields) o la protección contra rastreo estricta de Firefox pueden estar bloqueando la conexión con Supabase.';
+  }
+  if (str.toLowerCase().includes('invalid login credentials')) {
+    return 'Nombre de conferencia o contraseña incorrectos.';
+  }
+  if (
+    str.toLowerCase().includes('user already registered') ||
+    str.toLowerCase().includes('already exists') ||
+    err?.code === '23505'
+  ) {
+    return 'Ya existe una conferencia registrada con este nombre.';
+  }
+  return str;
+};
+
+/**
  * 1. Crear nueva conferencia / cuenta
  * Soporta tanto Supabase Auth (conferences) como tabla manual (accounts)
  */
@@ -91,9 +117,13 @@ export async function registrarConferencia(nombre, password) {
       password
     });
 
-    if (!authError && authData?.user) {
+    if (authError) {
+      throw new Error(formatSupabaseError(authError));
+    }
+
+    if (authData?.user) {
       // Registrar en public.conferences
-      const { error: confError } = await client.from('conferences').insert({
+      const { error: confError } = await client.from('conferences').upsert({
         id: authData.user.id,
         name: cleanName
       });
@@ -105,9 +135,19 @@ export async function registrarConferencia(nombre, password) {
           email,
           mode: 'auth'
         };
+      } else {
+        throw new Error(formatSupabaseError(confError));
       }
     }
   } catch (err) {
+    const formatted = formatSupabaseError(err);
+    // Si es error de red o usuario ya registrado, propagar de inmediato
+    if (
+      formatted.includes('Error de red') ||
+      formatted.includes('Ya existe una conferencia')
+    ) {
+      throw new Error(formatted);
+    }
     console.warn('[Supabase Auth Register warning, evaluando tabla accounts]:', err);
   }
 
@@ -126,7 +166,7 @@ export async function registrarConferencia(nombre, password) {
       if (accError.code === '23505' || accError.message?.includes('duplicate key')) {
         throw new Error('Ya existe una conferencia registrada con este nombre.');
       }
-      throw accError;
+      throw new Error(formatSupabaseError(accError));
     }
 
     registeredAccount = {
@@ -165,7 +205,16 @@ export async function loginConferencia(nombre, password) {
       password
     });
 
-    if (!authError && authData?.user) {
+    if (authError) {
+      const formatted = formatSupabaseError(authError);
+      // Si es error de red o credenciales inválidas, propagar directamente
+      if (formatted.includes('Error de red') || formatted.includes('incorrectos')) {
+        throw new Error(formatted);
+      }
+      throw authError;
+    }
+
+    if (authData?.user) {
       // Obtener nombre desde conferences si está disponible
       let visibleName = cleanName;
       try {
@@ -185,6 +234,10 @@ export async function loginConferencia(nombre, password) {
       };
     }
   } catch (err) {
+    const formatted = formatSupabaseError(err);
+    if (formatted.includes('Error de red') || formatted.includes('incorrectos')) {
+      throw new Error(formatted);
+    }
     console.warn('[Supabase Auth Login warning, intentando con tabla accounts]:', err);
   }
 
@@ -198,6 +251,12 @@ export async function loginConferencia(nombre, password) {
       .single();
 
     if (accError || !accData) {
+      if (accError) {
+        const formatted = formatSupabaseError(accError);
+        if (formatted.includes('Error de red')) {
+          throw new Error(formatted);
+        }
+      }
       throw new Error('Nombre de conferencia o contraseña incorrectos.');
     }
 
@@ -253,7 +312,7 @@ export async function guardarComite(nombreComite, payloadJSON) {
       )
       .select();
 
-    if (error) throw error;
+    if (error) throw new Error(formatSupabaseError(error));
     return data;
   }
 
@@ -272,7 +331,7 @@ export async function guardarComite(nombreComite, payloadJSON) {
       )
       .select();
 
-    if (error) throw error;
+    if (error) throw new Error(formatSupabaseError(error));
     return data;
   } catch (err) {
     // Si la tabla committees no existe o da error, probar con backups
@@ -289,7 +348,7 @@ export async function guardarComite(nombreComite, payloadJSON) {
       )
       .select();
 
-    if (backupErr) throw err || backupErr;
+    if (backupErr) throw new Error(formatSupabaseError(backupErr));
     return backupData;
   }
 }
@@ -311,7 +370,7 @@ export async function listarComites() {
       .eq('account_id', account.id)
       .order('updated_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) throw new Error(formatSupabaseError(error));
     return data || [];
   }
 
@@ -322,7 +381,7 @@ export async function listarComites() {
       .select('id, name, updated_at')
       .order('updated_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) throw new Error(formatSupabaseError(error));
     return data || [];
   } catch (err) {
     // Fallback a backups
@@ -332,7 +391,7 @@ export async function listarComites() {
       .eq('account_id', account.id)
       .order('updated_at', { ascending: false });
 
-    if (backupErr) throw err || backupErr;
+    if (backupErr) throw new Error(formatSupabaseError(backupErr));
     return backupData || [];
   }
 }
@@ -364,7 +423,7 @@ export async function cargarComite(comiteId) {
     .eq('id', comiteId)
     .single();
 
-  if (backupErr) throw backupErr;
+  if (backupErr) throw new Error(formatSupabaseError(backupErr));
   return backupData?.data;
 }
 
@@ -390,6 +449,6 @@ export async function eliminarComite(comiteId) {
     .delete()
     .eq('id', comiteId);
 
-  if (backupErr) throw backupErr;
+  if (backupErr) throw new Error(formatSupabaseError(backupErr));
   return true;
 }

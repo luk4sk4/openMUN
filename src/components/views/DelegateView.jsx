@@ -23,6 +23,7 @@ import {
   Check,
   AlertCircle,
   Eye,
+  EyeOff,
   Sun,
   Moon,
   Search,
@@ -46,7 +47,11 @@ import {
   FileSignature,
   ArrowRight,
   CheckCheck,
-  Trash2
+  Trash2,
+  Users,
+  RotateCcw,
+  Hourglass,
+  BarChart2
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
@@ -59,6 +64,7 @@ import LanguageSelector from '../common/LanguageSelector';
 import ConferenceBanner from '../common/ConferenceBanner';
 import MensajeriaComite from '../messaging/MensajeriaComite';
 import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
+import { ignorarAviso, obtenerAvisosIgnorados, puedeBorrarAviso } from '../../utils/announcementHelpers';
 
 import { parsearResolucion } from '../../utils/resolutionUtils';
 
@@ -88,7 +94,8 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     resetCountrySelection,
     connectedPeers,
     requestFullSync,
-    announcements = []
+    announcements = [],
+    deleteAnnouncement
   } = useP2P();
 
   // Estados para Selección de País / Delegación inicial
@@ -104,6 +111,36 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const [destinatario, setDestinatario] = useState('CHAIR');
   const [textoNota, setTextoNota] = useState('');
   const [tipoNota, setTipoNota] = useState('general'); // 'general' | 'urgente' | 'pregunta'
+
+  const [descartadosAnnouncements, setDescartadosAnnouncements] = useState(() => obtenerAvisosIgnorados());
+
+  useEffect(() => {
+    const handleIgnorado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosAnnouncements(prev => [...new Set([...prev, String(e.detail.id)])]);
+      }
+    };
+    const handleRestaurado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosAnnouncements(prev => prev.filter(id => String(id) !== String(e.detail.id)));
+      }
+    };
+    window.addEventListener('openmun_aviso_ignorado', handleIgnorado);
+    window.addEventListener('openmun_aviso_restaurado', handleRestaurado);
+    return () => {
+      window.removeEventListener('openmun_aviso_ignorado', handleIgnorado);
+      window.removeEventListener('openmun_aviso_restaurado', handleRestaurado);
+    };
+  }, []);
+
+  const visibleAnnouncements = useMemo(() => {
+    return (announcements || []).filter(ann => !descartadosAnnouncements.map(String).includes(String(ann.id)));
+  }, [announcements, descartadosAnnouncements]);
+
+  const handleIgnorarAnnouncement = (id) => {
+    ignorarAviso(id);
+    setDescartadosAnnouncements(prev => [...new Set([...prev, String(id)])]);
+  };
 
   const getPriorityBadge = (priority) => {
     switch (priority) {
@@ -121,13 +158,14 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     }
   };
 
-  // Estados para Mociones de Debate
+  // Estados para Mociones de Debate (alineado con PizarraMociones)
   const [pedirMocionOpen, setPedirMocionOpen] = useState(false);
   const [tipoMocion, setTipoMocion] = useState('Caucus Moderado');
+  const [varianteConsultaMocion, setVarianteConsultaMocion] = useState('Estándar');
   const [posicionProponenteMocion, setPosicionProponenteMocion] = useState('Primero');
   const [temaMocion, setTemaMocion] = useState('');
-  const [tiempoTotalMocion, setTiempoTotalMocion] = useState(600);
-  const [tiempoOradorMocion, setTiempoOradorMocion] = useState(45);
+  const [tiempoTotalMinMocion, setTiempoTotalMinMocion] = useState(10);
+  const [tiempoOradorSegMocion, setTiempoOradorSegMocion] = useState(45);
   const [solicitudMocionHecha, setSolicitudMocionHecha] = useState(false);
 
   // Estados para Puntos Parlamentarios & POI
@@ -292,12 +330,69 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     setTimeout(() => setSolicitudCaucusHecha(false), 4000);
   };
 
+  const presetsTotalMinMocion = [5, 10, 12, 15, 20];
+  const presetsOradorSegMocion = [30, 45, 60, 90, 120];
+
+  const esModeradoMocion = tipoMocion === 'Caucus Moderado';
+  const esConsultaMocion = tipoMocion === 'Consulta General';
+  const esNoModeradoMocion = tipoMocion === 'Caucus No Moderado';
+  const esTourMocion = tipoMocion === 'Tour de Table';
+
+  const intervencionesEstimadasMocion = useMemo(() => {
+    if (!esModeradoMocion || !tiempoOradorSegMocion || tiempoOradorSegMocion <= 0) return 0;
+    return Math.floor((Number(tiempoTotalMinMocion) * 60) / Number(tiempoOradorSegMocion));
+  }, [esModeradoMocion, tiempoTotalMinMocion, tiempoOradorSegMocion]);
+
+  const tiposMocionConfig = [
+    {
+      id: 'Caucus Moderado',
+      nombre: 'Caucus Moderado',
+      subtitulo: 'Oradores cronometrados por turnos',
+      icon: Mic,
+      color: '#3b82f6',
+      activeBg: 'rgba(59, 130, 246, 0.15)',
+      activeBorder: '#3b82f6',
+      textColor: '#93c5fd'
+    },
+    {
+      id: 'Caucus No Moderado',
+      nombre: 'Caucus No Moderado',
+      subtitulo: 'Negociación y redacción libre',
+      icon: Users,
+      color: '#a855f7',
+      activeBg: 'rgba(168, 85, 247, 0.15)',
+      activeBorder: '#a855f7',
+      textColor: '#d8b4fe'
+    },
+    {
+      id: 'Consulta General',
+      nombre: 'Consulta General',
+      subtitulo: 'Diálogo abierto o ping-pong temático',
+      icon: MessageSquare,
+      color: '#10b981',
+      activeBg: 'rgba(16, 185, 129, 0.15)',
+      activeBorder: '#10b981',
+      textColor: '#6ee7b7'
+    },
+    {
+      id: 'Tour de Table',
+      nombre: 'Tour de Table',
+      subtitulo: 'Intervención de todas las delegaciones',
+      icon: RotateCcw,
+      color: '#f59e0b',
+      activeBg: 'rgba(245, 158, 11, 0.15)',
+      activeBorder: '#f59e0b',
+      textColor: '#fcd34d'
+    }
+  ];
+
   const handleEnviarMocion = (e) => {
     e.preventDefault();
     if (!settings.allowMotions) return;
+    if (!clientCountry || !temaMocion.trim()) return;
 
-    let totalSeg = Number(tiempoTotalMocion);
-    let oradorSeg = Number(tiempoOradorMocion);
+    let totalSeg = Number(tiempoTotalMinMocion) * 60;
+    let oradorSeg = Number(tiempoOradorSegMocion);
     if (tipoMocion === 'Caucus No Moderado' || tipoMocion === 'Consulta General') {
       oradorSeg = 0;
     } else if (tipoMocion === 'Tour de Table') {
@@ -306,9 +401,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
     requestSpeaking('MOTION', {
       country: clientCountry,
-      tipo: tipoMocion,
+      tipo: tipoMocion === 'Consulta General' ? `Consulta General (${varianteConsultaMocion})` : tipoMocion,
+      varianteConsulta: tipoMocion === 'Consulta General' ? varianteConsultaMocion : '',
       posicionProponente: posicionProponenteMocion,
-      tema: temaMocion.trim() || tipoMocion,
+      tema: temaMocion.trim(),
       tiempoTotal: totalSeg,
       tiempoOrador: oradorSeg
     });
@@ -540,14 +636,15 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
         {/* Cuerpo Principal de Selección */}
         <main style={{
-          padding: '2rem 1.25rem 3rem 1.25rem',
-          maxWidth: '960px',
+          padding: '2rem 1.5rem 3rem 1.5rem',
+          maxWidth: '1300px',
           margin: '0 auto',
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
           gap: '1.5rem',
-          flex: 1
+          flex: 1,
+          boxSizing: 'border-box'
         }}>
           {/* Banner de Bienvenida y Comité */}
           <div style={{
@@ -1028,14 +1125,24 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
       {/* Banner de Avisos Oficiales */}
       <ConferenceBanner isLight={isLight} role="delegate" comiteId={roomId} />
 
-      {/* ── Subheader / Navegación Móvil ── */}
+      {/* ── Subheader / Navegación ── */}
       <div style={{
-        display: 'flex',
         borderBottom: '1px solid var(--subborder-color)',
         backgroundColor: 'var(--subnav-bg)',
-        padding: '0.35rem 1rem',
-        gap: '0.5rem'
+        padding: '0.4rem 1.25rem',
+        display: 'flex',
+        justifyContent: 'center',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
+        <div style={{
+          display: 'flex',
+          gap: '0.5rem',
+          maxWidth: '1300px',
+          width: '100%',
+          alignItems: 'center',
+          overflowX: 'auto'
+        }}>
         <button
           onClick={() => setActiveTab('DEBATE')}
           style={{
@@ -1123,14 +1230,15 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             transition: 'all 0.15s ease'
           }}
         >
-          <Megaphone size={14} /> {t('views.staff.announcementsTab', 'Avisos')} ({announcements.length})
+          <Megaphone size={14} /> {t('views.staff.announcementsTab', 'Avisos')} ({visibleAnnouncements.length})
         </button>
+        </div>
       </div>
 
       {/* ── Cuerpo Principal del Delegado ── */}
-      <main style={{ padding: '1rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+      <main style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '1300px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         {/* ── HOLDER PERMANENTE DE AVISOS IMPORTANTES (SECRETARÍA & STAFF) ── */}
-        {announcements.length > 0 && activeTab !== 'AVISOS' && (
+        {visibleAnnouncements.length > 0 && activeTab !== 'AVISOS' && (
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1.5px solid rgba(245, 158, 11, 0.45)',
@@ -1165,7 +1273,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   padding: '0.1rem 0.45rem',
                   borderRadius: '10px'
                 }}>
-                  {announcements.length} {announcements.length === 1 ? 'aviso' : 'avisos'}
+                  {visibleAnnouncements.length} {visibleAnnouncements.length === 1 ? 'aviso' : 'avisos'}
                 </span>
               </div>
 
@@ -1185,8 +1293,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 maxHeight: '300px',
                 overflowY: 'auto'
               }}>
-                {announcements.map((ann) => {
+                {visibleAnnouncements.map((ann) => {
                   const badge = getPriorityBadge(ann.priority);
+                  const esPropio = puedeBorrarAviso(ann, 'delegate');
                   return (
                     <div
                       key={ann.id}
@@ -1218,9 +1327,59 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Staff'}</strong>
                           </span>
                         </div>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-                          {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
+                            {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+
+                          {esPropio && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                                  deleteAnnouncement?.(ann.id);
+                                }
+                              }}
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.12)',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                color: '#ef4444',
+                                fontSize: '0.72rem',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                padding: '0.2rem 0.55rem',
+                                borderRadius: '5px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={t('avisos.deleteNoticeTooltip', 'Eliminar aviso para toda la sala')}
+                            >
+                              <Trash2 size={12} /> {t('avisos.deleteNotice', 'Eliminar')}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleIgnorarAnnouncement(ann.id)}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--subborder-color)',
+                              color: 'var(--muted-text)',
+                              fontSize: '0.72rem',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              padding: '0.2rem 0.55rem',
+                              borderRadius: '5px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              transition: 'all 0.15s ease'
+                            }}
+                            title={t('avisos.dismissTooltip', 'Descartar este aviso (ocultarlo de tu vista)')}
+                          >
+                            <EyeOff size={12} /> {t('avisos.dismiss', 'Descartar')}
+                          </button>
+                        </div>
                       </div>
 
                       <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-color)' }}>
@@ -1542,10 +1701,19 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.35rem'
+                    gap: '0.35rem',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  {settings.allowMotions ? <PenTool size={14} /> : <Lock size={14} />} Proponer Moción
+                  {settings.allowMotions ? (
+                    solicitudMocionHecha ? (
+                      <><Check size={14} style={{ color: '#22c55e' }} /> Moción Transmitida</>
+                    ) : (
+                      <><Plus size={14} /> Proponer Moción</>
+                    )
+                  ) : (
+                    <><Lock size={14} /> Bloqueado</>
+                  )}
                 </button>
               </div>
 
@@ -2991,7 +3159,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         {activeTab === 'AVISOS' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* Si existen avisos de sala local P2P prioritarios emitidos por Chair/Staff, se muestran al frente */}
-            {announcements.length > 0 && (
+            {visibleAnnouncements.length > 0 && (
               <div style={{
                 backgroundColor: 'var(--panel-color)',
                 border: '1px solid var(--border-color)',
@@ -3005,13 +3173,14 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Megaphone size={20} color="#f59e0b" />
                   <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800' }}>
-                    {t('views.announcements.holderTitle', 'Avisos Inmediatos de Sala')} ({announcements.length})
+                    {t('views.announcements.holderTitle', 'Avisos Inmediatos de Sala')} ({visibleAnnouncements.length})
                   </h3>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {announcements.map(ann => {
+                  {visibleAnnouncements.map(ann => {
                     const badge = getPriorityBadge(ann.priority);
+                    const esPropio = puedeBorrarAviso(ann, 'delegate');
                     return (
                       <div
                         key={ann.id}
@@ -3043,9 +3212,59 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Staff'}</strong>
                             </span>
                           </div>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
-                            {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
+                              {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+
+                            {esPropio && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                                    deleteAnnouncement?.(ann.id);
+                                  }
+                                }}
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.12)',
+                                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                                  color: '#ef4444',
+                                  fontSize: '0.72rem',
+                                  fontWeight: '800',
+                                  cursor: 'pointer',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '5px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title={t('avisos.deleteNoticeTooltip', 'Eliminar aviso para toda la sala')}
+                              >
+                                <Trash2 size={12} /> {t('avisos.deleteNotice', 'Eliminar')}
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => handleIgnorarAnnouncement(ann.id)}
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid var(--subborder-color)',
+                                color: 'var(--muted-text)',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                padding: '0.2rem 0.55rem',
+                                borderRadius: '5px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={t('avisos.dismissTooltip', 'Descartar este aviso (ocultarlo de tu vista)')}
+                            >
+                              <EyeOff size={12} /> {t('avisos.dismiss', 'Descartar')}
+                            </button>
+                          </div>
                         </div>
 
                         <div style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-color)' }}>
@@ -3077,7 +3296,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         )}
       </main>
 
-      {/* ── Modal para Proponer Moción de Debate ── */}
+      {/* ── Modal para Proponer Moción de Debate (Estilo Pizarra de Mociones) ── */}
       {pedirMocionOpen && (
         <div style={{
           position: 'fixed',
@@ -3085,7 +3304,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.75)',
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
           backdropFilter: 'blur(6px)',
           zIndex: 99999,
           display: 'flex',
@@ -3096,166 +3315,620 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
-            borderRadius: '14px',
-            padding: '1.5rem',
-            width: '460px',
-            maxWidth: '95vw',
+            borderRadius: '12px',
+            padding: '1.05rem 1.15rem',
+            width: '490px',
+            maxWidth: '96vw',
+            maxHeight: '92vh',
+            overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem'
+            gap: '0.75rem',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4)',
+            boxSizing: 'border-box'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', fontSize: '1.1rem', color: '#3b82f6' }}>
-                <FileText size={18} /> Proponer Moción de Debate
+            {/* Cabecera del Formulario */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Sparkles size={16} style={{ color: '#38bdf8' }} />
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', letterSpacing: '-0.01em', color: 'var(--text-color)' }}>
+                    Proponer Moción de Debate
+                  </h4>
+                  <span style={{ fontSize: '0.68rem', opacity: 0.6, fontWeight: '500' }}>
+                    Formulación y transmisión a la Mesa Directiva
+                  </span>
+                </div>
               </div>
+
               <button
+                type="button"
                 onClick={() => setPedirMocionOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer' }}
+                style={{
+                  background: 'var(--card-header-bg)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-color)',
+                  borderRadius: '5px',
+                  padding: '0.25rem',
+                  cursor: 'pointer',
+                  opacity: 0.8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'opacity 0.15s ease'
+                }}
+                title="Cerrar formulario"
               >
-                <X size={18} />
+                <X size={15} />
               </button>
             </div>
 
-            <form onSubmit={handleEnviarMocion} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <form onSubmit={handleEnviarMocion} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* 1. Selector Visual de Modalidad de Debate (Grid 2x2) */}
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Tipo de Moción de Debate</label>
-                <select
-                  value={tipoMocion}
-                  onChange={e => setTipoMocion(e.target.value)}
-                  style={{
-                    width: '100%',
-                    marginTop: '0.35rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
-                    padding: '0.6rem',
-                    color: 'var(--text-color)',
-                    fontWeight: '700'
-                  }}
-                >
-                  <option value="Caucus Moderado">Debate</option>
-                  <option value="Caucus No Moderado">Caucus No Moderado</option>
-                  <option value="Consulta General">Consulta General</option>
-                  <option value="Tour de Table">Tour de Table</option>
-                </select>
+                <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7, display: 'block', marginBottom: '0.35rem' }}>
+                  {t('motions.motionType', '1. Modalidad de Debate')}
+                </label>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '0.45rem'
+                }}>
+                  {tiposMocionConfig.map(tItem => {
+                    const IconComponent = tItem.icon;
+                    const isSelected = tipoMocion === tItem.id;
+                    return (
+                      <button
+                        key={tItem.id}
+                        type="button"
+                        onClick={() => {
+                          setTipoMocion(tItem.id);
+                          if (tItem.id === 'Caucus Moderado') {
+                            setTiempoTotalMinMocion(10);
+                            setTiempoOradorSegMocion(60);
+                          } else if (tItem.id === 'Caucus No Moderado') {
+                            setTiempoTotalMinMocion(15);
+                          } else if (tItem.id === 'Consulta General') {
+                            setTiempoTotalMinMocion(10);
+                            setVarianteConsultaMocion('Estándar');
+                          } else if (tItem.id === 'Tour de Table') {
+                            setTiempoOradorSegMocion(45);
+                          }
+                        }}
+                        style={{
+                          padding: '0.55rem 0.65rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          backgroundColor: isSelected ? tItem.activeBg : 'var(--card-header-bg, rgba(255, 255, 255, 0.03))',
+                          border: isSelected ? `1.5px solid ${tItem.activeBorder}` : '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+                          borderRadius: '8px',
+                          color: isSelected ? tItem.textColor : 'var(--text-color)',
+                          boxShadow: isSelected ? `0 0 12px ${tItem.color}30` : 'none',
+                          transition: 'all 0.15s ease',
+                          outline: 'none'
+                        }}
+                      >
+                        <div style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '6px',
+                          backgroundColor: isSelected ? tItem.color : 'rgba(255, 255, 255, 0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: isSelected ? '#ffffff' : 'var(--muted-text, #94a3b8)',
+                          flexShrink: 0
+                        }}>
+                          <IconComponent size={14} />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{
+                            fontSize: '0.8rem',
+                            fontWeight: isSelected ? '800' : '600',
+                            color: isSelected ? tItem.textColor : 'var(--text-color)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {tItem.nombre}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: tItem.color, flexShrink: 0 }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* 2. País Proponente (Fijo a la propia Delegación) */}
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Tema de Debate</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Cooperación internacional frente a la crisis..."
-                  value={temaMocion}
-                  onChange={e => setTemaMocion(e.target.value)}
+                <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.25rem' }}>
+                  <span>{t('motions.proponent', '2. País Proponente *')}</span>
+                </label>
+                <div
                   style={{
                     width: '100%',
-                    marginTop: '0.35rem',
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: 'var(--card-header-bg, rgba(255, 255, 255, 0.04))',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    borderRadius: '7px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.5rem',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
+                    <CountryFlag bandera={miPaisObj?.bandera} nombre={clientCountry} size="sm" />
+                    <span style={{ fontWeight: '700', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {clientCountry || 'Tu Delegación'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{
+                      fontSize: '0.67rem',
+                      padding: '2px 7px',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                      color: '#60a5fa',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}>
+                      <UserCheck size={11} /> Tu Delegación
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Tema / Propósito del Debate */}
+              <div>
+                <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7, display: 'block', marginBottom: '0.25rem' }}>
+                  {t('motions.topic', '3. Tema / Propósito del Debate *')}
+                </label>
+                <input
+                  type="text"
+                  placeholder={t('motions.topicPlaceholder', 'Ej. Estrategias de cooperación económica...')}
+                  value={temaMocion}
+                  onChange={e => setTemaMocion(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.48rem 0.65rem',
                     backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
-                    padding: '0.6rem',
-                    color: 'var(--text-color)'
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    borderRadius: '6px',
+                    fontSize: '0.82rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
 
-              <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Posición del Proponente en la Lista</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.35rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setPosicionProponenteMocion('Primero')}
-                    style={{
-                      padding: '0.5rem',
-                      borderRadius: '6px',
-                      border: `1px solid ${posicionProponenteMocion === 'Primero' ? '#3b82f6' : 'var(--subborder-color)'}`,
-                      backgroundColor: posicionProponenteMocion === 'Primero' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                      color: posicionProponenteMocion === 'Primero' ? '#3b82f6' : 'var(--text-color)',
-                      fontWeight: '700',
-                      fontSize: '0.78rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Hablar de Primero
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPosicionProponenteMocion('Ultimo')}
-                    style={{
-                      padding: '0.5rem',
-                      borderRadius: '6px',
-                      border: `1px solid ${posicionProponenteMocion === 'Ultimo' ? '#3b82f6' : 'var(--subborder-color)'}`,
-                      backgroundColor: posicionProponenteMocion === 'Ultimo' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                      color: posicionProponenteMocion === 'Ultimo' ? '#3b82f6' : 'var(--text-color)',
-                      fontWeight: '700',
-                      fontSize: '0.78rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Hablar de Último
-                  </button>
+              {/* Opciones Específicas: Turno del Proponente en Caucus Moderado */}
+              {esModeradoMocion && (
+                <div style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '7px',
+                  padding: '0.5rem 0.65rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem'
+                }}>
+                  <label style={{ fontSize: '0.7rem', fontWeight: '700', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Mic size={12} /> {t('motions.speakerTurn', 'Turno de la delegación')} ({clientCountry || 'Proponente'}):
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setPosicionProponenteMocion('Primero')}
+                      style={{
+                        flex: 1,
+                        padding: '0.38rem 0.5rem',
+                        backgroundColor: posicionProponenteMocion === 'Primero' ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
+                        color: posicionProponenteMocion === 'Primero' ? '#ffffff' : 'var(--text-color)',
+                        border: posicionProponenteMocion === 'Primero' ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '5px',
+                        fontSize: '0.74rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Mic size={13} />
+                      <span>{t('motions.speakFirst', 'Hablar Primero')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPosicionProponenteMocion('Ultimo')}
+                      style={{
+                        flex: 1,
+                        padding: '0.38rem 0.5rem',
+                        backgroundColor: posicionProponenteMocion === 'Ultimo' ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
+                        color: posicionProponenteMocion === 'Ultimo' ? '#ffffff' : 'var(--text-color)',
+                        border: posicionProponenteMocion === 'Ultimo' ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '5px',
+                        fontSize: '0.74rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Hourglass size={13} />
+                      <span>{t('motions.speakLast', 'Hablar Al Final')}</span>
+                    </button>
+                  </div>
                 </div>
+              )}
+
+              {/* Opciones Específicas: Modalidad de Consulta General */}
+              {esConsultaMocion && (
+                <div style={{
+                  backgroundColor: 'rgba(16, 185, 129, 0.06)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  borderRadius: '7px',
+                  padding: '0.5rem 0.65rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem'
+                }}>
+                  <label style={{ fontSize: '0.7rem', fontWeight: '700', color: '#6ee7b7', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <MessageSquare size={12} /> {t('motions.consultationMode', 'Modalidad de Consulta:')}
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
+                    {[
+                      { id: 'Estándar', label: 'Estándar' },
+                      { id: 'Cadena / Ping-Pong', label: 'Ping-Pong' },
+                      { id: 'Moderada por el Proponente', label: 'Mod. País' }
+                    ].map(v => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setVarianteConsultaMocion(v.id)}
+                        style={{
+                          padding: '0.35rem 0.4rem',
+                          backgroundColor: varianteConsultaMocion === v.id ? '#10b981' : 'rgba(255, 255, 255, 0.05)',
+                          color: varianteConsultaMocion === v.id ? '#000000' : 'var(--text-color)',
+                          border: varianteConsultaMocion === v.id ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '5px',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Configuración de Tiempos y Presets */}
+              <div style={{ display: 'grid', gridTemplateColumns: (!esTourMocion && esModeradoMocion) ? '1fr 1fr' : '1fr', gap: '0.5rem' }}>
+                {/* Tiempo Total (excepto Tour de Table) */}
+                {!esTourMocion && (
+                  <div style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '7px',
+                    padding: '0.5rem 0.65rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', fontWeight: '700', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Clock size={12} style={{ color: '#38bdf8' }} /> {t('motions.totalDuration', 'Total')}
+                      </label>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#38bdf8', fontFamily: 'monospace' }}>
+                        {tiempoTotalMinMocion}m
+                      </span>
+                    </div>
+
+                    {/* Controles de Stepper */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setTiempoTotalMinMocion(prev => Math.max(1, Number(prev) - 1))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '5px',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        -
+                      </button>
+
+                      <input
+                        type="number"
+                        min="1"
+                        max="90"
+                        value={tiempoTotalMinMocion}
+                        onChange={e => setTiempoTotalMinMocion(Math.max(1, Number(e.target.value)))}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          textAlign: 'center',
+                          padding: '0.25rem 0.2rem',
+                          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          color: 'var(--text-color)',
+                          borderRadius: '5px',
+                          fontSize: '0.82rem',
+                          fontWeight: '700',
+                          fontFamily: 'monospace'
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setTiempoTotalMinMocion(prev => Math.min(90, Number(prev) + 1))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '5px',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Presets Rápidos */}
+                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'space-between' }}>
+                      {presetsTotalMinMocion.map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTiempoTotalMinMocion(p)}
+                          style={{
+                            flex: 1,
+                            padding: '0.15rem 0',
+                            fontSize: '0.67rem',
+                            borderRadius: '4px',
+                            border: Number(tiempoTotalMinMocion) === p ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+                            backgroundColor: Number(tiempoTotalMinMocion) === p ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                            color: Number(tiempoTotalMinMocion) === p ? '#38bdf8' : 'inherit',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {p}m
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tiempo por Orador (para Caucus Moderado o Tour de Table) */}
+                {(esModeradoMocion || esTourMocion) && (
+                  <div style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '7px',
+                    padding: '0.5rem 0.65rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.7rem', fontWeight: '700', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Mic size={12} style={{ color: '#a855f7' }} /> {t('motions.speakerDuration', 'Orador')}
+                      </label>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#c084fc', fontFamily: 'monospace' }}>
+                        {tiempoOradorSegMocion}s
+                      </span>
+                    </div>
+
+                    {/* Controles de Stepper */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setTiempoOradorSegMocion(prev => Math.max(10, Number(prev) - 5))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '5px',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        -
+                      </button>
+
+                      <input
+                        type="number"
+                        min="10"
+                        max="300"
+                        step="5"
+                        value={tiempoOradorSegMocion}
+                        onChange={e => setTiempoOradorSegMocion(Math.max(10, Number(e.target.value)))}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          textAlign: 'center',
+                          padding: '0.25rem 0.2rem',
+                          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          color: 'var(--text-color)',
+                          borderRadius: '5px',
+                          fontSize: '0.82rem',
+                          fontWeight: '700',
+                          fontFamily: 'monospace'
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setTiempoOradorSegMocion(prev => Math.min(300, Number(prev) + 5))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '5px',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Presets Rápidos */}
+                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'space-between' }}>
+                      {presetsOradorSegMocion.map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTiempoOradorSegMocion(p)}
+                          style={{
+                            flex: 1,
+                            padding: '0.15rem 0',
+                            fontSize: '0.67rem',
+                            borderRadius: '4px',
+                            border: Number(tiempoOradorSegMocion) === p ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.08)',
+                            backgroundColor: Number(tiempoOradorSegMocion) === p ? 'rgba(192, 132, 252, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                            color: Number(tiempoOradorSegMocion) === p ? '#c084fc' : 'inherit',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {p}s
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Tiempo Total (segundos)</label>
-                  <input
-                    type="number"
-                    disabled={tipoMocion === 'Tour de Table'}
-                    value={tiempoTotalMocion}
-                    onChange={e => setTiempoTotalMocion(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--subborder-color)',
-                      borderRadius: '8px',
-                      padding: '0.55rem',
-                      color: 'var(--text-color)',
-                      opacity: tipoMocion === 'Tour de Table' ? 0.5 : 1
-                    }}
-                  />
+              {/* Banner de cálculo inteligente para Caucus Moderado */}
+              {esModeradoMocion && intervencionesEstimadasMocion > 0 && (
+                <div style={{
+                  backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px dashed rgba(56, 189, 248, 0.3)',
+                  borderRadius: '6px',
+                  padding: '0.35rem 0.65rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '0.72rem',
+                  color: '#bae6fd'
+                }}>
+                  <span><BarChart2 size={13} style={{ display: 'inline', marginRight: '0.35rem', verticalAlign: '-1px' }} />Capacidad estimada:</span>
+                  <strong style={{ fontSize: '0.76rem', color: '#38bdf8' }}>
+                    ~{intervencionesEstimadasMocion} {t('motions.estimatedInterventions', 'intervenciones')}
+                  </strong>
                 </div>
+              )}
 
-                <div>
-                  <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Por Orador (segundos)</label>
-                  <input
-                    type="number"
-                    disabled={tipoMocion === 'Caucus No Moderado' || tipoMocion === 'Consulta General'}
-                    value={tiempoOradorMocion}
-                    onChange={e => setTiempoOradorMocion(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      marginTop: '0.35rem',
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--subborder-color)',
-                      borderRadius: '8px',
-                      padding: '0.55rem',
-                      color: 'var(--text-color)',
-                      opacity: (tipoMocion === 'Caucus No Moderado' || tipoMocion === 'Consulta General') ? 0.5 : 1
-                    }}
-                  />
-                </div>
+              {/* Botones de Envío / Cancelar */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setPedirMocionOpen(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: 'var(--text-color)',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s ease'
+                  }}
+                >
+                  {t('common.cancel', 'Cancelar')}
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={!clientCountry || !temaMocion.trim()}
+                  style={{
+                    flex: 2,
+                    padding: '0.5rem 0.85rem',
+                    background: (!clientCountry || !temaMocion.trim())
+                      ? 'rgba(255, 255, 255, 0.1)'
+                      : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.82rem',
+                    fontWeight: '800',
+                    letterSpacing: '0.02em',
+                    cursor: (!clientCountry || !temaMocion.trim()) ? 'not-allowed' : 'pointer',
+                    opacity: (!clientCountry || !temaMocion.trim()) ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem',
+                    boxShadow: (!clientCountry || !temaMocion.trim()) ? 'none' : '0 3px 10px rgba(37, 99, 235, 0.35)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Send size={14} /> Transmitir Moción a la Mesa
+                </button>
               </div>
-
-              <button
-                type="submit"
-                style={{
-                  backgroundColor: 'var(--btn-bg)',
-                  color: 'var(--btn-text)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.65rem',
-                  fontWeight: '800',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  marginTop: '0.5rem'
-                }}
-              >
-                Transmitir Moción a la Mesa
-              </button>
             </form>
           </div>
         </div>

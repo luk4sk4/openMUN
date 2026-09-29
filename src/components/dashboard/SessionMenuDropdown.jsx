@@ -677,7 +677,7 @@ const SessionMenuDropdown = ({
                     {t('header.driveConnect', 'Conectar con Google Drive')}
                   </span>
                   <span
-                    title="Función en desarrollo / Not working yet"
+                    title="Función en desarrollo / Coming soon"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -694,7 +694,7 @@ const SessionMenuDropdown = ({
                     }}
                   >
                     <AlertTriangle size={10} />
-                    NOT WORKING YET
+                    Coming soon
                   </span>
                 </div>
                 <span style={{ fontSize: '0.66rem', opacity: 0.8 }}>

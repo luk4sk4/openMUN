@@ -78,11 +78,18 @@ export const NetworkCrashMonitor = () => {
 
   const wasOfflineRef = useRef(false);
   const lastRestoredToastRef = useRef(0);
+  const lastOfflineToastRef = useRef(0);
 
   useEffect(() => {
     const handleNetworkLost = () => {
-      const current = stateRef.current;
+      const now = Date.now();
+      // Debounce: evitar que múltiples eventos seguidos (reintentos de socket, peticiones fallidas) creen bucle
+      if (wasOfflineRef.current && (now - lastOfflineToastRef.current < 20000)) {
+        return;
+      }
+      lastOfflineToastRef.current = now;
       wasOfflineRef.current = true;
+      const current = stateRef.current;
 
       // Construcción del mensaje según el contexto activo
       const messageParts = [];

@@ -316,13 +316,15 @@ class NetworkService {
 
         this.socket.on('connect_error', (err) => {
           console.warn('Error de conexión Socket.io en Host (reintentando en segundo plano):', err.message);
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && (!navigator.onLine || this.consecutiveErrors > 2)) {
             window.dispatchEvent(new CustomEvent('openmun_network_failure'));
           }
+          this.consecutiveErrors = (this.consecutiveErrors || 0) + 1;
           this.emit('connection_lost', { error: err.message });
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
+          this.consecutiveErrors = 0;
           console.log(`Reconectado exitosamente al servidor (intento ${attemptNumber})`);
           this.socketId = this.socket.id;
           if (typeof window !== 'undefined') {
@@ -528,14 +530,16 @@ class NetworkService {
             console.warn('Error de conexión en cliente Socket.io:', err.message);
           } else {
             console.warn('Error de conexión en cliente Socket.io (reintentando en segundo plano):', err.message);
-            if (typeof window !== 'undefined') {
+            if (typeof window !== 'undefined' && (!navigator.onLine || this.consecutiveClientErrors > 2)) {
               window.dispatchEvent(new CustomEvent('openmun_network_failure'));
             }
+            this.consecutiveClientErrors = (this.consecutiveClientErrors || 0) + 1;
             this.emit('connection_lost', { error: err.message });
           }
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
+          this.consecutiveClientErrors = 0;
           console.log(`Cliente reconectado a sala ${cleanRoomId} (intento ${attemptNumber})`);
           this.socketId = this.socket.id;
           if (typeof window !== 'undefined') {

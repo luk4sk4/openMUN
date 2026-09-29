@@ -61,7 +61,10 @@ import {
   formatearMensajeAviso,
   correspondeAviso,
   obtenerOpcionesDestino,
-  obtenerEtiquetaDestino
+  obtenerEtiquetaDestino,
+  ignorarAviso,
+  obtenerAvisosIgnorados,
+  puedeBorrarAviso
 } from '../../utils/announcementHelpers';
 import MensajeriaComite from '../messaging/MensajeriaComite';
 import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
@@ -149,10 +152,54 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
   const [avisosDB, setAvisosDB] = useState([]);
   const [comitesConf, setComitesConf] = useState([]);
   const confActiva = conferenceService.obtenerSesionActiva();
-  const [comiteAsignado, setComiteAsignado] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || roomId || 'TODOS');
+  const [comiteAsignado, setComiteAsignado] = useState(() => (roomId && roomId !== 'TODOS') ? roomId : ((typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || 'TODOS'));
   const currentComiteId = comiteAsignado === 'TODOS' ? null : comiteAsignado;
   const currentComiteNombre = currentComiteId ? (comitesConf.find(c => String(c.id).toLowerCase() === String(currentComiteId).toLowerCase())?.nombre || null) : null;
   const avisosDBFiltrados = avisosDB.filter(av => correspondeAviso(av, { role: 'staff', currentComiteId, currentComiteNombre, comites: comitesConf }));
+
+  const [descartadosAnnouncements, setDescartadosAnnouncements] = useState(() => obtenerAvisosIgnorados());
+
+  useEffect(() => {
+    if (roomId && roomId !== 'TODOS') {
+      setComiteAsignado(roomId);
+    }
+  }, [roomId]);
+
+  useEffect(() => {
+    const handleSessionCleared = () => {
+      setComiteAsignado(roomId || 'TODOS');
+      setDescartadosAnnouncements(obtenerAvisosIgnorados());
+      setAvisosDB([]);
+    };
+    window.addEventListener('openmun_session_cleared', handleSessionCleared);
+    return () => window.removeEventListener('openmun_session_cleared', handleSessionCleared);
+  }, [roomId]);
+
+  useEffect(() => {
+    const handleIgnorado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosAnnouncements(prev => [...new Set([...prev, String(e.detail.id)])]);
+      }
+    };
+    const handleRestaurado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosAnnouncements(prev => prev.filter(id => String(id) !== String(e.detail.id)));
+      }
+    };
+    window.addEventListener('openmun_aviso_ignorado', handleIgnorado);
+    window.addEventListener('openmun_aviso_restaurado', handleRestaurado);
+    return () => {
+      window.removeEventListener('openmun_aviso_ignorado', handleIgnorado);
+      window.removeEventListener('openmun_aviso_restaurado', handleRestaurado);
+    };
+  }, []);
+
+  const visibleAnnouncements = (announcements || []).filter(ann => !descartadosAnnouncements.map(String).includes(String(ann.id)));
+
+  const handleIgnorarAnnouncement = (id) => {
+    ignorarAviso(id);
+    setDescartadosAnnouncements(prev => [...new Set([...prev, String(id)])]);
+  };
 
   // Cargar comités de la conferencia para selector completo de destinos
   useEffect(() => {
@@ -567,7 +614,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
         overflowX: 'auto'
       }}>
         {[
-          { id: 'AVISOS_COMITE', icon: Megaphone, label: 'Avisos Comité', badge: announcements.length },
+          { id: 'AVISOS_COMITE', icon: Megaphone, label: 'Avisos Comité', badge: visibleAnnouncements.length },
           { id: 'MENSAJERIA_COMITE', icon: MessageSquare, label: 'Mensajería Comité', badge: notasStaff.length },
           { id: 'COMUNICACION_CONF', icon: Globe, label: 'Comunicación Conferencia', badge: avisosDBFiltrados.length },
           { id: 'MONITOR_SALA', icon: Radio, label: 'Monitor Sala' }
@@ -787,11 +834,11 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
                 <Bell size={20} color="#10b981" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800' }}>
-                  Avisos Activos en Sala ({announcements.length})
+                  Avisos Activos en Sala ({visibleAnnouncements.length})
                 </h3>
               </div>
 
-              {announcements.length === 0 ? (
+              {visibleAnnouncements.length === 0 ? (
                 <div style={{
                   padding: '3rem 1.5rem',
                   textAlign: 'center',
@@ -813,8 +860,9 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  {announcements.map((ann) => {
+                  {visibleAnnouncements.map((ann) => {
                     const badge = getPriorityBadge(ann.priority);
+                    const esPropio = puedeBorrarAviso(ann, 'staff');
                     return (
                       <div
                         key={`ws_${ann.id}`}
@@ -862,24 +910,54 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                             </span>
                           </div>
 
-                          <button
-                            onClick={() => deleteAnnouncement(ann.id)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--muted-text)',
-                              cursor: 'pointer',
-                              padding: '4px',
-                              borderRadius: '6px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.25rem',
-                              fontSize: '0.72rem'
-                            }}
-                            title={t('views.staff.deleteAnnouncement', 'Retirar Aviso')}
-                          >
-                            <Trash2 size={15} color="#ef4444" />
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            {esPropio && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                                    deleteAnnouncement(ann.id);
+                                  }
+                                }}
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.12)',
+                                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  padding: '3px 8px',
+                                  borderRadius: '5px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  fontSize: '0.72rem',
+                                  fontWeight: '800',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title={t('avisos.deleteNoticeTooltip', 'Eliminar aviso para toda la sala')}
+                              >
+                                <Trash2 size={13} /> {t('avisos.deleteNotice', 'Eliminar')}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleIgnorarAnnouncement(ann.id)}
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid var(--subborder-color)',
+                                color: 'var(--muted-text)',
+                                cursor: 'pointer',
+                                padding: '3px 8px',
+                                borderRadius: '5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={t('avisos.dismissTooltip', 'Descartar este aviso (ocultarlo de tu vista)')}
+                            >
+                              <EyeOff size={13} /> {t('avisos.dismiss', 'Descartar')}
+                            </button>
+                          </div>
                         </div>
 
                         <div style={{ fontSize: '0.98rem', fontWeight: '800', color: 'var(--text-color)' }}>
@@ -920,9 +998,11 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
         {activeTab === 'COMUNICACION_CONF' && (
           <MensajeriaConferencia
             currentRole="staff"
+            conferenciaId={confActiva?.id || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null)}
             currentComiteId={currentComiteId}
             currentComiteNombre={currentComiteNombre}
             comites={comitesConf}
+            initialAvisos={avisosDBFiltrados}
             layout="split"
             showHeader={false}
           />

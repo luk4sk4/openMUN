@@ -32,8 +32,34 @@ export const SESSION_STORAGE_KEYS = [
   'openmun_last_country',
   'openmun_current_comite_id',
   'openmun_current_comite_nombre',
-  'openmun_current_conf_id'
+  'openmun_current_conf_id',
+  'openmun_descartados_avisos',
+  'openmun_mis_avisos',
+  'openmun_user_role',
+  'openmun_last_room_id'
 ];
+
+/**
+ * Limpia los datos de la sesión anterior en localStorage y sessionStorage
+ * @param {Array<string>} conservarKeys - Claves que no deben ser eliminadas (opcional)
+ */
+export function limpiarDatosSesionPrevia(conservarKeys = []) {
+  if (typeof window === 'undefined') return;
+  const toKeep = new Set(conservarKeys);
+  SESSION_STORAGE_KEYS.forEach(k => {
+    if (!toKeep.has(k)) {
+      try {
+        localStorage.removeItem(k);
+      } catch (e) {
+        console.warn('Error eliminando clave de almacenamiento:', k, e);
+      }
+    }
+  });
+  try {
+    sessionStorage.removeItem('openmun_descartados_avisos');
+    sessionStorage.removeItem('openmun_notes');
+  } catch (e) {}
+}
 
 export const ALLOWED_STORAGE_KEYS = new Set([
   'openmun_paises',

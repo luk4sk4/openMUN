@@ -61,7 +61,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
 
   const showNotification = (msg, type = 'success') => {
     setFeedback({ msg, type });
-    setTimeout(() => setFeedback(null), 3500);
+    setTimeout(() => setFeedback(null), type === 'error' ? 7000 : 3500);
   };
 
   const handleAuthSubmit = async (e) => {

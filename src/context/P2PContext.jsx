@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import peerService, { MSG_TYPES, generateRoomCode, DEFAULT_ROOM_SETTINGS } from '../services/peerService';
 import { applyStateDelta } from '../utils/deltaSync';
-import { SESSION_STORAGE_KEYS } from '../utils/sessionValidator';
+import { SESSION_STORAGE_KEYS, limpiarDatosSesionPrevia } from '../utils/sessionValidator';
+import { registrarAvisoPropio } from '../utils/announcementHelpers';
 
 const P2PContext = createContext();
 
@@ -28,7 +29,12 @@ export const P2PProvider = ({ children }) => {
   const [roomId, setRoomId] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      return params.get('room') || localStorage.getItem('openmun_last_room_id') || generateRoomCode();
+      const urlRoom = params.get('room');
+      const prevRoom = localStorage.getItem('openmun_last_room_id');
+      if (urlRoom && prevRoom && urlRoom.trim().toUpperCase() !== prevRoom.trim().toUpperCase()) {
+        limpiarDatosSesionPrevia();
+      }
+      return urlRoom || prevRoom || generateRoomCode();
     }
     return generateRoomCode();
   });
@@ -582,16 +588,14 @@ export const P2PProvider = ({ children }) => {
       if (finalTargetId) {
         if (typeof window !== 'undefined') {
           const previousRoomId = localStorage.getItem('openmun_last_room_id');
-          // Si el código de la sesión es distinto al guardado previamente, limpiar datos de la sesión anterior
-          if (previousRoomId && previousRoomId.trim().toUpperCase() !== finalTargetId.toUpperCase()) {
-            console.log(`[openMUN] Nueva sesión detectada (${finalTargetId} != ${previousRoomId}). Limpiando datos de sesión antigua...`);
-            SESSION_STORAGE_KEYS.forEach(key => {
-              try {
-                localStorage.removeItem(key);
-              } catch (e) {
-                console.warn('Error limpiando clave:', key, e);
-              }
-            });
+          const previousRole = localStorage.getItem('openmun_user_role');
+          const isDifferentRoom = Boolean(previousRoomId && previousRoomId.trim().toUpperCase() !== finalTargetId.toUpperCase());
+          const isDifferentRole = Boolean(previousRole && targetRole && previousRole !== targetRole && (targetRole === 'secretariat' || targetRole === 'staff' || previousRole === 'secretariat' || previousRole === 'staff'));
+
+          // Si el código de la sesión es distinto o cambia a/desde secretaría o staff, limpiar datos de la sesión anterior
+          if (isDifferentRoom || isDifferentRole) {
+            console.log(`[openMUN] Sesión distinta detectada (${finalTargetId} vs ${previousRoomId}, rol: ${targetRole} vs ${previousRole}). Limpiando datos de sesión previa...`);
+            limpiarDatosSesionPrevia();
             // Restablecer notas y avisos en memoria del contexto P2P
             setNotes([]);
             setAnnouncements([]);
@@ -609,11 +613,9 @@ export const P2PProvider = ({ children }) => {
           }
 
           localStorage.setItem('openmun_last_room_id', finalTargetId);
-          // Solo asignar openmun_current_comite_id si no es una conexión secundaria local y no hay un comite_id previo fijado
-          if (!isLocalBroadcast && !localStorage.getItem('openmun_current_comite_id')) {
-            localStorage.setItem('openmun_current_comite_id', finalTargetId);
-          }
+          // Actualizar comite_id actual si no es una conexión secundaria local
           if (!isLocalBroadcast) {
+            localStorage.setItem('openmun_current_comite_id', finalTargetId);
             localStorage.setItem('openmun_user_role', targetRole);
           }
         }
@@ -689,6 +691,11 @@ export const P2PProvider = ({ children }) => {
     setRole('none');
     setClientCountry('');
     setViewMode('chair');
+    setNotes([]);
+    setAnnouncements([]);
+    setSpeakingRequests([]);
+    setEnmiendasPropuestas([]);
+    setRemoteSessionState(null);
   }, []);
 
   const sendNote = useCallback((to, text, type = 'general') => {
@@ -742,6 +749,7 @@ export const P2PProvider = ({ children }) => {
     } else {
       peerService.broadcastAnnouncementAsClient(ann);
     }
+    registrarAvisoPropio(ann.id);
     setAnnouncements(prev => [ann, ...prev.filter(a => a.id !== ann.id)]);
     addNotification('Aviso emitido con éxito', 'success');
   }, [connectionStatus, role, addNotification]);

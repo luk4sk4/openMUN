@@ -14,7 +14,8 @@ import {
   CheckCircle2,
   RefreshCw,
   Bell,
-  EyeOff
+  EyeOff,
+  RotateCcw
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import conferenceService from '../../services/conferenceService';
@@ -22,7 +23,11 @@ import {
   obtenerOpcionesDestino,
   obtenerEtiquetaDestino,
   formatearMensajeAviso,
-  correspondeAviso
+  correspondeAviso,
+  obtenerAvisosIgnorados,
+  ignorarAviso,
+  restaurarAvisoIgnorado,
+  puedeBorrarAviso
 } from '../../utils/announcementHelpers';
 import { playChimeAlert } from '../../utils/audioAlerts';
 
@@ -78,6 +83,7 @@ const MensajeriaConferencia = ({
   currentComiteId: propComiteId,
   currentComiteNombre: propComiteNombre,
   comites: propComites = [],
+  initialAvisos: propInitialAvisos = [],
   layout = 'auto', // 'auto' | 'split' | 'tabs'
   readOnly = false,
   showHeader = true,
@@ -133,17 +139,32 @@ const MensajeriaConferencia = ({
     }
   }, [cleanConfId, propComites]);
 
-  // Lista de avisos obtenidos
-  const [avisos, setAvisos] = useState([]);
-  const [cargando, setCargando] = useState(false);
-  const [descartadosLocales, setDescartadosLocales] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('openmun_descartados_avisos');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
+  // Lista de avisos obtenidos: inicializada desde props o caché en memoria compartida
+  const [avisos, setAvisos] = useState(() => {
+    if (Array.isArray(propInitialAvisos) && propInitialAvisos.length > 0) {
+      return propInitialAvisos;
     }
+    if (conferenceService.obtenerAvisosEnMemoria) {
+      return conferenceService.obtenerAvisosEnMemoria();
+    }
+    return [];
   });
+
+  // Sincronizar si llegan avisos iniciales desde el padre
+  useEffect(() => {
+    if (Array.isArray(propInitialAvisos) && propInitialAvisos.length > 0) {
+      setAvisos(prev => {
+        const map = new Map();
+        propInitialAvisos.forEach(a => { if (a?.id) map.set(String(a.id), a); });
+        prev.forEach(a => { if (a?.id && !map.has(String(a.id))) map.set(String(a.id), a); });
+        return Array.from(map.values());
+      });
+    }
+  }, [propInitialAvisos]);
+
+  const [cargando, setCargando] = useState(false);
+  const [descartadosLocales, setDescartadosLocales] = useState(() => obtenerAvisosIgnorados());
+  const [mostrarIgnorados, setMostrarIgnorados] = useState(false);
 
   // Estados del Redactor de Comunicados
   const [tabMovil, setTabMovil] = useState('TABLON'); // 'TABLON' | 'EMITIR'
@@ -184,17 +205,26 @@ const MensajeriaConferencia = ({
 
   // Cargar avisos desde el servicio
   const fetchAvisos = useCallback(async (silencioso = false) => {
-    if (!cleanConfId) return;
+    const targetConfId = cleanConfId || conferenceService.obtenerSesionActiva()?.id;
+    if (!targetConfId) {
+      if (conferenceService.obtenerAvisosEnMemoria) {
+        const enMem = conferenceService.obtenerAvisosEnMemoria();
+        if (enMem.length > 0) setAvisos(enMem);
+      }
+      return;
+    }
     if (!silencioso) setCargando(true);
     try {
       const res = await conferenceService.obtenerAvisos(
-        cleanConfId,
+        targetConfId,
         effectiveComiteId,
         propRole,
         effectiveComiteNombre
       );
-      if (Array.isArray(res)) {
-        setAvisos(res);
+      const items = Array.isArray(res) ? res : (res && Array.isArray(res.avisos) ? res.avisos : []);
+      if (items.length > 0) {
+        setAvisos(items);
+        conferenceService.guardarAvisosEnMemoria?.(items);
       }
     } catch (e) {
       console.warn('Error cargando avisos de conferencia:', e);
@@ -214,31 +244,41 @@ const MensajeriaConferencia = ({
     const handleNuevoAviso = (e) => {
       if (e.detail) {
         setAvisos(prev => [e.detail, ...prev.filter(a => a.id !== e.detail.id)]);
+        conferenceService.guardarAvisosEnMemoria?.([e.detail]);
       }
     };
 
     const handleAvisoDesactivado = (e) => {
       if (e.detail?.id) {
-        setAvisos(prev => prev.filter(a => a.id !== e.detail.id));
+        setAvisos(prev => prev.filter(a => String(a.id) !== String(e.detail.id)));
+      }
+    };
+
+    const handleAvisoIgnorado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosLocales(prev => [...new Set([...prev, String(e.detail.id)])]);
+      }
+    };
+
+    const handleAvisoRestaurado = (e) => {
+      if (e.detail?.id) {
+        setDescartadosLocales(prev => prev.filter(id => String(id) !== String(e.detail.id)));
       }
     };
 
     window.addEventListener('openmun_nuevo_aviso', handleNuevoAviso);
     window.addEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
+    window.addEventListener('openmun_aviso_ignorado', handleAvisoIgnorado);
+    window.addEventListener('openmun_aviso_restaurado', handleAvisoRestaurado);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('openmun_nuevo_aviso', handleNuevoAviso);
       window.removeEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
+      window.removeEventListener('openmun_aviso_ignorado', handleAvisoIgnorado);
+      window.removeEventListener('openmun_aviso_restaurado', handleAvisoRestaurado);
     };
   }, [fetchAvisos]);
-
-  // Guardar descartados locales en sessionStorage
-  useEffect(() => {
-    try {
-      sessionStorage.setItem('openmun_descartados_avisos', JSON.stringify(descartadosLocales));
-    } catch {}
-  }, [descartadosLocales]);
 
   // Opciones de destino agrupadas para el selector
   const opcionesDestino = useMemo(() => {
@@ -249,14 +289,32 @@ const MensajeriaConferencia = ({
   const avisosFiltrados = useMemo(() => {
     return avisos.filter(av => {
       if (!av) return false;
-      if (descartadosLocales.includes(av.id)) return false;
+      const estaIgnorado = descartadosLocales.map(String).includes(String(av.id));
 
-      // 1. Filtro Prioridad
+      if (mostrarIgnorados) {
+        if (!estaIgnorado) return false;
+      } else {
+        if (estaIgnorado) return false;
+      }
+
+      // 1. Rol checking: Si el usuario no es de la organización central, aplicar filtro de correspondencia de roles y salas
+      if (!['secretaria', 'organizacion', 'admin'].includes(propRole)) {
+        if (!correspondeAviso(av, {
+          role: propRole,
+          currentComiteId: effectiveComiteId,
+          currentComiteNombre: effectiveComiteNombre,
+          comites: listaComites
+        })) {
+          return false;
+        }
+      }
+
+      // 2. Filtro Prioridad
       if (filtroPrioridad !== 'TODAS' && (av.tipo || 'info') !== filtroPrioridad) {
         return false;
       }
 
-      // 2. Filtro Destino
+      // 3. Filtro Destino
       if (filtroDestino === 'MI_SALA' && effectiveComiteId) {
         const dest = String(av.comite_id || '').toUpperCase();
         const matchesLocal =
@@ -272,7 +330,7 @@ const MensajeriaConferencia = ({
         if (dest !== 'SECRETARIA' && dest !== 'ORGANIZACION') return false;
       }
 
-      // 3. Filtro Búsqueda
+      // 4. Filtro Búsqueda
       if (busqueda.trim()) {
         const q = busqueda.toLowerCase().trim();
         const matchMsg = (av.mensaje || '').toLowerCase().includes(q);
@@ -282,7 +340,7 @@ const MensajeriaConferencia = ({
 
       return true;
     });
-  }, [avisos, descartadosLocales, filtroPrioridad, filtroDestino, busqueda, effectiveComiteId]);
+  }, [avisos, descartadosLocales, mostrarIgnorados, filtroPrioridad, filtroDestino, busqueda, effectiveComiteId, propRole, effectiveComiteNombre, listaComites]);
 
   // Manejador de emisión de aviso
   const handleEmitirAviso = async (e) => {
@@ -295,12 +353,14 @@ const MensajeriaConferencia = ({
     try {
       let targetComite = destino === 'GLOBAL' ? null : destino;
 
-      const nuevoAviso = await conferenceService.crearAviso(cleanConfId, {
+      const resAviso = await conferenceService.crearAviso(cleanConfId, {
         comite_id: targetComite,
         emisor: emisor.trim() || 'Organización',
         tipo,
         mensaje: mensaje.trim()
       });
+
+      const nuevoAviso = resAviso?.aviso || resAviso;
 
       if (nuevoAviso) {
         try { playChimeAlert(0.4); } catch {}
@@ -326,20 +386,30 @@ const MensajeriaConferencia = ({
     }
   };
 
-  // Desactivar / Descartar aviso
-  const handleDesactivarAviso = async (avisoId) => {
-    const isStaffOrAdmin = ['chair', 'secretaria', 'secretariat', 'staff', 'admin', 'organizacion'].includes(propRole);
+  // Ignorar aviso (solo para la vista personal del usuario)
+  const handleIgnorarAviso = (avisoId) => {
+    ignorarAviso(avisoId);
+    setDescartadosLocales(prev => [...new Set([...prev, String(avisoId)])]);
+  };
 
-    if (isStaffOrAdmin) {
-      try {
-        await conferenceService.desactivarAviso(avisoId, cleanConfId);
-        setAvisos(prev => prev.filter(a => a.id !== avisoId));
-      } catch (err) {
-        console.warn('Error al desactivar en servidor, descartando localmente:', err);
-        setDescartadosLocales(prev => [...prev, avisoId]);
-      }
-    } else {
-      setDescartadosLocales(prev => [...prev, avisoId]);
+  // Restaurar aviso ignorado para volver a verlo
+  const handleRestaurarAviso = (avisoId) => {
+    restaurarAvisoIgnorado(avisoId);
+    setDescartadosLocales(prev => prev.filter(id => String(id) !== String(avisoId)));
+  };
+
+  // Borrar aviso para toda la conferencia (solo emisor o secretaría/admin)
+  const handleBorrarAviso = async (avisoId) => {
+    const confirmacion = window.confirm(
+      t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?')
+    );
+    if (!confirmacion) return;
+
+    try {
+      await conferenceService.desactivarAviso(avisoId, cleanConfId);
+      setAvisos(prev => prev.filter(a => String(a.id) !== String(avisoId)));
+    } catch (err) {
+      alert(t('common.error', 'Error al borrar aviso: ') + err.message);
     }
   };
 
@@ -805,6 +875,30 @@ const MensajeriaConferencia = ({
                       {tFilter.label}
                     </button>
                   ))}
+
+                  {descartadosLocales.length > 0 && (
+                    <button
+                      onClick={() => setMostrarIgnorados(prev => !prev)}
+                      style={{
+                        backgroundColor: mostrarIgnorados ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
+                        color: mostrarIgnorados ? '#ef4444' : 'var(--muted-text)',
+                        border: `1px solid ${mostrarIgnorados ? 'rgba(239, 68, 68, 0.35)' : 'var(--subborder-color)'}`,
+                        borderRadius: '6px',
+                        padding: '0.28rem 0.55rem',
+                        fontSize: '0.72rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                      title={mostrarIgnorados ? 'Volver a avisos activos' : 'Ver comunicados ignorados'}
+                    >
+                      <EyeOff size={11} />
+                      {mostrarIgnorados ? 'Volver a activos' : `Ignorados (${descartadosLocales.length})`}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -829,12 +923,16 @@ const MensajeriaConferencia = ({
                 }}>
                   <Globe size={32} style={{ opacity: 0.35, marginBottom: '0.5rem' }} />
                   <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>
-                    {busqueda ? 'No se encontraron comunicados con ese criterio' : 'Sin avisos de conferencia activos'}
+                    {mostrarIgnorados
+                      ? 'No tienes comunicados ignorados'
+                      : (busqueda ? 'No se encontraron comunicados con ese criterio' : 'Sin avisos de conferencia activos')}
                   </div>
                   <div style={{ fontSize: '0.76rem', marginTop: '3px' }}>
-                    {cleanConfId
-                      ? 'Los comunicados emitidos por la secretaría o el staff general aparecerán aquí en vivo.'
-                      : 'Conéctate a una conferencia activa para recibir avisos de toda la organización.'}
+                    {mostrarIgnorados
+                      ? 'Los avisos a los que des a "Ignorar" aparecerán aquí si deseas restaurarlos.'
+                      : (cleanConfId
+                        ? 'Los comunicados emitidos por la secretaría o el staff general aparecerán aquí en vivo.'
+                        : 'Conéctate a una conferencia activa para recibir avisos de toda la organización.')}
                   </div>
                 </div>
               ) : (
@@ -842,6 +940,7 @@ const MensajeriaConferencia = ({
                   const tCfg = AVISO_TIPOS_CONFIG[aviso.tipo] || AVISO_TIPOS_CONFIG.info;
                   const targetInfo = obtenerEtiquetaDestino(aviso.comite_id, listaComites);
                   const IconDest = targetInfo.icon || Globe;
+                  const esPropio = puedeBorrarAviso(aviso, propRole);
 
                   return (
                     <div
@@ -896,29 +995,82 @@ const MensajeriaConferencia = ({
                           </span>
                         </div>
 
-                        {/* Fecha y Descartar */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                        {/* Acciones: Fecha, Borrar (emisor) e Ignorar (todos) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                           <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
                             {aviso.creado_en || ''}
                           </span>
-                          <button
-                            onClick={() => handleDesactivarAviso(aviso.id)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#ef4444',
-                              fontSize: '0.72rem',
-                              fontWeight: '700',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '2px',
-                              opacity: 0.8
-                            }}
-                            title="Descartar este aviso"
-                          >
-                            <Trash2 size={12} /> Descartar
-                          </button>
+
+                          {mostrarIgnorados ? (
+                            <button
+                              onClick={() => handleRestaurarAviso(aviso.id)}
+                              style={{
+                                background: 'rgba(59, 130, 246, 0.12)',
+                                border: '1px solid rgba(59, 130, 246, 0.35)',
+                                color: '#3b82f6',
+                                fontSize: '0.72rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '5px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={t('avisos.restoreNotice', 'Volver a mostrar en mi vista')}
+                            >
+                              <RotateCcw size={12} /> {t('avisos.restore', 'Restaurar')}
+                            </button>
+                          ) : (
+                            <>
+                              {/* Botón Eliminar: solo si lo envió el usuario actual o tiene rol secretaría/admin */}
+                              {esPropio && (
+                                <button
+                                  onClick={() => handleBorrarAviso(aviso.id)}
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.12)',
+                                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                                    color: '#ef4444',
+                                    fontSize: '0.72rem',
+                                    fontWeight: '800',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    padding: '0.2rem 0.5rem',
+                                    borderRadius: '5px',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title={t('avisos.deleteNoticeTooltip', 'Eliminar aviso para toda la conferencia')}
+                                >
+                                  <Trash2 size={12} /> {t('avisos.deleteNotice', 'Eliminar')}
+                                </button>
+                              )}
+
+                              {/* Botón Descartar: disponible para cualquier persona */}
+                              <button
+                                onClick={() => handleIgnorarAviso(aviso.id)}
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid var(--subborder-color)',
+                                  color: 'var(--muted-text)',
+                                  fontSize: '0.72rem',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '0.2rem 0.5rem',
+                                  borderRadius: '5px',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title={t('avisos.dismissTooltip', 'Descartar este aviso (ocultarlo de tu vista)')}
+                              >
+                                <EyeOff size={12} /> {t('avisos.dismiss', 'Descartar')}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
 

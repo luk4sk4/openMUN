@@ -51,7 +51,9 @@ import {
   formatearMensajeAviso,
   correspondeAviso,
   obtenerEtiquetaDestino,
-  obtenerOpcionesDestino
+  obtenerOpcionesDestino,
+  ignorarAviso,
+  obtenerAvisosIgnorados
 } from '../../utils/announcementHelpers';
 import { normalizarDatosComite, SESSION_STORAGE_KEYS } from '../../utils/sessionValidator';
 import EstablecerAgenda from '../widgets/EstablecerAgenda';
@@ -353,7 +355,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     try {
       const [resResult, avisosResult, checklistResult] = await Promise.allSettled([
         conferenceService.obtenerResumen(conferencia.id),
-        conferenceService.obtenerAvisos(conferencia.id),
+        conferenceService.obtenerAvisos(conferencia.id, null, 'secretaria', null, true),
         conferenceService.obtenerChecklist(conferencia.id)
       ]);
 
@@ -1223,14 +1225,24 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     }
   };
 
-  // Desactivar aviso en Base de Datos
-  const handleDesactivarAviso = async (avisoId) => {
+  // Borrar aviso en Base de Datos (toda la conferencia)
+  const handleBorrarAviso = async (avisoId) => {
+    const ok = window.confirm(
+      t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?')
+    );
+    if (!ok) return;
     try {
-      await conferenceService.desactivarAviso(avisoId);
+      await conferenceService.desactivarAviso(avisoId, conferencia?.id);
       setAvisosActivos(prev => prev.filter(a => a.id !== avisoId));
     } catch (err) {
-      alert('Error al desactivar aviso: ' + err.message);
+      alert('Error al borrar aviso: ' + err.message);
     }
+  };
+
+  // Ignorar aviso en la vista actual
+  const handleIgnorarAviso = (avisoId) => {
+    ignorarAviso(avisoId);
+    setAvisosActivos(prev => prev.filter(a => a.id !== avisoId));
   };
 
   // Eliminar comité
@@ -2770,7 +2782,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Megaphone size={18} color="#f59e0b" /> Buzón de Avisos y Comunicados Recibidos ({avisosActivos.filter(a => correspondeAviso(a, { role: 'staff', currentComiteId: (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist, comites: listaComitesConsolidada })).length})
+                    <Megaphone size={18} color="#f59e0b" /> Buzón de Avisos y Comunicados Recibidos ({avisosActivos.filter(a => correspondeAviso(a, { role: 'staff_global', currentComiteId: (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist, comites: listaComitesConsolidada })).length})
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>
                     Visualiza los avisos oficiales dirigidos al personal de Staff {filtroComiteChecklist !== 'TODOS' && filtroComiteChecklist !== 'GLOBAL' ? `de la sala seleccionada (${filtroComiteChecklist})` : 'de toda la conferencia'}.
@@ -2799,7 +2811,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
               {(() => {
                 const comiteFiltradoAviso = (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist;
-                const avisosParaStaff = avisosActivos.filter(a => correspondeAviso(a, { role: 'staff', currentComiteId: comiteFiltradoAviso, comites: listaComitesConsolidada }));
+                const avisosParaStaff = avisosActivos.filter(a => correspondeAviso(a, { role: 'staff_global', currentComiteId: comiteFiltradoAviso, comites: listaComitesConsolidada }));
 
                 if (avisosParaStaff.length === 0) {
                   return (
@@ -2857,22 +2869,47 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           </span>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                           <span style={{ fontSize: '0.72rem', color: textMuted }}>
                             {av.creado_en || ''}
                           </span>
                           <button
-                            onClick={() => handleDesactivarAviso(av.id)}
+                            onClick={() => handleBorrarAviso(av.id)}
                             style={{
-                              background: 'transparent',
-                              border: 'none',
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.35)',
                               color: '#ef4444',
                               fontSize: '0.72rem',
-                              fontWeight: '700',
-                              cursor: 'pointer'
+                              fontWeight: '800',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '5px'
                             }}
+                            title={t('avisos.deleteNoticeTooltip', 'Borrar aviso para toda la conferencia')}
                           >
-                            Descartar
+                            <Trash2 size={12} /> {t('avisos.deleteNotice', 'Borrar')}
+                          </button>
+                          <button
+                            onClick={() => handleIgnorarAviso(av.id)}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--subborder-color)',
+                              color: 'var(--muted-text)',
+                              fontSize: '0.72rem',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '5px'
+                            }}
+                            title={t('avisos.ignoreTooltip', 'Ignorar este aviso (ocultarlo de tu vista)')}
+                          >
+                            <EyeOff size={12} /> {t('avisos.ignore', 'Ignorar')}
                           </button>
                         </div>
                       </div>
@@ -4075,20 +4112,46 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                                 )}
                               </div>
 
-                              <button
-                                onClick={() => handleDesactivarAviso(av.id)}
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  color: '#ef4444',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '700',
-                                  cursor: 'pointer',
-                                  padding: '0.2rem 0.4rem'
-                                }}
-                              >
-                                Descartar
-                              </button>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <button
+                                  onClick={() => handleBorrarAviso(av.id)}
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                                    color: '#ef4444',
+                                    fontSize: '0.73rem',
+                                    fontWeight: '800',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    padding: '0.2rem 0.45rem',
+                                    borderRadius: '5px'
+                                  }}
+                                  title={t('avisos.deleteNoticeTooltip', 'Borrar aviso para toda la conferencia')}
+                                >
+                                  <Trash2 size={12} /> {t('avisos.deleteNotice', 'Borrar')}
+                                </button>
+                                <button
+                                  onClick={() => handleIgnorarAviso(av.id)}
+                                  style={{
+                                    background: 'transparent',
+                                    border: '1px solid var(--subborder-color)',
+                                    color: 'var(--muted-text)',
+                                    fontSize: '0.73rem',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    padding: '0.2rem 0.45rem',
+                                    borderRadius: '5px'
+                                  }}
+                                  title={t('avisos.ignoreTooltip', 'Ignorar este aviso (ocultarlo de tu vista)')}
+                                >
+                                  <EyeOff size={12} /> {t('avisos.ignore', 'Ignorar')}
+                                </button>
+                              </div>
                             </div>
 
                             <div style={{ fontSize: '0.86rem', color: 'var(--text-color)', lineHeight: '1.4' }}>

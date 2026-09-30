@@ -657,7 +657,30 @@ export const conferenceService = {
   limpiarSesionActiva() {
     try {
       localStorage.removeItem('openmun_active_conference');
-    } catch (e) {}
+      localStorage.removeItem('openmun_current_conf_id');
+      localStorage.removeItem('openmun_current_comite_id');
+      localStorage.removeItem('openmun_current_comite_nombre');
+      localStorage.removeItem('openmun_user_role');
+      localStorage.removeItem('openmun_mesa_activa');
+      localStorage.removeItem('openmun_cloud_active_comite');
+      localStorage.removeItem('openmun_cloud_account');
+      localStorage.removeItem('openmun_descartados_avisos');
+      localStorage.removeItem('openmun_mis_avisos');
+      if (typeof window !== 'undefined' && window.localStorage) {
+        Object.keys(localStorage).forEach(k => {
+          if (
+            k.startsWith('openmun_conf_') ||
+            k.startsWith('openmun_comite_') ||
+            k.startsWith('openmun_cloud_')
+          ) {
+            try { localStorage.removeItem(k); } catch (e) {}
+          }
+        });
+      }
+      _avisosMemoria = [];
+    } catch (e) {
+      console.warn('Error al limpiar sesión activa de conferencia:', e);
+    }
   }
 };
 

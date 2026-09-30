@@ -36,7 +36,11 @@ export const SESSION_STORAGE_KEYS = [
   'openmun_descartados_avisos',
   'openmun_mis_avisos',
   'openmun_user_role',
-  'openmun_last_room_id'
+  'openmun_last_room_id',
+  'openmun_active_conference',
+  'openmun_cloud_active_comite',
+  'openmun_cloud_account',
+  'openmun_conf_comites'
 ];
 
 /**

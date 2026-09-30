@@ -178,14 +178,23 @@ class NetworkService {
       return this.latestNotes;
     }
     if (role === 'staff') {
-      return this.latestNotes.filter(n =>
-        n.to?.toUpperCase() === 'STAFF' ||
-        n.fromRole === 'staff' ||
-        n.from?.toUpperCase() === 'STAFF' ||
-        n.to?.toUpperCase() === 'TODOS' ||
-        n.type === 'logistica' ||
-        n.type === 'paje'
-      );
+      return this.latestNotes.filter(n => {
+        const dest = (n.to || '').toUpperCase().trim();
+        return (
+          dest === 'STAFF' ||
+          dest === 'CHAIR' ||
+          dest === 'MESA' ||
+          dest === 'MESA DE PRESIDENCIA' ||
+          dest === 'TODOS' ||
+          dest === 'ALL' ||
+          n.fromRole === 'staff' ||
+          n.fromRole === 'chair' ||
+          n.from === 'Staff' ||
+          n.from === 'Mesa de Presidencia' ||
+          n.type === 'logistica' ||
+          n.type === 'paje'
+        );
+      });
     }
     if (role === 'backroom') {
       return this.latestNotes.filter(n =>
@@ -487,6 +496,14 @@ class NetworkService {
             return;
           }
 
+          // Mantener sincronizado el array latestNotes del cliente si llega una nota
+          if (data.type === MSG_TYPES.NOTE_RECEIVED && data.payload) {
+            if (!this.latestNotes) this.latestNotes = [];
+            if (!this.latestNotes.some(n => n.id === data.payload.id)) {
+              this.latestNotes = [data.payload, ...this.latestNotes];
+            }
+          }
+
           // Distribución general de mensajes
           this.emit('message', data);
         });
@@ -642,7 +659,7 @@ class NetworkService {
           const meta = { role, country: country?.trim() || null, connectedAt: Date.now(), socketId: senderSocketId };
           this.peerMetadata.set(senderSocketId, meta);
 
-          const roleNotes = meta.country ? this.getNotesForRole(role, meta.country) : (role === 'backroom' ? this.getNotesForRole('backroom') : (role === 'staff' ? this.getNotesForRole('staff') : []));
+          const roleNotes = this.getNotesForRole(role, meta.country);
 
           const currentPeerList = Array.from(this.peerMetadata.entries()).map(([id, pmeta]) => ({
             peerId: id,

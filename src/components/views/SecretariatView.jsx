@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Radio, 
   Layers, 
@@ -43,7 +43,10 @@ import {
   SkipForward,
   Megaphone,
   AlertTriangle,
-  HelpCircle
+  HelpCircle,
+  ArrowLeft,
+  ChevronDown,
+  LayoutDashboard
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CountryFlag from '../common/CountryFlag';
@@ -117,8 +120,84 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     registerSessionHandlers,
     announcements = [],
     broadcastAnnouncement,
-    deleteAnnouncement
+    deleteAnnouncement,
+    setViewMode
   } = useP2P();
+
+  // Estados y gestión de retorno / volver atrás
+  const [volverMenuOpen, setVolverMenuOpen] = useState(false);
+  const volverMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (volverMenuRef.current && !volverMenuRef.current.contains(e.target)) {
+        setVolverMenuOpen(false);
+      }
+    };
+    if (volverMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [volverMenuOpen]);
+
+  const confIdActiva = typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null;
+  const isLocalTab = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('local') === 'true' || Boolean(window.opener));
+  const hasMultipleDestinations = Boolean(confIdActiva) || isLocalTab;
+
+  const handleNavigateBack = (destination) => {
+    setVolverMenuOpen(false);
+    // Limpiar parámetros de modo en URL para evitar quedar atrapado en secretaría
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      let changed = false;
+      ['mode', 'local'].forEach(p => {
+        if (url.searchParams.has(p)) {
+          url.searchParams.delete(p);
+          changed = true;
+        }
+      });
+      if (changed) {
+        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+      }
+    }
+
+    if (destination === 'close') {
+      if (typeof window !== 'undefined') {
+        window.close();
+      }
+      return;
+    }
+
+    if (leaveRoom) {
+      leaveRoom();
+    }
+
+    if (destination === 'conference') {
+      if (confIdActiva) {
+        window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
+          detail: { view: 'conference', confId: confIdActiva, mode: 'explore' }
+        }));
+      }
+      if (setViewMode) setViewMode('conference');
+      return;
+    }
+
+    if (onExit) {
+      onExit();
+    } else if (setViewMode) {
+      setViewMode('chair');
+    }
+  };
+
+  const handleClickVolver = () => {
+    if (hasMultipleDestinations) {
+      setVolverMenuOpen(prev => !prev);
+    } else {
+      handleNavigateBack('chair');
+    }
+  };
 
   const [respuestasPuntos, setRespuestasPuntos] = useState({});
 
@@ -301,6 +380,126 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: isLogoCompact ? '0.5rem' : '0.9rem', minWidth: 0, flexShrink: 1 }}>
+          {/* Botón Volver Atrás con soporte de destinos múltiples */}
+          <div style={{ position: 'relative', flexShrink: 0 }} ref={volverMenuRef}>
+            <button
+              onClick={handleClickVolver}
+              style={{
+                backgroundColor: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                color: 'var(--text-color)',
+                padding: isExtraCompact ? '0.35rem 0.6rem' : '0.45rem 0.75rem',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.15s ease'
+              }}
+              title={t('views.secretariat.back', 'Volver atrás')}
+            >
+              <ArrowLeft size={16} />
+              {!isExtraCompact && <span>{t('common.back', 'Volver')}</span>}
+              {hasMultipleDestinations && <ChevronDown size={13} style={{ opacity: 0.7 }} />}
+            </button>
+
+            {volverMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                width: '230px',
+                backgroundColor: isLight ? 'rgba(255, 255, 255, 0.98)' : 'rgba(22, 27, 39, 0.96)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px',
+                boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 16px 36px rgba(0,0,0,0.5)',
+                padding: '0.4rem',
+                zIndex: 1000,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem'
+              }}>
+                {confIdActiva && (
+                  <button
+                    onClick={() => handleNavigateBack('conference')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.55rem',
+                      padding: '0.5rem 0.65rem',
+                      borderRadius: '7px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--text-color)',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      textAlign: 'left',
+                      transition: 'background-color 0.15s ease'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    <Building2 size={15} color="#8b5cf6" />
+                    <span>{t('views.secretariat.backToConference', 'Volver a Conferencia')}</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => handleNavigateBack('chair')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.55rem',
+                    padding: '0.5rem 0.65rem',
+                    borderRadius: '7px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-color)',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    textAlign: 'left',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <LayoutDashboard size={15} color="#3b82f6" />
+                  <span>{t('views.secretariat.backToDashboard', 'Volver a Modo Mesa (Chair)')}</span>
+                </button>
+                {isLocalTab && (
+                  <button
+                    onClick={() => handleNavigateBack('close')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.55rem',
+                      padding: '0.5rem 0.65rem',
+                      borderRadius: '7px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      textAlign: 'left',
+                      transition: 'background-color 0.15s ease'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    <X size={15} color="#ef4444" />
+                    <span>{t('views.secretariat.closeTab', 'Cerrar esta pestaña')}</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           <OpenMunLogo height={32} isLight={isLight} showText={!isLogoCompact} />
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'nowrap' }}>
@@ -452,9 +651,8 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
           <button
             onClick={() => {
-              if (confirm('¿Deseas salir del panel de Secretaría?')) {
-                leaveRoom();
-                if (onExit) onExit();
+              if (confirm(t('views.secretariat.confirmExit', '¿Deseas salir del panel de Secretaría?'))) {
+                handleNavigateBack(confIdActiva ? 'conference' : 'chair');
               }
             }}
             style={{
@@ -470,6 +668,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
               alignItems: 'center',
               gap: '0.35rem'
             }}
+            title={t('common.exit', 'Salir')}
           >
             <LogOut size={14} /> {t('common.exit', 'Salir')}
           </button>

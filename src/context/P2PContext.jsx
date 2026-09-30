@@ -13,7 +13,11 @@ export const P2PProvider = ({ children }) => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const mode = params.get('mode');
+      const isLocal = params.get('local') === 'true';
       if (mode && ['delegate', 'secretariat', 'backroom', 'staff', 'join'].includes(mode)) {
+        if ((mode === 'secretariat' || mode === 'staff') && !isLocal) {
+          return 'join';
+        }
         return mode;
       }
       if (params.get('room')) {
@@ -590,11 +594,10 @@ export const P2PProvider = ({ children }) => {
           const previousRoomId = localStorage.getItem('openmun_last_room_id');
           const previousRole = localStorage.getItem('openmun_user_role');
           const isDifferentRoom = Boolean(previousRoomId && previousRoomId.trim().toUpperCase() !== finalTargetId.toUpperCase());
-          const isDifferentRole = Boolean(previousRole && targetRole && previousRole !== targetRole && (targetRole === 'secretariat' || targetRole === 'staff' || previousRole === 'secretariat' || previousRole === 'staff'));
 
-          // Si el código de la sesión es distinto o cambia a/desde secretaría o staff, limpiar datos de la sesión anterior
-          if (isDifferentRoom || isDifferentRole) {
-            console.log(`[openMUN] Sesión distinta detectada (${finalTargetId} vs ${previousRoomId}, rol: ${targetRole} vs ${previousRole}). Limpiando datos de sesión previa...`);
+          // Si el código de la sesión es distinto a una sala previa, limpiar datos de la sala anterior
+          if (isDifferentRoom) {
+            console.log(`[openMUN] Sala distinta detectada (${finalTargetId} vs ${previousRoomId}). Limpiando datos de sesión previa...`);
             limpiarDatosSesionPrevia();
             // Restablecer notas y avisos en memoria del contexto P2P
             setNotes([]);

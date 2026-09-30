@@ -950,7 +950,7 @@ io.on('connection', (socket) => {
                 const salaNorm = data.sala.toString().trim();
                 socket.to(salaNorm).emit('nuevos-datos', data.json);
                 try {
-                        if (data.json && typeof data.json === 'object') {
+                        if (data.json && typeof data.json === 'object' && !data.json.type && !data.json._c) {
                                 const jsonStr = JSON.stringify(data.json);
                                 const confId = salaNorm.includes('_') ? salaNorm.split('_')[0] : salaNorm;
 

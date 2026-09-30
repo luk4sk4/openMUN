@@ -133,6 +133,7 @@ export const SessionProvider = ({ children }) => {
   const [cloudActiveComiteName, setCloudActiveComiteName] = useState(() => {
     return (typeof window !== 'undefined' ? localStorage.getItem('openmun_cloud_active_comite') : '') || '';
   });
+  const isInitialCloudSyncRef = useRef(false);
 
   // Mantener referencias actualizadas para lectura en callbacks
   const stateRef = useRef({
@@ -1884,6 +1885,55 @@ export const SessionProvider = ({ children }) => {
     }
   }, [isCloudLinked]);
 
+  // AUTO-GUARDADO CONTINUO EN SUPABASE CLOUD (Debounce de 2.5s)
+  useEffect(() => {
+    if (!isCloudLinked || !obtenerCuentaActiva()) return;
+
+    // Saltar el primer ciclo de renderizado para no disparar guardado antes de hidratar
+    if (!isInitialCloudSyncRef.current) {
+      isInitialCloudSyncRef.current = true;
+      return;
+    }
+
+    const comiteNameTarget = (cloudActiveComiteName || nombreComite || 'Comité Principal').trim();
+    if (!comiteNameTarget) return;
+
+    setCloudSyncStatus('syncing');
+    const debounceTimer = setTimeout(async () => {
+      try {
+        const snapshot = generarSnapshotSesion();
+        await guardarComite(comiteNameTarget, snapshot);
+        setCloudSyncStatus('synced');
+        setCloudLastSync(new Date());
+
+        // Actualizar la lista en segundo plano sin interrumpir
+        listarComites().then(list => {
+          if (list) setCloudComitesList(list);
+        }).catch(() => {});
+      } catch (err) {
+        console.warn('[Supabase Cloud Auto-Save Warning]:', err);
+        setCloudSyncStatus('error');
+      }
+    }, 2500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [
+    paises,
+    oradoresCola,
+    oradoresCaucus,
+    registroIntervenciones,
+    mociones,
+    historicoMociones,
+    caucusActivo,
+    votacionSesion,
+    agendaSesion,
+    nombreComite,
+    enmiendasSesion,
+    isCloudLinked,
+    cloudActiveComiteName,
+    generarSnapshotSesion
+  ]);
+
   // 2. CARGAR sesion_activa.json
   const cargarSesionJSON = (rawSesionData, onConfigLoaded) => {
     try {
@@ -2085,6 +2135,26 @@ export const SessionProvider = ({ children }) => {
     setRelojGSLState({ segundosRestantes: 60, tiempoInicial: 60, corriendo: false });
     setYieldEvento(null);
 
+    // 1. Limpiar estado de Conferencia en Nube / Supabase
+    try {
+      cerrarSesionConferencia();
+    } catch (e) {
+      console.warn('Error cerrando sesión de conferencia en nube:', e);
+    }
+    setCloudAccount(null);
+    setIsCloudLinked(false);
+    setCloudSyncStatus('idle');
+    setCloudComitesList([]);
+    setCloudActiveComiteName('');
+
+    // 2. Limpiar sesión activa y almacenamiento de conferencias
+    try {
+      conferenceService.limpiarSesionActiva();
+    } catch (e) {
+      console.warn('Error limpiando sesión activa de conferencia:', e);
+    }
+
+    // 3. Limpiar claves de almacenamiento registradas
     const keysToRemove = SESSION_STORAGE_KEYS;
     keysToRemove.forEach(k => {
       try {
@@ -2094,12 +2164,28 @@ export const SessionProvider = ({ children }) => {
       }
     });
 
+    // 4. Limpiar cualquier clave dinámica de conferencias, comités o tokens
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (
+            k.startsWith('openmun_conf_') ||
+            k.startsWith('openmun_comite_') ||
+            k.startsWith('openmun_cloud_')
+          ) {
+            localStorage.removeItem(k);
+          }
+        });
+      } catch (e) {}
+    }
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new CustomEvent('openmun_crisis_update', { 
         detail: { eventos: [], reloj: { dia: 1, hora: 9, minutos: 0, activo: false } } 
       }));
       window.dispatchEvent(new CustomEvent('openmun_session_cleared'));
+      window.dispatchEvent(new CustomEvent('openmun_conference_cleared'));
     }
     emitirAccion('RESET_SESSION', {});
   }, [emitirAccion]);

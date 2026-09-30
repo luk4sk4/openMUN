@@ -183,13 +183,20 @@ const MensajeriaComite = ({
         return true;
       }
 
-      // Staff ve notas a STAFF, de staff, o de tipo paje/logística o dirigidas a TODOS
+      // Staff ve notas a STAFF, de staff, o dirigidas/enviadas por la Mesa (pajes), o de tipo paje/logística o dirigidas a TODOS
       if (effectiveRole === 'staff') {
+        const dest = (n.to || '').toUpperCase().trim();
         return (
-          n.to?.toUpperCase() === 'STAFF' ||
+          dest === 'STAFF' ||
+          dest === 'CHAIR' ||
+          dest === 'MESA' ||
+          dest === 'MESA DE PRESIDENCIA' ||
+          dest === 'TODOS' ||
+          dest === 'ALL' ||
           n.fromRole === 'staff' ||
-          n.from?.toUpperCase() === 'STAFF' ||
-          n.to?.toUpperCase() === 'TODOS' ||
+          n.fromRole === 'chair' ||
+          n.from === 'Staff' ||
+          n.from === 'Mesa de Presidencia' ||
           n.type === 'logistica' ||
           n.type === 'paje'
         );
@@ -299,10 +306,8 @@ const MensajeriaComite = ({
     const remitente = nota.from;
     if (!remitente) return;
 
-    if (remitente === 'Mesa de Presidencia' || nota.fromRole === 'chair') {
+    if (remitente === 'Mesa de Presidencia' || nota.fromRole === 'chair' || remitente === 'Secretaría' || nota.fromRole === 'secretariat') {
       setDestinatario('CHAIR');
-    } else if (remitente === 'Secretaría' || nota.fromRole === 'secretariat') {
-      setDestinatario('SECRETARIA');
     } else if (remitente === 'Staff' || nota.fromRole === 'staff') {
       setDestinatario('STAFF');
     } else if (remitente === 'Backroom' || nota.fromRole === 'backroom') {
@@ -554,7 +559,6 @@ const MensajeriaComite = ({
                     {canSendToChair && (
                       <option value="CHAIR">🏛️ Mesa de Presidencia (Chair)</option>
                     )}
-                    <option value="SECRETARIA">📑 Secretaría General / Proyector</option>
                     <option value="STAFF">👥 Equipo de Staff / Pajes</option>
                     <option value="BACKROOM">🛡️ Backroom / Gabinete de Crisis</option>
                     {canSendToDelegates && effectiveRole !== 'delegate' && (

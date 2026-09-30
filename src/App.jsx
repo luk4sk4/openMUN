@@ -125,6 +125,29 @@ function AppContent() {
     );
   }
 
+  const handleExitStaffOrSecretariat = () => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      let changed = false;
+      ['mode', 'local'].forEach(p => {
+        if (url.searchParams.has(p)) {
+          url.searchParams.delete(p);
+          changed = true;
+        }
+      });
+      if (changed) {
+        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+      }
+    }
+    const confId = typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null;
+    if (confId) {
+      setConferenceParams({ confId, mode: 'explore' });
+      setViewMode('conference');
+    } else {
+      setViewMode('chair');
+    }
+  };
+
   let currentView;
   let viewFallback;
 
@@ -142,10 +165,10 @@ function AppContent() {
     currentView = <DelegateView isLight={isLight} onExit={() => setViewMode('chair')} />;
     viewFallback = <DelegateSkeleton isLight={isLight} />;
   } else if (viewMode === 'secretariat') {
-    currentView = <SecretariatView isLight={isLight} onExit={() => setViewMode('chair')} />;
+    currentView = <SecretariatView isLight={isLight} onExit={handleExitStaffOrSecretariat} />;
     viewFallback = <SecretariatSkeleton isLight={isLight} />;
   } else if (viewMode === 'staff') {
-    currentView = <StaffView isLight={isLight} onExit={() => setViewMode('chair')} />;
+    currentView = <StaffView isLight={isLight} onExit={handleExitStaffOrSecretariat} />;
     viewFallback = <StaffSkeleton isLight={isLight} />;
   } else if (viewMode === 'backroom') {
     currentView = <BackroomView isLight={isLight} onExit={() => setViewMode('chair')} />;

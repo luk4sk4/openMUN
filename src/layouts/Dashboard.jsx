@@ -14,7 +14,6 @@ const AvisosModal = lazyWithRetry(() => import('../components/modals/AvisosModal
 const WidgetSidebar = lazyWithRetry(() => import('../components/panels/WidgetSidebar'), 'WidgetSidebar');
 
 
-import ConferenceBanner from '../components/common/ConferenceBanner';
 import PermanentCrisisBanner from '../components/common/PermanentCrisisBanner';
 import LibreWidgetBanner from '../components/common/LibreWidgetBanner';
 import { useToast } from '../context/ToastContext';
@@ -335,15 +334,7 @@ const Dashboard = () => {
             addToast={addToast}
           />
 
-          {/* Banner de Avisos Oficiales de la Conferencia y Sala (Fuera de HOME / Vista Principal) */}
-          {activeTab !== 'HOME' && (
-            <ConferenceBanner
-              isLight={isLight}
-              role="chair"
-              comiteId={(typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null) || p2p.roomId || null}
-              comiteNombre={session.nombreComite}
-            />
-          )}
+
 
           {/* Banner Permanente de Alerta de Crisis Activa */}
           <PermanentCrisisBanner isLight={isLight} />

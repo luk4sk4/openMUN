@@ -44,11 +44,11 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlRoom = params.get('room');
-      const urlRole = params.get('role');
+      const urlRole = params.get('role') || params.get('mode');
       if (urlRoom) setRoomIdInput(urlRoom.toUpperCase());
       else if (defaultRoomId) setRoomIdInput(defaultRoomId);
 
-      if (urlRole && ['delegate', 'secretariat', 'backroom'].includes(urlRole)) {
+      if (urlRole && ['delegate', 'secretariat', 'staff', 'backroom'].includes(urlRole)) {
         setSelectedRole(urlRole);
       }
     }

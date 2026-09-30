@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Megaphone, 
   Send, 
@@ -30,6 +30,10 @@ import {
   Sparkles,
   Layers,
   ArrowRight,
+  ArrowLeft,
+  ChevronDown,
+  Building2,
+  LayoutDashboard,
   Filter,
   Info,
   AlertTriangle,
@@ -108,8 +112,84 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     broadcastAnnouncement,
     deleteAnnouncement,
     connectedPeers,
-    registerSessionHandlers
+    registerSessionHandlers,
+    setViewMode
   } = useP2P();
+
+  // Estados y gestión de retorno / volver atrás
+  const [volverMenuOpen, setVolverMenuOpen] = useState(false);
+  const volverMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (volverMenuRef.current && !volverMenuRef.current.contains(e.target)) {
+        setVolverMenuOpen(false);
+      }
+    };
+    if (volverMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [volverMenuOpen]);
+
+  const confIdActiva = typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null;
+  const isLocalTab = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('local') === 'true' || Boolean(window.opener));
+  const hasMultipleDestinations = Boolean(confIdActiva) || isLocalTab;
+
+  const handleNavigateBack = (destination) => {
+    setVolverMenuOpen(false);
+    // Limpiar parámetros de modo en URL para evitar quedar atrapado en staff
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      let changed = false;
+      ['mode', 'local'].forEach(p => {
+        if (url.searchParams.has(p)) {
+          url.searchParams.delete(p);
+          changed = true;
+        }
+      });
+      if (changed) {
+        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+      }
+    }
+
+    if (destination === 'close') {
+      if (typeof window !== 'undefined') {
+        window.close();
+      }
+      return;
+    }
+
+    if (leaveRoom) {
+      leaveRoom();
+    }
+
+    if (destination === 'conference') {
+      if (confIdActiva) {
+        window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
+          detail: { view: 'conference', confId: confIdActiva, mode: 'explore' }
+        }));
+      }
+      if (setViewMode) setViewMode('conference');
+      return;
+    }
+
+    if (onExit) {
+      onExit();
+    } else if (setViewMode) {
+      setViewMode('chair');
+    }
+  };
+
+  const handleClickVolver = () => {
+    if (hasMultipleDestinations) {
+      setVolverMenuOpen(prev => !prev);
+    } else {
+      handleNavigateBack('chair');
+    }
+  };
 
   // Sincronización bidireccional inmediata con motor P2P / Host
   useEffect(() => {
@@ -277,15 +357,25 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
   const totalPaises = paises.length;
   const presentesCount = paises.filter(p => p.estatus === 'Presente' || p.estatus === 'Presente y Votando').length;
 
-  // Filtrar notas relevantes para el staff
-  const notasStaff = notes.filter(n => 
-    n.to === 'STAFF' || 
-    n.fromRole === 'staff' ||
-    n.from === 'Staff' ||
-    n.to === 'TODOS' ||
-    n.type === 'logistica' ||
-    n.type === 'paje'
-  );
+  // Filtrar notas relevantes para el staff (incluye notas a la Mesa / Chair y comunicados de sala)
+  const notasStaff = notes.filter(n => {
+    if (!n || !n.text) return false;
+    const dest = (n.to || '').toUpperCase().trim();
+    return (
+      dest === 'STAFF' ||
+      dest === 'CHAIR' ||
+      dest === 'MESA' ||
+      dest === 'MESA DE PRESIDENCIA' ||
+      dest === 'TODOS' ||
+      dest === 'ALL' ||
+      n.fromRole === 'staff' ||
+      n.fromRole === 'chair' ||
+      n.from === 'Staff' ||
+      n.from === 'Mesa de Presidencia' ||
+      n.type === 'logistica' ||
+      n.type === 'paje'
+    );
+  });
 
   const notasFiltradas = notasStaff.filter(n => {
     if (filtroNotas === 'RECIBIDAS') return !n.isOutgoing && n.fromRole !== 'staff';
@@ -458,6 +548,126 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: isLogoCompact ? '0.5rem' : '0.9rem', minWidth: 0, flexShrink: 1 }}>
+          {/* Botón Volver Atrás con soporte de destinos múltiples */}
+          <div style={{ position: 'relative', flexShrink: 0 }} ref={volverMenuRef}>
+            <button
+              onClick={handleClickVolver}
+              style={{
+                backgroundColor: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--subborder-color)',
+                borderRadius: '8px',
+                color: 'var(--text-color)',
+                padding: isExtraCompact ? '0.35rem 0.6rem' : '0.45rem 0.75rem',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.15s ease'
+              }}
+              title={t('views.staff.back', 'Volver atrás')}
+            >
+              <ArrowLeft size={16} />
+              {!isExtraCompact && <span>{t('common.back', 'Volver')}</span>}
+              {hasMultipleDestinations && <ChevronDown size={13} style={{ opacity: 0.7 }} />}
+            </button>
+
+            {volverMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                width: '230px',
+                backgroundColor: isLight ? 'rgba(255, 255, 255, 0.98)' : 'rgba(22, 27, 39, 0.96)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid var(--subborder-color)',
+                borderRadius: '10px',
+                boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 16px 36px rgba(0,0,0,0.5)',
+                padding: '0.4rem',
+                zIndex: 1000,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem'
+              }}>
+                {confIdActiva && (
+                  <button
+                    onClick={() => handleNavigateBack('conference')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.55rem',
+                      padding: '0.5rem 0.65rem',
+                      borderRadius: '7px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--text-color)',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      textAlign: 'left',
+                      transition: 'background-color 0.15s ease'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    <Building2 size={15} color="#8b5cf6" />
+                    <span>{t('views.staff.backToConference', 'Volver a Conferencia')}</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => handleNavigateBack('chair')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.55rem',
+                    padding: '0.5rem 0.65rem',
+                    borderRadius: '7px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-color)',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    textAlign: 'left',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <LayoutDashboard size={15} color="#3b82f6" />
+                  <span>{t('views.staff.backToDashboard', 'Volver a Modo Mesa (Chair)')}</span>
+                </button>
+                {isLocalTab && (
+                  <button
+                    onClick={() => handleNavigateBack('close')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.55rem',
+                      padding: '0.5rem 0.65rem',
+                      borderRadius: '7px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      textAlign: 'left',
+                      transition: 'background-color 0.15s ease'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                  >
+                    <X size={15} color="#ef4444" />
+                    <span>{t('views.staff.closeTab', 'Cerrar esta pestaña')}</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           <OpenMunLogo height={32} isLight={isLight} showText={!isLogoCompact} />
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'nowrap' }}>
@@ -579,8 +789,9 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
 
           <button
             onClick={() => {
-              if (onExit) onExit();
-              else leaveRoom();
+              if (confirm(t('views.staff.confirmExit', '¿Deseas salir de la Consola de Staff?'))) {
+                handleNavigateBack(confIdActiva ? 'conference' : 'chair');
+              }
             }}
             style={{
               backgroundColor: 'rgba(239, 68, 68, 0.12)',
@@ -595,8 +806,9 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
               alignItems: 'center',
               gap: '0.35rem'
             }}
+            title={t('common.exit', 'Salir')}
           >
-            <LogOut size={14} /> {t('views.delegate.exitRoom', 'Salir')}
+            <LogOut size={14} /> {t('common.exit', 'Salir')}
           </button>
         </div>
       </header>

@@ -70,24 +70,35 @@ export const obtenerCuentaActiva = () => {
  */
 export const formatSupabaseError = (err) => {
   if (!err) return 'Error desconocido al conectar con Supabase';
-  const str = String(err?.message || err?.error_description || err || '');
+  const str = String(err?.message || err?.error_description || err?.msg || err || '');
+  const code = String(err?.code || err?.error_code || '');
+
+  if (
+    code === 'user_already_exists' ||
+    str.toLowerCase().includes('user already registered') ||
+    str.toLowerCase().includes('already exists') ||
+    str.toLowerCase().includes('already registered') ||
+    code === '23505'
+  ) {
+    return 'Ya existe una conferencia registrada con este nombre.';
+  }
+
+  if (
+    code === 'invalid_credentials' ||
+    str.toLowerCase().includes('invalid login credentials') ||
+    str.toLowerCase().includes('invalid credentials')
+  ) {
+    return 'Nombre de conferencia o contraseña incorrectos.';
+  }
+
   if (
     str.toLowerCase().includes('networkerror') ||
     str.toLowerCase().includes('failed to fetch') ||
     str.toLowerCase().includes('fetch failed')
   ) {
-    return 'Error de red al conectar con Supabase. Tu navegador, un bloqueador de publicidad (uBlock Origin, AdBlock, Brave Shields) o la protección contra rastreo estricta de Firefox pueden estar bloqueando la conexión con Supabase.';
+    return 'Error de red al conectar con Supabase. Revisa tu conexión o que ningún proxy/bloqueador esté interfiriendo.';
   }
-  if (str.toLowerCase().includes('invalid login credentials')) {
-    return 'Nombre de conferencia o contraseña incorrectos.';
-  }
-  if (
-    str.toLowerCase().includes('user already registered') ||
-    str.toLowerCase().includes('already exists') ||
-    err?.code === '23505'
-  ) {
-    return 'Ya existe una conferencia registrada con este nombre.';
-  }
+
   return str;
 };
 
@@ -106,75 +117,49 @@ export async function registrarConferencia(nombre, password) {
   if (!password || password.length < 4) throw new Error('La contraseña debe tener al menos 4 caracteres.');
 
   const email = formatEmail(cleanName);
-  const passwordHash = await hashPassword(password);
 
-  let registeredAccount = null;
+  // 1. Registrar usuario en Supabase Auth
+  const { data: authData, error: authError } = await client.auth.signUp({
+    email,
+    password
+  });
 
-  // Intento 1: Supabase Auth + tabla public.conferences
-  try {
-    const { data: authData, error: authError } = await client.auth.signUp({
-      email,
-      password
-    });
-
-    if (authError) {
-      throw new Error(formatSupabaseError(authError));
-    }
-
-    if (authData?.user) {
-      // Registrar en public.conferences
-      const { error: confError } = await client.from('conferences').upsert({
-        id: authData.user.id,
-        name: cleanName
-      });
-
-      if (!confError) {
-        registeredAccount = {
-          id: authData.user.id,
-          name: cleanName,
-          email,
-          mode: 'auth'
-        };
-      } else {
-        throw new Error(formatSupabaseError(confError));
-      }
-    }
-  } catch (err) {
-    const formatted = formatSupabaseError(err);
-    // Si es error de red o usuario ya registrado, propagar de inmediato
-    if (
-      formatted.includes('Error de red') ||
-      formatted.includes('Ya existe una conferencia')
-    ) {
-      throw new Error(formatted);
-    }
-    console.warn('[Supabase Auth Register warning, evaluando tabla accounts]:', err);
+  if (authError) {
+    throw new Error(formatSupabaseError(authError));
   }
 
-  // Intento 2: Tabla public.accounts (si Auth falló o se usa esquema directo)
-  if (!registeredAccount) {
-    const { data: accData, error: accError } = await client
-      .from('accounts')
-      .insert({
-        name: cleanName,
-        password_hash: passwordHash
-      })
-      .select('id, name')
-      .single();
-
-    if (accError) {
-      if (accError.code === '23505' || accError.message?.includes('duplicate key')) {
-        throw new Error('Ya existe una conferencia registrada con este nombre.');
-      }
-      throw new Error(formatSupabaseError(accError));
-    }
-
-    registeredAccount = {
-      id: accData.id,
-      name: accData.name,
-      mode: 'accounts'
-    };
+  const user = authData?.user;
+  if (!user) {
+    throw new Error('No se pudo crear el usuario en Supabase.');
   }
+
+  // Si signUp no devolvió sesión automática, iniciar sesión explícitamente para tener token de auth
+  if (!authData?.session) {
+    try {
+      await client.auth.signInWithPassword({ email, password });
+    } catch (loginErr) {
+      console.warn('[Supabase auto-login tras signUp warning]:', loginErr);
+    }
+  }
+
+  // 2. Registrar en tabla public.conferences
+  const { error: confError } = await client.from('conferences').upsert({
+    id: user.id,
+    name: cleanName
+  });
+
+  if (confError) {
+    console.error('[Error al registrar conferencia en tabla conferences]:', confError);
+    // Si falla el upsert de conferencias no lanzar error de red confuso
+    throw new Error(formatSupabaseError(confError));
+  }
+
+  const registeredAccount = {
+    id: user.id,
+    name: cleanName,
+    email,
+    mode: 'auth'
+  };
 
   guardarCuentaLocal(registeredAccount);
   return registeredAccount;
@@ -194,78 +179,37 @@ export async function loginConferencia(nombre, password) {
   if (!password) throw new Error('Ingresa la contraseña de la conferencia.');
 
   const email = formatEmail(cleanName);
-  const passwordHash = await hashPassword(password);
 
-  let loggedAccount = null;
+  const { data: authData, error: authError } = await client.auth.signInWithPassword({
+    email,
+    password
+  });
 
-  // Intento 1: Supabase Auth
+  if (authError) {
+    throw new Error(formatSupabaseError(authError));
+  }
+
+  if (!authData?.user) {
+    throw new Error('Nombre de conferencia o contraseña incorrectos.');
+  }
+
+  // Obtener nombre real desde conferences si está disponible
+  let visibleName = cleanName;
   try {
-    const { data: authData, error: authError } = await client.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (authError) {
-      const formatted = formatSupabaseError(authError);
-      // Si es error de red o credenciales inválidas, propagar directamente
-      if (formatted.includes('Error de red') || formatted.includes('incorrectos')) {
-        throw new Error(formatted);
-      }
-      throw authError;
-    }
-
-    if (authData?.user) {
-      // Obtener nombre desde conferences si está disponible
-      let visibleName = cleanName;
-      try {
-        const { data: conf } = await client
-          .from('conferences')
-          .select('name')
-          .eq('id', authData.user.id)
-          .single();
-        if (conf?.name) visibleName = conf.name;
-      } catch {}
-
-      loggedAccount = {
-        id: authData.user.id,
-        name: visibleName,
-        email,
-        mode: 'auth'
-      };
-    }
-  } catch (err) {
-    const formatted = formatSupabaseError(err);
-    if (formatted.includes('Error de red') || formatted.includes('incorrectos')) {
-      throw new Error(formatted);
-    }
-    console.warn('[Supabase Auth Login warning, intentando con tabla accounts]:', err);
-  }
-
-  // Intento 2: Tabla public.accounts
-  if (!loggedAccount) {
-    const { data: accData, error: accError } = await client
-      .from('accounts')
-      .select('id, name')
-      .eq('name', cleanName)
-      .eq('password_hash', passwordHash)
+    const { data: conf } = await client
+      .from('conferences')
+      .select('name')
+      .eq('id', authData.user.id)
       .single();
+    if (conf?.name) visibleName = conf.name;
+  } catch {}
 
-    if (accError || !accData) {
-      if (accError) {
-        const formatted = formatSupabaseError(accError);
-        if (formatted.includes('Error de red')) {
-          throw new Error(formatted);
-        }
-      }
-      throw new Error('Nombre de conferencia o contraseña incorrectos.');
-    }
-
-    loggedAccount = {
-      id: accData.id,
-      name: accData.name,
-      mode: 'accounts'
-    };
-  }
+  const loggedAccount = {
+    id: authData.user.id,
+    name: visibleName,
+    email,
+    mode: 'auth'
+  };
 
   guardarCuentaLocal(loggedAccount);
   return loggedAccount;
@@ -297,60 +241,21 @@ export async function guardarComite(nombreComite, payloadJSON) {
   const cleanName = (nombreComite || 'Comité').trim();
   const timestamp = new Date().toISOString();
 
-  // Si la cuenta usa modo 'accounts' o tabla 'backups'
-  if (account.mode === 'accounts') {
-    const { data, error } = await client
-      .from('backups')
-      .upsert(
-        {
-          account_id: account.id,
-          name: cleanName,
-          data: payloadJSON,
-          updated_at: timestamp
-        },
-        { onConflict: 'account_id, name' }
-      )
-      .select();
+  const { data, error } = await client
+    .from('committees')
+    .upsert(
+      {
+        conference_id: account.id,
+        name: cleanName,
+        data: payloadJSON,
+        updated_at: timestamp
+      },
+      { onConflict: 'conference_id, name' }
+    )
+    .select();
 
-    if (error) throw new Error(formatSupabaseError(error));
-    return data;
-  }
-
-  // Si la cuenta usa modo 'auth' / tabla 'committees'
-  try {
-    const { data, error } = await client
-      .from('committees')
-      .upsert(
-        {
-          conference_id: account.id,
-          name: cleanName,
-          data: payloadJSON,
-          updated_at: timestamp
-        },
-        { onConflict: 'conference_id, name' }
-      )
-      .select();
-
-    if (error) throw new Error(formatSupabaseError(error));
-    return data;
-  } catch (err) {
-    // Si la tabla committees no existe o da error, probar con backups
-    const { data: backupData, error: backupErr } = await client
-      .from('backups')
-      .upsert(
-        {
-          account_id: account.id,
-          name: cleanName,
-          data: payloadJSON,
-          updated_at: timestamp
-        },
-        { onConflict: 'account_id, name' }
-      )
-      .select();
-
-    if (backupErr) throw new Error(formatSupabaseError(backupErr));
-    return backupData;
-  }
+  if (error) throw new Error(formatSupabaseError(error));
+  return data;
 }
 
 /**
@@ -363,37 +268,14 @@ export async function listarComites() {
   const account = obtenerCuentaActiva();
   if (!account) throw new Error('No hay una conferencia autenticada.');
 
-  if (account.mode === 'accounts') {
-    const { data, error } = await client
-      .from('backups')
-      .select('id, name, updated_at')
-      .eq('account_id', account.id)
-      .order('updated_at', { ascending: false });
+  const { data, error } = await client
+    .from('committees')
+    .select('id, name, updated_at')
+    .eq('conference_id', account.id)
+    .order('updated_at', { ascending: false });
 
-    if (error) throw new Error(formatSupabaseError(error));
-    return data || [];
-  }
-
-  // Intentar tabla committees
-  try {
-    const { data, error } = await client
-      .from('committees')
-      .select('id, name, updated_at')
-      .order('updated_at', { ascending: false });
-
-    if (error) throw new Error(formatSupabaseError(error));
-    return data || [];
-  } catch (err) {
-    // Fallback a backups
-    const { data: backupData, error: backupErr } = await client
-      .from('backups')
-      .select('id, name, updated_at')
-      .eq('account_id', account.id)
-      .order('updated_at', { ascending: false });
-
-    if (backupErr) throw new Error(formatSupabaseError(backupErr));
-    return backupData || [];
-  }
+  if (error) throw new Error(formatSupabaseError(error));
+  return data || [];
 }
 
 /**
@@ -403,28 +285,14 @@ export async function cargarComite(comiteId) {
   const client = getSupabaseClient();
   if (!client) throw new Error('Supabase no está configurado.');
 
-  // Intentar tabla committees
-  try {
-    const { data, error } = await client
-      .from('committees')
-      .select('data')
-      .eq('id', comiteId)
-      .single();
-
-    if (!error && data?.data) {
-      return data.data;
-    }
-  } catch {}
-
-  // Fallback tabla backups
-  const { data: backupData, error: backupErr } = await client
-    .from('backups')
+  const { data, error } = await client
+    .from('committees')
     .select('data')
     .eq('id', comiteId)
     .single();
 
-  if (backupErr) throw new Error(formatSupabaseError(backupErr));
-  return backupData?.data;
+  if (error) throw new Error(formatSupabaseError(error));
+  return data?.data;
 }
 
 /**
@@ -434,21 +302,11 @@ export async function eliminarComite(comiteId) {
   const client = getSupabaseClient();
   if (!client) throw new Error('Supabase no está configurado.');
 
-  // Intentar tabla committees
-  try {
-    const { error } = await client
-      .from('committees')
-      .delete()
-      .eq('id', comiteId);
-    if (!error) return true;
-  } catch {}
-
-  // Fallback tabla backups
-  const { error: backupErr } = await client
-    .from('backups')
+  const { error } = await client
+    .from('committees')
     .delete()
     .eq('id', comiteId);
 
-  if (backupErr) throw new Error(formatSupabaseError(backupErr));
+  if (error) throw new Error(formatSupabaseError(error));
   return true;
 }

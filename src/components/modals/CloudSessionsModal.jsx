@@ -23,6 +23,8 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
   const {
     isCloudLinked,
     cloudAccount,
+    cloudSyncStatus,
+    cloudLastSync,
     cloudComitesList,
     cloudActiveComiteName,
     conectarCloud,
@@ -508,12 +510,41 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   <div style={{ fontSize: '0.68rem', color: '#3ecf8e', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Conferencia Vinculada
                   </div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: '700', marginTop: '1px' }}>
-                    {cloudAccount?.name || 'Conferencia'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '1px' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: '700' }}>
+                      {cloudAccount?.name || 'Conferencia'}
+                    </span>
+                    <span style={{
+                      fontSize: '0.62rem',
+                      fontWeight: '700',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      backgroundColor: cloudSyncStatus === 'syncing'
+                        ? 'rgba(59, 130, 246, 0.2)'
+                        : cloudSyncStatus === 'error'
+                          ? 'rgba(239, 68, 68, 0.2)'
+                          : 'rgba(62, 207, 142, 0.2)',
+                      color: cloudSyncStatus === 'syncing'
+                        ? '#3b82f6'
+                        : cloudSyncStatus === 'error'
+                          ? '#ef4444'
+                          : '#3ecf8e'
+                    }}>
+                      {cloudSyncStatus === 'syncing'
+                        ? 'Guardando cambios...'
+                        : cloudSyncStatus === 'error'
+                          ? 'Error al guardar'
+                          : 'Autoguardado activo'}
+                    </span>
                   </div>
                   {cloudActiveComiteName && (
                     <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                       Comité en pantalla: <strong>{cloudActiveComiteName}</strong>
+                    </div>
+                  )}
+                  {cloudLastSync && (
+                    <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', marginTop: '2px', opacity: 0.85 }}>
+                      Último guardado: {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </div>
                   )}
                 </div>

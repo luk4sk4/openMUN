@@ -44,6 +44,7 @@ const SessionMenuDropdown = ({
     cloudAccount,
     cloudSyncStatus,
     cloudComitesList,
+    cloudLastSync,
     cloudActiveComiteName,
     desconectarCloud,
     guardarComiteCloud,
@@ -258,23 +259,23 @@ const SessionMenuDropdown = ({
             </div>
           </button>
 
-          {/* Botón Borrar Datos Locales */}
+          {/* Botón Eliminar Sesión / Borrar Datos Locales */}
           <button
             onClick={() => {
               setSessionMenuOpen(false);
               addToast({
                 type: 'confirm',
                 isLarge: true,
-                title: t('toast.confirmClearSessionTitle', '¿Borrar todos los datos locales?'),
-                message: t('toast.confirmClearSessionDesc', 'Esta acción restablecerá el comité actual, lista de oradores, votaciones y datos guardados en el navegador. No se puede deshacer si no tienes una copia de seguridad.'),
-                confirmText: t('toast.confirmClearSessionBtn', 'Borrar datos locales'),
+                title: t('toast.confirmClearSessionTitle', '¿Eliminar sesión y datos locales?'),
+                message: t('toast.confirmClearSessionDesc', 'Esta acción restablecerá el comité actual, la conferencia conectada, lista de oradores, votaciones y datos guardados en el navegador. No se puede deshacer si no tienes una copia de seguridad.'),
+                confirmText: t('toast.confirmClearSessionBtn', 'Eliminar sesión'),
                 cancelText: t('toast.cancelBtn', 'Cancelar'),
                 onConfirm: () => {
                   borrarDatosLocales();
                   addToast({
                     type: 'success',
-                    title: t('toast.sessionClearedTitle', '¡Datos locales borrados!'),
-                    message: t('toast.sessionClearedDesc', 'Se ha restablecido la sesión local por completo.'),
+                    title: t('toast.sessionClearedTitle', '¡Sesión eliminada!'),
+                    message: t('toast.sessionClearedDesc', 'Se ha restablecido la sesión local y la información de la conferencia por completo.'),
                     duration: 3500
                   });
                 }
@@ -311,10 +312,10 @@ const SessionMenuDropdown = ({
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#ef4444' }}>
-                {t('header.clearLocalData', 'Borrar datos locales')}
+                {t('header.clearLocalData', 'Eliminar sesión')}
               </span>
               <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-                {t('header.clearLocalDataDesc', 'Restablecer comités, oradores y estado')}
+                {t('header.clearLocalDataDesc', 'Restablecer comités, oradores y conferencia')}
               </span>
             </div>
           </button>
@@ -351,18 +352,24 @@ const SessionMenuDropdown = ({
                 ? (isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)')
                 : cloudSyncStatus === 'syncing'
                   ? 'rgba(59, 130, 246, 0.15)'
-                  : 'rgba(62, 207, 142, 0.15)',
+                  : cloudSyncStatus === 'error'
+                    ? 'rgba(239, 68, 68, 0.15)'
+                    : 'rgba(62, 207, 142, 0.15)',
               color: !isCloudLinked
                 ? 'var(--muted-text)'
                 : cloudSyncStatus === 'syncing'
                   ? '#3b82f6'
-                  : '#3ecf8e'
+                  : cloudSyncStatus === 'error'
+                    ? '#ef4444'
+                    : '#3ecf8e'
             }}>
               {!isCloudLinked
                 ? 'Offline'
                 : cloudSyncStatus === 'syncing'
                   ? 'Guardando...'
-                  : 'Conectado'}
+                  : cloudSyncStatus === 'error'
+                    ? 'Error'
+                    : 'Sincronizado'}
             </span>
           </div>
 
@@ -423,6 +430,11 @@ const SessionMenuDropdown = ({
                 {cloudActiveComiteName && (
                   <div style={{ fontSize: '0.66rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
                     Comité cargado: <strong>{cloudActiveComiteName}</strong>
+                  </div>
+                )}
+                {cloudLastSync && (
+                  <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', marginTop: '0.2rem', opacity: 0.85 }}>
+                    Último guardado: {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </div>
                 )}
               </div>

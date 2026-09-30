@@ -92,6 +92,14 @@ export const formatSupabaseError = (err) => {
   }
 
   if (
+    str.toLowerCase().includes('content security policy') ||
+    str.toLowerCase().includes('violates the document\'s content security policy') ||
+    str.toLowerCase().includes('csp')
+  ) {
+    return 'La política de seguridad (CSP) del sitio bloquea la conexión con Supabase.';
+  }
+
+  if (
     str.toLowerCase().includes('networkerror') ||
     str.toLowerCase().includes('failed to fetch') ||
     str.toLowerCase().includes('fetch failed')

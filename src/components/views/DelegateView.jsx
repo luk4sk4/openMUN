@@ -100,7 +100,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
   // Estados para Selección de País / Delegación inicial
   const [busquedaPais, setBusquedaPais] = useState('');
-  const [paisSeleccionadoTemp, setPaisSeleccionadoTemp] = useState('');
+  const [paisSeleccionadoTemp, setPaisSeleccionadoTemp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('openmun_last_country');
+      if (saved && saved !== 'null' && saved !== 'undefined') return saved.trim();
+    }
+    return '';
+  });
   const [paisPersonalizadoInput, setPaisPersonalizadoInput] = useState('');
   const [isSubmittingCountry, setIsSubmittingCountry] = useState(false);
   const [countrySelectError, setCountrySelectError] = useState(null);
@@ -638,14 +644,14 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         <ConferenceBanner isLight={isLight} role="delegate" comiteId={roomId} />
 
         {/* Cuerpo Principal de Selección */}
-        <main className="openmun-main-content" style={{
-          padding: '2rem 1.5rem 3rem 1.5rem',
+        <main className="openmun-main-content openmun-selection-main" style={{
+          padding: '1.5rem 1.25rem 11rem 1.25rem',
           maxWidth: '1300px',
           margin: '0 auto',
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.5rem',
+          gap: '1.25rem',
           flex: 1,
           boxSizing: 'border-box'
         }}>
@@ -654,13 +660,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
             borderRadius: '16px',
-            padding: '1.75rem',
+            padding: '1.5rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.65rem',
             boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div style={{
                 backgroundColor: 'rgba(34, 197, 94, 0.15)',
                 color: '#22c55e',
@@ -681,11 +687,11 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               </span>
             </div>
 
-            <h2 style={{ margin: 0, fontSize: '1.65rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
               Selecciona tu Delegación
             </h2>
-            <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--muted-text)', lineHeight: '1.5' }}>
-              El Chair ha transmitido el listado oficial de países de esta sesión. Haz clic sobre tu delegación para identificarte en los debates, lista de oradores, votaciones telemáticas y mensajería oficial.
+            <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--muted-text)', lineHeight: '1.5' }}>
+              Haz clic sobre tu delegación para identificarte en los debates, lista de oradores, votaciones telemáticas y mensajería oficial.
             </p>
           </div>
 
@@ -713,18 +719,18 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               backgroundColor: 'var(--panel-color)',
               border: '1.5px dashed var(--subborder-color)',
               borderRadius: '16px',
-              padding: '3rem 1.5rem',
+              padding: '2.25rem 1.25rem',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               textAlign: 'center',
-              gap: '1.25rem',
+              gap: '1rem',
               boxShadow: '0 10px 30px rgba(0,0,0,0.08)'
             }}>
               <div style={{
-                width: '64px',
-                height: '64px',
+                width: '56px',
+                height: '56px',
                 borderRadius: '50%',
                 backgroundColor: 'rgba(234, 179, 8, 0.12)',
                 color: '#eab308',
@@ -732,14 +738,14 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <Clock size={32} />
+                <Clock size={28} />
               </div>
               <div style={{ maxWidth: '520px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800' }}>
-                  Esperando lista de delegaciones de la sesión
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
+                  Esperando lista oficial de delegaciones
                 </h3>
-                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.88rem', color: 'var(--muted-text)', lineHeight: '1.5' }}>
-                  La Mesa Directiva (Chair) aún no ha cargado o transmitido el listado oficial de países de este comité. En cuanto la Presidencia configure la sesión, los países aparecerán aquí para su selección.
+                <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.84rem', color: 'var(--muted-text)', lineHeight: '1.5' }}>
+                  La Mesa Directiva (Chair) aún no ha cargado los países o están sincronizándose. Puedes sincronizar o escribir tu delegación abajo para entrar ya.
                 </p>
               </div>
               <button
@@ -749,8 +755,8 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   color: 'var(--btn-text)',
                   border: 'none',
                   borderRadius: '10px',
-                  padding: '0.65rem 1.25rem',
-                  fontSize: '0.85rem',
+                  padding: '0.55rem 1.15rem',
+                  fontSize: '0.82rem',
                   fontWeight: '800',
                   cursor: 'pointer',
                   display: 'flex',
@@ -759,7 +765,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
                 }}
               >
-                <RefreshCw size={15} /> Comprobar / Actualizar Sesión
+                <RefreshCw size={14} /> Sincronizar Sesión
               </button>
             </div>
           ) : (
@@ -818,8 +824,12 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       className="openmun-country-card"
                       onClick={() => {
                         if (estaOcupado || isSubmittingCountry) return;
-                        setPaisSeleccionadoTemp(p.nombre);
-                        setPaisPersonalizadoInput('');
+                        if (isSelected) {
+                          handleConfirmCountrySelection(p.nombre);
+                        } else {
+                          setPaisSeleccionadoTemp(p.nombre);
+                          setPaisPersonalizadoInput('');
+                        }
                       }}
                       onDoubleClick={() => {
                         if (estaOcupado || isSubmittingCountry) return;
@@ -835,7 +845,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             : (estaOcupado ? 'var(--subborder-color)' : 'var(--border-color)')
                         }`,
                         borderRadius: '12px',
-                        padding: '0.9rem 1rem',
+                        padding: '0.85rem 0.95rem',
                         cursor: estaOcupado ? 'not-allowed' : 'pointer',
                         opacity: estaOcupado ? 0.45 : 1,
                         display: 'flex',
@@ -879,44 +889,49 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   );
                 })}
               </div>
-
-              {/* Opción de país personalizado */}
-              <div style={{
-                backgroundColor: 'var(--panel-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '14px',
-                padding: '1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem'
-              }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  ¿Tu delegación no aparece en la lista anterior?
-                </div>
-                <div style={{ display: 'flex', gap: '0.65rem' }}>
-                  <input
-                    type="text"
-                    placeholder="Escribe el nombre de tu delegación (ej: Santa Sede, Observador ONU...)"
-                    value={paisPersonalizadoInput}
-                    onChange={e => {
-                      setPaisPersonalizadoInput(e.target.value);
-                      if (e.target.value) setPaisSeleccionadoTemp('');
-                    }}
-                    style={{
-                      flex: 1,
-                      backgroundColor: 'var(--card-header-bg)',
-                      border: '1px solid var(--subborder-color)',
-                      borderRadius: '10px',
-                      padding: '0.7rem 1rem',
-                      color: 'var(--text-color)',
-                      fontWeight: '600',
-                      fontSize: '0.88rem'
-                    }}
-                  />
-                </div>
-              </div>
             </>
           )}
+
+          {/* Opción de país personalizado SIEMPRE DISPONIBLE */}
+          <div style={{
+            backgroundColor: 'var(--panel-color)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '14px',
+            padding: '1.15rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.65rem'
+          }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {listaPaisesNormalizada.length === 0 ? 'O introduce el nombre de tu delegación directamente:' : '¿Tu delegación no aparece en la lista anterior?'}
+            </div>
+            <div style={{ display: 'flex', gap: '0.65rem' }}>
+              <input
+                type="text"
+                placeholder="Escribe el nombre de tu delegación (ej: España, Francia, Santa Sede...)"
+                value={paisPersonalizadoInput}
+                onChange={e => {
+                  setPaisPersonalizadoInput(e.target.value);
+                  if (e.target.value) setPaisSeleccionadoTemp('');
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (paisPersonalizadoInput.trim() || paisSeleccionadoTemp)) {
+                    handleConfirmCountrySelection(paisPersonalizadoInput.trim() || paisSeleccionadoTemp);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--subborder-color)',
+                  borderRadius: '10px',
+                  padding: '0.7rem 1rem',
+                  color: 'var(--text-color)',
+                  fontWeight: '600',
+                  fontSize: '0.88rem'
+                }}
+              />
+            </div>
+          </div>
 
           {/* Botón de Confirmación Flotante */}
           <div className="openmun-bottom-floating-bar" style={{
@@ -1003,12 +1018,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
           <OpenMunLogo height={30} isLight={isLight} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'nowrap', minWidth: 0, overflow: 'hidden' }}>
               <CountryFlag nombre={clientCountry} size="sm" />
               <span className="openmun-topbar-title" style={{ fontWeight: '800', fontSize: '1rem', letterSpacing: '-0.01em' }}>
                 {clientCountry || 'Delegación'}
               </span>
               <button
+                className="openmun-topbar-btn"
                 onClick={() => {
                   if (confirm('¿Deseas cambiar tu delegación asignada?')) {
                     resetCountrySelection();
@@ -1019,13 +1035,14 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   border: '1px solid var(--subborder-color)',
                   borderRadius: '6px',
                   color: 'var(--muted-text)',
-                  padding: '0.15rem 0.45rem',
-                  fontSize: '0.68rem',
+                  padding: '0.2rem 0.45rem',
+                  fontSize: '0.7rem',
                   fontWeight: '700',
                   cursor: 'pointer',
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '3px'
+                  gap: '3px',
+                  flexShrink: 0
                 }}
                 title="Cambiar de país asignado"
               >

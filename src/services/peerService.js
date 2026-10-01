@@ -281,6 +281,29 @@ class NetworkService {
       }
     }
 
+    if (!this.latestSessionState && typeof window !== 'undefined') {
+      try {
+        const rawPaises = localStorage.getItem('openmun_paises');
+        if (rawPaises) {
+          const paises = JSON.parse(rawPaises);
+          const nombreComite = localStorage.getItem('openmun_comite') || '';
+          this.latestSessionState = {
+            comision: nombreComite || 'Comité',
+            nombreComite,
+            paises: Array.isArray(paises) ? paises : [],
+            oradoresCola: JSON.parse(localStorage.getItem('openmun_oradores') || '[]'),
+            oradoresCaucus: JSON.parse(localStorage.getItem('openmun_oradores_caucus') || '[]'),
+            mociones: JSON.parse(localStorage.getItem('openmun_mociones') || '[]'),
+            caucusActivo: JSON.parse(localStorage.getItem('openmun_caucus') || 'null'),
+            agendaSesion: JSON.parse(localStorage.getItem('openmun_agenda') || 'null'),
+            votacionSesion: JSON.parse(localStorage.getItem('openmun_votacion') || 'null'),
+            enmiendasSesion: JSON.parse(localStorage.getItem('openmun_enmiendas') || 'null'),
+            roomSettings: this.roomSettings
+          };
+        }
+      } catch (e) {}
+    }
+
     return new Promise((resolve, reject) => {
       try {
         this.socket = io(SOCKET_SERVER_URL, {
@@ -497,8 +520,14 @@ class NetworkService {
                   country: data.payload.country,
                   sessionState: data.payload.sessionState,
                   roomSettings: data.payload.roomSettings,
-                  speakingRequests: data.payload.speakingRequests || []
+                  speakingRequests: data.payload.speakingRequests || [],
+                  enmiendasPropuestas: data.payload.enmiendasPropuestas || [],
+                  connectedPeers: data.payload.connectedPeers || [],
+                  announcements: data.payload.announcements || [],
+                  notes: data.payload.notes || [],
+                  message: data.payload.message || null
                 });
+                this.emit('message', data);
                 resolve(data.payload);
               } else {
                 isResolved = true;
@@ -634,9 +663,12 @@ class NetworkService {
       const { role, password, country, clientId } = message.payload || {};
       let authorized = false;
       let errorMsg = '';
+      let assignedCountry = null;
+      let conflictNotice = null;
 
       if (isLocal) {
         authorized = true;
+        assignedCountry = country || null;
       } else if (role === 'delegate') {
         if (country && country.trim()) {
           const cleanCountry = country.trim();
@@ -655,18 +687,24 @@ class NetworkService {
 
             if (esMismoCliente) {
               authorized = true;
+              assignedCountry = cleanCountry;
               if (existingSocketId !== senderSocketId) {
                 this.peerMetadata.delete(existingSocketId);
               }
             } else {
-              errorMsg = `La delegación de ${cleanCountry} ya está conectada`;
+              // En vez de rechazar al delegado, se le permite entrar a la sala para seleccionar otra delegación
+              authorized = true;
+              assignedCountry = null;
+              conflictNotice = `La delegación de ${cleanCountry} ya está ocupada por otro delegado en esta sala. Por favor selecciona otro país.`;
             }
           } else {
             authorized = true;
+            assignedCountry = cleanCountry;
           }
         } else {
           // El delegado entra a la sala para elegir país desde la lista oficial
           authorized = true;
+          assignedCountry = null;
         }
       } else if (role === 'secretariat') {
         if (password === this.secretPassword) {
@@ -694,7 +732,7 @@ class NetworkService {
         if (authorized) {
           const meta = {
             role,
-            country: country?.trim() || null,
+            country: assignedCountry,
             connectedAt: Date.now(),
             socketId: senderSocketId,
             clientId: clientId || null
@@ -707,6 +745,29 @@ class NetworkService {
             peerId: id,
             ...pmeta
           }));
+
+          if (!this.latestSessionState && typeof window !== 'undefined') {
+            try {
+              const rawPaises = localStorage.getItem('openmun_paises');
+              if (rawPaises) {
+                const paises = JSON.parse(rawPaises);
+                const nombreComite = localStorage.getItem('openmun_comite') || '';
+                this.latestSessionState = {
+                  comision: nombreComite || 'Comité',
+                  nombreComite,
+                  paises: Array.isArray(paises) ? paises : [],
+                  oradoresCola: JSON.parse(localStorage.getItem('openmun_oradores') || '[]'),
+                  oradoresCaucus: JSON.parse(localStorage.getItem('openmun_oradores_caucus') || '[]'),
+                  mociones: JSON.parse(localStorage.getItem('openmun_mociones') || '[]'),
+                  caucusActivo: JSON.parse(localStorage.getItem('openmun_caucus') || 'null'),
+                  agendaSesion: JSON.parse(localStorage.getItem('openmun_agenda') || 'null'),
+                  votacionSesion: JSON.parse(localStorage.getItem('openmun_votacion') || 'null'),
+                  enmiendasSesion: JSON.parse(localStorage.getItem('openmun_enmiendas') || 'null'),
+                  roomSettings: this.roomSettings
+                };
+              }
+            } catch (e) {}
+          }
 
           // Enviar respuesta de autenticación dirigida al socket solicitante
           this.emitSocketMessage({
@@ -722,7 +783,8 @@ class NetworkService {
               sessionState: this.latestSessionState || null,
               notes: roleNotes,
               announcements: this.latestAnnouncements || [],
-              connectedPeers: currentPeerList
+              connectedPeers: currentPeerList,
+              message: conflictNotice || null
             }
           });
 
@@ -1009,6 +1071,26 @@ class NetworkService {
 
     // 6.1 Petición de Sincronización Completa desde Cliente
     if (message.type === MSG_TYPES.REQUEST_FULL_SYNC) {
+      if (!this.latestSessionState && typeof window !== 'undefined') {
+        try {
+          const rawPaises = localStorage.getItem('openmun_paises');
+          if (rawPaises) {
+            this.latestSessionState = {
+              comision: localStorage.getItem('openmun_comite') || 'Comité',
+              nombreComite: localStorage.getItem('openmun_comite') || '',
+              paises: JSON.parse(rawPaises),
+              oradoresCola: JSON.parse(localStorage.getItem('openmun_oradores') || '[]'),
+              oradoresCaucus: JSON.parse(localStorage.getItem('openmun_oradores_caucus') || '[]'),
+              mociones: JSON.parse(localStorage.getItem('openmun_mociones') || '[]'),
+              caucusActivo: JSON.parse(localStorage.getItem('openmun_caucus') || 'null'),
+              agendaSesion: JSON.parse(localStorage.getItem('openmun_agenda') || 'null'),
+              votacionSesion: JSON.parse(localStorage.getItem('openmun_votacion') || 'null'),
+              enmiendasSesion: JSON.parse(localStorage.getItem('openmun_enmiendas') || 'null'),
+              roomSettings: this.roomSettings
+            };
+          }
+        } catch (e) {}
+      }
       if (this.latestSessionState) {
         this.executeBroadcastState(this.latestSessionState);
       }

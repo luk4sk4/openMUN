@@ -182,8 +182,8 @@ const DashboardNavbar = ({
           border: '1px solid var(--subborder-color)',
           boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
           transition: 'background-color 0.3s ease',
-          flexShrink: 1,
-          minWidth: 0,
+          flex: '1 1 auto',
+          minWidth: isExtraCompact ? '130px' : '200px',
           overflowX: 'auto',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none'
@@ -212,6 +212,7 @@ const DashboardNavbar = ({
                 alignItems: 'center',
                 gap: '0.3rem',
                 whiteSpace: 'nowrap',
+                flexShrink: 0,
                 boxShadow: isActiva ? '0 1px 3px rgba(0,0,0,0.25)' : 'none'
               }}
             >
@@ -223,7 +224,7 @@ const DashboardNavbar = ({
       </div>
 
       {/* ── ZONA 3 (DERECHA): Grupos de Conectividad, Sesión, Utilidades y Configuración ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: isExtraCompact ? '0.35rem' : '0.5rem', justifyContent: 'flex-end', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isExtraCompact ? '0.35rem' : '0.5rem', justifyContent: 'flex-end', flexShrink: 0, minWidth: 0 }}>
         {/* Grupo 1: Sala en Vivo & Avisos Oficiales */}
         <div style={{
           display: 'flex',
@@ -251,18 +252,45 @@ const DashboardNavbar = ({
               fontWeight: '600',
               cursor: 'pointer',
               position: 'relative',
-              transition: 'all 0.15s ease'
+              transition: 'all 0.15s ease',
+              minWidth: 0,
+              maxWidth: isExtraCompact ? '130px' : '180px',
+              flexShrink: 0
             }}
-            title={t('liveSession.title', 'Sesión en Vivo')}
+            title={
+              isLiveActive
+                ? `${t('liveSession.title', 'Sesión en Vivo')}: ${roomId || t('liveSession.live', 'En Vivo')} (${connectedPeers?.length || 0} ${t('liveSession.connected', 'conectados')})`
+                : t('liveSession.title', 'Sesión en Vivo')
+            }
           >
-            {(!isExtraCompact || isLiveActive) && (
-              <span>
-                {isLiveActive
-                  ? (roomSettings?.privacyMode === 'hidden'
-                    ? (isExtraCompact ? `(${connectedPeers?.length || 0})` : `${t('liveSession.live', 'En Vivo')} (${connectedPeers?.length || 0})`)
-                    : (isExtraCompact ? `${roomId || 'Live'} (${connectedPeers?.length || 0})` : `${roomId || t('liveSession.live', 'En Vivo')} (${connectedPeers?.length || 0})`))
-                  : t('liveSession.live', 'En Vivo')}
-              </span>
+            <Radio size={12} style={{ opacity: isLiveActive ? 1 : 0.75, flexShrink: 0 }} />
+            {isLiveActive ? (
+              roomSettings?.privacyMode === 'hidden' ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}>
+                  {!isExtraCompact && <span>{t('liveSession.live', 'En Vivo')}</span>}
+                  <span>({connectedPeers?.length || 0})</span>
+                </span>
+              ) : (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', minWidth: 0 }}>
+                  <span
+                    style={{
+                      maxWidth: isExtraCompact ? '65px' : '110px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      display: 'inline-block',
+                      verticalAlign: 'bottom'
+                    }}
+                  >
+                    {roomId || (isExtraCompact ? 'Live' : t('liveSession.live', 'En Vivo'))}
+                  </span>
+                  <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    ({connectedPeers?.length || 0})
+                  </span>
+                </span>
+              )
+            ) : (
+              !isExtraCompact && <span>{t('liveSession.live', 'En Vivo')}</span>
             )}
             {speakingRequests?.length > 0 && (
               <span style={{

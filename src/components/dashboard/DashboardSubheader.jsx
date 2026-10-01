@@ -29,22 +29,31 @@ const DashboardSubheader = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1, overflow: 'hidden' }}>
         {/* Badge Comité */}
         {nombreComite ? (
-          <span style={{
-            fontSize: '0.7rem',
-            fontWeight: '700',
-            color: 'var(--btn-text)',
-            backgroundColor: 'var(--btn-bg)',
-            padding: '0.2rem 0.55rem',
-            borderRadius: '6px',
-            letterSpacing: '0.02em',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-          }}>
-            <Landmark size={12} /> {nombreComite}
+          <span
+            title={nombreComite}
+            style={{
+              fontSize: '0.7rem',
+              fontWeight: '700',
+              color: 'var(--btn-text)',
+              backgroundColor: 'var(--btn-bg)',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '6px',
+              letterSpacing: '0.02em',
+              whiteSpace: 'nowrap',
+              maxWidth: '240px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+            }}
+          >
+            <Landmark size={12} style={{ flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {nombreComite}
+            </span>
           </span>
         ) : (
           <span style={{

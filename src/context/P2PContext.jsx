@@ -44,7 +44,11 @@ export const P2PProvider = ({ children }) => {
   });
 
   const [clientCountry, setClientCountry] = useState(() => {
-    return localStorage.getItem('openmun_last_country') || '';
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('openmun_last_country');
+      return (saved && saved !== 'null' && saved !== 'undefined') ? saved.trim() : '';
+    }
+    return '';
   });
 
   const [secretPassword, setSecretPassword] = useState(() => {
@@ -201,13 +205,23 @@ export const P2PProvider = ({ children }) => {
         setConnectionStatus('connected');
         setRole(data.role);
         setError(null);
-        if (data.country) {
-          setClientCountry(data.country);
-          localStorage.setItem('openmun_last_country', data.country);
+        const validCountry = (typeof data.country === 'string' && data.country.trim() && data.country !== 'null' && data.country !== 'undefined') ? data.country.trim() : null;
+        if (validCountry) {
+          setClientCountry(validCountry);
+          localStorage.setItem('openmun_last_country', validCountry);
+          if (roomId) localStorage.setItem(`openmun_country_${roomId}`, validCountry);
         } else if (data.role === 'delegate') {
-          const savedCountry = localStorage.getItem('openmun_last_country');
-          if (savedCountry) {
-            setClientCountry(savedCountry);
+          // Si el host no tiene país registrado aún, verificar si en esta sala o en general teníamos uno
+          const currentRoom = roomId || (typeof window !== 'undefined' ? localStorage.getItem('openmun_last_room_id') : '');
+          const savedCountry = currentRoom ? (localStorage.getItem(`openmun_country_${currentRoom}`) || localStorage.getItem('openmun_last_country')) : (typeof window !== 'undefined' ? localStorage.getItem('openmun_last_country') : null);
+          if (savedCountry && savedCountry !== 'null' && savedCountry !== 'undefined') {
+            const clean = savedCountry.trim();
+            setClientCountry(clean);
+            localStorage.setItem('openmun_last_country', clean);
+            if (currentRoom) localStorage.setItem(`openmun_country_${currentRoom}`, clean);
+            peerService.selectCountryAsClient(clean);
+          } else {
+            setClientCountry('');
           }
         }
         if (data.sessionState) {
@@ -216,8 +230,20 @@ export const P2PProvider = ({ children }) => {
             sessionActionHandlersRef.current.onSyncState(data.sessionState);
           }
         }
+        if (Array.isArray(data.connectedPeers)) {
+          setConnectedPeers(data.connectedPeers);
+        }
+        if (Array.isArray(data.announcements)) {
+          setAnnouncements(data.announcements);
+        }
+        if (Array.isArray(data.notes)) {
+          setNotes(data.notes);
+        }
         if (data.roomSettings) setRoomSettings(data.roomSettings);
         if (data.speakingRequests) setSpeakingRequests(data.speakingRequests);
+        if (data.message) {
+          addNotification(data.message, 'warning');
+        }
         addNotification(data.country ? `Conectado a la sala como ${data.country}` : `Conectado a la sala (${data.role})`, 'success');
       }
 
@@ -585,42 +611,54 @@ export const P2PProvider = ({ children }) => {
     setConnectionStatus('connecting');
     setError(null);
     try {
+      const finalTargetId = (targetRoomId || roomId || '').trim();
+      const previousRoomId = typeof window !== 'undefined' ? localStorage.getItem('openmun_last_room_id') : null;
+      const isDifferentRoom = Boolean(previousRoomId && finalTargetId && previousRoomId.trim().toUpperCase() !== finalTargetId.toUpperCase());
+
+      // Si es una sala distinta a la previa, limpiar datos de la sala anterior ANTES de conectar
+      if (isDifferentRoom) {
+        console.log(`[openMUN] Sala distinta detectada (${finalTargetId} vs ${previousRoomId}). Limpiando datos de sesión previa...`);
+        limpiarDatosSesionPrevia();
+        setNotes([]);
+        setAnnouncements([]);
+        setSpeakingRequests([]);
+        setEnmiendasPropuestas([]);
+        setRemoteSessionState(null);
+        if (peerService) {
+          peerService.latestNotes = [];
+          peerService.latestAnnouncements = [];
+          peerService.latestSpeakingRequests = [];
+          peerService.latestSessionState = null;
+        }
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('openmun_session_cleared'));
+      }
+
+      // Determinar país para esta sesión: preservar la delegación del usuario (sala específica o general)
+      const isValid = (c) => typeof c === 'string' && c.trim() && c.trim() !== 'null' && c.trim() !== 'undefined';
+      let effectiveCountry = '';
+      if (targetRole === 'delegate') {
+        if (isValid(country)) {
+          effectiveCountry = country.trim();
+        } else if (typeof window !== 'undefined') {
+          const roomCountry = localStorage.getItem(`openmun_country_${finalTargetId}`) || localStorage.getItem('openmun_last_country');
+          if (isValid(roomCountry)) {
+            effectiveCountry = roomCountry.trim();
+          }
+        }
+      }
+
       await peerService.initClient({
-        roomId: targetRoomId || roomId,
+        roomId: finalTargetId,
         role: targetRole,
         password,
-        country: country || null,
+        country: effectiveCountry || null,
         isLocalBroadcast
       });
-      const finalTargetId = (targetRoomId || roomId || '').trim();
+
       if (finalTargetId) {
         if (typeof window !== 'undefined') {
-          const previousRoomId = localStorage.getItem('openmun_last_room_id');
-          const previousRole = localStorage.getItem('openmun_user_role');
-          const isDifferentRoom = Boolean(previousRoomId && previousRoomId.trim().toUpperCase() !== finalTargetId.toUpperCase());
-
-          // Si el código de la sesión es distinto a una sala previa, limpiar datos de la sala anterior
-          if (isDifferentRoom) {
-            console.log(`[openMUN] Sala distinta detectada (${finalTargetId} vs ${previousRoomId}). Limpiando datos de sesión previa...`);
-            limpiarDatosSesionPrevia();
-            // Restablecer notas y avisos en memoria del contexto P2P
-            setNotes([]);
-            setAnnouncements([]);
-            setSpeakingRequests([]);
-            setEnmiendasPropuestas([]);
-            setRemoteSessionState(null);
-            if (peerService) {
-              peerService.latestNotes = [];
-              peerService.latestAnnouncements = [];
-              peerService.latestSpeakingRequests = [];
-              peerService.latestSessionState = null;
-            }
-            window.dispatchEvent(new Event('storage'));
-            window.dispatchEvent(new CustomEvent('openmun_session_cleared'));
-          }
-
           localStorage.setItem('openmun_last_room_id', finalTargetId);
-          // Actualizar comite_id actual si no es una conexión secundaria local
           if (!isLocalBroadcast) {
             localStorage.setItem('openmun_current_comite_id', finalTargetId);
             localStorage.setItem('openmun_user_role', targetRole);
@@ -639,10 +677,10 @@ export const P2PProvider = ({ children }) => {
         } catch (e) { }
       }
       if (targetRole === 'delegate') {
-        const effectiveCountry = country || localStorage.getItem('openmun_last_country') || '';
         if (effectiveCountry) {
           setClientCountry(effectiveCountry);
           localStorage.setItem('openmun_last_country', effectiveCountry);
+          if (finalTargetId) localStorage.setItem(`openmun_country_${finalTargetId}`, effectiveCountry);
         } else {
           setClientCountry('');
         }
@@ -670,7 +708,12 @@ export const P2PProvider = ({ children }) => {
             resolved = true;
             unsubscribe();
             if (data.payload?.success) {
-              resolve({ success: true, country: data.payload.country || cleanName });
+              const assignedCountry = (data.payload.country || cleanName).trim();
+              setClientCountry(assignedCountry);
+              localStorage.setItem('openmun_last_country', assignedCountry);
+              const curRoom = roomId || (typeof window !== 'undefined' ? localStorage.getItem('openmun_last_room_id') : '');
+              if (curRoom) localStorage.setItem(`openmun_country_${curRoom}`, assignedCountry);
+              resolve({ success: true, country: assignedCountry });
             } else {
               resolve({ success: false, message: data.payload?.message || 'País no disponible' });
             }
@@ -694,13 +737,15 @@ export const P2PProvider = ({ children }) => {
         }
       }, 8000);
     });
-  }, []);
+  }, [roomId]);
 
   const resetCountrySelection = useCallback(() => {
     setClientCountry('');
     localStorage.removeItem('openmun_last_country');
+    const curRoom = roomId || (typeof window !== 'undefined' ? localStorage.getItem('openmun_last_room_id') : '');
+    if (curRoom) localStorage.removeItem(`openmun_country_${curRoom}`);
     peerService.releaseCountryAsClient();
-  }, []);
+  }, [roomId]);
 
   const leaveRoom = useCallback(() => {
     peerService.releaseCountryAsClient();
@@ -708,7 +753,7 @@ export const P2PProvider = ({ children }) => {
     setConnectionStatus('disconnected');
     setRole('none');
     setClientCountry('');
-    setViewMode('chair');
+    setViewMode('join');
     setNotes([]);
     setAnnouncements([]);
     setSpeakingRequests([]);
@@ -723,8 +768,10 @@ export const P2PProvider = ({ children }) => {
       } catch (e) { }
       localStorage.removeItem('openmun_last_country');
       localStorage.removeItem('openmun_user_role');
+      const curRoom = roomId || localStorage.getItem('openmun_last_room_id');
+      if (curRoom) localStorage.removeItem(`openmun_country_${curRoom}`);
     }
-  }, []);
+  }, [roomId]);
 
   const sendNote = useCallback((to, text, type = 'general') => {
     const noteId = `note-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;

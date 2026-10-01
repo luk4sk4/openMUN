@@ -533,6 +533,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
       {/* ── Cabecera de Staff ── */}
       <header
         ref={headerRef}
+        className="openmun-topbar"
         style={{
           padding: isExtraCompact ? '0.5rem 1rem' : '0.85rem 1.5rem',
           backgroundColor: 'var(--header-bg)',
@@ -552,6 +553,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
           <div style={{ position: 'relative', flexShrink: 0 }} ref={volverMenuRef}>
             <button
               onClick={handleClickVolver}
+              className="openmun-topbar-btn"
               style={{
                 backgroundColor: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)',
                 border: '1px solid var(--subborder-color)',
@@ -569,7 +571,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
               title={t('views.staff.back', 'Volver atrás')}
             >
               <ArrowLeft size={16} />
-              {!isExtraCompact && <span>{t('common.back', 'Volver')}</span>}
+              {!isExtraCompact && <span className="btn-text">{t('common.back', 'Volver')}</span>}
               {hasMultipleDestinations && <ChevronDown size={13} style={{ opacity: 0.7 }} />}
             </button>
 
@@ -749,6 +751,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
 
           <button
             onClick={() => setIsAccessModalOpen(true)}
+            className="openmun-topbar-btn"
             style={{
               background: 'transparent',
               border: '1px solid var(--subborder-color)',
@@ -763,11 +766,12 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
               gap: '0.35rem'
             }}
           >
-            <Eye size={14} /> {t('accessibility.title', 'Accesibilidad')}
+            <Eye size={14} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
           </button>
 
           <button
             onClick={toggleThemeMode}
+            className="openmun-topbar-btn"
             style={{
               background: 'transparent',
               border: '1px solid var(--subborder-color)',
@@ -793,6 +797,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                 handleNavigateBack(confIdActiva ? 'conference' : 'chair');
               }
             }}
+            className="openmun-topbar-btn"
             style={{
               backgroundColor: 'rgba(239, 68, 68, 0.12)',
               color: '#ef4444',
@@ -808,7 +813,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
             }}
             title={t('common.exit', 'Salir')}
           >
-            <LogOut size={14} /> {t('common.exit', 'Salir')}
+            <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
           </button>
         </div>
       </header>
@@ -817,7 +822,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
       <ConferenceBanner isLight={isLight} role="staff" comiteId={currentComiteId} comiteNombre={currentComiteNombre} comites={comitesConf} />
 
       {/* ── Barra de Pestañas de Navegación (4 Secciones) ── */}
-      <nav style={{
+      <nav className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
         display: 'flex',
         gap: '0.4rem',
         padding: '0.65rem 1.5rem',
@@ -837,6 +842,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              className="openmun-nav-tab-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -896,13 +902,13 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
       )}
 
       {/* ── Contenido Principal según Pestaña ── */}
-      <main style={{ flex: 1, padding: '1.5rem', maxWidth: '1300px', width: '100%', margin: '0 auto' }}>
+      <main className="openmun-main-content" style={{ flex: 1, padding: '1.5rem', maxWidth: '1300px', width: '100%', margin: '0 auto' }}>
 
         {/* ══════════════════════════════════════════════════════════════
             PESTAÑA 1: AVISOS COMITÉ (EMISIÓN & GESTIÓN WEBSOCKETS)
            ══════════════════════════════════════════════════════════════ */}
         {activeTab === 'AVISOS_COMITE' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 420px) 1fr', gap: '1.5rem' }}>
+          <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 420px) 1fr', gap: '1.5rem' }}>
             {/* Formulario de Emisión de Aviso Local a la Sala */}
             <div style={{
               backgroundColor: 'var(--panel-color)',

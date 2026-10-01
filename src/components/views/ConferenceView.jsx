@@ -1922,7 +1922,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       )}
 
       {/* Barra Superior Central */}
-      <header style={{
+      <header className="openmun-topbar" style={{
         padding: '0.85rem 1.5rem',
         backgroundColor: bgCard,
         borderBottom: `1px solid ${borderCol}`,
@@ -1942,6 +1942,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               if (onExit) onExit();
               else setViewMode('chair');
             }}
+            className="openmun-topbar-btn"
             style={{
               background: 'transparent',
               border: `1px solid ${borderCol}`,
@@ -1957,7 +1958,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             }}
             title="Volver al Dashboard"
           >
-            <ArrowLeft size={16} /> Volver
+            <ArrowLeft size={16} /> <span className="btn-text">Volver</span>
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -1995,7 +1996,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         </div>
 
         {/* SELECTOR DE 3 PESTAÑAS */}
-        <div style={{
+        <div className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
           display: 'flex',
           backgroundColor: isLight ? '#e2e8f0' : 'rgba(255, 255, 255, 0.08)',
           borderRadius: '10px',
@@ -2004,6 +2005,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         }}>
           <button
             onClick={() => setActiveMainTab('VER_COMITES')}
+            className="openmun-nav-tab-btn"
             style={{
               padding: '0.5rem 1rem',
               borderRadius: '8px',
@@ -2025,6 +2027,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
           <button
             onClick={() => setActiveMainTab('STAFF')}
+            className="openmun-nav-tab-btn"
             style={{
               padding: '0.5rem 1rem',
               borderRadius: '8px',
@@ -2046,6 +2049,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
           <button
             onClick={() => setActiveMainTab('SECRETARIA')}
+            className="openmun-nav-tab-btn"
             style={{
               padding: '0.5rem 1rem',
               borderRadius: '8px',
@@ -2071,6 +2075,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             conferenceService.limpiarSesionActiva();
             setConferencia(null);
           }}
+          className="openmun-topbar-btn"
           style={{
             background: 'transparent',
             border: `1px solid ${borderCol}`,
@@ -2093,7 +2098,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       />
 
       {/* CUERPO SEGÚN PESTAÑA */}
-      <main style={{ padding: '1.5rem', flex: 1, maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+      <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
 
         {/* ════════════════════════════════════════════════════════════════════════
             PESTAÑA 1: VER COMITÉS (MESAS DIRECTIVAS)
@@ -2153,7 +2158,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 </p>
               </div>
             ) : (
-              <div style={{
+              <div className="openmun-conf-comites-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
                 gap: '1.25rem'

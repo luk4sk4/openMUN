@@ -521,7 +521,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
         {/* Header Superior */}
-        <header style={{
+        <header className="openmun-topbar" style={{
           padding: '0.85rem 1.5rem',
           backgroundColor: 'var(--header-bg)',
           borderBottom: '1px solid var(--subborder-color)',
@@ -532,11 +532,11 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           top: 0,
           zIndex: 100
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
             <OpenMunLogo height={32} isLight={isLight} />
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span className="openmun-topbar-title" style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
                   {state.comision || state.nombreComite || 'Sesión en Vivo'}
                 </span>
                 <span style={{
@@ -554,14 +554,15 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   Sala {roomId}
                 </span>
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted-text)', marginTop: '2px' }}>
+              <div className="openmun-desktop-only" style={{ fontSize: '0.75rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                 Conectado como participante • Selección de Delegación Oficial
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
             <button
+              className="openmun-topbar-btn"
               onClick={() => setIsAccessModalOpen(true)}
               style={{
                 background: 'transparent',
@@ -579,10 +580,11 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}
               title={t('accessibility.title', "Accesibilidad y Tema")}
             >
-              <Eye size={14} /> {t('accessibility.title', 'Accesibilidad')}
+              <Eye size={14} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
             </button>
 
             <button
+              className="openmun-topbar-btn"
               onClick={toggleThemeMode}
               style={{
                 background: 'transparent',
@@ -606,6 +608,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             <LanguageSelector showIcon={false} />
 
             <button
+              className="openmun-topbar-btn"
               onClick={() => {
                 if (confirm('¿Deseas desconectarte de la sala?')) {
                   leaveRoom();
@@ -626,7 +629,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 gap: '0.35rem'
               }}
             >
-              <LogOut size={14} /> {t('common.exit', 'Salir')}
+              <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
             </button>
           </div>
         </header>
@@ -635,7 +638,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         <ConferenceBanner isLight={isLight} role="delegate" comiteId={roomId} />
 
         {/* Cuerpo Principal de Selección */}
-        <main style={{
+        <main className="openmun-main-content" style={{
           padding: '2rem 1.5rem 3rem 1.5rem',
           maxWidth: '1300px',
           margin: '0 auto',
@@ -800,7 +803,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               </div>
 
               {/* Grid de Países */}
-              <div style={{
+              <div className="openmun-countries-selection-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                 gap: '0.75rem'
@@ -812,6 +815,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   return (
                     <div
                       key={p.id || p.nombre}
+                      className="openmun-country-card"
                       onClick={() => {
                         if (estaOcupado || isSubmittingCountry) return;
                         setPaisSeleccionadoTemp(p.nombre);
@@ -915,7 +919,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           )}
 
           {/* Botón de Confirmación Flotante */}
-          <div style={{
+          <div className="openmun-bottom-floating-bar" style={{
             position: 'sticky',
             bottom: '16px',
             backgroundColor: 'var(--panel-color)',
@@ -985,7 +989,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
       {/* ── Topbar del Delegado ── */}
-      <header style={{
+      <header className="openmun-topbar" style={{
         padding: '0.75rem 1.25rem',
         backgroundColor: 'var(--header-bg)',
         borderBottom: '1px solid var(--subborder-color)',
@@ -996,12 +1000,12 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         top: 0,
         zIndex: 100
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
           <OpenMunLogo height={30} isLight={isLight} />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
               <CountryFlag nombre={clientCountry} size="sm" />
-              <span style={{ fontWeight: '800', fontSize: '1rem', letterSpacing: '-0.01em' }}>
+              <span className="openmun-topbar-title" style={{ fontWeight: '800', fontSize: '1rem', letterSpacing: '-0.01em' }}>
                 {clientCountry || 'Delegación'}
               </span>
               <button
@@ -1025,7 +1029,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 }}
                 title="Cambiar de país asignado"
               >
-                <RefreshCw size={11} /> Cambiar
+                <RefreshCw size={11} /> <span className="btn-text">Cambiar</span>
               </button>
               <span style={{
                 fontSize: '0.68rem',
@@ -1042,15 +1046,16 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 En Vivo ({roomId})
               </span>
             </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
+            <div className="openmun-desktop-only" style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
               {state.comision || 'Comité Conectado'}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
           {/* Botón Accesibilidad y Tema */}
           <button
+            className="openmun-topbar-btn"
             onClick={() => setIsAccessModalOpen(true)}
             style={{
               background: 'transparent',
@@ -1068,11 +1073,12 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             }}
             title={t('accessibility.title', "Accesibilidad y Tema")}
           >
-            <Eye size={13} /> {t('accessibility.title', 'Accesibilidad')}
+            <Eye size={13} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
           </button>
 
           {/* Botón Rápido Modo Claro / Oscuro */}
           <button
+            className="openmun-topbar-btn"
             onClick={toggleThemeMode}
             style={{
               background: 'transparent',
@@ -1097,6 +1103,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
           {/* Botón Salir */}
           <button
+            className="openmun-topbar-btn"
             onClick={() => {
               if (confirm('¿Deseas desconectarte de la sala?')) {
                 leaveRoom();
@@ -1117,7 +1124,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               gap: '0.35rem'
             }}
           >
-            <LogOut size={13} /> {t('common.exit', 'Salir')}
+            <LogOut size={13} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
           </button>
         </div>
       </header>
@@ -1126,7 +1133,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
       <ConferenceBanner isLight={isLight} role="delegate" comiteId={roomId} />
 
       {/* ── Subheader / Navegación ── */}
-      <div style={{
+      <div className="openmun-nav-tabs-container" style={{
         borderBottom: '1px solid var(--subborder-color)',
         backgroundColor: 'var(--subnav-bg)',
         padding: '0.4rem 1.25rem',
@@ -1135,7 +1142,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         width: '100%',
         boxSizing: 'border-box'
       }}>
-        <div style={{
+        <div className="openmun-nav-tabs-list" style={{
           display: 'flex',
           gap: '0.5rem',
           maxWidth: '1300px',
@@ -1144,6 +1151,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           overflowX: 'auto'
         }}>
         <button
+          className="openmun-nav-tab-btn"
           onClick={() => setActiveTab('DEBATE')}
           style={{
             flex: 1,
@@ -1166,6 +1174,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         </button>
 
         <button
+          className="openmun-nav-tab-btn"
           onClick={() => setActiveTab('ENMIENDAS')}
           style={{
             flex: 1,
@@ -1188,6 +1197,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         </button>
 
         <button
+          className="openmun-nav-tab-btn"
           onClick={() => setActiveTab('NOTAS')}
           style={{
             flex: 1,
@@ -1211,6 +1221,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
         </button>
 
         <button
+          className="openmun-nav-tab-btn"
           onClick={() => setActiveTab('AVISOS')}
           style={{
             flex: 1,
@@ -1236,7 +1247,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
       </div>
 
       {/* ── Cuerpo Principal del Delegado ── */}
-      <main style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '1300px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      <main className="openmun-main-content" style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '1300px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         {/* ── HOLDER PERMANENTE DE AVISOS IMPORTANTES (SECRETARÍA & STAFF) ── */}
         {visibleAnnouncements.length > 0 && activeTab !== 'AVISOS' && (
           <div style={{
@@ -1438,7 +1449,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   </div>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                <div className="openmun-grid-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
                   <button
                     onClick={() => handleEmitirVoto('favor')}
                     style={{
@@ -1514,7 +1525,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             )}
 
             {/* 2. Panel de Acciones de Orador (GSL y Caucus) adaptativo */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               {/* Botón / Estado GSL */}
               <div style={{
                 backgroundColor: 'var(--panel-color)',
@@ -1663,7 +1674,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             </div>
 
             {/* 3. Panel Separado: Mociones de Debate y Puntos Parlamentarios */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               {/* Card A: Mociones de Debate */}
               <div style={{
                 backgroundColor: 'var(--panel-color)',
@@ -3312,7 +3323,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           justifyContent: 'center',
           padding: '1rem'
         }}>
-          <div style={{
+          <div className="openmun-modal-box" style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
             borderRadius: '12px',
@@ -3950,7 +3961,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           justifyContent: 'center',
           padding: '1rem'
         }}>
-          <div style={{
+          <div className="openmun-modal-box" style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
             borderRadius: '14px',

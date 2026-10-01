@@ -203,8 +203,12 @@ export const P2PProvider = ({ children }) => {
         setError(null);
         if (data.country) {
           setClientCountry(data.country);
+          localStorage.setItem('openmun_last_country', data.country);
         } else if (data.role === 'delegate') {
-          setClientCountry('');
+          const savedCountry = localStorage.getItem('openmun_last_country');
+          if (savedCountry) {
+            setClientCountry(savedCountry);
+          }
         }
         if (data.sessionState) {
           setRemoteSessionState(data.sessionState);
@@ -626,10 +630,19 @@ export const P2PProvider = ({ children }) => {
       }
       setRole(targetRole);
       setViewMode(targetRole);
+      if (typeof window !== 'undefined' && !isLocalBroadcast && finalTargetId) {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('mode', targetRole);
+          url.searchParams.set('room', finalTargetId);
+          window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+        } catch (e) { }
+      }
       if (targetRole === 'delegate') {
-        if (country) {
-          setClientCountry(country);
-          localStorage.setItem('openmun_last_country', country);
+        const effectiveCountry = country || localStorage.getItem('openmun_last_country') || '';
+        if (effectiveCountry) {
+          setClientCountry(effectiveCountry);
+          localStorage.setItem('openmun_last_country', effectiveCountry);
         } else {
           setClientCountry('');
         }
@@ -686,9 +699,11 @@ export const P2PProvider = ({ children }) => {
   const resetCountrySelection = useCallback(() => {
     setClientCountry('');
     localStorage.removeItem('openmun_last_country');
+    peerService.releaseCountryAsClient();
   }, []);
 
   const leaveRoom = useCallback(() => {
+    peerService.releaseCountryAsClient();
     peerService.destroy();
     setConnectionStatus('disconnected');
     setRole('none');
@@ -699,6 +714,16 @@ export const P2PProvider = ({ children }) => {
     setSpeakingRequests([]);
     setEnmiendasPropuestas([]);
     setRemoteSessionState(null);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mode');
+        url.searchParams.delete('room');
+        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+      } catch (e) { }
+      localStorage.removeItem('openmun_last_country');
+      localStorage.removeItem('openmun_user_role');
+    }
   }, []);
 
   const sendNote = useCallback((to, text, type = 'general') => {

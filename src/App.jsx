@@ -104,6 +104,26 @@ function AppContent() {
           targetRole: 'staff',
           isLocalBroadcast: true
         });
+      } else if (mode === 'delegate') {
+        const savedRoom = params.get('room') || (typeof window !== 'undefined' ? localStorage.getItem('openmun_last_room_id') : '');
+        const savedCountry = typeof window !== 'undefined' ? (localStorage.getItem('openmun_last_country') || '') : '';
+        if (savedRoom) {
+          joinRoom({
+            targetRoomId: savedRoom,
+            targetRole: 'delegate',
+            country: savedCountry
+          });
+        }
+      } else if (mode === 'backroom') {
+        const savedRoom = params.get('room') || (typeof window !== 'undefined' ? localStorage.getItem('openmun_last_room_id') : '');
+        const pass = typeof window !== 'undefined' ? (localStorage.getItem('openmun_backroom_pass') || '') : '';
+        if (savedRoom) {
+          joinRoom({
+            targetRoomId: savedRoom,
+            targetRole: 'backroom',
+            password: pass
+          });
+        }
       }
     }
   }, [joinRoom, setViewMode]);

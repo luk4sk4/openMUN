@@ -86,83 +86,93 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
     }}>
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
-      {/* Botón Volver a la Mesa Principal */}
-      <button
-        onClick={onBackToChair}
-        style={{
-          position: 'absolute',
-          top: '24px',
-          left: '24px',
-          background: 'transparent',
-          border: '1px solid var(--subborder-color)',
-          borderRadius: '10px',
-          color: 'var(--muted-text)',
-          padding: '0.55rem 0.95rem',
-          fontSize: '0.82rem',
-          fontWeight: '700',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          transition: 'all 0.15s ease'
-        }}
-      >
-        <ArrowLeft size={16} /> {t('views.join.backToHome', 'Volver a Modo Mesa (Chair)')}
-      </button>
-
-      {/* Controles de Accesibilidad y Tema en esquina superior derecha */}
-      <div style={{
+      {/* Barra Superior con botón Volver y Controles */}
+      <header className="openmun-join-topbar" style={{
         position: 'absolute',
-        top: '24px',
-        right: '24px',
+        top: '20px',
+        left: '20px',
+        right: '20px',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.5rem'
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
+        zIndex: 10
       }}>
+        {/* Botón Volver a la Mesa Principal */}
         <button
-          onClick={() => setIsAccessModalOpen(true)}
+          onClick={onBackToChair}
           style={{
             background: 'transparent',
             border: '1px solid var(--subborder-color)',
             borderRadius: '10px',
-            color: 'var(--text-color)',
-            padding: '0.55rem 0.85rem',
-            fontSize: '0.82rem',
-            fontWeight: '600',
+            color: 'var(--muted-text)',
+            padding: '0.5rem 0.85rem',
+            fontSize: '0.8rem',
+            fontWeight: '700',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.4rem',
+            gap: '0.45rem',
             transition: 'all 0.15s ease'
           }}
-          title={t('accessibility.title', "Accesibilidad y Tema")}
         >
-          <Eye size={15} /> {t('accessibility.title', 'Accesibilidad')}
+          <ArrowLeft size={16} /> <span className="btn-text">{t('views.join.backToHome', 'Volver a Modo Mesa (Chair)')}</span>
         </button>
-        <button
-          onClick={toggleThemeMode}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: '10px',
-            color: 'var(--text-color)',
-            padding: '0.55rem 0.7rem',
-            fontSize: '0.82rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            transition: 'all 0.15s ease'
-          }}
-          title={isLight ? t('header.darkMode', "Cambiar a Modo Oscuro") : t('header.lightMode', "Cambiar a Modo Claro")}
-        >
-          {isLight ? <Moon size={15} /> : <Sun size={15} />}
-        </button>
-        <LanguageSelector showIcon={false} />
-      </div>
 
-      <div style={{
+        {/* Controles de Accesibilidad y Tema */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem'
+        }}>
+          <button
+            className="openmun-topbar-btn"
+            onClick={() => setIsAccessModalOpen(true)}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: '10px',
+              color: 'var(--text-color)',
+              padding: '0.5rem 0.75rem',
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.15s ease'
+            }}
+            title={t('accessibility.title', "Accesibilidad y Tema")}
+          >
+            <Eye size={15} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
+          </button>
+          <button
+            className="openmun-topbar-btn"
+            onClick={toggleThemeMode}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: '10px',
+              color: 'var(--text-color)',
+              padding: '0.5rem 0.65rem',
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.15s ease'
+            }}
+            title={isLight ? t('header.darkMode', "Cambiar a Modo Oscuro") : t('header.lightMode', "Cambiar a Modo Claro")}
+          >
+            {isLight ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
+          <LanguageSelector showIcon={false} />
+        </div>
+      </header>
+
+      <div className="openmun-join-card" style={{
         backgroundColor: 'var(--panel-color)',
         border: '1px solid var(--border-color)',
         borderRadius: '20px',
@@ -241,7 +251,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
             <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Tipo de Acceso / Rol
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginTop: '0.4rem' }}>
+            <div className="openmun-grid-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginTop: '0.4rem' }}>
               {/* Delegado */}
               <div
                 onClick={() => setSelectedRole('delegate')}

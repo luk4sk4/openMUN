@@ -11,6 +11,7 @@ import {
   Clock, 
   MessageSquare, 
   Eye, 
+  EyeOff,
   RefreshCw,
   Send,
   Building2,
@@ -365,6 +366,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       {/* ── Topbar de Secretaría ── */}
       <header
         ref={headerRef}
+        className="openmun-topbar"
         style={{
           padding: isExtraCompact ? '0.5rem 1rem' : '0.85rem 1.5rem',
           backgroundColor: 'var(--header-bg)',
@@ -384,6 +386,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           <div style={{ position: 'relative', flexShrink: 0 }} ref={volverMenuRef}>
             <button
               onClick={handleClickVolver}
+              className="openmun-topbar-btn"
               style={{
                 backgroundColor: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)',
                 border: '1px solid var(--border-color)',
@@ -401,7 +404,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
               title={t('views.secretariat.back', 'Volver atrás')}
             >
               <ArrowLeft size={16} />
-              {!isExtraCompact && <span>{t('common.back', 'Volver')}</span>}
+              {!isExtraCompact && <span className="btn-text">{t('common.back', 'Volver')}</span>}
               {hasMultipleDestinations && <ChevronDown size={13} style={{ opacity: 0.7 }} />}
             </button>
 
@@ -585,6 +588,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           {/* Botón Accesibilidad y Tema */}
           <button
             onClick={() => setIsAccessModalOpen(true)}
+            className="openmun-topbar-btn"
             style={{
               backgroundColor: 'var(--card-header-bg)',
               border: '1px solid var(--border-color)',
@@ -601,12 +605,13 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             }}
             title="Accesibilidad y Tema (Dislexia, Tamaño de Letra, Daltonismo)"
           >
-            <Eye size={14} /> {t('header.accessibility', 'Accesibilidad')}
+            <Eye size={14} /> <span className="btn-text">{t('header.accessibility', 'Accesibilidad')}</span>
           </button>
 
           {/* Botón Rápido Modo Claro / Oscuro */}
           <button
             onClick={toggleThemeMode}
+            className="openmun-topbar-btn"
             style={{
               backgroundColor: 'var(--card-header-bg)',
               border: '1px solid var(--border-color)',
@@ -630,6 +635,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
           <button
             onClick={handleExportarNotasCSV}
+            className="openmun-topbar-btn"
             style={{
               backgroundColor: 'var(--card-header-bg)',
               border: '1px solid var(--border-color)',
@@ -646,7 +652,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             }}
             title="Exportar archivo de notas en CSV para Excel"
           >
-            <Download size={14} /> {t('views.secretariat.exportCsv', 'Exportar CSV')}
+            <Download size={14} /> <span className="btn-text">{t('views.secretariat.exportCsv', 'Exportar CSV')}</span>
           </button>
 
           <button
@@ -655,6 +661,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 handleNavigateBack(confIdActiva ? 'conference' : 'chair');
               }
             }}
+            className="openmun-topbar-btn"
             style={{
               background: 'rgba(239, 68, 68, 0.12)',
               border: '1px solid rgba(239, 68, 68, 0.35)',
@@ -670,7 +677,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             }}
             title={t('common.exit', 'Salir')}
           >
-            <LogOut size={14} /> {t('common.exit', 'Salir')}
+            <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
           </button>
         </div>
       </header>
@@ -679,7 +686,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       <ConferenceBanner isLight={isLight} role="secretariat" comiteId={currentComiteId} comiteNombre={nombreComite} comites={comitesConf} />
 
       {/* ── Sub-navegación por Pestañas ── */}
-      <div style={{
+      <div className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
         backgroundColor: 'var(--subnav-bg)',
         borderBottom: '1px solid var(--border-color)',
         padding: '0.45rem 1.5rem',
@@ -690,6 +697,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       }}>
         <button
           onClick={() => setActiveTab('NOTAS')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -710,6 +718,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('AVISOS')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -730,6 +739,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('SOLICITUDES')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -760,6 +770,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('DEBATE')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -780,6 +791,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('VOTACION')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -800,6 +812,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('INFO')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -820,6 +833,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('CRISIS')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -840,6 +854,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('AJUSTES')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -860,6 +875,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('CONEXIONES')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -880,7 +896,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       </div>
 
       {/* ── Contenido Principal de Secretaría ── */}
-      <main style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+      <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA: CRISIS & NOTICIERO                             */}
         {/* ═══════════════════════════════════════════════════════ */}
@@ -903,7 +919,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
         {/* PESTAÑA: AVISOS OFICIALES (SECRETARÍA)                 */}
         {/* ═══════════════════════════════════════════════════════ */}
         {activeTab === 'AVISOS' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 420px) 1fr', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 420px) 1fr', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
             {/* Formulario de Emisión de Aviso */}
             <div style={{
               backgroundColor: 'var(--panel-color)',
@@ -2119,7 +2135,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
               </div>
 
               {/* 3 opciones selector en tarjetas */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+              <div className="openmun-grid-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                 {/* Opción 1: Directas */}
                 <div
                   onClick={() => updateRoomSettings({ speakerRequestMode: 'direct' })}
@@ -2219,7 +2235,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+              <div className="openmun-grid-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                 {/* Opción 1: Directas */}
                 <div
                   onClick={() => updateRoomSettings({ caucusRequestMode: 'direct' })}
@@ -2314,7 +2330,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 <Shield size={18} color="#10b981" /> Permisos y Capacidades de Delegados
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+              <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
                 {/* Toggle Notas entre Delegados */}
                 <div style={{
                   backgroundColor: 'var(--card-header-bg)',
@@ -2591,7 +2607,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 <AnadirPaises />
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+              <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                 {/* Tarjeta Lista General GSL */}
                 <div style={{
                   backgroundColor: 'var(--panel-color)',

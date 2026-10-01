@@ -125,9 +125,28 @@ export const MSG_TYPES = {
   KICK: 'KICK',
   KICK_PEER: 'KICK_PEER',
   PEER_LIST_UPDATED: 'PEER_LIST_UPDATED',
+  RELEASE_COUNTRY: 'RELEASE_COUNTRY',
+  PEER_DISCONNECTED: 'PEER_DISCONNECTED',
   PING: 'PING',
   PONG: 'PONG'
 };
+
+/**
+ * Genera o recupera un identificador de sesión persistente para el cliente
+ */
+export function getOrCreateClientId() {
+  if (typeof window === 'undefined') return 'server_client';
+  try {
+    let id = localStorage.getItem('openmun_client_uuid');
+    if (!id) {
+      id = `client_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('openmun_client_uuid', id);
+    }
+    return id;
+  } catch (e) {
+    return `client_${Date.now().toString(36)}`;
+  }
+}
 
 /**
  * Generador de ID de sala amigable (ej: MUN-4921)
@@ -139,9 +158,10 @@ export function generateRoomCode() {
 
 class NetworkService {
   constructor() {
+    this.clientId = getOrCreateClientId();
     this.socket = null;
     this.socketId = null;
-    this.peerMetadata = new Map(); // socketId -> { role, country, connectedAt }
+    this.peerMetadata = new Map(); // socketId -> { role, country, connectedAt, clientId }
     this.broadcastChannel = null;
     this.isHost = false;
     this.role = 'none';
@@ -439,7 +459,7 @@ class NetworkService {
           // Enviar solicitud de autenticación / registro de rol
           this.emitSocketMessage({
             type: MSG_TYPES.AUTH,
-            payload: { role, password, country },
+            payload: { role, password, country: this.clientCountry, clientId: this.clientId },
             senderSocketId: this.socket.id,
             id: `auth-${Date.now()}`
           });
@@ -611,7 +631,7 @@ class NetworkService {
 
     // 1. Mensaje de Autenticación
     if (message.type === MSG_TYPES.AUTH) {
-      const { role, password, country } = message.payload || {};
+      const { role, password, country, clientId } = message.payload || {};
       let authorized = false;
       let errorMsg = '';
 
@@ -619,12 +639,28 @@ class NetworkService {
         authorized = true;
       } else if (role === 'delegate') {
         if (country && country.trim()) {
-          // Validar si el país ya está ocupado
-          const yaConectado = Array.from(this.peerMetadata.values()).some(
-            m => m.role === 'delegate' && m.country && m.country.toLowerCase() === country.trim().toLowerCase()
+          const cleanCountry = country.trim();
+          // Validar si el país ya está ocupado por OTRO participante
+          const existingPeerEntry = Array.from(this.peerMetadata.entries()).find(
+            ([id, m]) => m.role === 'delegate' && m.country && m.country.toLowerCase() === cleanCountry.toLowerCase()
           );
-          if (yaConectado) {
-            errorMsg = `La delegación de ${country} ya está conectada`;
+
+          if (existingPeerEntry) {
+            const [existingSocketId, existingMeta] = existingPeerEntry;
+            // Si es el mismo cliente (mismo clientId o mismo socketId), permitir reconexión sin error
+            const esMismoCliente = Boolean(
+              existingSocketId === senderSocketId ||
+              (clientId && existingMeta.clientId === clientId)
+            );
+
+            if (esMismoCliente) {
+              authorized = true;
+              if (existingSocketId !== senderSocketId) {
+                this.peerMetadata.delete(existingSocketId);
+              }
+            } else {
+              errorMsg = `La delegación de ${cleanCountry} ya está conectada`;
+            }
           } else {
             authorized = true;
           }
@@ -656,7 +692,13 @@ class NetworkService {
 
       if (!isLocal) {
         if (authorized) {
-          const meta = { role, country: country?.trim() || null, connectedAt: Date.now(), socketId: senderSocketId };
+          const meta = {
+            role,
+            country: country?.trim() || null,
+            connectedAt: Date.now(),
+            socketId: senderSocketId,
+            clientId: clientId || null
+          };
           this.peerMetadata.set(senderSocketId, meta);
 
           const roleNotes = this.getNotesForRole(role, meta.country);
@@ -733,6 +775,7 @@ class NetworkService {
     // 1.1 Selección / Toma de País por parte del Delegado
     if (message.type === MSG_TYPES.SELECT_COUNTRY) {
       const selectedCountry = (message.payload?.country || '').trim();
+      const clientId = message.payload?.clientId;
       if (!selectedCountry) {
         this.emitSocketMessage({
           type: MSG_TYPES.SELECT_COUNTRY_RESULT,
@@ -743,22 +786,37 @@ class NetworkService {
       }
 
       // Validar si otro participante ya tiene asignado este país
-      const yaOcupado = Array.from(this.peerMetadata.entries()).some(
-        ([id, m]) => id !== senderSocketId && m.role === 'delegate' && m.country && m.country.toLowerCase() === selectedCountry.toLowerCase()
+      const existingPeerEntry = Array.from(this.peerMetadata.entries()).find(
+        ([id, m]) => m.role === 'delegate' && m.country && m.country.toLowerCase() === selectedCountry.toLowerCase()
       );
 
-      if (yaOcupado) {
-        this.emitSocketMessage({
-          type: MSG_TYPES.SELECT_COUNTRY_RESULT,
-          targetSocketId: senderSocketId,
-          payload: { success: false, message: `La delegación de ${selectedCountry} ya ha sido seleccionada por otro participante.` }
-        });
-        return;
+      if (existingPeerEntry) {
+        const [existingSocketId, existingMeta] = existingPeerEntry;
+        const esMismoCliente = Boolean(
+          existingSocketId === senderSocketId ||
+          (clientId && existingMeta.clientId === clientId)
+        );
+
+        if (!esMismoCliente) {
+          this.emitSocketMessage({
+            type: MSG_TYPES.SELECT_COUNTRY_RESULT,
+            targetSocketId: senderSocketId,
+            payload: { success: false, message: `La delegación de ${selectedCountry} ya ha sido seleccionada por otro participante.` }
+          });
+          return;
+        }
+        if (existingSocketId !== senderSocketId) {
+          this.peerMetadata.delete(existingSocketId);
+        }
       }
 
       // Asignar el país al participante
-      const currentMeta = this.peerMetadata.get(senderSocketId) || { role: 'delegate', connectedAt: Date.now(), socketId: senderSocketId };
-      const updatedMeta = { ...currentMeta, country: selectedCountry };
+      const currentMeta = this.peerMetadata.get(senderSocketId) || {
+        role: 'delegate',
+        connectedAt: Date.now(),
+        socketId: senderSocketId
+      };
+      const updatedMeta = { ...currentMeta, country: selectedCountry, clientId: clientId || currentMeta.clientId || null };
       this.peerMetadata.set(senderSocketId, updatedMeta);
 
       const roleNotes = this.getNotesForRole('delegate', selectedCountry);
@@ -775,6 +833,35 @@ class NetworkService {
 
       this.emit('peer_authenticated', { peerId: senderSocketId, meta: updatedMeta });
       this.broadcastPeerList();
+      return;
+    }
+
+    // 1.2 Liberación voluntaria de país
+    if (message.type === MSG_TYPES.RELEASE_COUNTRY) {
+      const clientId = message.payload?.clientId;
+      const currentMeta = this.peerMetadata.get(senderSocketId);
+      if (currentMeta) {
+        currentMeta.country = null;
+        this.peerMetadata.set(senderSocketId, currentMeta);
+      }
+      if (clientId) {
+        for (const [id, m] of this.peerMetadata.entries()) {
+          if (m.clientId === clientId) {
+            m.country = null;
+          }
+        }
+      }
+      this.broadcastPeerList();
+      return;
+    }
+
+    // 1.3 Notificación de Desconexión de Socket
+    if (message.type === MSG_TYPES.PEER_DISCONNECTED) {
+      const discSocketId = message.payload?.socketId;
+      if (discSocketId && this.peerMetadata.has(discSocketId)) {
+        this.peerMetadata.delete(discSocketId);
+        this.broadcastPeerList();
+      }
       return;
     }
 
@@ -1365,6 +1452,15 @@ class NetworkService {
     this.clientCountry = country;
     return this.sendToServer(MSG_TYPES.SELECT_COUNTRY, {
       country,
+      clientId: this.clientId,
+      timestamp: Date.now()
+    });
+  }
+
+  releaseCountryAsClient() {
+    this.clientCountry = null;
+    return this.sendToServer(MSG_TYPES.RELEASE_COUNTRY, {
+      clientId: this.clientId,
       timestamp: Date.now()
     });
   }

@@ -744,5 +744,138 @@ body.density-projector .selector-tipo-enmienda-del button {
   animation: highlightPulse 2s ease-in-out infinite;
 }
 
+/* ==========================================================================
+   MOBILE RESPONSIVENESS SYSTEM (Views: Delegate, Join, Secretariat, Staff, Backroom, Conference)
+   ========================================================================== */
+
+.openmun-mobile-only {
+  display: none !important;
+}
+
+.openmun-desktop-only {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .openmun-mobile-only {
+    display: flex !important;
+  }
+  .openmun-desktop-only {
+    display: none !important;
+  }
+
+  /* Responsive Topbars & Headers */
+  .openmun-topbar {
+    padding: 0.55rem 0.75rem !important;
+    gap: 0.45rem !important;
+  }
+  .openmun-topbar-title {
+    font-size: 0.9rem !important;
+    max-width: 130px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .openmun-topbar-btn {
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.72rem !important;
+  }
+  .openmun-topbar-btn span.btn-text {
+    display: none !important;
+  }
+
+  /* View Main Content Padding */
+  .openmun-main-content {
+    padding: 0.75rem 0.75rem 2rem 0.75rem !important;
+    gap: 0.85rem !important;
+  }
+
+  /* Responsive Navigation Tabs Bar */
+  .openmun-nav-tabs-container {
+    padding: 0.35rem 0.5rem !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .openmun-nav-tabs-list {
+    min-width: max-content !important;
+    gap: 0.35rem !important;
+  }
+  .openmun-nav-tab-btn {
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
+    flex: initial !important;
+  }
+
+  /* Responsive 2-column, 3-column & 4-column grids to 1 column or 2x2 */
+  .openmun-grid-2col {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+  .openmun-grid-3col {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+  .openmun-grid-4col {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Delegate Countries Grid */
+  .openmun-countries-selection-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    gap: 0.5rem !important;
+  }
+  .openmun-country-card {
+    padding: 0.65rem 0.75rem !important;
+  }
+
+  /* Floating Bottom Bar (e.g., delegate confirm) */
+  .openmun-bottom-floating-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.65rem !important;
+    padding: 0.75rem !important;
+    bottom: 10px !important;
+  }
+  .openmun-bottom-floating-bar button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Modals on Mobile */
+  .openmun-modal-box {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    max-height: 92vh !important;
+    padding: 1.1rem 0.85rem !important;
+  }
+
+  /* Messaging Responsive Split / Stack */
+  .openmun-messaging-split {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Join View Responsive Topbar */
+  .openmun-join-topbar {
+    position: static !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 1.5rem !important;
+    padding: 0 !important;
+  }
+  .openmun-join-card {
+    padding: 1.5rem 1.1rem !important;
+    border-radius: 16px !important;
+  }
+
+  /* Conference View Mobile Adaptations */
+  .openmun-conf-comites-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 
 

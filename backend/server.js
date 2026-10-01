@@ -965,6 +965,16 @@ io.on('connection', (socket) => {
                         }
                 } catch (err) { }
         });
+        socket.on('disconnecting', () => {
+                for (const sala of socket.rooms) {
+                        if (sala !== socket.id) {
+                                socket.to(sala).emit('nuevos-datos', {
+                                        type: 'PEER_DISCONNECTED',
+                                        payload: { socketId: socket.id }
+                                });
+                        }
+                }
+        });
         socket.on('disconnect', () => {
                 console.log(`Usuario desconectado: ${socket.id}`);
         });

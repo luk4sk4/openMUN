@@ -158,6 +158,16 @@ const MensajeriaComite = ({
 
   // Estados del Buzón
   const [tabMovil, setTabMovil] = useState('BUZON'); // 'BUZON' | 'REDACTAR' para modo tabs
+  const [isMobileScreen, setIsMobileScreen] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileScreen(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const useMobileTabs = layout === 'tabs' || isMobileScreen;
+
   const [filtroDireccion, setFiltroDireccion] = useState('TODAS'); // 'TODAS' | 'RECIBIDAS' | 'ENVIADAS'
   const [filtroTipo, setFiltroTipo] = useState('TODOS'); // 'TODOS' | 'URGENTES' | 'PAJES' | 'CRISIS'
   const [busqueda, setBusqueda] = useState('');
@@ -455,7 +465,7 @@ const MensajeriaComite = ({
       )}
 
       {/* Contenido en modo Tabs (móvil) o modo Split (2 columnas) */}
-      {layout === 'tabs' && (
+      {useMobileTabs && (
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button
             onClick={() => setTabMovil('BUZON')}
@@ -501,14 +511,14 @@ const MensajeriaComite = ({
       )}
 
       {/* Grid principal */}
-      <div style={{
+      <div className="openmun-messaging-split" style={{
         display: 'grid',
-        gridTemplateColumns: layout === 'tabs' ? '1fr' : 'minmax(320px, 390px) 1fr',
+        gridTemplateColumns: useMobileTabs ? '1fr' : 'minmax(320px, 390px) 1fr',
         gap: '1.25rem',
         alignItems: 'start'
       }}>
         {/* ── COLUMNA 1: FORMULARIO REDACTOR ── */}
-        {(layout !== 'tabs' || tabMovil === 'REDACTAR') && (
+        {(!useMobileTabs || tabMovil === 'REDACTAR') && (
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
@@ -709,7 +719,7 @@ const MensajeriaComite = ({
         )}
 
         {/* ── COLUMNA 2: BUZÓN DE NOTAS (FEED) ── */}
-        {(layout !== 'tabs' || tabMovil === 'BUZON') && (
+        {(!useMobileTabs || tabMovil === 'BUZON') && (
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',

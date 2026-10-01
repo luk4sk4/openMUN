@@ -107,7 +107,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
       {/* ── Header de Backroom ── */}
-      <header style={{
+      <header className="openmun-topbar" style={{
         padding: '0.85rem 1.5rem',
         backgroundColor: 'var(--header-bg)',
         borderBottom: '1px solid var(--subborder-color)',
@@ -150,6 +150,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
           {/* Botón Accesibilidad y Tema */}
           <button
             onClick={() => setIsAccessModalOpen(true)}
+            className="openmun-topbar-btn"
             style={{
               background: 'transparent',
               border: '1px solid var(--subborder-color)',
@@ -166,12 +167,13 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
             }}
             title={t('accessibility.title', "Accesibilidad y Tema")}
           >
-            <Eye size={14} /> {t('accessibility.title', 'Accesibilidad')}
+            <Eye size={14} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
           </button>
 
           {/* Botón Rápido Modo Claro / Oscuro */}
           <button
             onClick={toggleThemeMode}
+            className="openmun-topbar-btn"
             style={{
               background: 'transparent',
               border: '1px solid var(--subborder-color)',
@@ -200,6 +202,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
                 if (onExit) onExit();
               }
             }}
+            className="openmun-topbar-btn"
             style={{
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -214,13 +217,13 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
               gap: '0.35rem'
             }}
           >
-            <LogOut size={14} /> {t('common.exit', 'Salir')}
+            <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
           </button>
         </div>
       </header>
 
       {/* ── Sub-navegación ── */}
-      <div style={{
+      <div className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
         backgroundColor: 'var(--subnav-bg)',
         borderBottom: '1px solid var(--subborder-color)',
         padding: '0.4rem 1.5rem',
@@ -231,6 +234,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
       }}>
         <button
           onClick={() => setActiveTab('CRISIS')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -250,6 +254,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('TV_PREVIEW')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -269,6 +274,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('DELEGADOS')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -288,6 +294,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('CHAIR')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -307,6 +314,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
 
         <button
           onClick={() => setActiveTab('AJUSTES')}
+          className="openmun-nav-tab-btn"
           style={{
             padding: '0.5rem 0.95rem',
             borderRadius: '8px',
@@ -349,7 +357,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
       )}
 
       {/* ── Contenido Principal ── */}
-      <main style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+      <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
         {/* PESTAÑA: GESTOR DE CRISIS COMPLETO */}
         {activeTab === 'CRISIS' && (
           <div style={{

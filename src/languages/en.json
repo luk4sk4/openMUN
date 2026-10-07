@@ -458,7 +458,18 @@
     "vetoPower": "Veto Power (P5 / Permanent)",
     "present": "Present",
     "presentAndVoting": "Present and Voting",
-    "votesCount": "Number of Votes"
+    "votesCount": "Number of Votes",
+    "uploadOrPaste": "Upload a file or press",
+    "dragDropHint": "Drag any PNG, JPG or SVG image here, or copy and paste directly from the web.",
+    "urlPlaceholder": "Or paste an image URL (https://...)",
+    "hideCatalog": "Hide official catalog",
+    "showCatalog": "Choose from official catalog",
+    "confirmDeleteTitle": "Delete Delegation?",
+    "confirmDelete": "Permanently delete the delegation of \"{{name}}\" from the committee?",
+    "deletedTitle": "Delegation deleted",
+    "deletedDesc": "The delegation of \"{{name}}\" has been removed from the committee.",
+    "nameRequired": "The delegation name cannot be empty.",
+    "imageError": "Could not process selected image."
   },
   "views": {
     "delegate": {

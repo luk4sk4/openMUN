@@ -27,7 +27,12 @@ import {
   Check,
   Flame,
   Globe,
-  RefreshCw
+  RefreshCw,
+  GraduationCap,
+  Building2,
+  ExternalLink,
+  LogOut,
+  Filter
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { normalizarDatosComite } from '../../utils/sessionValidator';
@@ -46,7 +51,7 @@ function formatTiempo(segundos = 0) {
 }
 
 // Helper para convertir datos a CSV descargable
-function exportarCsvEquipos(equipos, confNombre) {
+function exportarCsvEquipos(equipos, confNombre, nombreEquipoPersonalizado = null) {
   const headers = [
     'Equipo / Institución',
     'Delegación',
@@ -64,6 +69,7 @@ function exportarCsvEquipos(equipos, confNombre) {
 
   const filas = [];
   equipos.forEach(eq => {
+    if (!eq) return;
     eq.miembros.forEach(m => {
       filas.push([
         `"${eq.nombre.replace(/"/g, '""')}"`,
@@ -87,7 +93,14 @@ function exportarCsvEquipos(equipos, confNombre) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `rendimiento_equipos_${(confNombre || 'conferencia').replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`;
+  const nombreSanitizado = (confNombre || 'conferencia').replace(/\s+/g, '_').toLowerCase();
+  const fechaStr = new Date().toISOString().slice(0, 10);
+  if (nombreEquipoPersonalizado) {
+    const eqSanitizado = nombreEquipoPersonalizado.replace(/\s+/g, '_').toLowerCase();
+    a.download = `rendimiento_equipo_${eqSanitizado}_${nombreSanitizado}_${fechaStr}.csv`;
+  } else {
+    a.download = `rendimiento_todos_equipos_${nombreSanitizado}_${fechaStr}.csv`;
+  }
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -103,133 +116,7 @@ const RendimientoEquiposTab = ({
 }) => {
   const confId = conferencia?.id ? String(conferencia.id).toLowerCase().trim() : '';
 
-  // ── ESTADO DE AUTENTICACIÓN (TRAS CONTRASEÑA) ──
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (isAdmin) return true;
-    if (!confId) return false;
-    try {
-      const auth = localStorage.getItem(`openmun_conf_faculty_auth_${confId}`) ||
-                   sessionStorage.getItem(`openmun_conf_faculty_auth_${confId}`);
-      return Boolean(auth);
-    } catch {
-      return false;
-    }
-  });
-
-  const [passwordInput, setPasswordInput] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [authError, setAuthError] = useState(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Filtros y Visualización
-  const [filtroEquipo, setFiltroEquipo] = useState('TODOS');
-  const [busqueda, setBusqueda] = useState('');
-  const [orden, setOrden] = useState('TIEMPO'); // 'TIEMPO' | 'MOCIONES' | 'ALFABETICO'
-  const [equiposExpandidos, setEquiposExpandidos] = useState({});
-
-  // Sincronizar si entra como admin
-  useEffect(() => {
-    if (isAdmin) {
-      setIsAuthenticated(true);
-    }
-  }, [isAdmin]);
-
-  // Refresco manual de datos
-  const handleManualRefresh = async () => {
-    if (!onRefresh || isRefreshing) return;
-    setIsRefreshing(true);
-    try {
-      await onRefresh();
-    } catch (e) {
-      console.warn('Error al refrescar datos de comités:', e);
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 500);
-    }
-  };
-
-  // Auto-refresco en segundo plano cada 20s cuando el profesor está autenticado
-  useEffect(() => {
-    if (!isAuthenticated || !onRefresh) return;
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        onRefresh();
-      }
-    }, 20000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated, onRefresh]);
-
-  // Manejar Login del Profesor / Faculty Advisor
-  const handleAuthSubmit = async (e) => {
-    e.preventDefault();
-    const pin = passwordInput.trim();
-    if (!pin) {
-      setAuthError('Por favor ingresa la contraseña de acceso.');
-      return;
-    }
-
-    setIsVerifying(true);
-    setAuthError(null);
-
-    try {
-      // 1. Comprobar PIN específico de Profesores/Faculty Advisors guardado localmente
-      const facultyPin = localStorage.getItem(`openmun_conf_faculty_pin_${confId}`) || '';
-      if (facultyPin && facultyPin.trim() === pin) {
-        setIsAuthenticated(true);
-        localStorage.setItem(`openmun_conf_faculty_auth_${confId}`, 'true');
-        return;
-      }
-
-      // 2. Comprobar PIN de Organización (Admin)
-      const adminPinGuardado = localStorage.getItem(`openmun_conf_admin_pin_${confId}`) || conferencia?.pin_admin || '';
-      if (adminPinGuardado && adminPinGuardado.trim() === pin) {
-        setIsAuthenticated(true);
-        localStorage.setItem(`openmun_conf_faculty_auth_${confId}`, 'true');
-        return;
-      }
-
-      // 3. Comprobar con el servicio backend si coincide con el PIN Admin
-      try {
-        await conferenceService.verificarAdmin(confId, pin);
-        setIsAuthenticated(true);
-        localStorage.setItem(`openmun_conf_faculty_auth_${confId}`, 'true');
-        return;
-      } catch (errAdmin) {
-        // No es admin
-      }
-
-      // 4. Comprobar PIN de Acceso general a la conferencia (si existe)
-      const accessPin = localStorage.getItem(`openmun_conf_pin_${confId}`) || conferencia?.pin_acceso || '';
-      if (accessPin && accessPin.trim() === pin) {
-        setIsAuthenticated(true);
-        localStorage.setItem(`openmun_conf_faculty_auth_${confId}`, 'true');
-        return;
-      }
-
-      // 5. Si no hay ningún PIN configurado aún en la conferencia, permitir acceso con aviso
-      if (!facultyPin && !adminPinGuardado && !accessPin) {
-        setIsAuthenticated(true);
-        localStorage.setItem(`openmun_conf_faculty_auth_${confId}`, 'true');
-        return;
-      }
-
-      setAuthError('Contraseña incorrecta. Contacta a la organización del evento si necesitas el PIN de profesores.');
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const handleCerrarSesion = () => {
-    setIsAuthenticated(false);
-    setPasswordInput('');
-    setAuthError(null);
-    try {
-      localStorage.removeItem(`openmun_conf_faculty_auth_${confId}`);
-      sessionStorage.removeItem(`openmun_conf_faculty_auth_${confId}`);
-    } catch {}
-  };
-
-  // ── EXTRACCIÓN Y AGREGACIÓN DE DATOS DE RENDIMIENTO ──
+  // ── 1. EXTRACCIÓN Y AGREGACIÓN DE DATOS DE RENDIMIENTO ──
   const datosEquipos = useMemo(() => {
     const mapaEquipos = new Map();
 
@@ -361,21 +248,248 @@ const RendimientoEquiposTab = ({
     }));
   }, [listaComites]);
 
-  // Lista única de nombres de equipos
+  // Lista única de nombres de equipos ordenados
   const nombresEquipos = useMemo(() => {
     return datosEquipos.filter(e => !e.esSinEquipo).map(e => e.nombre).sort((a, b) => a.localeCompare(b, 'es'));
   }, [datosEquipos]);
 
-  // Filtrado y Ordenación de Equipos
-  const equiposFiltrados = useMemo(() => {
-    let resultado = datosEquipos;
+  // ── 2. ESTADO DE AUTENTICACIÓN Y ROLES ──
+  // Rol: 'ORGANIZACION' (ve todos los equipos) | 'FACULTY' (solo ve su equipo)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (isAdmin) return true;
+    if (!confId) return false;
+    try {
+      const auth = localStorage.getItem(`openmun_conf_faculty_auth_${confId}`) ||
+                   sessionStorage.getItem(`openmun_conf_faculty_auth_${confId}`);
+      return Boolean(auth);
+    } catch {
+      return false;
+    }
+  });
 
-    if (filtroEquipo !== 'TODOS') {
-      resultado = resultado.filter(e => e.nombre === filtroEquipo);
+  const [authRole, setAuthRole] = useState(() => {
+    if (isAdmin) return 'ORGANIZACION';
+    if (!confId) return null;
+    try {
+      const saved = localStorage.getItem(`openmun_conf_equipos_role_${confId}`) ||
+                    sessionStorage.getItem(`openmun_conf_equipos_role_${confId}`);
+      if (saved) return saved;
+      const auth = localStorage.getItem(`openmun_conf_faculty_auth_${confId}`);
+      return auth ? 'FACULTY' : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [facultyTeam, setFacultyTeam] = useState(() => {
+    if (!confId) return '';
+    try {
+      return localStorage.getItem(`openmun_conf_equipos_team_${confId}`) ||
+             sessionStorage.getItem(`openmun_conf_equipos_team_${confId}`) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  // Vista activa: 'ORGANIZACION' (todos los equipos) | 'FACULTY' (solo su equipo)
+  const [viewMode, setViewMode] = useState(() => {
+    if (isAdmin) return 'ORGANIZACION';
+    try {
+      const savedRole = localStorage.getItem(`openmun_conf_equipos_role_${confId}`);
+      return savedRole === 'ORGANIZACION' ? 'ORGANIZACION' : 'FACULTY';
+    } catch {
+      return 'ORGANIZACION';
+    }
+  });
+
+  // Equipo previsualizado cuando la Organización desea ver la vista Faculty
+  const [previewTeam, setPreviewTeam] = useState(() => nombresEquipos[0] || '');
+
+  // Sincronizar equipo inicial para previsualización si cambia la lista
+  useEffect(() => {
+    if (!previewTeam && nombresEquipos.length > 0) {
+      setPreviewTeam(nombresEquipos[0]);
+    }
+  }, [nombresEquipos, previewTeam]);
+
+  // Sincronizar si entra como admin de la conferencia
+  useEffect(() => {
+    if (isAdmin) {
+      setIsAuthenticated(true);
+      setAuthRole('ORGANIZACION');
+      setViewMode(prev => prev || 'ORGANIZACION');
+    }
+  }, [isAdmin]);
+
+  // ── ESTADOS DEL FORMULARIO DE ACCESO ──
+  const [loginMode, setLoginMode] = useState('FACULTY'); // 'FACULTY' | 'ORGANIZACION'
+  const [selectedTeamForLogin, setSelectedTeamForLogin] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Inicializar equipo de login si hay alguno
+  useEffect(() => {
+    if (!selectedTeamForLogin && nombresEquipos.length > 0) {
+      setSelectedTeamForLogin(nombresEquipos[0]);
+    }
+  }, [nombresEquipos, selectedTeamForLogin]);
+
+  // ── ESTADOS DE FILTROS PARA VISTA ORGANIZACIÓN ──
+  const [filtroEquipoOrg, setFiltroEquipoOrg] = useState('TODOS');
+  const [busquedaOrg, setBusquedaOrg] = useState('');
+  const [ordenOrg, setOrdenOrg] = useState('TIEMPO'); // 'TIEMPO' | 'MOCIONES' | 'ALFABETICO'
+  const [equiposExpandidos, setEquiposExpandidos] = useState({});
+
+  // ── ESTADOS DE FILTROS PARA VISTA FACULTY ──
+  const [busquedaFaculty, setBusquedaFaculty] = useState('');
+  const [filtroComiteFaculty, setFiltroComiteFaculty] = useState('TODOS');
+  const [filtroAsistenciaFaculty, setFiltroAsistenciaFaculty] = useState('TODOS'); // 'TODOS' | 'PRESENTE' | 'AUSENTE'
+  const [ordenFaculty, setOrdenFaculty] = useState('TIEMPO');
+
+  // Refresco manual de datos
+  const handleManualRefresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (e) {
+      console.warn('Error al refrescar datos de comités:', e);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  // Auto-refresco en segundo plano cada 20s cuando está autenticado
+  useEffect(() => {
+    if (!isAuthenticated || !onRefresh) return;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        onRefresh();
+      }
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, onRefresh]);
+
+  // ── PROCESAMIENTO DE AUTENTICACIÓN ──
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    const pin = passwordInput.trim();
+    setAuthError(null);
+
+    if (loginMode === 'FACULTY' && !selectedTeamForLogin) {
+      setAuthError('Por favor selecciona tu colegio o equipo de la lista.');
+      return;
     }
 
-    if (busqueda.trim()) {
-      const q = busqueda.toLowerCase().trim();
+    setIsVerifying(true);
+
+    try {
+      if (loginMode === 'ORGANIZACION') {
+        // ── LOGIN ORGANIZACIÓN (Todos los equipos) ──
+        const adminPinGuardado = localStorage.getItem(`openmun_conf_admin_pin_${confId}`) || conferencia?.pin_admin || '';
+        let esAdminValido = false;
+
+        if (adminPinGuardado && adminPinGuardado.trim() === pin) {
+          esAdminValido = true;
+        } else if (pin) {
+          try {
+            await conferenceService.verificarAdmin(confId, pin);
+            esAdminValido = true;
+          } catch {}
+        } else if (!adminPinGuardado) {
+          esAdminValido = true;
+        }
+
+        if (esAdminValido) {
+          setIsAuthenticated(true);
+          setAuthRole('ORGANIZACION');
+          setViewMode('ORGANIZACION');
+          localStorage.setItem(`openmun_conf_faculty_auth_${confId}`, 'true');
+          localStorage.setItem(`openmun_conf_equipos_role_${confId}`, 'ORGANIZACION');
+          setPasswordInput('');
+          return;
+        }
+
+        setAuthError('PIN de Organización incorrecto. Solo la secretaría general y administradores pueden acceder a esta vista.');
+        return;
+      }
+
+      // ── LOGIN FACULTY ADVISOR (Solo su equipo) ──
+      const facultyPin = localStorage.getItem(`openmun_conf_faculty_pin_${confId}`) || '';
+      const adminPinGuardado = localStorage.getItem(`openmun_conf_admin_pin_${confId}`) || conferencia?.pin_admin || '';
+      const accessPin = localStorage.getItem(`openmun_conf_pin_${confId}`) || conferencia?.pin_acceso || '';
+
+      let esFacultyValido = false;
+
+      // 1. PIN de profesores específico
+      if (facultyPin && facultyPin.trim() === pin) {
+        esFacultyValido = true;
+      }
+      // 2. PIN de admin también autoriza
+      else if (adminPinGuardado && adminPinGuardado.trim() === pin) {
+        esFacultyValido = true;
+      }
+      // 3. PIN de acceso general a la conferencia
+      else if (accessPin && accessPin.trim() === pin) {
+        esFacultyValido = true;
+      }
+      // 4. Verificación remota admin
+      else if (pin) {
+        try {
+          await conferenceService.verificarAdmin(confId, pin);
+          esFacultyValido = true;
+        } catch {}
+      }
+      // 5. Sin contraseña configurada
+      else if (!facultyPin && !adminPinGuardado && !accessPin) {
+        esFacultyValido = true;
+      }
+
+      if (esFacultyValido) {
+        setIsAuthenticated(true);
+        setAuthRole('FACULTY');
+        setFacultyTeam(selectedTeamForLogin);
+        setViewMode('FACULTY');
+        localStorage.setItem(`openmun_conf_faculty_auth_${confId}`, 'true');
+        localStorage.setItem(`openmun_conf_equipos_role_${confId}`, 'FACULTY');
+        localStorage.setItem(`openmun_conf_equipos_team_${confId}`, selectedTeamForLogin);
+        setPasswordInput('');
+        return;
+      }
+
+      setAuthError('Contraseña incorrecta. Contacta a la organización del evento si necesitas el PIN de profesores.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleCerrarSesion = () => {
+    setIsAuthenticated(false);
+    setAuthRole(null);
+    setFacultyTeam('');
+    setPasswordInput('');
+    setAuthError(null);
+    try {
+      localStorage.removeItem(`openmun_conf_faculty_auth_${confId}`);
+      sessionStorage.removeItem(`openmun_conf_faculty_auth_${confId}`);
+      localStorage.removeItem(`openmun_conf_equipos_role_${confId}`);
+      localStorage.removeItem(`openmun_conf_equipos_team_${confId}`);
+    } catch {}
+  };
+
+  // ── DATOS FILTRADOS: VISTA ORGANIZACIÓN (TODOS LOS EQUIPOS) ──
+  const equiposFiltradosOrg = useMemo(() => {
+    let resultado = datosEquipos;
+
+    if (filtroEquipoOrg !== 'TODOS') {
+      resultado = resultado.filter(e => e.nombre === filtroEquipoOrg);
+    }
+
+    if (busquedaOrg.trim()) {
+      const q = busquedaOrg.toLowerCase().trim();
       resultado = resultado.filter(e => {
         const matchNombre = e.nombre.toLowerCase().includes(q);
         const matchMiembros = e.miembros.some(m =>
@@ -388,18 +502,16 @@ const RendimientoEquiposTab = ({
     }
 
     return [...resultado].sort((a, b) => {
-      // Dejar 'Sin Equipo' siempre al final a menos que sea búsqueda específica
       if (a.esSinEquipo && !b.esSinEquipo) return 1;
       if (!a.esSinEquipo && b.esSinEquipo) return -1;
-
-      if (orden === 'TIEMPO') return b.totalSegundos - a.totalSegundos;
-      if (orden === 'MOCIONES') return b.totalMocionesAprobadas - a.totalMocionesAprobadas;
-      if (orden === 'ALFABETICO') return a.nombre.localeCompare(b.nombre, 'es');
+      if (ordenOrg === 'TIEMPO') return b.totalSegundos - a.totalSegundos;
+      if (ordenOrg === 'MOCIONES') return b.totalMocionesAprobadas - a.totalMocionesAprobadas;
+      if (ordenOrg === 'ALFABETICO') return a.nombre.localeCompare(b.nombre, 'es');
       return 0;
     });
-  }, [datosEquipos, filtroEquipo, busqueda, orden]);
+  }, [datosEquipos, filtroEquipoOrg, busquedaOrg, ordenOrg]);
 
-  // KPIs Globales de Toda la Conferencia
+  // KPIs Globales de Toda la Conferencia (Organización)
   const kpisGlobales = useMemo(() => {
     const equiposReales = datosEquipos.filter(e => !e.esSinEquipo);
     const totalDelegaciones = datosEquipos.reduce((acc, e) => acc + e.miembros.length, 0);
@@ -417,6 +529,56 @@ const RendimientoEquiposTab = ({
       equipoLider
     };
   }, [datosEquipos]);
+
+  // ── DATOS FILTRADOS: VISTA FACULTY ADVISOR (SOLO SU EQUIPO) ──
+  const nombreEquipoActualFaculty = authRole === 'ORGANIZACION'
+    ? (previewTeam || nombresEquipos[0] || '')
+    : facultyTeam;
+
+  const equipoActualFaculty = useMemo(() => {
+    if (!nombreEquipoActualFaculty) return null;
+    return datosEquipos.find(e => e.nombre.toLowerCase().trim() === nombreEquipoActualFaculty.toLowerCase().trim()) || null;
+  }, [datosEquipos, nombreEquipoActualFaculty]);
+
+  // Comités en los que participa este equipo
+  const comitesEquipoFaculty = useMemo(() => {
+    if (!equipoActualFaculty) return [];
+    return Array.from(equipoActualFaculty.comitesSet || []).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [equipoActualFaculty]);
+
+  // Miembros filtrados del equipo en Faculty View
+  const miembrosFiltradosFaculty = useMemo(() => {
+    if (!equipoActualFaculty) return [];
+    let list = equipoActualFaculty.miembros || [];
+
+    if (busquedaFaculty.trim()) {
+      const q = busquedaFaculty.toLowerCase().trim();
+      list = list.filter(m =>
+        m.paisNombre.toLowerCase().includes(q) ||
+        m.comiteNombre.toLowerCase().includes(q) ||
+        (m.delegado && m.delegado.toLowerCase().includes(q))
+      );
+    }
+
+    if (filtroComiteFaculty !== 'TODOS') {
+      list = list.filter(m => m.comiteNombre === filtroComiteFaculty);
+    }
+
+    if (filtroAsistenciaFaculty !== 'TODOS') {
+      if (filtroAsistenciaFaculty === 'PRESENTE') {
+        list = list.filter(m => m.estatus === 'Presente' || m.estatus === 'Presente y Votando');
+      } else if (filtroAsistenciaFaculty === 'AUSENTE') {
+        list = list.filter(m => m.estatus === 'Ausente');
+      }
+    }
+
+    return [...list].sort((a, b) => {
+      if (ordenFaculty === 'TIEMPO') return b.segHablados - a.segHablados;
+      if (ordenFaculty === 'MOCIONES') return b.mocAprobadas - a.mocAprobadas;
+      if (ordenFaculty === 'ALFABETICO') return a.paisNombre.localeCompare(b.paisNombre, 'es');
+      return 0;
+    });
+  }, [equipoActualFaculty, busquedaFaculty, filtroComiteFaculty, filtroAsistenciaFaculty, ordenFaculty]);
 
   const toggleExpandir = (nombreEq) => {
     setEquiposExpandidos(prev => ({
@@ -444,42 +606,102 @@ const RendimientoEquiposTab = ({
   const headerBg = isLight ? '#f1f5f9' : 'var(--card-header-bg)';
 
   // ─────────────────────────────────────────────────────────────
-  // PANTALLA DE ACCESO TRAS CONTRASEÑA
+  // PANTALLA DE ACCESO / AUTENTICACIÓN (CUANDO NO ESTÁ AUTENTICADO)
   // ─────────────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div style={{
-        maxWidth: '460px',
-        margin: '3rem auto',
+        maxWidth: '520px',
+        margin: '2.5rem auto',
         backgroundColor: bgCard,
         border: `1px solid ${borderCol}`,
         borderRadius: '16px',
         padding: '2.2rem 1.8rem',
-        textAlign: 'center',
         boxShadow: isLight
           ? '0 10px 25px -5px rgba(0, 0, 0, 0.08)'
           : '0 15px 35px -5px rgba(0, 0, 0, 0.5)'
       }}>
-        <div style={{
-          width: '58px',
-          height: '58px',
-          borderRadius: '16px',
-          backgroundColor: 'rgba(16, 185, 129, 0.15)',
-          color: '#10b981',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 1.25rem auto'
-        }}>
-          <Users size={30} />
+        {/* Cabecera del Modal */}
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{
+            width: '58px',
+            height: '58px',
+            borderRadius: '16px',
+            backgroundColor: loginMode === 'FACULTY' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+            color: loginMode === 'FACULTY' ? '#10b981' : '#6366f1',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1rem auto',
+            transition: 'all 0.2s ease'
+          }}>
+            {loginMode === 'FACULTY' ? <GraduationCap size={32} /> : <Shield size={30} />}
+          </div>
+
+          <h2 style={{ fontSize: '1.35rem', fontWeight: '800', margin: '0 0 0.35rem 0', color: 'var(--text-color)' }}>
+            Rendimiento de Equipos & Alumnos
+          </h2>
+          <p style={{ fontSize: '0.84rem', color: textMuted, margin: 0, lineHeight: '1.45' }}>
+            Acceso protegido según rol para supervisión académica de <strong>{conferencia?.nombre || 'la Conferencia'}</strong>.
+          </p>
         </div>
 
-        <h2 style={{ fontSize: '1.35rem', fontWeight: '800', margin: '0 0 0.5rem 0', color: 'var(--text-color)' }}>
-          Rendimiento de Equipos
-        </h2>
-        <p style={{ fontSize: '0.86rem', color: textMuted, margin: '0 0 1.5rem 0', lineHeight: '1.5' }}>
-          Espacio exclusivo para profesores y <em>Faculty Advisors</em>. Ingresa la contraseña de profesores u organización para supervisar el rendimiento de tus alumnos y colegios.
-        </p>
+        {/* Pestañas de Selección de Modo (Organización vs Faculty) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '0.4rem',
+          backgroundColor: headerBg,
+          padding: '0.35rem',
+          borderRadius: '10px',
+          marginBottom: '1.5rem'
+        }}>
+          <button
+            type="button"
+            onClick={() => { setLoginMode('FACULTY'); setAuthError(null); }}
+            style={{
+              padding: '0.65rem 0.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: loginMode === 'FACULTY' ? (isLight ? '#ffffff' : '#27272a') : 'transparent',
+              color: loginMode === 'FACULTY' ? '#10b981' : textMuted,
+              fontWeight: '800',
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              boxShadow: loginMode === 'FACULTY' ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <GraduationCap size={16} /> Faculty Advisor
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setLoginMode('ORGANIZACION'); setAuthError(null); }}
+            style={{
+              padding: '0.65rem 0.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: loginMode === 'ORGANIZACION' ? (isLight ? '#ffffff' : '#27272a') : 'transparent',
+              color: loginMode === 'ORGANIZACION' ? '#6366f1' : textMuted,
+              fontWeight: '800',
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              boxShadow: loginMode === 'ORGANIZACION' ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Shield size={16} /> Organización
+          </button>
+        </div>
 
         {authError && (
           <div style={{
@@ -501,10 +723,71 @@ const RendimientoEquiposTab = ({
           </div>
         )}
 
-        <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+          
+          {/* Si está en modo Faculty Advisor: Selección de Equipo / Colegio */}
+          {loginMode === 'FACULTY' ? (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: textMuted, marginBottom: '0.35rem' }}>
+                Selecciona tu Colegio / Equipo
+              </label>
+              {nombresEquipos.length > 0 ? (
+                <select
+                  required
+                  value={selectedTeamForLogin}
+                  onChange={(e) => setSelectedTeamForLogin(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 0.85rem',
+                    borderRadius: '8px',
+                    border: `1px solid ${borderCol}`,
+                    backgroundColor: headerBg,
+                    color: 'var(--text-color)',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {nombresEquipos.map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{
+                  padding: '0.85rem',
+                  borderRadius: '8px',
+                  backgroundColor: isLight ? '#fef3c7' : 'rgba(245, 158, 11, 0.15)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  color: isLight ? '#92400e' : '#fcd34d',
+                  fontSize: '0.8rem',
+                  lineHeight: '1.4'
+                }}>
+                  ⚠️ Aún no se han configurado equipos en los comités de la conferencia. La organización debe asignarlos a las delegaciones en la Matriz de Países.
+                </div>
+              )}
+              <span style={{ fontSize: '0.72rem', color: textMuted, marginTop: '0.35rem', display: 'block' }}>
+                Solo podrás visualizar el rendimiento y los alumnos de este equipo.
+              </span>
+            </div>
+          ) : (
+            <div style={{
+              padding: '0.85rem',
+              borderRadius: '8px',
+              backgroundColor: isLight ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.15)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              fontSize: '0.8rem',
+              color: 'var(--text-color)',
+              lineHeight: '1.45'
+            }}>
+              🏛️ <strong>Vista Integral de Organización:</strong> Permite consultar el rendimiento consolidado de <strong>TODOS</strong> los equipos y colegios participantes con métricas comparativas.
+            </div>
+          )}
+
+          {/* Campo de Contraseña */}
           <div style={{ position: 'relative', textAlign: 'left' }}>
             <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: textMuted, marginBottom: '0.35rem' }}>
-              Contraseña de Profesores / Faculty Advisor
+              {loginMode === 'FACULTY' ? 'Contraseña de Profesores / Faculty' : 'PIN de Organización / Secretaría'}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -512,7 +795,7 @@ const RendimientoEquiposTab = ({
                 required
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Introduce la contraseña..."
+                placeholder={loginMode === 'FACULTY' ? 'Ingresa el PIN de profesores...' : 'Ingresa el PIN de admin...'}
                 style={{
                   width: '100%',
                   padding: '0.75rem 2.6rem 0.75rem 0.85rem',
@@ -546,13 +829,14 @@ const RendimientoEquiposTab = ({
             </div>
           </div>
 
+          {/* Botón de Envío */}
           <button
             type="submit"
-            disabled={isVerifying}
+            disabled={isVerifying || (loginMode === 'FACULTY' && nombresEquipos.length === 0)}
             style={{
               padding: '0.85rem',
               borderRadius: '8px',
-              backgroundColor: '#10b981',
+              backgroundColor: loginMode === 'FACULTY' ? '#10b981' : '#6366f1',
               color: '#ffffff',
               border: 'none',
               fontSize: '0.92rem',
@@ -562,29 +846,678 @@ const RendimientoEquiposTab = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.5rem',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
+              boxShadow: loginMode === 'FACULTY'
+                ? '0 4px 12px rgba(16, 185, 129, 0.25)'
+                : '0 4px 12px rgba(99, 102, 241, 0.25)',
               transition: 'all 0.15s ease'
             }}
           >
             <Key size={16} />
-            {isVerifying ? 'Verificando...' : 'Acceder al Panel de Rendimiento'}
+            {isVerifying ? 'Verificando...' : (
+              loginMode === 'FACULTY'
+                ? `Acceder a ${selectedTeamForLogin || 'mi Equipo'}`
+                : 'Acceder a Todos los Equipos'
+            )}
           </button>
         </form>
 
-        <p style={{ fontSize: '0.75rem', color: textMuted, marginTop: '1.25rem', marginBottom: 0 }}>
-          🔒 El acceso está protegido para garantizar la confidencialidad de las evaluaciones académicas.
+        <p style={{ fontSize: '0.74rem', color: textMuted, marginTop: '1.25rem', marginBottom: 0, textAlign: 'center' }}>
+          🔒 El acceso está protegido para garantizar la confidencialidad y privacidad entre delegaciones.
         </p>
       </div>
     );
   }
 
   // ─────────────────────────────────────────────────────────────
-  // VISTA PRINCIPAL: PANEL DE RENDIMIENTO DE EQUIPOS
+  // DETERMINAR VISTA ACTIVA: ORGANIZACIÓN O FACULTY
+  // ─────────────────────────────────────────────────────────────
+  const esVistaOrganizacion = viewMode === 'ORGANIZACION';
+
+  // ─────────────────────────────────────────────────────────────
+  // VISTA 2: FACULTY ADVISOR (SOLO SU EQUIPO)
+  // ─────────────────────────────────────────────────────────────
+  if (!esVistaOrganizacion) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+        
+        {/* Banner de Previsualización para Organización */}
+        {authRole === 'ORGANIZACION' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            padding: '0.75rem 1rem',
+            backgroundColor: isLight ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.15)',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            borderRadius: '10px',
+            fontSize: '0.84rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#6366f1', fontWeight: '700' }}>
+              <Shield size={16} />
+              <span>Simulación de Organización: Previsualizando vista del Faculty de <strong>{nombreEquipoActualFaculty}</strong></span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              {nombresEquipos.length > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ fontSize: '0.76rem', color: textMuted }}>Cambiar equipo:</span>
+                  <select
+                    value={previewTeam}
+                    onChange={(e) => setPreviewTeam(e.target.value)}
+                    style={{
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.8rem',
+                      borderRadius: '6px',
+                      border: `1px solid ${borderCol}`,
+                      backgroundColor: bgCard,
+                      color: 'var(--text-color)',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {nombresEquipos.map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <button
+                onClick={() => setViewMode('ORGANIZACION')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  backgroundColor: '#6366f1',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.78rem',
+                  fontWeight: '800',
+                  cursor: 'pointer'
+                }}
+              >
+                Volver a Vista Organización (Todos los equipos)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Cabecera Principal del Faculty Advisor */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          padding: '1.25rem',
+          backgroundColor: bgCard,
+          border: `1px solid ${borderCol}`,
+          borderRadius: '12px',
+          boxShadow: isLight ? '0 2px 5px rgba(0,0,0,0.03)' : 'none'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+              <div style={{
+                padding: '0.4rem',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                color: '#10b981',
+                display: 'flex'
+              }}>
+                <GraduationCap size={20} />
+              </div>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: '800',
+                textTransform: 'uppercase',
+                padding: '0.2rem 0.5rem',
+                borderRadius: '6px',
+                backgroundColor: isLight ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.2)',
+                color: '#10b981'
+              }}>
+                Panel Faculty Advisor
+              </span>
+            </div>
+
+            <h2 style={{ fontSize: '1.45rem', fontWeight: '900', margin: '0 0 0.25rem 0', color: 'var(--text-color)' }}>
+              {nombreEquipoActualFaculty || 'Mi Equipo'}
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
+              Seguimiento académico exclusivo para la delegación y profesor/a de <strong>{nombreEquipoActualFaculty}</strong> en <strong>{conferencia?.nombre || 'la Conferencia'}</strong>.
+            </p>
+          </div>
+
+          {/* Acciones de la Cabecera Faculty */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            {onRefresh && (
+              <button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.55rem 0.85rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${borderCol}`,
+                  backgroundColor: headerBg,
+                  color: 'var(--text-color)',
+                  fontSize: '0.82rem',
+                  fontWeight: '700',
+                  cursor: isRefreshing ? 'wait' : 'pointer'
+                }}
+                title="Actualizar datos de los comités en vivo"
+              >
+                <RefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+              </button>
+            )}
+
+            {equipoActualFaculty && (
+              <button
+                onClick={() => exportarCsvEquipos([equipoActualFaculty], conferencia?.nombre, nombreEquipoActualFaculty)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.55rem 0.85rem',
+                  borderRadius: '8px',
+                  border: `1px solid ${borderCol}`,
+                  backgroundColor: headerBg,
+                  color: 'var(--text-color)',
+                  fontSize: '0.82rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+                title="Descargar informe exclusivo de mi equipo en CSV"
+              >
+                <Download size={15} /> Exportar CSV Equipo
+              </button>
+            )}
+
+            <button
+              onClick={() => window.print()}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.55rem 0.85rem',
+                borderRadius: '8px',
+                border: `1px solid ${borderCol}`,
+                backgroundColor: headerBg,
+                color: 'var(--text-color)',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+              title="Imprimir informe del equipo o guardar PDF"
+            >
+              <Printer size={15} /> Imprimir / PDF
+            </button>
+
+            {authRole === 'FACULTY' && (
+              <button
+                onClick={handleCerrarSesion}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.55rem 0.85rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  backgroundColor: isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)',
+                  color: isLight ? '#dc2626' : '#f87171',
+                  fontSize: '0.82rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+                title="Cerrar sesión de profesor o cambiar de equipo"
+              >
+                <LogOut size={14} /> Salir / Cambiar
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Notificación de Confidencialidad y Privacidad Exclusiva */}
+        <div style={{
+          padding: '0.85rem 1.1rem',
+          borderRadius: '10px',
+          backgroundColor: isLight ? 'rgba(16, 185, 129, 0.06)' : 'rgba(16, 185, 129, 0.12)',
+          border: '1px solid rgba(16, 185, 129, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+          fontSize: '0.82rem',
+          color: 'var(--text-color)'
+        }}>
+          <Lock size={16} color="#10b981" style={{ flexShrink: 0 }} />
+          <span>
+            <strong>Vista Privada de Equipo:</strong> Estás consultando exclusivamente el rendimiento de los alumnos de <strong>{nombreEquipoActualFaculty}</strong>. Los datos del resto de colegios permanecen confidenciales.
+          </span>
+        </div>
+
+        {/* Si el equipo no tiene delegaciones aún */}
+        {!equipoActualFaculty ? (
+          <div style={{
+            padding: '3.5rem 1.5rem',
+            textAlign: 'center',
+            backgroundColor: bgCard,
+            border: `1px solid ${borderCol}`,
+            borderRadius: '12px'
+          }}>
+            <School size={40} style={{ color: textMuted, margin: '0 auto 0.75rem auto' }} />
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.35rem 0', color: 'var(--text-color)' }}>
+              No se encontraron delegaciones para "{nombreEquipoActualFaculty}"
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0, maxWidth: '460px', marginLeft: 'auto', marginRight: 'auto' }}>
+              La mesa directiva o secretaría aún no ha asignado delegaciones a este equipo en la Matriz de Países de los comités.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* ── BARRA DE KPIS EXCLUSIVOS DEL EQUIPO ── */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '0.85rem'
+            }}>
+              {/* KPI 1: Alumnos y Delegaciones */}
+              <div style={{
+                backgroundColor: bgCard,
+                border: `1px solid ${borderCol}`,
+                borderRadius: '10px',
+                padding: '0.9rem 1.1rem',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#10b981', fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                  <span>Alumnos / Delegaciones</span>
+                  <Users size={16} />
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: '900', color: 'var(--text-color)', marginTop: '0.2rem' }}>
+                  {equipoActualFaculty.miembros.length}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: textMuted }}>
+                  en {equipoActualFaculty.totalComites} {equipoActualFaculty.totalComites === 1 ? 'comité activo' : 'comités activos'}
+                </div>
+              </div>
+
+              {/* KPI 2: Tiempo de Oratoria Acumulado */}
+              <div style={{
+                backgroundColor: bgCard,
+                border: `1px solid ${borderCol}`,
+                borderRadius: '10px',
+                padding: '0.9rem 1.1rem',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#3b82f6', fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                  <span>Tiempo de Debate</span>
+                  <Clock size={16} />
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: '900', color: '#3b82f6', marginTop: '0.2rem' }}>
+                  {formatTiempo(equipoActualFaculty.totalSegundos)}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: textMuted }}>
+                  {equipoActualFaculty.totalIntervenciones} discursos e intervenciones
+                </div>
+              </div>
+
+              {/* KPI 3: Mociones del Equipo */}
+              <div style={{
+                backgroundColor: bgCard,
+                border: `1px solid ${borderCol}`,
+                borderRadius: '10px',
+                padding: '0.9rem 1.1rem',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#8b5cf6', fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                  <span>Mociones Aprobadas</span>
+                  <FileText size={16} />
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: '900', color: '#8b5cf6', marginTop: '0.2rem' }}>
+                  {equipoActualFaculty.totalMocionesAprobadas} <span style={{ fontSize: '0.88rem', fontWeight: '600', color: textMuted }}>/ {equipoActualFaculty.totalMociones}</span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: textMuted }}>
+                  {equipoActualFaculty.tasaMociones}% tasa de éxito en el pleno
+                </div>
+              </div>
+
+              {/* KPI 4: Enmiendas Redactadas */}
+              <div style={{
+                backgroundColor: bgCard,
+                border: `1px solid ${borderCol}`,
+                borderRadius: '10px',
+                padding: '0.9rem 1.1rem',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#ec4899', fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                  <span>Enmiendas Aprobadas</span>
+                  <FileSignature size={16} />
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: '900', color: '#ec4899', marginTop: '0.2rem' }}>
+                  {equipoActualFaculty.totalEnmiendasAprobadas} <span style={{ fontSize: '0.88rem', fontWeight: '600', color: textMuted }}>/ {equipoActualFaculty.totalEnmiendas}</span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: textMuted }}>
+                  redactadas por tus alumnos
+                </div>
+              </div>
+
+              {/* KPI 5: Asistencia y Compromiso */}
+              <div style={{
+                backgroundColor: bgCard,
+                border: `1px solid ${borderCol}`,
+                borderRadius: '10px',
+                padding: '0.9rem 1.1rem',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#06b6d4', fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase' }}>
+                  <span>Asistencia Global</span>
+                  <CheckCircle size={16} />
+                </div>
+                <div style={{ fontSize: '1.55rem', fontWeight: '900', color: '#06b6d4', marginTop: '0.2rem' }}>
+                  {equipoActualFaculty.tasaAsistencia}%
+                </div>
+                <div style={{ fontSize: '0.74rem', color: textMuted }}>
+                  {equipoActualFaculty.asistencia.presenteVotando + equipoActualFaculty.asistencia.presente} presentes / {equipoActualFaculty.asistencia.ausente} ausentes
+                </div>
+              </div>
+            </div>
+
+            {/* ── CONTROLES Y FILTROS INTERNOS PARA EL EQUIPO ── */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              padding: '0.85rem 1rem',
+              backgroundColor: bgCard,
+              border: `1px solid ${borderCol}`,
+              borderRadius: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: '1 1 320px', flexWrap: 'wrap' }}>
+                {/* Buscador de Alumnos en el Equipo */}
+                <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '180px' }}>
+                  <Search size={14} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: textMuted }} />
+                  <input
+                    type="text"
+                    placeholder="Buscar alumno, país, comité..."
+                    value={busquedaFaculty}
+                    onChange={(e) => setBusquedaFaculty(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.45rem 0.65rem 0.45rem 1.85rem',
+                      fontSize: '0.82rem',
+                      borderRadius: '6px',
+                      border: `1px solid ${borderCol}`,
+                      backgroundColor: headerBg,
+                      color: 'var(--text-color)',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                {/* Filtro por Comité */}
+                {comitesEquipoFaculty.length > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '700', color: textMuted }}>Comité:</span>
+                    <select
+                      value={filtroComiteFaculty}
+                      onChange={(e) => setFiltroComiteFaculty(e.target.value)}
+                      style={{
+                        padding: '0.45rem 0.65rem',
+                        fontSize: '0.82rem',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        border: `1px solid ${borderCol}`,
+                        backgroundColor: headerBg,
+                        color: 'var(--text-color)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="TODOS">Todos ({comitesEquipoFaculty.length})</option>
+                      {comitesEquipoFaculty.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Filtro por Asistencia */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: '700', color: textMuted }}>Asistencia:</span>
+                  <select
+                    value={filtroAsistenciaFaculty}
+                    onChange={(e) => setFiltroAsistenciaFaculty(e.target.value)}
+                    style={{
+                      padding: '0.45rem 0.65rem',
+                      fontSize: '0.82rem',
+                      fontWeight: '600',
+                      borderRadius: '6px',
+                      border: `1px solid ${borderCol}`,
+                      backgroundColor: headerBg,
+                      color: 'var(--text-color)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="TODOS">Todos los alumnos</option>
+                    <option value="PRESENTE">Solo presentes</option>
+                    <option value="AUSENTE">Solo ausentes</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Ordenación */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: textMuted }}>Ordenar:</span>
+                <select
+                  value={ordenFaculty}
+                  onChange={(e) => setOrdenFaculty(e.target.value)}
+                  style={{
+                    padding: '0.45rem 0.65rem',
+                    fontSize: '0.82rem',
+                    borderRadius: '6px',
+                    border: `1px solid ${borderCol}`,
+                    backgroundColor: headerBg,
+                    color: 'var(--text-color)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="TIEMPO">Tiempo Hablado</option>
+                  <option value="MOCIONES">Mociones Aprobadas</option>
+                  <option value="ALFABETICO">Alfabético</option>
+                </select>
+              </div>
+            </div>
+
+            {/* ── TABLA DETALLADA DE ALUMNOS DEL EQUIPO ── */}
+            <div style={{
+              backgroundColor: bgCard,
+              border: `1px solid ${borderCol}`,
+              borderRadius: '12px',
+              overflow: 'hidden',
+              boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none'
+            }}>
+              <div style={{
+                padding: '1rem 1.25rem',
+                backgroundColor: headerBg,
+                borderBottom: `1px solid ${borderCol}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
+                    Alumnos y Delegaciones ({miembrosFiltradosFaculty.length})
+                  </h3>
+                </div>
+                <span style={{ fontSize: '0.74rem', color: textMuted }}>
+                  Actualizado en tiempo real según los registros de Mesa
+                </span>
+              </div>
+
+              {miembrosFiltradosFaculty.length === 0 ? (
+                <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: textMuted, fontSize: '0.86rem' }}>
+                  No se encontraron alumnos con los filtros seleccionados.
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{
+                        backgroundColor: isLight ? '#f8fafc' : 'rgba(0,0,0,0.2)',
+                        borderBottom: `1px solid ${borderCol}`,
+                        color: textMuted,
+                        fontSize: '0.72rem',
+                        textTransform: 'uppercase'
+                      }}>
+                        <th style={{ padding: '0.7rem 0.95rem' }}>Delegación & Alumno</th>
+                        <th style={{ padding: '0.7rem 0.95rem' }}>Comité</th>
+                        <th style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>Asistencia</th>
+                        <th style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>Tiempo Hablado</th>
+                        <th style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>Discursos</th>
+                        <th style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>Mociones</th>
+                        <th style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>Enmiendas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {miembrosFiltradosFaculty.map((m, idx) => (
+                        <tr
+                          key={`${m.comiteId}_${m.paisId}`}
+                          style={{
+                            borderBottom: idx < miembrosFiltradosFaculty.length - 1 ? `1px solid ${borderCol}` : 'none',
+                            backgroundColor: idx % 2 === 0 ? 'transparent' : (isLight ? 'rgba(0,0,0,0.015)' : 'rgba(255,255,255,0.015)')
+                          }}
+                        >
+                          {/* Delegación & Alumno */}
+                          <td style={{ padding: '0.7rem 0.95rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <CountryFlag bandera={m.bandera} nombre={m.paisNombre} size="sm" />
+                              <div>
+                                <div style={{ fontWeight: '700', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <span>{m.paisNombre}</span>
+                                  {m.veto && <span title="P5 / Veto" style={{ fontSize: '0.7rem' }}>👑</span>}
+                                </div>
+                                {m.delegado ? (
+                                  <div style={{ fontSize: '0.76rem', color: '#10b981', fontWeight: '700' }}>
+                                    {m.delegado}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: '0.72rem', color: textMuted, fontStyle: 'italic' }}>
+                                    Sin nombre de delegado
+                                  </div>
+                                )}
+                                {m.insignias.length > 0 && (
+                                  <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                                    {m.insignias.map(ins => (
+                                      <span
+                                        key={ins}
+                                        style={{
+                                          fontSize: '0.64rem',
+                                          padding: '0.08rem 0.4rem',
+                                          borderRadius: '4px',
+                                          backgroundColor: isLight ? '#f1f5f9' : 'rgba(255,255,255,0.08)',
+                                          color: textMuted,
+                                          fontWeight: '700'
+                                        }}
+                                      >
+                                        {ins}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Comité */}
+                          <td style={{ padding: '0.7rem 0.95rem', color: 'var(--text-color)' }}>
+                            <span style={{
+                              fontSize: '0.76rem',
+                              padding: '0.25rem 0.55rem',
+                              borderRadius: '6px',
+                              backgroundColor: isLight ? '#e0f2fe' : 'rgba(2, 132, 199, 0.15)',
+                              color: isLight ? '#0369a1' : '#38bdf8',
+                              fontWeight: '700'
+                            }}>
+                              {m.comiteNombre}
+                            </span>
+                          </td>
+
+                          {/* Asistencia */}
+                          <td style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>
+                            <span style={{
+                              fontSize: '0.72rem',
+                              padding: '0.2rem 0.55rem',
+                              borderRadius: '999px',
+                              fontWeight: '700',
+                              backgroundColor: m.estatus === 'Presente y Votando'
+                                ? (isLight ? '#dbeafe' : 'rgba(59, 130, 246, 0.15)')
+                                : (m.estatus === 'Presente'
+                                  ? (isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.15)')
+                                  : (isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)')),
+                              color: m.estatus === 'Presente y Votando'
+                                ? '#2563eb'
+                                : (m.estatus === 'Presente' ? '#16a34a' : '#dc2626')
+                            }}>
+                              {m.estatus}
+                            </span>
+                          </td>
+
+                          {/* Tiempo Hablado */}
+                          <td style={{ padding: '0.7rem 0.85rem', textAlign: 'center', fontWeight: '800', color: m.segHablados > 0 ? '#3b82f6' : textMuted }}>
+                            {formatTiempo(m.segHablados)}
+                          </td>
+
+                          {/* Discursos */}
+                          <td style={{ padding: '0.7rem 0.85rem', textAlign: 'center', fontWeight: '800' }}>
+                            {m.intervencionesCount}
+                          </td>
+
+                          {/* Mociones */}
+                          <td style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>
+                            <span style={{ fontWeight: '800', color: m.mocAprobadas > 0 ? '#10b981' : 'inherit' }}>
+                              {m.mocAprobadas}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: textMuted }}> / {m.mocPresentadas}</span>
+                          </td>
+
+                          {/* Enmiendas */}
+                          <td style={{ padding: '0.7rem 0.85rem', textAlign: 'center' }}>
+                            <span style={{ fontWeight: '800', color: m.enmAprobadas > 0 ? '#8b5cf6' : 'inherit' }}>
+                              {m.enmAprobadas}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: textMuted }}> / {m.enmPresentadas}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // VISTA 1: ORGANIZACIÓN (TODOS LOS EQUIPOS)
   // ─────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
       
-      {/* ── CABECERA Y ACCIONES ── */}
+      {/* ── CABECERA Y ACCIONES ORGANIZACIÓN ── */}
       <div style={{
         display: 'flex',
         alignItems: 'flex-start',
@@ -602,22 +1535,60 @@ const RendimientoEquiposTab = ({
             <div style={{
               padding: '0.4rem',
               borderRadius: '8px',
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-              color: '#10b981',
+              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              color: '#6366f1',
               display: 'flex'
             }}>
-              <Award size={20} />
+              <Shield size={20} />
             </div>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
-              Rendimiento de Equipos & Alumnos
-            </h2>
+            <span style={{
+              fontSize: '0.72rem',
+              fontWeight: '800',
+              textTransform: 'uppercase',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '6px',
+              backgroundColor: isLight ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.2)',
+              color: '#6366f1'
+            }}>
+              Vista Organización — Acceso Global
+            </span>
           </div>
+
+          <h2 style={{ fontSize: '1.35rem', fontWeight: '800', margin: '0 0 0.2rem 0', color: 'var(--text-color)' }}>
+            Rendimiento de Equipos & Alumnos
+          </h2>
           <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-            Supervisión académica en tiempo real para profesores y delegaciones de <strong>{conferencia?.nombre || 'la Conferencia'}</strong>.
+            Supervisión académica global para Secretaría y Staff de <strong>{conferencia?.nombre || 'la Conferencia'}</strong>.
           </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {/* Botón para Simular / Conmutar a la Vista de Faculty */}
+          {nombresEquipos.length > 0 && (
+            <button
+              onClick={() => {
+                setPreviewTeam(nombresEquipos[0]);
+                setViewMode('FACULTY');
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                padding: '0.55rem 0.85rem',
+                borderRadius: '8px',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                backgroundColor: isLight ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.15)',
+                color: '#10b981',
+                fontSize: '0.82rem',
+                fontWeight: '800',
+                cursor: 'pointer'
+              }}
+              title="Previsualizar el panel tal como lo ve un profesor de colegio"
+            >
+              <GraduationCap size={15} /> Simular Vista Faculty
+            </button>
+          )}
+
           {onRefresh && (
             <button
               onClick={handleManualRefresh}
@@ -657,7 +1628,7 @@ const RendimientoEquiposTab = ({
               fontWeight: '700',
               cursor: 'pointer'
             }}
-            title="Descargar datos en formato CSV para Excel"
+            title="Descargar datos de todos los equipos en CSV"
           >
             <Download size={15} /> Exportar CSV
           </button>
@@ -698,7 +1669,7 @@ const RendimientoEquiposTab = ({
                 fontWeight: '700',
                 cursor: 'pointer'
               }}
-              title="Bloquear y salir del modo profesor"
+              title="Bloquear y salir del modo organización"
             >
               <Lock size={14} /> Bloquear
             </button>
@@ -706,7 +1677,7 @@ const RendimientoEquiposTab = ({
         </div>
       </div>
 
-      {/* ── BARRA DE KPIS GLOBALES ── */}
+      {/* ── BARRA DE KPIS GLOBALES DE LA CONFERENCIA ── */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -775,7 +1746,7 @@ const RendimientoEquiposTab = ({
           </div>
         </div>
 
-        {/* KPI 4: Equipo con Mayor Desempeño */}
+        {/* KPI 4: Equipo Líder */}
         <div style={{
           backgroundColor: bgCard,
           border: `1px solid ${borderCol}`,
@@ -805,7 +1776,7 @@ const RendimientoEquiposTab = ({
         </div>
       </div>
 
-      {/* ── CONTROLES Y FILTROS ── */}
+      {/* ── CONTROLES Y FILTROS ORGANIZACIÓN ── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -822,8 +1793,8 @@ const RendimientoEquiposTab = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <span style={{ fontSize: '0.78rem', fontWeight: '700', color: textMuted }}>Equipo:</span>
             <select
-              value={filtroEquipo}
-              onChange={(e) => setFiltroEquipo(e.target.value)}
+              value={filtroEquipoOrg}
+              onChange={(e) => setFiltroEquipoOrg(e.target.value)}
               style={{
                 padding: '0.45rem 0.75rem',
                 fontSize: '0.82rem',
@@ -848,8 +1819,8 @@ const RendimientoEquiposTab = ({
             <input
               type="text"
               placeholder="Buscar alumno, país, comité..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              value={busquedaOrg}
+              onChange={(e) => setBusquedaOrg(e.target.value)}
               style={{
                 width: '100%',
                 padding: '0.45rem 0.65rem 0.45rem 1.85rem',
@@ -869,8 +1840,8 @@ const RendimientoEquiposTab = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <span style={{ fontSize: '0.78rem', fontWeight: '700', color: textMuted }}>Ordenar:</span>
             <select
-              value={orden}
-              onChange={(e) => setOrden(e.target.value)}
+              value={ordenOrg}
+              onChange={(e) => setOrdenOrg(e.target.value)}
               style={{
                 padding: '0.45rem 0.65rem',
                 fontSize: '0.82rem',
@@ -922,8 +1893,8 @@ const RendimientoEquiposTab = ({
         </div>
       </div>
 
-      {/* ── LISTADO DETALLADO POR EQUIPO ── */}
-      {equiposFiltrados.length === 0 ? (
+      {/* ── LISTADO DETALLADO DE TODOS LOS EQUIPOS (VISTA ORGANIZACIÓN) ── */}
+      {equiposFiltradosOrg.length === 0 ? (
         <div style={{
           padding: '3rem 1.5rem',
           textAlign: 'center',
@@ -936,14 +1907,14 @@ const RendimientoEquiposTab = ({
             No se encontraron equipos
           </h3>
           <p style={{ fontSize: '0.84rem', color: textMuted, margin: 0, maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto' }}>
-            {busqueda || filtroEquipo !== 'TODOS'
+            {busquedaOrg || filtroEquipoOrg !== 'TODOS'
               ? 'Prueba a cambiar los filtros o el término de búsqueda.'
               : 'Aún no se han asignado equipos a las delegaciones en los comités. Las mesas directivas pueden asignarlos en la Matriz de Países.'}
           </p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {equiposFiltrados.map((equipo, index) => {
+          {equiposFiltradosOrg.map((equipo, index) => {
             const isExpandido = equiposExpandidos[equipo.nombre] !== false; // Abierto por defecto
             const rank = index + 1;
 
@@ -961,7 +1932,6 @@ const RendimientoEquiposTab = ({
               >
                 {/* Cabecera del Equipo */}
                 <div
-                  onClick={() => toggleExpandir(equipo.nombre)}
                   style={{
                     padding: '1rem 1.25rem',
                     backgroundColor: equipo.esSinEquipo
@@ -973,11 +1943,13 @@ const RendimientoEquiposTab = ({
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: '0.75rem',
-                    cursor: 'pointer',
                     userSelect: 'none'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '1 1 260px' }}>
+                  <div
+                    onClick={() => toggleExpandir(equipo.nombre)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: '1 1 260px', cursor: 'pointer' }}
+                  >
                     {!equipo.esSinEquipo && (
                       <div style={{
                         width: '28px',
@@ -997,7 +1969,7 @@ const RendimientoEquiposTab = ({
                     )}
 
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <h3 style={{
                           fontSize: '1.1rem',
                           fontWeight: '800',
@@ -1030,8 +2002,8 @@ const RendimientoEquiposTab = ({
                     </div>
                   </div>
 
-                  {/* Resumen de Métricas del Equipo */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                  {/* Resumen de Métricas del Equipo y Acciones */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                       <span style={{ fontSize: '0.68rem', color: textMuted, textTransform: 'uppercase', fontWeight: '700' }}>
                         Tiempo Hablado
@@ -1059,7 +2031,36 @@ const RendimientoEquiposTab = ({
                       </span>
                     </div>
 
-                    <div style={{ color: textMuted, display: 'flex', alignItems: 'center' }}>
+                    {!equipo.esSinEquipo && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewTeam(equipo.nombre);
+                          setViewMode('FACULTY');
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          backgroundColor: isLight ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.15)',
+                          color: '#10b981',
+                          fontSize: '0.76rem',
+                          fontWeight: '800',
+                          cursor: 'pointer'
+                        }}
+                        title="Ver como Faculty de este equipo"
+                      >
+                        <GraduationCap size={13} /> Ver como Faculty
+                      </button>
+                    )}
+
+                    <div
+                      onClick={() => toggleExpandir(equipo.nombre)}
+                      style={{ color: textMuted, display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '4px' }}
+                    >
                       {isExpandido ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </div>
                   </div>

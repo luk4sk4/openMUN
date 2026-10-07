@@ -20,7 +20,8 @@ import {
   Download,
   ArrowUpDown,
   Check,
-  RotateCcw
+  RotateCcw,
+  Users
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../context/SessionContext';
@@ -59,8 +60,8 @@ function autodetectarBanderaYVeto(nombre) {
 // ── Funciones detectoras de columnas para ignorar datos no requeridos ────────
 function esHeaderPais(header) {
   const norm = normalizarTexto(header);
-  // Si dice expresamente delegado (sin decir pais/country), alumno, estudiante, email, colegio, comite, etc., descartar
-  if (/(?:^|\s)(delegad[oa]s?|alumn[oa]s?|estudiantes?|students?|personas?|representantes?|participantes?|correo|email|colegio|school|comit[eé])(?:\s|$)/i.test(norm) && !/(?:pais|pa[ií]s|country)/i.test(norm)) {
+  // Si dice expresamente delegado (sin decir pais/country), alumno, estudiante, email, colegio, comite, equipo, etc., descartar
+  if (/(?:^|\s)(delegad[oa]s?|alumn[oa]s?|estudiantes?|students?|personas?|representantes?|participantes?|correo|email|colegio|school|equipo|equipos|team|teams|escuela|escuelas|instituto|institutos|instituci[oó]n|instituciones|institution|institutions|universidad|universidades|university|universities|comit[eé])(?:\s|$)/i.test(norm) && !/(?:pais|pa[ií]s|country)/i.test(norm)) {
     return false;
   }
   return /\b(pais|pa[ií]s|pa[ií]ses|country|countries|delegaci[oó]n|delegaciones|delegation|delegations|estado|estados|state|states|naci[oó]n|naciones|nation|nations|representaci[oó]n)\b/i.test(norm) ||
@@ -69,8 +70,8 @@ function esHeaderPais(header) {
 
 function esHeaderDelegadoONombre(header) {
   const norm = normalizarTexto(header);
-  // Si ya es un header de país (ej. "Nombre del País", "País asignado"), NO es delegado/nombre de persona
-  if (esHeaderPais(header)) {
+  // Si ya es un header de país o equipo, NO es delegado
+  if (esHeaderPais(header) || esHeaderEquipo(header)) {
     return false;
   }
   return /delegad|alumno|estudiante|student|persona|representante|participant|asistente|nombre|name/i.test(norm);
@@ -78,7 +79,7 @@ function esHeaderDelegadoONombre(header) {
 
 function esHeaderNombreGenerico(header) {
   const norm = normalizarTexto(header);
-  if (/delegad|alumno|estudiante|student|persona|representante|participant|asistente|email|correo|mail|comit|coleg|escuela|school|observa|nota|rol|cargo/i.test(norm)) {
+  if (/delegad|alumno|estudiante|student|persona|representante|participant|asistente|email|correo|mail|comit|coleg|escuela|school|equipo|equipos|team|teams|institu|universi|observa|nota|rol|cargo/i.test(norm)) {
     return false;
   }
   return /^(nombre|name|delegaciones|countries|pa[ií]ses)$/i.test(norm) || /nombre\s*(del\s*)?(pais|pa[ií]s|country|estado)/i.test(norm);
@@ -148,7 +149,7 @@ function detectarColumnasTabla(filas) {
     if (indicesPais.length > 0) {
       const colPais = indicesPais[0];
       // Si hay columna NOMBRE o DELEGADO, se asume que es el nombre del delegado y no del país
-      const colDelegado = indicesNombre.find(idx => idx !== colPais) ?? -1;
+      const colDelegado = indicesNombre.find(idx => idx !== colPais && idx !== idxEquipo) ?? -1;
       return {
         colPais,
         colVeto: idxVeto !== colPais ? idxVeto : -1,
@@ -160,13 +161,13 @@ function detectarColumnasTabla(filas) {
     }
 
     // Si no hay columna 'PAIS', pero hay columna NOMBRE genérica junto con veto o bandera u otros headers MUN
-    if (indicesNombre.length > 0 && (idxVeto >= 0 || idxBandera >= 0 || r.some(c => esHeaderNombreGenerico(c)))) {
+    if (indicesNombre.length > 0 && (idxVeto >= 0 || idxBandera >= 0 || idxEquipo >= 0 || r.some(c => esHeaderNombreGenerico(c)))) {
       return {
         colPais: indicesNombre[0],
         colVeto: idxVeto,
         colBandera: idxBandera,
         colDelegado: -1,
-        colEquipo: idxEquipo,
+        colEquipo: (idxEquipo >= 0 && idxEquipo !== indicesNombre[0]) ? idxEquipo : -1,
         filaInicio: rIdx + 1
       };
     }
@@ -387,7 +388,9 @@ function filaAPais(fila, index, indicesCol = null) {
   const nombre = String(fila[colNombre]).trim();
   if (!nombre) return null;
 
-  const rawDelegado = keyDelegado ? String(fila[keyDelegado] || '').trim() : '';
+  const rawDelegado = keyDelegado
+    ? String(fila[keyDelegado] || '').trim()
+    : String(fila.delegado || fila.delegate || fila.alumno || '').trim();
 
   // 2. Columna Bandera / ISO (si existe, ignorando el resto)
   const colBandera = allKeys.find(k => k !== colNombre && k !== keyDelegado && esHeaderBandera(k));
@@ -403,7 +406,9 @@ function filaAPais(fila, index, indicesCol = null) {
 
   // 5. Columna Equipo / Colegio (si existe)
   const colEquipo = allKeys.find(k => k !== colNombre && k !== keyDelegado && k !== colBandera && k !== colVeto && esHeaderEquipo(k));
-  const rawEquipo = colEquipo ? String(fila[colEquipo]).trim() : '';
+  const rawEquipo = colEquipo
+    ? String(fila[colEquipo]).trim()
+    : String(fila.equipo || fila.team || fila.colegio || fila.escuela || fila.institucion || '').trim();
 
   const auto = autodetectarBanderaYVeto(nombre);
   const bandera = rawBandera ? normalizarBandera(rawBandera, nombre) : auto.bandera;
@@ -612,6 +617,8 @@ const ImportarPaises = () => {
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevaBandera, setNuevaBandera] = useState('');
   const [nuevoVeto, setNuevoVeto] = useState(false);
+  const [nuevoEquipo, setNuevoEquipo] = useState('');
+  const [nuevoDelegado, setNuevoDelegado] = useState('');
   
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -930,6 +937,8 @@ const ImportarPaises = () => {
       nombre: nuevoNombre.trim(),
       bandera: finalBandera,
       veto: nuevoVeto,
+      equipo: nuevoEquipo.trim() || undefined,
+      delegado: nuevoDelegado.trim() || undefined,
       estatus: 'Ausente'
     };
 
@@ -945,6 +954,8 @@ const ImportarPaises = () => {
     setNuevoNombre('');
     setNuevaBandera('');
     setNuevoVeto(false);
+    setNuevoEquipo('');
+    setNuevoDelegado('');
     setExito(`"${nuevo.nombre}" añadida a la sesión.`);
     setTimeout(() => setExito(''), 3000);
     setTimeout(() => {
@@ -1017,14 +1028,14 @@ const ImportarPaises = () => {
   // Descargar plantilla CSV de muestra (con estatus Ausente de base)
   const handleDescargarPlantilla = () => {
     const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(
-      'Nombre,Bandera,Veto\n' +
-      'Estados Unidos,us,true\n' +
-      'Reino Unido,gb,true\n' +
-      'Francia,fr,true\n' +
-      'España,es,false\n' +
-      'México,mx,false\n' +
-      'Japón,jp,false\n' +
-      'Brasil,br,false\n'
+      'Nombre,Bandera,Veto,Equipo,Delegado\n' +
+      'Estados Unidos,us,true,Colegio Internacional,John Smith\n' +
+      'Reino Unido,gb,true,Colegio Británico,Emily Watson\n' +
+      'Francia,fr,true,Liceo Francés,Pierre Dubois\n' +
+      'España,es,false,Colegio Mayor,Carlos Ruiz\n' +
+      'México,mx,false,Instituto Tecnológico,Sofia Reyes\n' +
+      'Japón,jp,false,Academia Global,Kenji Sato\n' +
+      'Brasil,br,false,Escuela Modelo,Ana Silva\n'
     );
     const link = document.createElement('a');
     link.setAttribute('href', csvContent);
@@ -1091,8 +1102,10 @@ const ImportarPaises = () => {
     if (!preview) return [];
     const q = normalizarTexto(busquedaPreview);
     return preview.filter(p => {
-      const matchNombre = normalizarTexto(p.nombre).includes(q);
-      if (!matchNombre) return false;
+      const matchTexto = normalizarTexto(p.nombre).includes(q) ||
+        (p.equipo && normalizarTexto(p.equipo).includes(q)) ||
+        (p.delegado && normalizarTexto(p.delegado).includes(q));
+      if (!matchTexto) return false;
       if (filtroPreview === 'VETO') return p.veto;
       if (filtroPreview === 'SIN_VETO') return !p.veto;
       return true;
@@ -1122,6 +1135,23 @@ const ImportarPaises = () => {
   };
 
   const totalVetosSesion = paises.filter(p => p.veto).length;
+
+  const totalEquiposSesion = useMemo(() => {
+    const s = new Set();
+    paises.forEach(p => {
+      if (p.equipo && String(p.equipo).trim()) s.add(String(p.equipo).trim());
+    });
+    return s.size;
+  }, [paises]);
+
+  const totalEquiposPreview = useMemo(() => {
+    if (!preview) return 0;
+    const s = new Set();
+    preview.forEach(p => {
+      if (p.equipo && String(p.equipo).trim()) s.add(String(p.equipo).trim());
+    });
+    return s.size;
+  }, [preview]);
 
   return (
     <div style={{
@@ -1198,6 +1228,21 @@ const ImportarPaises = () => {
                   fontWeight: '700'
                 }}>
                   <Crown size={10} /> {totalVetosSesion} Veto
+                </span>
+              )}
+              {totalEquiposSesion > 0 && (
+                <span style={{
+                  fontSize: '0.66rem',
+                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                  color: '#a78bfa',
+                  padding: '0.1rem 0.35rem',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  fontWeight: '700'
+                }}>
+                  <Users size={10} /> {totalEquiposSesion} {totalEquiposSesion === 1 ? 'Equipo' : 'Equipos'}
                 </span>
               )}
             </div>
@@ -1499,7 +1544,9 @@ const ImportarPaises = () => {
               {[
                 { col: 'Nombre / Pais', req: true, desc: 'Nombre delegación (ej: España)' },
                 { col: 'Bandera / ISO', req: false, desc: 'Código ISO (es, us) o URL' },
-                { col: 'Veto / P5', req: false, desc: 'true/si/1 para derecho a veto' }
+                { col: 'Veto / P5', req: false, desc: 'true/si/1 para derecho a veto' },
+                { col: 'Equipo / Colegio', req: false, desc: 'Institución o colegio asignado' },
+                { col: 'Delegado', req: false, desc: 'Nombre del representante' }
               ].map(c => (
                 <div key={c.col} style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.03)',
@@ -1574,7 +1621,7 @@ const ImportarPaises = () => {
 
               <button
                 type="button"
-                onClick={() => setTextoPegar("nombre,bandera,veto\nEstados Unidos,us,true\nFrancia,fr,true\nEspaña,es,false\nChile,cl,false")}
+                onClick={() => setTextoPegar("nombre,bandera,veto,equipo,delegado\nEstados Unidos,us,true,Colegio Alpha,John Smith\nFrancia,fr,true,Colegio Beta,Marie Laurent\nEspaña,es,false,Colegio Alpha,Carlos Ruiz\nChile,cl,false,Colegio Gamma,Camila Soto")}
                 style={{
                   padding: '0.25rem 0.45rem',
                   backgroundColor: 'rgba(255,255,255,0.05)',
@@ -1849,6 +1896,60 @@ const ImportarPaises = () => {
                 <Plus size={14} />
                 <span>{t('common.add', 'Añadir')}</span>
               </button>
+            </div>
+
+            {/* Campos opcionales: Equipo y Delegado */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', paddingTop: '1px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                backgroundColor: 'var(--input-bg, rgba(255,255,255,0.04))',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '0.3rem 0.5rem'
+              }}>
+                <Users size={12} color="#a78bfa" style={{ flexShrink: 0 }} />
+                <input
+                  type="text"
+                  value={nuevoEquipo}
+                  onChange={(e) => setNuevoEquipo(e.target.value)}
+                  placeholder="Equipo / Colegio (opcional)"
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-color)',
+                    fontSize: '0.74rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                backgroundColor: 'var(--input-bg, rgba(255,255,255,0.04))',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '0.3rem 0.5rem'
+              }}>
+                <UserPlus size={12} color="#60a5fa" style={{ flexShrink: 0 }} />
+                <input
+                  type="text"
+                  value={nuevoDelegado}
+                  onChange={(e) => setNuevoDelegado(e.target.value)}
+                  placeholder="Delegado (opcional)"
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-color)',
+                    fontSize: '0.74rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
             </div>
 
             {/* Fila informativa inferior */}
@@ -2227,11 +2328,27 @@ const ImportarPaises = () => {
             border: '1px solid var(--border-color)',
             borderRadius: '6px'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
               <Sparkles size={14} color="#3b82f6" />
               <span style={{ fontWeight: '800', fontSize: '0.8rem' }}>
                 Revisión: <strong style={{ color: '#3b82f6' }}>{preview.length} delegaciones</strong>
               </span>
+              {totalEquiposPreview > 0 && (
+                <span style={{
+                  fontSize: '0.68rem',
+                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                  color: '#a78bfa',
+                  padding: '0.1rem 0.4rem',
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  fontWeight: '700'
+                }}>
+                  <Users size={11} />
+                  {totalEquiposPreview} {totalEquiposPreview === 1 ? 'equipo' : 'equipos'}
+                </span>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -2436,12 +2553,53 @@ const ImportarPaises = () => {
                           padding: '0.1rem 0.4rem',
                           borderRadius: '4px',
                           whiteSpace: 'nowrap',
-                          maxWidth: '180px',
+                          maxWidth: '170px',
                           overflow: 'hidden',
-                          textOverflow: 'ellipsis'
+                          textOverflow: 'ellipsis',
+                          flexShrink: 0
                         }}
                       >
                         Delegado: {p.delegado}
+                      </span>
+                    )}
+
+                    {/* Badge de Equipo / Institución (si existe asignado) */}
+                    {p.equipo && (
+                      <span
+                        title={`Equipo / Institución asignada: ${p.equipo} (Haz clic para editar)`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nuevo = window.prompt('Editar equipo asignado:', p.equipo);
+                          if (nuevo !== null) {
+                            setPreview(prev => {
+                              const copy = [...prev];
+                              copy[originalIndex] = { ...copy[originalIndex], equipo: nuevo.trim() || undefined };
+                              return copy;
+                            });
+                          }
+                        }}
+                        style={{
+                          fontSize: '0.66rem',
+                          color: '#a78bfa',
+                          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                          border: '1px solid rgba(139, 92, 246, 0.3)',
+                          padding: '0.1rem 0.45rem',
+                          borderRadius: '4px',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '160px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          fontWeight: '600',
+                          flexShrink: 0,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Users size={11} style={{ flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.equipo}</span>
                       </span>
                     )}
 

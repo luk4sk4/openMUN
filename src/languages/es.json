@@ -440,7 +440,12 @@
     "urlPlaceholder": "O pega una URL de imagen (https://...)",
     "hideCatalog": "Ocultar catálogo oficial",
     "showCatalog": "Elegir del catálogo oficial",
-    "confirmDelete": "¿Eliminar definitivamente la delegación de \"{{name}}\" del comité?"
+    "confirmDelete": "¿Eliminar definitivamente la delegación de \"{{name}}\" del comité?",
+    "confirmDeleteTitle": "¿Eliminar delegación?",
+    "deletedTitle": "Delegación eliminada",
+    "deletedDesc": "Se ha eliminado la delegación de \"{{name}}\" del comité.",
+    "nameRequired": "El nombre de la delegación no puede estar vacío.",
+    "imageError": "No se pudo procesar la imagen seleccionada."
   },
   "views": {
     "delegate": {

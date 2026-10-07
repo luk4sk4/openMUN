@@ -17,6 +17,7 @@ import {
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { useToast } from '../../context/ToastContext';
 import {
   procesarImagenBandera,
   normalizarBandera,
@@ -49,6 +50,7 @@ const PAISES_POPULARES_ISO = [
 const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const { t } = useTranslation();
   const { isLight } = useAccessibility();
+  const { addToast } = useToast();
   const [nombre, setNombre] = useState('');
   const [equipo, setEquipo] = useState('');
   const [bandera, setBandera] = useState('');
@@ -124,7 +126,11 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
       setTimeout(() => setMensajeFeedback(''), 3000);
     } catch (err) {
       console.error('Error al subir imagen:', err);
-      alert('No se pudo procesar la imagen seleccionada.');
+      addToast({
+        type: 'error',
+        title: t('common.error', 'Error'),
+        message: t('editCountry.imageError', 'No se pudo procesar la imagen seleccionada.')
+      });
     }
   };
 
@@ -162,7 +168,11 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const handleGuardar = (e) => {
     e.preventDefault();
     if (!nombre.trim()) {
-      alert('El nombre de la delegación no puede estar vacío');
+      addToast({
+        type: 'warning',
+        title: t('common.warning', 'Atención'),
+        message: t('editCountry.nameRequired', 'El nombre de la delegación no puede estar vacío.')
+      });
       return;
     }
 
@@ -578,10 +588,30 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(t('editCountry.confirmDelete', `¿Eliminar definitivamente la delegación de "${nombre}" del comité?`))) {
-                      onEliminar(pais.id);
-                      onClose();
-                    }
+                    const delegacionNombre = (nombre && nombre.trim()) || pais.nombre || '';
+                    onClose();
+                    addToast({
+                      type: 'confirm',
+                      title: t('editCountry.confirmDeleteTitle', '¿Eliminar delegación?'),
+                      message: t('editCountry.confirmDelete', {
+                        name: delegacionNombre,
+                        defaultValue: `¿Eliminar definitivamente la delegación de "${delegacionNombre}" del comité?`
+                      }),
+                      confirmText: t('common.delete', 'Eliminar'),
+                      cancelText: t('common.cancel', 'Cancelar'),
+                      onConfirm: () => {
+                        onEliminar(pais.id);
+                        addToast({
+                          type: 'success',
+                          title: t('editCountry.deletedTitle', 'Delegación eliminada'),
+                          message: t('editCountry.deletedDesc', {
+                            name: delegacionNombre,
+                            defaultValue: `Se ha eliminado la delegación de "${delegacionNombre}" del comité.`
+                          }),
+                          duration: 3500
+                        });
+                      }
+                    });
                   }}
                   style={{
                     padding: '0.5rem 0.8rem',

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Radio, 
-  Copy, 
-  Check, 
-  QrCode, 
-  Users, 
-  Key, 
-  ShieldAlert, 
-  ExternalLink, 
-  UserX, 
-  RefreshCw, 
-  Eye, 
+import {
+  X,
+  Radio,
+  Copy,
+  Check,
+  QrCode,
+  Users,
+  Key,
+  ShieldAlert,
+  ExternalLink,
+  UserX,
+  RefreshCw,
+  Eye,
   EyeOff,
   Sparkles,
   Layers,
@@ -148,7 +148,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
   const conexionesFiltradas = connectedPeers.filter(p => {
     if (!filtroConexiones) return true;
     return (p.country || '').toLowerCase().includes(filtroConexiones.toLowerCase()) ||
-           (p.role || '').toLowerCase().includes(filtroConexiones.toLowerCase());
+      (p.role || '').toLowerCase().includes(filtroConexiones.toLowerCase());
   });
 
   return (
@@ -1614,7 +1614,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
           {/* ═══════════════════════════════════════════════════════ */}
           {tabActiva === 'SOLICITUDES' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
+
               {/* Sección de Propuestas de Enmienda */}
               {enmiendasPropuestas.length > 0 && (
                 <div style={{
@@ -1932,23 +1932,8 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
           >
             {/* Cabecera / Badge */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.45rem' }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.4rem 1.1rem',
-                borderRadius: '999px',
-                backgroundColor: 'rgba(59, 130, 246, 0.18)',
-                border: '1px solid rgba(59, 130, 246, 0.35)',
-                color: '#60a5fa',
-                fontSize: '0.85rem',
-                fontWeight: '700',
-                letterSpacing: '0.04em'
-              }}>
-                <Radio size={16} color="#38bdf8" />
-                SESIÓN EN DIRECTO OPENMUN
-              </div>
-              
+
+
               <h2 style={{
                 fontSize: '2rem',
                 fontWeight: '800',
@@ -1958,7 +1943,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               }}>
                 Escanear para Unirse
               </h2>
-              
+
               <p style={{
                 fontSize: '0.95rem',
                 color: '#94a3b8',

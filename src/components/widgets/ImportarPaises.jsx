@@ -227,7 +227,7 @@ function detectarColumnasTabla(filas) {
     }
   }
 
-  return { colPais, colVeto, colBandera, colDelegado, filaInicio: 0 };
+  return { colPais, colVeto, colBandera, colDelegado, colEquipo: -1, filaInicio: 0 };
 }
 
 function procesarFilaArray(fila, index, indicesCol = null) {
@@ -242,6 +242,7 @@ function procesarFilaArray(fila, index, indicesCol = null) {
     const rawBandera = indicesCol.colBandera >= 0 ? String(fila[indicesCol.colBandera] ?? '').trim() : '';
     const rawVeto = indicesCol.colVeto >= 0 ? String(fila[indicesCol.colVeto] ?? '').trim() : undefined;
     const rawDelegado = indicesCol.colDelegado >= 0 ? String(fila[indicesCol.colDelegado] ?? '').trim() : '';
+    const rawEquipo = indicesCol.colEquipo >= 0 ? String(fila[indicesCol.colEquipo] ?? '').trim() : '';
 
     const auto = autodetectarBanderaYVeto(nombre);
     const bandera = rawBandera ? normalizarBandera(rawBandera, nombre) : auto.bandera;
@@ -255,6 +256,7 @@ function procesarFilaArray(fila, index, indicesCol = null) {
       bandera,
       veto: Boolean(veto),
       delegado: rawDelegado || undefined,
+      equipo: rawEquipo || undefined,
       estatus: 'Ausente'
     };
   }
@@ -2554,6 +2556,14 @@ const ImportarPaises = () => {
       )}
     </div>
   );
+};
+
+export {
+  parsearXLSX,
+  parsearTexto,
+  detectarColumnasTabla,
+  filaAPais,
+  procesarFilaArray
 };
 
 export default ImportarPaises;

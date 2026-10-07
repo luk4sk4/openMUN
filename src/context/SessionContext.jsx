@@ -389,9 +389,31 @@ export const SessionProvider = ({ children }) => {
       }
     };
 
-    // Ejecutar cada 60 segundos (1 minuto)
-    const interval = setInterval(sincronizarMesaBD, 60000);
-    return () => clearInterval(interval);
+    // Sincronización continua cada 15 segundos
+    const interval = setInterval(sincronizarMesaBD, 15000);
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        sincronizarMesaBD();
+      }
+    };
+    const handleBeforeUnload = () => {
+      sincronizarMesaBD();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('visibilitychange', handleVisibility);
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('visibilitychange', handleVisibility);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      }
+      sincronizarMesaBD();
+    };
   }, []);
 
   // APLICAR ESTADO REMOTO COMPLETO

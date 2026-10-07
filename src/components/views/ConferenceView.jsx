@@ -57,7 +57,7 @@ import {
 } from '../../utils/announcementHelpers';
 import { normalizarDatosComite, SESSION_STORAGE_KEYS } from '../../utils/sessionValidator';
 import EstablecerAgenda from '../widgets/EstablecerAgenda';
-import ImportarPaises from '../widgets/ImportarPaises';
+import ImportarPaises, { parsearXLSX, parsearTexto } from '../widgets/ImportarPaises';
 import MatrizPaises from '../widgets/MatrizPaises';
 import RendimientoEquiposTab from '../conference/RendimientoEquiposTab';
 
@@ -283,7 +283,13 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 const map = new Map(initialComites.map(c => [c.id, c]));
                 parsedLocal.forEach(lc => {
                   if (lc && lc.id && serverIds.has(lc.id)) {
-                    map.set(lc.id, { ...lc, ...(map.get(lc.id) || {}) });
+                    const serv = map.get(lc.id) || {};
+                    const servDatos = serv.datos_json;
+                    const lcDatos = lc.datos_json;
+                    const servTieneDatos = servDatos && typeof servDatos === 'object' && Object.keys(servDatos).length > 0 &&
+                      ((Array.isArray(servDatos.paises) && servDatos.paises.length > 0) || Object.keys(servDatos).length > 2);
+                    const finalDatos = servTieneDatos ? servDatos : (lcDatos || servDatos || {});
+                    map.set(lc.id, { ...lc, ...serv, datos_json: finalDatos });
                   }
                 });
                 initialComites = Array.from(map.values());
@@ -396,6 +402,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             res.comites.forEach(rc => {
               if (rc && rc.id) {
                 const prev = map.get(rc.id) || {};
+                const prevDatos = prev.datos_json;
+                const rcDatos = rc.datos_json;
+                const rcTieneDatos = rcDatos && typeof rcDatos === 'object' && Object.keys(rcDatos).length > 0 &&
+                  ((Array.isArray(rcDatos.paises) && rcDatos.paises.length > 0) || Object.keys(rcDatos).length > 2);
+                const finalDatos = rcTieneDatos ? rcDatos : (prevDatos || rcDatos || {});
+
                 map.set(rc.id, {
                   ...prev,
                   ...rc,
@@ -403,7 +415,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   nombre: rc.nombre || prev.nombre || rc.id,
                   pin_mesa: rc.pin_mesa !== undefined ? rc.pin_mesa : prev.pin_mesa,
                   requierePinMesa: rc.requierePinMesa !== undefined ? rc.requierePinMesa : (rc.pin_mesa ? true : prev.requierePinMesa),
-                  datos_json: rc.datos_json || prev.datos_json || {}
+                  datos_json: finalDatos
                 });
               }
             });
@@ -680,13 +692,107 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     };
   });
 
-  // Procesar archivo JSON de conferencia o comité individual (vía selector de archivo o Drag & Drop)
+  // Procesar archivo JSON de conferencia, comité o delegaciones Excel/CSV (vía selector o Drag & Drop)
   const procesarArchivoConferenciaJSON = async (file, forceSingleComiteMode = false) => {
     if (!file) return;
+
+    const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
+    const isExcelOrCsv = ext === 'xlsx' || ext === 'xls' || ext === 'csv' || ext === 'tsv';
+
+    if (isExcelOrCsv) {
+      setImportandoJSON(true);
+      setConfSettingsFeedback(null);
+      try {
+        let parsedPaises = [];
+        if (ext === 'xlsx' || ext === 'xls') {
+          parsedPaises = await parsearXLSX(file);
+        } else {
+          parsedPaises = parsearTexto(await file.text());
+        }
+
+        if (!parsedPaises || parsedPaises.length === 0) {
+          throw new Error('No se detectaron delegaciones válidas en el archivo.');
+        }
+
+        const cleanNom = file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ').trim() || 'Comité Importado';
+        const customId = `${conferencia.id.toLowerCase()}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
+
+        const comiteState = {
+          comision: cleanNom,
+          nombreComite: cleanNom,
+          paises: parsedPaises,
+          agendaSesion: {},
+          tipoSesion: 'formal'
+        };
+
+        let idFinal = customId;
+        try {
+          const res = await conferenceService.crearOActualizarComite(conferencia.id, {
+            id: customId,
+            nombre: cleanNom,
+            pin_mesa: null,
+            datos_json: comiteState
+          });
+          if (res?.comiteId) idFinal = res.comiteId;
+        } catch (e) {
+          console.warn('Error al guardar comité desde Excel/CSV:', e);
+        }
+
+        try {
+          localStorage.setItem(`openmun_comite_data_${idFinal}`, JSON.stringify(comiteState));
+        } catch (e) {}
+
+        const nuevoComiteObj = {
+          id: idFinal,
+          nombre: cleanNom,
+          pin_mesa: null,
+          requierePinMesa: false,
+          datos_json: comiteState,
+          tipo_sesion: 'formal',
+          topico_actual: ''
+        };
+
+        setComites(prev => {
+          const map = new Map((prev || []).map(item => [item.id, item]));
+          map.set(idFinal, nuevoComiteObj);
+          const list = Array.from(map.values());
+          try {
+            localStorage.setItem(`openmun_conf_comites_${conferencia.id}`, JSON.stringify(list));
+          } catch (e) {}
+          return list;
+        });
+
+        setResumenData(prev => {
+          const map = new Map((prev || []).map(item => [item.id, item]));
+          map.set(idFinal, nuevoComiteObj);
+          return Array.from(map.values());
+        });
+
+        conferenceService.invalidarCache?.(conferencia.id);
+        await fetchResumen();
+
+        const countEquipos = new Set(parsedPaises.map(p => p.equipo).filter(Boolean)).size;
+        setConfSettingsFeedback({
+          type: 'success',
+          text: `¡Comité "${cleanNom}" creado con éxito! Se importaron ${parsedPaises.length} delegaciones (${countEquipos > 0 ? `${countEquipos} equipos/colegios detectados` : 'sin equipos'}).`
+        });
+      } catch (err) {
+        setConfSettingsFeedback({
+          type: 'error',
+          text: 'Error al importar archivo de delegaciones: ' + err.message
+        });
+      } finally {
+        setImportandoJSON(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        if (singleComiteFileInputRef.current) singleComiteFileInputRef.current.value = '';
+      }
+      return;
+    }
+
     if (file.name && !file.name.toLowerCase().endsWith('.json') && file.type && !file.type.includes('json')) {
       setConfSettingsFeedback({
         type: 'error',
-        text: 'Por favor, selecciona o arrastra un archivo en formato .JSON válido.'
+        text: 'Por favor, selecciona o arrastra un archivo en formato .JSON, .XLSX o .CSV válido.'
       });
       return;
     }
@@ -699,7 +805,19 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       try {
         const raw = event.target?.result;
         if (!raw) throw new Error('El archivo está vacío.');
-        const parsed = JSON.parse(raw);
+        let parsed = JSON.parse(raw);
+
+        // Si el JSON es un array plano de países/delegaciones (ej. [{nombre, equipo}]), adaptarlo a formato de comité
+        if (Array.isArray(parsed) && parsed.length > 0 &&
+          (parsed[0].nombre || parsed[0].name || typeof parsed[0] === 'string') &&
+          !parsed[0].datos_json && !parsed[0].comites && !parsed[0].agendaSesion) {
+          const comiteNombre = file.name?.replace(/\.json$/i, '').replace(/^sesion_/i, '').replace(/_/g, ' ') || 'Comité Importado';
+          parsed = {
+            comision: comiteNombre,
+            nombreComite: comiteNombre,
+            paises: parsed
+          };
+        }
 
         // Identificar si es un backup de un solo comité / sesión activa (tipo 'openmun_full_backup' o contiene paises/agendaSesion/datos_json)
         const isSingleComiteSession = forceSingleComiteMode || (!parsed.tablas && !parsed.conferencias && !parsed.conferencia && (
@@ -1700,7 +1818,13 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           tipo_sesion: r.tipo_sesion || existing.tipo_sesion || 'formal',
           topico_actual: r.topico_actual || existing.topico_actual || '',
           actualizado_en: r.actualizado_en || existing.actualizado_en || '',
-          datos_json: r.datos_json || existing.datos_json || {}
+          datos_json: (() => {
+            const rDatos = r.datos_json;
+            const exDatos = existing.datos_json;
+            const rTiene = rDatos && typeof rDatos === 'object' && Object.keys(rDatos).length > 0 &&
+              ((Array.isArray(rDatos.paises) && rDatos.paises.length > 0) || Object.keys(rDatos).length > 2);
+            return rTiene ? rDatos : (exDatos || rDatos || {});
+          })()
         });
       }
     });
@@ -4273,6 +4397,19 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             )}
           </div>
         )}
+
+        {/* ════════════════════════════════════════════════════════════════════════
+            PESTAÑA 4: RENDIMIENTO DE EQUIPOS (FACULTY ADVISORS / PROFESORES)
+        ════════════════════════════════════════════════════════════════════════ */}
+        {activeMainTab === 'EQUIPOS' && (
+          <RendimientoEquiposTab
+            conferencia={conferencia}
+            listaComites={listaComitesConsolidada}
+            isAdmin={isAdminAuthenticated}
+            isLight={isLight}
+            onRefresh={fetchResumen}
+          />
+        )}
       </main>
 
       {/* ════════════════════════════════════════════════════════════════════════
@@ -4284,12 +4421,35 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             e.preventDefault();
             e.stopPropagation();
           }}
-          onDrop={(e) => {
+          onDrop={async (e) => {
             e.preventDefault();
             e.stopPropagation();
             const files = e.dataTransfer?.files;
             if (files && files.length > 0) {
               setSecretariaWidgetTab('IMPORTAR');
+              const file = files[0];
+              try {
+                const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
+                let newCountries = [];
+                if (ext === 'xlsx' || ext === 'xls') {
+                  newCountries = await parsearXLSX(file);
+                } else if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
+                  newCountries = parsearTexto(await file.text());
+                } else if (ext === 'json') {
+                  const raw = await file.text();
+                  const norm = normalizarDatosComite(raw, file.name.replace(/\.json$/i, ''));
+                  if (norm?.paises?.length > 0) newCountries = norm.paises;
+                }
+                if (newCountries && newCountries.length > 0) {
+                  setPaises(newCountries);
+                  setGuardadoFeedback({
+                    type: 'success',
+                    text: `¡Se importaron ${newCountries.length} delegaciones de "${file.name}"!`
+                  });
+                }
+              } catch (errDrop) {
+                console.warn('Error al procesar archivo en modal:', errDrop);
+              }
             }
           }}
           style={{
@@ -4828,18 +4988,6 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             </div>
           </div>
         </div>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════════════════
-          PESTAÑA 4: RENDIMIENTO DE EQUIPOS (FACULTY ADVISORS / PROFESORES)
-      ════════════════════════════════════════════════════════════════════════ */}
-      {activeMainTab === 'EQUIPOS' && (
-        <RendimientoEquiposTab
-          conferencia={conferencia}
-          listaComites={listaComitesConsolidada}
-          isAdmin={isAdminAuthenticated}
-          isLight={isLight}
-        />
       )}
 
       {/* Modal PIN de Mesa Directiva al entrar */}

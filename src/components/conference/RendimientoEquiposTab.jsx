@@ -26,7 +26,8 @@ import {
   Layers,
   Check,
   Flame,
-  Globe
+  Globe,
+  RefreshCw
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { normalizarDatosComite } from '../../utils/sessionValidator';
@@ -99,7 +100,8 @@ const RendimientoEquiposTab = ({
   conferencia,
   listaComites = [],
   isAdmin = false,
-  isLight = false
+  isLight = false,
+  onRefresh = null
 }) => {
   const confId = conferencia?.id ? String(conferencia.id).toLowerCase().trim() : '';
 
@@ -120,6 +122,7 @@ const RendimientoEquiposTab = ({
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Filtros y Visualización
   const [filtroEquipo, setFiltroEquipo] = useState('TODOS');
@@ -133,6 +136,30 @@ const RendimientoEquiposTab = ({
       setIsAuthenticated(true);
     }
   }, [isAdmin]);
+
+  // Refresco manual de datos
+  const handleManualRefresh = async () => {
+    if (!onRefresh || isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (e) {
+      console.warn('Error al refrescar datos de comités:', e);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  // Auto-refresco en segundo plano cada 20s cuando el profesor está autenticado
+  useEffect(() => {
+    if (!isAuthenticated || !onRefresh) return;
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        onRefresh();
+      }
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, onRefresh]);
 
   // Manejar Login del Profesor / Faculty Advisor
   const handleAuthSubmit = async (e) => {
@@ -608,6 +635,30 @@ const RendimientoEquiposTab = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {onRefresh && (
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.55rem 0.85rem',
+                borderRadius: '8px',
+                border: `1px solid ${borderCol}`,
+                backgroundColor: headerBg,
+                color: 'var(--text-color)',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                cursor: isRefreshing ? 'wait' : 'pointer'
+              }}
+              title="Actualizar datos en tiempo real de todos los comités"
+            >
+              <RefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+              {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+            </button>
+          )}
+
           <button
             onClick={() => exportarCsvEquipos(datosEquipos, conferencia?.nombre)}
             style={{

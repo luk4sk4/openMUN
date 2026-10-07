@@ -94,8 +94,8 @@ const qUpsertComite = db.prepare(`
   INSERT INTO comites (id, conferencia_id, nombre, pin_mesa, datos_json, actualizado_en)
   VALUES (@id, @conferencia_id, @nombre, @pin_mesa, @datos_json, CURRENT_TIMESTAMP)
   ON CONFLICT(id) DO UPDATE SET
-    nombre = excluded.nombre,
-    pin_mesa = excluded.pin_mesa,
+    nombre = COALESCE(excluded.nombre, comites.nombre),
+    pin_mesa = COALESCE(excluded.pin_mesa, comites.pin_mesa),
     datos_json = excluded.datos_json,
     actualizado_en = CURRENT_TIMESTAMP
 `);

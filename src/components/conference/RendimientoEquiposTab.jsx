@@ -32,7 +32,11 @@ import {
   Building2,
   ExternalLink,
   LogOut,
-  Filter
+  Filter,
+  Copy,
+  X,
+  Trash2,
+  CheckCheck
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { normalizarDatosComite } from '../../utils/sessionValidator';
@@ -105,6 +109,26 @@ function exportarCsvEquipos(equipos, confNombre, nombreEquipoPersonalizado = nul
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// Helpers para gestionar contraseñas personalizadas de equipos
+function getTeamPinsStorage(confId) {
+  if (!confId) return {};
+  try {
+    const raw = localStorage.getItem(`openmun_conf_faculty_team_pins_${confId}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveTeamPinsStorage(confId, pinsMap) {
+  if (!confId) return;
+  try {
+    localStorage.setItem(`openmun_conf_faculty_team_pins_${confId}`, JSON.stringify(pinsMap));
+  } catch (e) {
+    console.warn('Error guardando contraseñas de equipos:', e);
+  }
 }
 
 const RendimientoEquiposTab = ({
@@ -349,6 +373,160 @@ const RendimientoEquiposTab = ({
   const [filtroAsistenciaFaculty, setFiltroAsistenciaFaculty] = useState('TODOS'); // 'TODOS' | 'PRESENTE' | 'AUSENTE'
   const [ordenFaculty, setOrdenFaculty] = useState('TIEMPO');
 
+  // ── ESTADOS PARA GESTIÓN DE CONTRASEÑAS DE FACULTIES (VISTA ORGANIZACIÓN) ──
+  const [modalClavesOpen, setModalClavesOpen] = useState(false);
+  const [tabClavesModal, setTabClavesModal] = useState('GENERAL'); // 'GENERAL' | 'EQUIPOS'
+  const [selectedTeamInModal, setSelectedTeamInModal] = useState('');
+  const [generalPinInput, setGeneralPinInput] = useState(() => {
+    if (!confId) return '';
+    try {
+      return localStorage.getItem(`openmun_conf_faculty_pin_${confId}`) || '';
+    } catch {
+      return '';
+    }
+  });
+  const [showGeneralPin, setShowGeneralPin] = useState(false);
+  const [teamPins, setTeamPins] = useState(() => getTeamPinsStorage(confId));
+  const [teamPinInputs, setTeamPinInputs] = useState({});
+  const [showTeamPins, setShowTeamPins] = useState({});
+  const [busquedaEquipoModal, setBusquedaEquipoModal] = useState('');
+  const [feedbackClavesModal, setFeedbackClavesModal] = useState(null);
+  const [copiadoFeedback, setCopiadoFeedback] = useState(null);
+
+  // Sincronizar pines cuando se abre el modal
+  useEffect(() => {
+    if (modalClavesOpen && confId) {
+      const pinGen = localStorage.getItem(`openmun_conf_faculty_pin_${confId}`) || '';
+      setGeneralPinInput(pinGen);
+      const pins = getTeamPinsStorage(confId);
+      setTeamPins(pins);
+      setTeamPinInputs(pins);
+      setFeedbackClavesModal(null);
+    }
+  }, [modalClavesOpen, confId]);
+
+  // Si se selecciona un equipo específico para editar clave, cambiar al tab de equipos
+  useEffect(() => {
+    if (selectedTeamInModal) {
+      setTabClavesModal('EQUIPOS');
+      setBusquedaEquipoModal(selectedTeamInModal);
+    }
+  }, [selectedTeamInModal]);
+
+  // Cerrar modal con tecla Escape
+  useEffect(() => {
+    if (!modalClavesOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setModalClavesOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalClavesOpen]);
+
+  // Guardar PIN General de Faculties
+  const handleGuardarGeneralPin = () => {
+    const nuevoPin = generalPinInput.trim();
+    try {
+      if (nuevoPin) {
+        localStorage.setItem(`openmun_conf_faculty_pin_${confId}`, nuevoPin);
+      } else {
+        localStorage.removeItem(`openmun_conf_faculty_pin_${confId}`);
+      }
+      setFeedbackClavesModal({
+        type: 'success',
+        text: nuevoPin
+          ? '¡Contraseña general para todos los Faculties guardada correctamente!'
+          : 'Contraseña general eliminada. Los Faculties accederán con el PIN de Organización o sin clave.'
+      });
+      setTimeout(() => setFeedbackClavesModal(null), 4000);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('openmun_faculty_pin_updated', { detail: { pin: nuevoPin } }));
+      }
+    } catch (e) {
+      setFeedbackClavesModal({ type: 'error', text: 'Error al guardar la contraseña general.' });
+    }
+  };
+
+  // Generar PIN aleatorio para el General
+  const handleGenerarPinGeneral = () => {
+    const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneralPinInput(randomPin);
+    setShowGeneralPin(true);
+  };
+
+  // Guardar PIN específico para un equipo
+  const handleGuardarPinEquipo = (teamNombre) => {
+    const pinVal = (teamPinInputs[teamNombre] ?? teamPins[teamNombre] ?? '').trim();
+    const nuevosPins = { ...teamPins };
+    if (pinVal) {
+      nuevosPins[teamNombre] = pinVal;
+    } else {
+      delete nuevosPins[teamNombre];
+    }
+    setTeamPins(nuevosPins);
+    saveTeamPinsStorage(confId, nuevosPins);
+    setFeedbackClavesModal({
+      type: 'success',
+      text: pinVal
+        ? `¡Contraseña guardada exclusivamente para "${teamNombre}"!`
+        : `Contraseña específica eliminada para "${teamNombre}". Ahora utilizará el PIN General.`
+    });
+    setTimeout(() => setFeedbackClavesModal(null), 4000);
+  };
+
+  // Generar PIN aleatorio para un equipo
+  const handleGenerarPinEquipo = (teamNombre) => {
+    const randomPin = Math.floor(100000 + Math.random() * 900000).toString();
+    setTeamPinInputs(prev => ({ ...prev, [teamNombre]: randomPin }));
+    setShowTeamPins(prev => ({ ...prev, [teamNombre]: true }));
+  };
+
+  // Restablecer / eliminar PIN específico de equipo (vuelve a general)
+  const handleRestablecerPinEquipo = (teamNombre) => {
+    const nuevosPins = { ...teamPins };
+    delete nuevosPins[teamNombre];
+    setTeamPins(nuevosPins);
+    saveTeamPinsStorage(confId, nuevosPins);
+    setTeamPinInputs(prev => {
+      const copy = { ...prev };
+      delete copy[teamNombre];
+      return copy;
+    });
+    setFeedbackClavesModal({
+      type: 'info',
+      text: `"${teamNombre}" ahora utiliza la contraseña general de Faculties.`
+    });
+    setTimeout(() => setFeedbackClavesModal(null), 4000);
+  };
+
+  // Copiar credenciales formateadas de acceso para compartir con el asesor/a
+  const handleCopiarCredenciales = async (teamNombre) => {
+    const pinEspecifico = teamPins[teamNombre]?.trim();
+    const pinGeneral = generalPinInput.trim();
+    const pinEfectivo = pinEspecifico || pinGeneral || '(Sin contraseña configurada)';
+    const urlActual = typeof window !== 'undefined' ? window.location.href.split('#')[0] : '';
+
+    const mensaje = [
+      `🏛️ OpenMUN — Credenciales de Acceso Faculty Advisor`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `📍 Conferencia: ${conferencia?.nombre || 'OpenMUN'}`,
+      `🏫 Equipo / Institución: ${teamNombre}`,
+      `🔑 Contraseña de Acceso: ${pinEfectivo}`,
+      pinEspecifico ? `ℹ️ Tipo: Contraseña exclusiva de tu colegio` : (pinGeneral ? `ℹ️ Tipo: Clave general de asesores` : `ℹ️ Acceso libre`),
+      `🔗 Enlace: ${urlActual}`,
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+      `Instrucciones: En la pestaña "Rendimiento de Equipos", selecciona el modo "Faculty Advisor", elige "${teamNombre}" e introduce la contraseña.`
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(mensaje);
+      setCopiadoFeedback(teamNombre);
+      setTimeout(() => setCopiadoFeedback(null), 2500);
+    } catch {
+      // Fallback
+    }
+  };
+
   // Refresco manual de datos
   const handleManualRefresh = async () => {
     if (!onRefresh || isRefreshing) return;
@@ -419,32 +597,38 @@ const RendimientoEquiposTab = ({
 
       // ── LOGIN FACULTY ADVISOR (Solo su equipo) ──
       const facultyPin = localStorage.getItem(`openmun_conf_faculty_pin_${confId}`) || '';
+      const storedTeamPins = getTeamPinsStorage(confId);
+      const teamSpecificPin = selectedTeamForLogin ? (storedTeamPins[selectedTeamForLogin] || '').trim() : '';
       const adminPinGuardado = localStorage.getItem(`openmun_conf_admin_pin_${confId}`) || conferencia?.pin_admin || '';
       const accessPin = localStorage.getItem(`openmun_conf_pin_${confId}`) || conferencia?.pin_acceso || '';
 
       let esFacultyValido = false;
 
-      // 1. PIN de profesores específico
-      if (facultyPin && facultyPin.trim() === pin) {
+      // 1. PIN de profesores específico para este equipo
+      if (teamSpecificPin && teamSpecificPin === pin) {
         esFacultyValido = true;
       }
-      // 2. PIN de admin también autoriza
+      // 2. PIN de profesores general para toda la conferencia
+      else if (facultyPin && facultyPin.trim() === pin) {
+        esFacultyValido = true;
+      }
+      // 3. PIN de admin de organización también autoriza
       else if (adminPinGuardado && adminPinGuardado.trim() === pin) {
         esFacultyValido = true;
       }
-      // 3. PIN de acceso general a la conferencia
+      // 4. PIN de acceso general a la conferencia
       else if (accessPin && accessPin.trim() === pin) {
         esFacultyValido = true;
       }
-      // 4. Verificación remota admin
+      // 5. Verificación remota admin
       else if (pin) {
         try {
           await conferenceService.verificarAdmin(confId, pin);
           esFacultyValido = true;
         } catch {}
       }
-      // 5. Sin contraseña configurada
-      else if (!facultyPin && !adminPinGuardado && !accessPin) {
+      // 6. Sin contraseña configurada (ni específica para este equipo, ni general, ni admin)
+      else if (!teamSpecificPin && !facultyPin && !adminPinGuardado && !accessPin) {
         esFacultyValido = true;
       }
 
@@ -869,6 +1053,728 @@ const RendimientoEquiposTab = ({
   }
 
   // ─────────────────────────────────────────────────────────────
+  // MODAL DE GESTIÓN DE CONTRASEÑAS FACULTY (GENERAL Y POR EQUIPO)
+  // ─────────────────────────────────────────────────────────────
+  const renderModalGestionClaves = () => {
+    if (!modalClavesOpen) return null;
+
+    const equiposFiltradosModal = nombresEquipos.filter(nombre => {
+      if (!busquedaEquipoModal.trim()) return true;
+      return nombre.toLowerCase().includes(busquedaEquipoModal.toLowerCase().trim());
+    });
+
+    const cantidadPersonalizadas = Object.keys(teamPins).length;
+
+    return (
+      <div
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setModalClavesOpen(false);
+        }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.72)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem',
+          animation: 'fadeIn 0.15s ease'
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: bgCard,
+            border: `1px solid ${borderCol}`,
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '680px',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: isLight
+              ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              : '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Cabecera del Modal */}
+          <div
+            style={{
+              padding: '1.2rem 1.4rem',
+              backgroundColor: headerBg,
+              borderBottom: `1px solid ${borderCol}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                  color: isLight ? '#b45309' : '#fbbf24',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Key size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-color)' }}>
+                  Contraseñas de Acceso Faculty Advisors
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: textMuted }}>
+                  Control de credenciales para profesores y colegios en <strong>{conferencia?.nombre || 'la Conferencia'}</strong>
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setModalClavesOpen(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: textMuted,
+                cursor: 'pointer',
+                padding: '0.4rem',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Cerrar ventana"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Banner de Feedback (si existe) */}
+          {feedbackClavesModal && (
+            <div
+              style={{
+                margin: '1rem 1.4rem 0 1.4rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor:
+                  feedbackClavesModal.type === 'success'
+                    ? (isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.15)')
+                    : feedbackClavesModal.type === 'error'
+                      ? (isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)')
+                      : (isLight ? '#e0f2fe' : 'rgba(2, 132, 199, 0.15)'),
+                color:
+                  feedbackClavesModal.type === 'success'
+                    ? '#16a34a'
+                    : feedbackClavesModal.type === 'error'
+                      ? '#dc2626'
+                      : '#0284c7',
+                border: `1px solid ${
+                  feedbackClavesModal.type === 'success'
+                    ? 'rgba(34, 197, 94, 0.3)'
+                    : feedbackClavesModal.type === 'error'
+                      ? 'rgba(239, 68, 68, 0.3)'
+                      : 'rgba(2, 132, 199, 0.3)'
+                }`
+              }}
+            >
+              {feedbackClavesModal.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+              <span>{feedbackClavesModal.text}</span>
+            </div>
+          )}
+
+          {/* Selector de Pestañas (General vs Por Equipo) */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0.4rem',
+              padding: '0.8rem 1.4rem 0.4rem 1.4rem'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => { setTabClavesModal('GENERAL'); setSelectedTeamInModal(''); }}
+              style={{
+                padding: '0.65rem 0.75rem',
+                borderRadius: '8px',
+                border: `1px solid ${tabClavesModal === 'GENERAL' ? 'rgba(234, 179, 8, 0.4)' : borderCol}`,
+                backgroundColor: tabClavesModal === 'GENERAL'
+                  ? (isLight ? '#fefce8' : 'rgba(234, 179, 8, 0.12)')
+                  : headerBg,
+                color: tabClavesModal === 'GENERAL'
+                  ? (isLight ? '#b45309' : '#fbbf24')
+                  : textMuted,
+                fontWeight: '800',
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Key size={15} /> Contraseña General
+              {generalPinInput.trim() && (
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    padding: '0.1rem 0.4rem',
+                    borderRadius: '999px',
+                    backgroundColor: '#10b981',
+                    color: '#ffffff',
+                    fontWeight: '800'
+                  }}
+                >
+                  Activa
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTabClavesModal('EQUIPOS')}
+              style={{
+                padding: '0.65rem 0.75rem',
+                borderRadius: '8px',
+                border: `1px solid ${tabClavesModal === 'EQUIPOS' ? 'rgba(99, 102, 241, 0.4)' : borderCol}`,
+                backgroundColor: tabClavesModal === 'EQUIPOS'
+                  ? (isLight ? '#eef2ff' : 'rgba(99, 102, 241, 0.12)')
+                  : headerBg,
+                color: tabClavesModal === 'EQUIPOS'
+                  ? '#6366f1'
+                  : textMuted,
+                fontWeight: '800',
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <School size={15} /> Por Colegio / Equipo
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '999px',
+                  backgroundColor: cantidadPersonalizadas > 0 ? '#6366f1' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
+                  color: cantidadPersonalizadas > 0 ? '#ffffff' : textMuted,
+                  fontWeight: '800'
+                }}
+              >
+                {cantidadPersonalizadas > 0 ? `${cantidadPersonalizadas} propias` : `${nombresEquipos.length} equipos`}
+              </span>
+            </button>
+          </div>
+
+          {/* Cuerpo del Modal con Scroll */}
+          <div style={{ padding: '1rem 1.4rem 1.4rem 1.4rem', overflowY: 'auto', flex: 1 }}>
+            
+            {/* ── TAB 1: CONTRASEÑA GENERAL ── */}
+            {tabClavesModal === 'GENERAL' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                <div
+                  style={{
+                    padding: '0.9rem 1rem',
+                    borderRadius: '10px',
+                    backgroundColor: isLight ? '#f8fafc' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${borderCol}`,
+                    fontSize: '0.82rem',
+                    color: textMuted,
+                    lineHeight: '1.45'
+                  }}
+                >
+                  <p style={{ margin: '0 0 0.4rem 0', fontWeight: '700', color: 'var(--text-color)' }}>
+                    🔑 ¿Cómo funciona la Contraseña General?
+                  </p>
+                  Esta contraseña es compartida por defecto entre todos los profesores y asesores del evento. Si un colegio no tiene configurada una clave específica individual, sus profesores podrán ingresar utilizando esta contraseña para ver exclusivamente los datos de su delegación.
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.82rem',
+                      fontWeight: '800',
+                      marginBottom: '0.4rem',
+                      color: 'var(--text-color)'
+                    }}
+                  >
+                    Contraseña General de Faculties
+                  </label>
+
+                  <div style={{ position: 'relative', display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input
+                        type={showGeneralPin ? 'text' : 'password'}
+                        value={generalPinInput}
+                        onChange={(e) => setGeneralPinInput(e.target.value)}
+                        placeholder="Ej. PROF2026 o PIN de 6 dígitos"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 2.8rem 0.75rem 0.85rem',
+                          borderRadius: '8px',
+                          border: `1px solid ${borderCol}`,
+                          backgroundColor: headerBg,
+                          color: 'var(--text-color)',
+                          fontSize: '0.95rem',
+                          fontWeight: '700',
+                          letterSpacing: showGeneralPin ? 'normal' : '0.15em',
+                          outline: 'none'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGeneralPin(!showGeneralPin)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'transparent',
+                          border: 'none',
+                          color: textMuted,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          padding: '4px'
+                        }}
+                        title={showGeneralPin ? 'Ocultar' : 'Mostrar'}
+                      >
+                        {showGeneralPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerarPinGeneral}
+                      style={{
+                        padding: '0.75rem 0.95rem',
+                        borderRadius: '8px',
+                        border: `1px solid ${borderCol}`,
+                        backgroundColor: headerBg,
+                        color: 'var(--text-color)',
+                        fontSize: '0.82rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title="Generar un PIN aleatorio de 6 dígitos"
+                    >
+                      <Sparkles size={14} color="#f59e0b" />
+                      Generar PIN
+                    </button>
+                  </div>
+
+                  <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.35rem', display: 'block' }}>
+                    {generalPinInput.trim()
+                      ? `Estado actual: Requiere introducir "${showGeneralPin ? generalPinInput.trim() : '••••••'}" para acceder como Faculty.`
+                      : 'Sin contraseña configurada: Los asesores podrán ingresar con el PIN de Organización o libremente si no hay clave.'}
+                  </span>
+                </div>
+
+                {/* Acciones para el PIN General */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={handleGuardarGeneralPin}
+                    style={{
+                      padding: '0.7rem 1.2rem',
+                      borderRadius: '8px',
+                      backgroundColor: '#10b981',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '0.84rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      boxShadow: '0 4px 10px rgba(16, 185, 129, 0.25)'
+                    }}
+                  >
+                    <Check size={16} /> Guardar Contraseña General
+                  </button>
+
+                  {generalPinInput.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGeneralPinInput('');
+                        localStorage.removeItem(`openmun_conf_faculty_pin_${confId}`);
+                        setFeedbackClavesModal({
+                          type: 'info',
+                          text: 'Contraseña general de Faculties eliminada.'
+                        });
+                        setTimeout(() => setFeedbackClavesModal(null), 3000);
+                      }}
+                      style={{
+                        padding: '0.7rem 1rem',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        backgroundColor: isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)',
+                        color: isLight ? '#dc2626' : '#f87171',
+                        fontSize: '0.82rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
+                      }}
+                    >
+                      <Trash2 size={14} /> Eliminar Clave
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── TAB 2: CONTRASEÑAS ESPECÍFICAS POR EQUIPO ── */}
+            {tabClavesModal === 'EQUIPOS' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div
+                  style={{
+                    padding: '0.85rem 1rem',
+                    borderRadius: '10px',
+                    backgroundColor: isLight ? '#f8fafc' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${borderCol}`,
+                    fontSize: '0.82rem',
+                    color: textMuted,
+                    lineHeight: '1.45'
+                  }}
+                >
+                  <p style={{ margin: '0 0 0.3rem 0', fontWeight: '700', color: 'var(--text-color)' }}>
+                    🏫 Contraseñas exclusivas por Colegio
+                  </p>
+                  Asigna contraseñas únicas para cada colegio o delegación. Cada asesor/a podrá acceder exclusivamente con su clave dedicada (o con la general). Puedes copiar y enviarle sus credenciales listas para WhatsApp o correo.
+                </div>
+
+                {/* Buscador de Colegios */}
+                <div style={{ position: 'relative' }}>
+                  <Search
+                    size={15}
+                    style={{
+                      position: 'absolute',
+                      left: '11px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: textMuted
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={busquedaEquipoModal}
+                    onChange={(e) => setBusquedaEquipoModal(e.target.value)}
+                    placeholder="Buscar colegio o equipo..."
+                    style={{
+                      width: '100%',
+                      padding: '0.6rem 0.75rem 0.6rem 2.1rem',
+                      borderRadius: '8px',
+                      border: `1px solid ${borderCol}`,
+                      backgroundColor: headerBg,
+                      color: 'var(--text-color)',
+                      fontSize: '0.85rem',
+                      outline: 'none'
+                    }}
+                  />
+                  {busquedaEquipoModal && (
+                    <button
+                      type="button"
+                      onClick={() => setBusquedaEquipoModal('')}
+                      style={{
+                        position: 'absolute',
+                        right: '9px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: textMuted,
+                        cursor: 'pointer',
+                        padding: '2px',
+                        display: 'flex'
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Lista de Equipos */}
+                {equiposFiltradosModal.length === 0 ? (
+                  <div style={{ padding: '2rem 1rem', textAlign: 'center', color: textMuted, fontSize: '0.85rem' }}>
+                    No se encontraron colegios con el término "{busquedaEquipoModal}".
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {equiposFiltradosModal.map((nombreEq) => {
+                      const tienePinPropio = Boolean(teamPins[nombreEq]);
+                      const pinActual = teamPinInputs[nombreEq] ?? teamPins[nombreEq] ?? '';
+                      const isShowing = Boolean(showTeamPins[nombreEq]);
+                      const estaCopiado = copiadoFeedback === nombreEq;
+                      const esSeleccionado = selectedTeamInModal === nombreEq;
+
+                      return (
+                        <div
+                          key={nombreEq}
+                          style={{
+                            padding: '0.9rem 1rem',
+                            borderRadius: '10px',
+                            backgroundColor: esSeleccionado
+                              ? (isLight ? '#f0fdf4' : 'rgba(16, 185, 129, 0.08)')
+                              : (isLight ? '#ffffff' : 'rgba(255,255,255,0.03)'),
+                            border: `1px solid ${
+                              esSeleccionado
+                                ? '#10b981'
+                                : (tienePinPropio ? 'rgba(16, 185, 129, 0.35)' : borderCol)
+                            }`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.6rem',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {/* Encabezado del item */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <School size={16} color={tienePinPropio ? '#10b981' : '#6366f1'} />
+                              <span style={{ fontWeight: '800', fontSize: '0.92rem', color: 'var(--text-color)' }}>
+                                {nombreEq}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              {tienePinPropio ? (
+                                <span
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: '800',
+                                    padding: '0.15rem 0.5rem',
+                                    borderRadius: '999px',
+                                    backgroundColor: isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.15)',
+                                    color: '#16a34a',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                  }}
+                                >
+                                  <Lock size={11} /> Clave propia configurada
+                                </span>
+                              ) : (
+                                <span
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: '700',
+                                    padding: '0.15rem 0.5rem',
+                                    borderRadius: '999px',
+                                    backgroundColor: isLight ? '#f1f5f9' : 'rgba(255,255,255,0.06)',
+                                    color: textMuted
+                                  }}
+                                >
+                                  Usa Clave General
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Controles del PIN */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                            <div style={{ position: 'relative', flex: '1 1 180px', minWidth: '150px' }}>
+                              <input
+                                type={isShowing ? 'text' : 'password'}
+                                value={pinActual}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setTeamPinInputs(prev => ({ ...prev, [nombreEq]: val }));
+                                }}
+                                placeholder="Clave exclusiva para este equipo"
+                                style={{
+                                  width: '100%',
+                                  padding: '0.55rem 2.4rem 0.55rem 0.75rem',
+                                  fontSize: '0.84rem',
+                                  borderRadius: '6px',
+                                  border: `1px solid ${borderCol}`,
+                                  backgroundColor: headerBg,
+                                  color: 'var(--text-color)',
+                                  outline: 'none',
+                                  fontWeight: '700'
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowTeamPins(prev => ({ ...prev, [nombreEq]: !prev[nombreEq] }));
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  right: '8px',
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: textMuted,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  padding: '2px'
+                                }}
+                                title={isShowing ? 'Ocultar' : 'Mostrar'}
+                              >
+                                {isShowing ? <EyeOff size={14} /> : <Eye size={14} />}
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleGenerarPinEquipo(nombreEq)}
+                              style={{
+                                padding: '0.55rem 0.7rem',
+                                borderRadius: '6px',
+                                border: `1px solid ${borderCol}`,
+                                backgroundColor: headerBg,
+                                color: textMuted,
+                                fontSize: '0.76rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                              }}
+                              title="Generar PIN aleatorio"
+                            >
+                              <Sparkles size={13} color="#f59e0b" />
+                              Generar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleGuardarPinEquipo(nombreEq)}
+                              style={{
+                                padding: '0.55rem 0.85rem',
+                                borderRadius: '6px',
+                                backgroundColor: '#10b981',
+                                color: '#ffffff',
+                                border: 'none',
+                                fontSize: '0.78rem',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                              }}
+                              title="Guardar contraseña de este equipo"
+                            >
+                              <Check size={14} /> Guardar
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCopiarCredenciales(nombreEq)}
+                              style={{
+                                padding: '0.55rem 0.8rem',
+                                borderRadius: '6px',
+                                border: `1px solid ${estaCopiado ? '#10b981' : borderCol}`,
+                                backgroundColor: estaCopiado
+                                  ? (isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.15)')
+                                  : headerBg,
+                                color: estaCopiado ? '#16a34a' : 'var(--text-color)',
+                                fontSize: '0.78rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem'
+                              }}
+                              title="Copiar credenciales formateadas para enviar por correo o WhatsApp"
+                            >
+                              {estaCopiado ? <CheckCheck size={14} color="#16a34a" /> : <Copy size={14} />}
+                              {estaCopiado ? '¡Copiado!' : 'Copiar Credenciales'}
+                            </button>
+
+                            {tienePinPropio && (
+                              <button
+                                type="button"
+                                onClick={() => handleRestablecerPinEquipo(nombreEq)}
+                                style={{
+                                  padding: '0.55rem 0.65rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  backgroundColor: isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)',
+                                  color: isLight ? '#dc2626' : '#f87171',
+                                  fontSize: '0.76rem',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem'
+                                }}
+                                title="Eliminar clave específica y volver a usar la clave general"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Pie del Modal */}
+          <div
+            style={{
+              padding: '0.9rem 1.4rem',
+              backgroundColor: headerBg,
+              borderTop: `1px solid ${borderCol}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem'
+            }}
+          >
+            <span style={{ fontSize: '0.75rem', color: textMuted }}>
+              🔒 Los cambios se aplican de inmediato en los accesos de la conferencia.
+            </span>
+            <button
+              type="button"
+              onClick={() => setModalClavesOpen(false)}
+              style={{
+                padding: '0.55rem 1.1rem',
+                borderRadius: '8px',
+                backgroundColor: '#6366f1',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '0.82rem',
+                fontWeight: '800',
+                cursor: 'pointer'
+              }}
+            >
+              Listo / Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────
   // DETERMINAR VISTA ACTIVA: ORGANIZACIÓN O FACULTY
   // ─────────────────────────────────────────────────────────────
   const esVistaOrganizacion = viewMode === 'ORGANIZACION';
@@ -923,6 +1829,31 @@ const RendimientoEquiposTab = ({
                   </select>
                 </div>
               )}
+
+              {/* Botón para cambiar contraseña del equipo previsualizado */}
+              <button
+                onClick={() => {
+                  setSelectedTeamInModal(nombreEquipoActualFaculty);
+                  setTabClavesModal('EQUIPOS');
+                  setModalClavesOpen(true);
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(234, 179, 8, 0.4)',
+                  backgroundColor: isLight ? 'rgba(234, 179, 8, 0.08)' : 'rgba(234, 179, 8, 0.15)',
+                  color: isLight ? '#b45309' : '#fbbf24',
+                  fontSize: '0.78rem',
+                  fontWeight: '800',
+                  cursor: 'pointer'
+                }}
+                title={`Gestionar o cambiar contraseña para ${nombreEquipoActualFaculty}`}
+              >
+                <Key size={13} /> Clave Faculty
+              </button>
 
               <button
                 onClick={() => setViewMode('ORGANIZACION')}
@@ -1507,6 +2438,7 @@ const RendimientoEquiposTab = ({
             </div>
           </>
         )}
+        {renderModalGestionClaves()}
       </div>
     );
   }
@@ -1588,6 +2520,31 @@ const RendimientoEquiposTab = ({
               <GraduationCap size={15} /> Simular Vista Faculty
             </button>
           )}
+
+          {/* Botón para Gestionar Contraseñas de Faculties */}
+          <button
+            onClick={() => {
+              setSelectedTeamInModal('');
+              setTabClavesModal('GENERAL');
+              setModalClavesOpen(true);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.55rem 0.85rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(234, 179, 8, 0.45)',
+              backgroundColor: isLight ? 'rgba(234, 179, 8, 0.08)' : 'rgba(234, 179, 8, 0.15)',
+              color: isLight ? '#b45309' : '#fbbf24',
+              fontSize: '0.82rem',
+              fontWeight: '800',
+              cursor: 'pointer'
+            }}
+            title="Cambiar y gestionar contraseñas de acceso para Faculties y Colegios"
+          >
+            <Key size={15} /> Contraseñas Faculties
+          </button>
 
           {onRefresh && (
             <button
@@ -2032,29 +2989,57 @@ const RendimientoEquiposTab = ({
                     </div>
 
                     {!equipo.esSinEquipo && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewTeam(equipo.nombre);
-                          setViewMode('FACULTY');
-                        }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          padding: '0.35rem 0.65rem',
-                          borderRadius: '6px',
-                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                          backgroundColor: isLight ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.15)',
-                          color: '#10b981',
-                          fontSize: '0.76rem',
-                          fontWeight: '800',
-                          cursor: 'pointer'
-                        }}
-                        title="Ver como Faculty de este equipo"
-                      >
-                        <GraduationCap size={13} /> Ver como Faculty
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTeamInModal(equipo.nombre);
+                            setTabClavesModal('EQUIPOS');
+                            setModalClavesOpen(true);
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(234, 179, 8, 0.4)',
+                            backgroundColor: isLight ? 'rgba(234, 179, 8, 0.08)' : 'rgba(234, 179, 8, 0.15)',
+                            color: isLight ? '#b45309' : '#fbbf24',
+                            fontSize: '0.76rem',
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                          }}
+                          title={`Gestionar o cambiar contraseña para ${equipo.nombre}`}
+                        >
+                          <Key size={13} />
+                          {teamPins[equipo.nombre] ? 'Clave propia' : 'Clave'}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewTeam(equipo.nombre);
+                            setViewMode('FACULTY');
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            backgroundColor: isLight ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.15)',
+                            color: '#10b981',
+                            fontSize: '0.76rem',
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                          }}
+                          title="Ver como Faculty de este equipo"
+                        >
+                          <GraduationCap size={13} /> Ver como Faculty
+                        </button>
+                      </div>
                     )}
 
                     <div
@@ -2203,6 +3188,7 @@ const RendimientoEquiposTab = ({
           })}
         </div>
       )}
+      {renderModalGestionClaves()}
     </div>
   );
 };

@@ -36,6 +36,7 @@ const MatrizPaises = () => {
 
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstatus, setFiltroEstatus] = useState('TODOS');
+  const [filtroEquipo, setFiltroEquipo] = useState('TODOS');
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [paisAEditar, setPaisAEditar] = useState(null);
@@ -116,13 +117,30 @@ const MatrizPaises = () => {
     }
   };
 
+  // Lista única de equipos presentes en la sesión
+  const listaEquipos = React.useMemo(() => {
+    const s = new Set();
+    paises.forEach(p => {
+      if (p.equipo && p.equipo.trim()) s.add(p.equipo.trim());
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [paises]);
+
   // Filtrado
-  const paisesFiltrados = paises.filter(p => {
-    const coincideNombre = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
-    if (filtroEstatus === 'TODOS') return coincideNombre;
-    if (filtroEstatus === 'VETO') return coincideNombre && p.veto;
-    return coincideNombre && p.estatus === filtroEstatus;
-  });
+  const paisesFiltrados = React.useMemo(() => {
+    return paises.filter(p => {
+      const q = busqueda.toLowerCase().trim();
+      const coincideTexto = !q || p.nombre.toLowerCase().includes(q) || (p.equipo && p.equipo.toLowerCase().includes(q));
+      if (!coincideTexto) return false;
+
+      if (filtroEstatus === 'VETO' && !p.veto) return false;
+      if (filtroEstatus !== 'TODOS' && filtroEstatus !== 'VETO' && p.estatus !== filtroEstatus) return false;
+
+      if (filtroEquipo !== 'TODOS' && (p.equipo || '').trim() !== filtroEquipo) return false;
+
+      return true;
+    });
+  }, [paises, busqueda, filtroEstatus, filtroEquipo]);
 
   const renderPaisItem = (p, index) => {
     const isDragging = draggedIndex === index;
@@ -192,6 +210,32 @@ const MatrizPaises = () => {
           >
             {p.nombre}
           </span>
+
+          {/* Badge de Equipo / Colegio (exclusivo para Matriz e Info de Chairs) */}
+          {p.equipo && (
+            <span
+              title={`Equipo / Colegio: ${p.equipo}`}
+              style={{
+                fontSize: '0.68rem',
+                padding: '0.12rem 0.45rem',
+                borderRadius: '4px',
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                color: '#6366f1',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                fontWeight: '600',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                maxWidth: '130px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Users size={11} />
+              {p.equipo}
+            </span>
+          )}
 
           {/* Botón / Indicador de Veto 👑 */}
           <button
@@ -430,6 +474,28 @@ const MatrizPaises = () => {
             <option value="Ausente">{t('countries.absent', 'Ausente')} ({ausentes})</option>
             <option value="VETO">{t('voting.vetoEnabled', 'P5 / Veto')}</option>
           </select>
+
+          {listaEquipos.length > 0 && (
+            <select
+              value={filtroEquipo}
+              onChange={(e) => setFiltroEquipo(e.target.value)}
+              style={{
+                padding: '0.4rem 0.6rem',
+                fontSize: '0.78rem',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--card-header-bg)',
+                color: 'var(--text-color)',
+                cursor: 'pointer'
+              }}
+              title="Filtrar por Equipo / Institución"
+            >
+              <option value="TODOS">Todos los equipos ({listaEquipos.length})</option>
+              {listaEquipos.map(eq => (
+                <option key={eq} value={eq}>{eq}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Acciones Rápidas */}

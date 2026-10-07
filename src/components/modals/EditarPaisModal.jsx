@@ -11,7 +11,8 @@ import {
   Image as ImageIcon,
   RotateCcw,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Users
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
@@ -49,6 +50,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const { t } = useTranslation();
   const { isLight } = useAccessibility();
   const [nombre, setNombre] = useState('');
+  const [equipo, setEquipo] = useState('');
   const [bandera, setBandera] = useState('');
   const [veto, setVeto] = useState(false);
   const [estatus, setEstatus] = useState('Presente');
@@ -66,6 +68,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   useEffect(() => {
     if (pais) {
       setNombre(pais.nombre || '');
+      setEquipo(pais.equipo || '');
       setBandera(pais.bandera || 'un');
       setVeto(pais.veto || false);
       setEstatus(pais.estatus || 'Presente');
@@ -166,7 +169,8 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
     onGuardar(pais.id, {
       nombre: nombre.trim(),
       bandera: bandera || 'un',
-      veto
+      veto,
+      equipo: equipo.trim()
     });
     onClose();
   };
@@ -275,6 +279,32 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                   Auto
                 </button>
               </div>
+            </div>
+
+            {/* Equipo / Colegio / Institución */}
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', fontWeight: '600', color: 'var(--muted-text)', marginBottom: '0.35rem' }}>
+                <Users size={13} color="#6366f1" />
+                {t('editCountry.team', 'Equipo / Colegio / Institución')}
+              </label>
+              <input
+                type="text"
+                value={equipo}
+                onChange={(e) => setEquipo(e.target.value)}
+                placeholder="Ej. Colegio San Ignacio, Equipo A, Instituto..."
+                style={{
+                  width: '100%',
+                  padding: '0.55rem 0.75rem',
+                  backgroundColor: isLight ? '#ffffff' : 'rgba(255,255,255,0.05)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  color: 'var(--text-color)',
+                  fontSize: '0.85rem'
+                }}
+              />
+              <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', display: 'block', marginTop: '0.25rem' }}>
+                Solo visible en la Matriz de Países, en Info para los Chairs y en el panel de rendimiento de equipos de la conferencia.
+              </span>
             </div>
 
             {/* Sección de Bandera e Imagen */}

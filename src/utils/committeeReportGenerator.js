@@ -191,9 +191,10 @@ export async function exportCommitteeReportPdf({
     doc.text(String(idx + 1), cellX + 4, cursorY + 12);
     cellX += colWidths[0];
 
-    // Nombre + Veto
-    const nombrePais = del.veto ? `${del.nombre} (P5)` : del.nombre;
-    doc.text(nombrePais.substring(0, 26), cellX + 4, cursorY + 12);
+    // Nombre + Veto + Equipo
+    const textoEquipo = del.equipo ? ` [${del.equipo}]` : '';
+    const nombrePais = (del.veto ? `${del.nombre} (P5)` : del.nombre) + textoEquipo;
+    doc.text(nombrePais.substring(0, 32), cellX + 4, cursorY + 12);
     cellX += colWidths[1];
 
     // Estatus

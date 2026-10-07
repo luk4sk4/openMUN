@@ -94,6 +94,11 @@ function esHeaderVeto(header) {
   return /veto|p5|perm|permanente|permanent|derecho\s*a\s*veto|poder\s*de\s*veto/i.test(norm);
 }
 
+function esHeaderEquipo(header) {
+  const norm = normalizarTexto(header);
+  return /\b(equipo|equipos|team|teams|colegio|colegios|school|schools|escuela|escuelas|instituto|institutos|instituci[oó]n|instituciones|institution|institutions|universidad|universidades|university|universities|club|clubes)\b/i.test(norm);
+}
+
 function esCeldaBandera(val) {
   if (!val) return false;
   const str = String(val).trim();
@@ -106,9 +111,9 @@ function esCeldaBandera(val) {
 
 // Analiza una tabla o matriz para determinar qué columnas contienen el País, Delegado, Bandera y Veto
 function detectarColumnasTabla(filas) {
-  if (!filas || filas.length === 0) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, filaInicio: 0 };
+  if (!filas || filas.length === 0) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, colEquipo: -1, filaInicio: 0 };
   const maxCols = Math.max(...filas.map(r => Array.isArray(r) ? r.length : 0));
-  if (maxCols <= 1) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, filaInicio: 0 };
+  if (maxCols <= 1) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, colEquipo: -1, filaInicio: 0 };
 
   // 1. Buscar si en las primeras 10 filas hay una fila con cabecera explícita
   const limiteCabecera = Math.min(filas.length, 10);
@@ -124,6 +129,7 @@ function detectarColumnasTabla(filas) {
     const indicesNombre = [];
     let idxVeto = -1;
     let idxBandera = -1;
+    let idxEquipo = -1;
 
     r.forEach((cell, cIdx) => {
       const val = String(cell ?? '').trim();
@@ -135,6 +141,7 @@ function detectarColumnasTabla(filas) {
       }
       if (esHeaderVeto(val)) idxVeto = cIdx;
       if (esHeaderBandera(val)) idxBandera = cIdx;
+      if (esHeaderEquipo(val)) idxEquipo = cIdx;
     });
 
     // Si encontramos una columna explícita de PAÍS
@@ -147,6 +154,7 @@ function detectarColumnasTabla(filas) {
         colVeto: idxVeto !== colPais ? idxVeto : -1,
         colBandera: idxBandera !== colPais ? idxBandera : -1,
         colDelegado,
+        colEquipo: idxEquipo !== colPais ? idxEquipo : -1,
         filaInicio: rIdx + 1
       };
     }
@@ -158,6 +166,7 @@ function detectarColumnasTabla(filas) {
         colVeto: idxVeto,
         colBandera: idxBandera,
         colDelegado: -1,
+        colEquipo: idxEquipo,
         filaInicio: rIdx + 1
       };
     }
@@ -309,12 +318,17 @@ function procesarFilaArray(fila, index, indicesCol = null) {
     c.val.length > 2
   );
 
+  const cellEquipo = indicesCol?.colEquipo >= 0 && fila[indicesCol.colEquipo] !== undefined
+    ? String(fila[indicesCol.colEquipo] || '').trim()
+    : undefined;
+
   return {
     id: `pais_${Date.now()}_${index}`,
     nombre,
     bandera,
     veto: Boolean(veto),
     delegado: cellDelegado ? cellDelegado.val : undefined,
+    equipo: cellEquipo || undefined,
     estatus: 'Ausente'
   };
 }
@@ -342,7 +356,7 @@ function filaAPais(fila, index, indicesCol = null) {
   }
 
   // Si fila es un Objeto (con cabeceras como claves):
-  // Se seleccionan ÚNICAMENTE las columnas requeridas (País, Bandera, Veto, ID) e IGNORAN las demás
+  // Se seleccionan ÚNICAMENTE las columnas requeridas (País, Bandera, Veto, ID, Equipo, Delegado) e IGNORAN las demás
   const allKeys = Object.keys(fila).filter(k => k && String(fila[k]).trim() !== '');
 
   // Regla crítica: Si existen tanto clave PAIS como clave NOMBRE / DELEGADO,
@@ -385,6 +399,10 @@ function filaAPais(fila, index, indicesCol = null) {
   const colId = allKeys.find(k => k !== colNombre && k !== keyDelegado && k !== colBandera && k !== colVeto && /^(id|codigo|c[oó]digo|code|iso)$/i.test(normalizarTexto(k)));
   const id = colId ? String(fila[colId]).trim() : `pais_${Date.now()}_${index}`;
 
+  // 5. Columna Equipo / Colegio (si existe)
+  const colEquipo = allKeys.find(k => k !== colNombre && k !== keyDelegado && k !== colBandera && k !== colVeto && esHeaderEquipo(k));
+  const rawEquipo = colEquipo ? String(fila[colEquipo]).trim() : '';
+
   const auto = autodetectarBanderaYVeto(nombre);
   const bandera = rawBandera ? normalizarBandera(rawBandera, nombre) : auto.bandera;
   const veto = rawVeto !== undefined
@@ -397,6 +415,7 @@ function filaAPais(fila, index, indicesCol = null) {
     bandera,
     veto: Boolean(veto),
     delegado: rawDelegado || undefined,
+    equipo: rawEquipo || undefined,
     estatus: 'Ausente'
   };
 }

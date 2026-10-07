@@ -428,6 +428,7 @@
   "editCountry": {
     "title": "Editar Delegación",
     "name": "Nombre del País",
+    "team": "Equipo / Colegio / Institución",
     "flag": "Bandera",
     "vetoPower": "Derecho a Veto (P5 / Permanente)",
     "vetoPowerDesc": "Habilita el poder de veto en votaciones sustantivas",

@@ -59,6 +59,7 @@ import { normalizarDatosComite, SESSION_STORAGE_KEYS } from '../../utils/session
 import EstablecerAgenda from '../widgets/EstablecerAgenda';
 import ImportarPaises from '../widgets/ImportarPaises';
 import MatrizPaises from '../widgets/MatrizPaises';
+import RendimientoEquiposTab from '../conference/RendimientoEquiposTab';
 
 const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, isLight: propIsLight }) => {
   const { t } = useTranslation();
@@ -101,10 +102,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const [errorMsg, setErrorMsg] = useState(null);
   const [filtroComite, setFiltroComite] = useState('');
 
-  // Pestaña Principal Superior: 'VER_COMITES' | 'STAFF' | 'SECRETARIA'
+  // Pestaña Principal Superior: 'VER_COMITES' | 'STAFF' | 'SECRETARIA' | 'EQUIPOS'
   const [activeMainTab, setActiveMainTab] = useState(() => {
     if (initialMode === 'admin') return 'SECRETARIA';
     if (initialMode === 'staff') return 'STAFF';
+    if (initialMode === 'equipos' || initialMode === 'teams') return 'EQUIPOS';
     return 'VER_COMITES';
   });
 
@@ -140,6 +142,15 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const [mostrarConfNuevoPin, setMostrarConfNuevoPin] = useState(false);
   const [confPinAdminActual, setConfPinAdminActual] = useState('');
   const [mostrarConfPinActual, setMostrarConfPinActual] = useState(false);
+  const [confPinDocentesInput, setConfPinDocentesInput] = useState(() => {
+    if (initialConfId) {
+      try {
+        return localStorage.getItem(`openmun_conf_faculty_pin_${initialConfId.toLowerCase().trim()}`) || '';
+      } catch (e) { return ''; }
+    }
+    return '';
+  });
+  const [mostrarConfPinDocentes, setMostrarConfPinDocentes] = useState(false);
   const [guardandoConfSettings, setGuardandoConfSettings] = useState(false);
   const [confSettingsFeedback, setConfSettingsFeedback] = useState(null);
 
@@ -157,6 +168,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         setConfEmailAdminInput(conferencia.email_admin || '');
       }
       setCambiarPinAcceso(Boolean(conferencia.requierePin));
+      try {
+        const savedFacPin = localStorage.getItem(`openmun_conf_faculty_pin_${conferencia.id.toLowerCase().trim()}`) || '';
+        if (savedFacPin) setConfPinDocentesInput(savedFacPin);
+      } catch (e) {}
       confSettingsInicializadoRef.current = true;
     }
   }, [conferencia]);
@@ -1058,6 +1073,16 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         setAdminPinInput(payload.nuevo_pin_admin);
         setConfPinAdminActual(payload.nuevo_pin_admin);
         setConfNuevoPinAdmin('');
+      }
+
+      if (confPinDocentesInput.trim()) {
+        try {
+          localStorage.setItem(`openmun_conf_faculty_pin_${conferencia.id.toLowerCase().trim()}`, confPinDocentesInput.trim());
+        } catch (e) {}
+      } else {
+        try {
+          localStorage.removeItem(`openmun_conf_faculty_pin_${conferencia.id.toLowerCase().trim()}`);
+        } catch (e) {}
       }
 
       setConfSettingsFeedback({
@@ -2067,6 +2092,28 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             }}
           >
             <Shield size={16} /> Panel Organización
+          </button>
+
+          <button
+            onClick={() => setActiveMainTab('EQUIPOS')}
+            className="openmun-nav-tab-btn"
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: activeMainTab === 'EQUIPOS' ? (isLight ? '#ffffff' : '#27272a') : 'transparent',
+              color: activeMainTab === 'EQUIPOS' ? '#10b981' : 'var(--muted-text)',
+              fontWeight: '800',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              boxShadow: activeMainTab === 'EQUIPOS' ? '0 2px 5px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Users size={16} /> Equipos
           </button>
         </div>
 
@@ -3567,6 +3614,59 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           Solo introduce un valor si deseas asignar una nueva clave de acceso de secretaría.
                         </span>
                       </div>
+
+                      {/* 5. PIN / Contraseña para Profesores / Faculty Advisors (Equipos) */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                          PIN de Profesores / Faculty Advisors (Pestaña Equipos)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={mostrarConfPinDocentes ? 'text' : 'password'}
+                            value={confPinDocentesInput}
+                            onChange={(e) => setConfPinDocentesInput(e.target.value)}
+                            placeholder="Dejar vacío para usar PIN de Organización"
+                            style={{
+                              width: '100%',
+                              padding: '0.65rem 2.5rem 0.65rem 2.4rem',
+                              borderRadius: '8px',
+                              border: `1px solid ${borderCol}`,
+                              backgroundColor: headerBg,
+                              color: 'var(--text-color)',
+                              fontSize: '0.88rem'
+                            }}
+                          />
+                          <Users
+                            size={16}
+                            style={{
+                              position: 'absolute',
+                              left: '12px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              color: textMuted
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setMostrarConfPinDocentes(!mostrarConfPinDocentes)}
+                            style={{
+                              position: 'absolute',
+                              right: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'transparent',
+                              border: 'none',
+                              color: textMuted,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {mostrarConfPinDocentes ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                        <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
+                          Permite a los profesores acompañantes consultar el rendimiento de sus alumnos en la pestaña Equipos sin tener acceso administrativo. Si se deja vacío, se podrá acceder con el PIN de Organización.
+                        </span>
+                      </div>
                     </div>
 
                     {/* Bloque de Autorización con PIN Actual y Botón Guardar */}
@@ -4728,6 +4828,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             </div>
           </div>
         </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════════
+          PESTAÑA 4: RENDIMIENTO DE EQUIPOS (FACULTY ADVISORS / PROFESORES)
+      ════════════════════════════════════════════════════════════════════════ */}
+      {activeMainTab === 'EQUIPOS' && (
+        <RendimientoEquiposTab
+          conferencia={conferencia}
+          listaComites={listaComitesConsolidada}
+          isAdmin={isAdminAuthenticated}
+          isLight={isLight}
+        />
       )}
 
       {/* Modal PIN de Mesa Directiva al entrar */}

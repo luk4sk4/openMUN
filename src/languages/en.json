@@ -453,6 +453,7 @@
   "editCountry": {
     "title": "Edit Delegation",
     "name": "Country Name",
+    "team": "Team / School / Institution",
     "flag": "Flag",
     "vetoPower": "Veto Power (P5 / Permanent)",
     "present": "Present",

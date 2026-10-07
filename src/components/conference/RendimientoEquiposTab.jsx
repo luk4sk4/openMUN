@@ -59,8 +59,7 @@ function exportarCsvEquipos(equipos, confNombre) {
     'Mociones Propuestas',
     'Mociones Aprobadas',
     'Enmiendas Propuestas',
-    'Enmiendas Aprobadas',
-    'Puntuación Estimada'
+    'Enmiendas Aprobadas'
   ];
 
   const filas = [];
@@ -78,8 +77,7 @@ function exportarCsvEquipos(equipos, confNombre) {
         m.mocPresentadas,
         m.mocAprobadas,
         m.enmPresentadas,
-        m.enmAprobadas,
-        m.score
+        m.enmAprobadas
       ].join(';'));
     });
   });
@@ -127,7 +125,7 @@ const RendimientoEquiposTab = ({
   // Filtros y Visualización
   const [filtroEquipo, setFiltroEquipo] = useState('TODOS');
   const [busqueda, setBusqueda] = useState('');
-  const [orden, setOrden] = useState('SCORE'); // 'SCORE' | 'TIEMPO' | 'MOCIONES' | 'ALFABETICO'
+  const [orden, setOrden] = useState('TIEMPO'); // 'TIEMPO' | 'MOCIONES' | 'ALFABETICO'
   const [equiposExpandidos, setEquiposExpandidos] = useState({});
 
   // Sincronizar si entra como admin
@@ -294,17 +292,6 @@ const RendimientoEquiposTab = ({
           return prop === pNombreNorm && (st === 'aceptada' || st === 'aceptado' || st === 'aprobada' || st === 'aprobado');
         }).length;
 
-        // Puntuación ponderada de participación
-        const score = Math.round(
-          (segHablados / 60) * 2 +
-          intervencionesCount * 4 +
-          mocAprobadas * 8 +
-          mocPresentadas * 2 +
-          enmAprobadas * 12 +
-          enmPresentadas * 3 +
-          (p.estatus === 'Presente y Votando' ? 5 : (p.estatus === 'Presente' ? 3 : 0))
-        );
-
         // Insignias individuales
         const insignias = [];
         if (segHablados >= 300) insignias.push('🗣️ Gran Oratoria');
@@ -327,7 +314,6 @@ const RendimientoEquiposTab = ({
           mocAprobadas,
           enmPresentadas,
           enmAprobadas,
-          score,
           insignias
         };
 
@@ -344,7 +330,6 @@ const RendimientoEquiposTab = ({
             totalMocionesAprobadas: 0,
             totalEnmiendas: 0,
             totalEnmiendasAprobadas: 0,
-            totalScore: 0,
             comitesSet: new Set(),
             asistencia: { presente: 0, presenteVotando: 0, ausente: 0 }
           });
@@ -358,7 +343,6 @@ const RendimientoEquiposTab = ({
         eqData.totalMocionesAprobadas += mocAprobadas;
         eqData.totalEnmiendas += enmPresentadas;
         eqData.totalEnmiendasAprobadas += enmAprobadas;
-        eqData.totalScore += score;
         eqData.comitesSet.add(cleanNom);
 
         if (p.estatus === 'Presente y Votando') eqData.asistencia.presenteVotando++;
@@ -408,7 +392,6 @@ const RendimientoEquiposTab = ({
       if (a.esSinEquipo && !b.esSinEquipo) return 1;
       if (!a.esSinEquipo && b.esSinEquipo) return -1;
 
-      if (orden === 'SCORE') return b.totalScore - a.totalScore;
       if (orden === 'TIEMPO') return b.totalSegundos - a.totalSegundos;
       if (orden === 'MOCIONES') return b.totalMocionesAprobadas - a.totalMocionesAprobadas;
       if (orden === 'ALFABETICO') return a.nombre.localeCompare(b.nombre, 'es');
@@ -423,7 +406,7 @@ const RendimientoEquiposTab = ({
     const totalSegundos = datosEquipos.reduce((acc, e) => acc + e.totalSegundos, 0);
     const totalMocionesAprobadas = datosEquipos.reduce((acc, e) => acc + e.totalMocionesAprobadas, 0);
     const totalMociones = datosEquipos.reduce((acc, e) => acc + e.totalMociones, 0);
-    const equipoLider = [...equiposReales].sort((a, b) => b.totalScore - a.totalScore)[0] || null;
+    const equipoLider = [...equiposReales].sort((a, b) => b.totalSegundos - a.totalSegundos)[0] || null;
 
     return {
       totalEquipos: equiposReales.length,
@@ -802,7 +785,7 @@ const RendimientoEquiposTab = ({
           flexDirection: 'column'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#f59e0b', fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase' }}>
-            <span>Equipo Líder</span>
+            <span>Mayor Oratoria</span>
             <Trophy size={16} />
           </div>
           <div style={{
@@ -817,7 +800,7 @@ const RendimientoEquiposTab = ({
             {kpisGlobales.equipoLider ? kpisGlobales.equipoLider.nombre : '—'}
           </div>
           <div style={{ fontSize: '0.74rem', color: textMuted }}>
-            {kpisGlobales.equipoLider ? `${kpisGlobales.equipoLider.totalScore} pts acumulados` : 'Sin datos de actividad'}
+            {kpisGlobales.equipoLider ? `${formatTiempo(kpisGlobales.equipoLider.totalSegundos)} de debate` : 'Sin datos de actividad'}
           </div>
         </div>
       </div>
@@ -898,7 +881,6 @@ const RendimientoEquiposTab = ({
                 cursor: 'pointer'
               }}
             >
-              <option value="SCORE">Puntuación / Desempeño</option>
               <option value="TIEMPO">Tiempo Hablado</option>
               <option value="MOCIONES">Mociones Aprobadas</option>
               <option value="ALFABETICO">Alfabético</option>
@@ -1070,17 +1052,10 @@ const RendimientoEquiposTab = ({
 
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                       <span style={{ fontSize: '0.68rem', color: textMuted, textTransform: 'uppercase', fontWeight: '700' }}>
-                        Puntuación
+                        Discursos
                       </span>
-                      <span style={{
-                        fontSize: '1rem',
-                        fontWeight: '900',
-                        color: '#6366f1',
-                        padding: '0.1rem 0.5rem',
-                        backgroundColor: 'rgba(99, 102, 241, 0.12)',
-                        borderRadius: '6px'
-                      }}>
-                        {equipo.totalScore} pts
+                      <span style={{ fontSize: '0.92rem', fontWeight: '800', color: '#8b5cf6' }}>
+                        {equipo.totalIntervenciones}
                       </span>
                     </div>
 
@@ -1109,7 +1084,6 @@ const RendimientoEquiposTab = ({
                           <th style={{ padding: '0.6rem 0.75rem', textAlign: 'center' }}>Discursos</th>
                           <th style={{ padding: '0.6rem 0.75rem', textAlign: 'center' }}>Mociones</th>
                           <th style={{ padding: '0.6rem 0.75rem', textAlign: 'center' }}>Enmiendas</th>
-                          <th style={{ padding: '0.6rem 0.85rem', textAlign: 'right' }}>Desempeño</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1216,20 +1190,6 @@ const RendimientoEquiposTab = ({
                                 {m.enmAprobadas}
                               </span>
                               <span style={{ fontSize: '0.72rem', color: textMuted }}> / {m.enmPresentadas}</span>
-                            </td>
-
-                            {/* Desempeño Individual */}
-                            <td style={{ padding: '0.6rem 0.85rem', textAlign: 'right' }}>
-                              <span style={{
-                                fontSize: '0.82rem',
-                                fontWeight: '900',
-                                color: '#6366f1',
-                                padding: '0.15rem 0.5rem',
-                                borderRadius: '4px',
-                                backgroundColor: 'rgba(99, 102, 241, 0.1)'
-                              }}>
-                                {m.score} pts
-                              </span>
                             </td>
                           </tr>
                         ))}

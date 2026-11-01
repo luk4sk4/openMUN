@@ -1,3 +1,5 @@
+import { useDebateRunning } from '../../hooks/useDebateRunning';
+import { useElapsedInterval } from '../../hooks/useElapsedInterval';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Clock,
@@ -35,7 +37,7 @@ const CronometroEnmiendas = () => {
   // Estados del temporizador
   const [tiempoInicial, setTiempoInicial] = useState(60); // en segundos
   const [segundosRestantes, setSegundosRestantes] = useState(60);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
   const [paisSeleccionado, setPaisSeleccionado] = useState('');
   const [sonidoHabilitado, setSonidoHabilitado] = useState(true);
   const [intervencionGuardadaFeedback, setIntervencionGuardadaFeedback] = useState(false);
@@ -48,22 +50,12 @@ const CronometroEnmiendas = () => {
   }, [paisesAsistentes, paisSeleccionado]);
 
   // Efecto del reloj
-  useEffect(() => {
-    let interval = null;
-    if (corriendo) {
-      interval = setInterval(() => {
-        setSegundosRestantes(prev => {
-          if (prev === 1 && sonidoHabilitado) {
-            playTimerAlarm(0.3);
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [corriendo, sonidoHabilitado]);
+  useElapsedInterval(corriendo, elapsed => {
+    setSegundosRestantes(prev => {
+      if (prev > 0 && prev <= elapsed && sonidoHabilitado) playTimerAlarm(0.3);
+      return prev - elapsed;
+    });
+  });
 
   // Manejar cambio de preset de tiempo
   const handleSeleccionarPreset = (segundos) => {

@@ -217,7 +217,7 @@ export const WIDGET_METADATA = {
   matriz_paises: {
     title: 'Matriz de Países',
     category: 'Votaciones',
-    description: 'Control de asistencia, derecho a veto, quórum y votaciones roll-call.',
+    description: 'Importación y alta de delegaciones, asistencia, derecho a veto, quórum y votaciones roll-call.',
     icon: Globe,
     iconBg: 'rgba(34, 197, 94, 0.15)',
     iconColor: '#22c55e',

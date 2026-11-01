@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useEffect } from 'react';
 import { Cookie, ShieldCheck, X, Check, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

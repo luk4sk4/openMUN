@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Vote,
@@ -33,6 +34,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../context/SessionContext';
+import { BotonesConDerechos, ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { emojiToIso, normalizarBandera, DICCIONARIO_PAISES_ISO } from '../../utils/flags';
 import worldSvgRaw from '../../assets/world.svg?raw';
@@ -1236,6 +1238,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
       )}
 
       {/* ─── DOCK FLOTANTE DE ROLL CALL NOMINAL DENTRO DEL MAPA ─── */}
+      <ListaDerechos paises={paises} sesion={votacionSesion} />
+
       {modoRollCall && (
         <div
           style={{
@@ -1317,7 +1321,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               </div>
 
               {/* Botones de Voto Roll Call */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.45rem' }}>
                 {indiceRollCall > 0 && (
                   <button
                     type="button"
@@ -1341,6 +1345,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   </button>
                 )}
 
+                <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={registrarYAvanzarRollCall} />
                 <button
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor')}
@@ -1833,6 +1838,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               </strong>
             </div>
 
+            <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={handleSetVote} voto={votos[selectedCountryForVote.countryObj.id]} conDerechos={votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id]} />
             {/* Botones de Votación Rápida */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               <button

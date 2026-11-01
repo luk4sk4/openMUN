@@ -12,13 +12,16 @@ import {
   ArrowUpDown,
   GripVertical,
   Edit2,
-  Check
+  Check,
+  UserPlus,
+  ArrowLeft
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import EditarPaisModal from '../modals/EditarPaisModal';
 import EmptyState from '../common/EmptyState';
 import VirtualizedList from '../common/VirtualizedList';
+import ImportarPaises from './ImportarPaises';
 import { useTranslation } from 'react-i18next';
 
 const MatrizPaises = () => {
@@ -40,6 +43,7 @@ const MatrizPaises = () => {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [paisAEditar, setPaisAEditar] = useState(null);
+  const [mostrarImportacion, setMostrarImportacion] = useState(false);
 
   // Estado para Roll Call Nominal de Asistencia
   const [modoRollCall, setModoRollCall] = useState(false);
@@ -339,6 +343,38 @@ const MatrizPaises = () => {
       gap: '0.75rem',
       position: 'relative'
     }}>
+      <button
+        type="button"
+        onClick={() => setMostrarImportacion(prev => !prev)}
+        aria-expanded={mostrarImportacion}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.4rem',
+          padding: '0.5rem 0.75rem',
+          backgroundColor: 'var(--card-header-bg)',
+          color: 'var(--text-color)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '6px',
+          fontSize: '0.8rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          flexShrink: 0
+        }}
+      >
+        {mostrarImportacion ? <ArrowLeft size={15} /> : <UserPlus size={15} />}
+        {mostrarImportacion
+          ? t('countries.backToMatrix', 'Volver a la matriz')
+          : t('countries.addOrImport', 'Añadir / importar delegaciones')}
+      </button>
+
+      {mostrarImportacion ? (
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <ImportarPaises />
+        </div>
+      ) : (
+        <>
       {/* Modal de edición rápida de país */}
       {paisAEditar && (
         <EditarPaisModal
@@ -677,7 +713,7 @@ const MatrizPaises = () => {
           <EmptyState
             icon={Users}
             title={paises.length === 0 ? t('countries.noDelegationsLoaded', 'No hay delegaciones cargadas') : t('countries.noMatchFound', 'Sin coincidencias')}
-            description={paises.length === 0 ? t('countries.importHelp', 'Carga delegaciones desde la pestaña "Comienzo" o importa un archivo Excel/CSV.') : t('countries.filterHelp', 'Prueba con otro término de búsqueda o limpia el filtro de estatus.')}
+            description={paises.length === 0 ? t('countries.matrixImportHelp', 'Añade países sueltos, importa un archivo, pega una lista o carga una plantilla desde el botón superior.') : t('countries.filterHelp', 'Prueba con otro término de búsqueda o limpia el filtro de estatus.')}
             compact={true}
           />
         ) : paisesFiltrados.length > 25 ? (
@@ -700,6 +736,8 @@ const MatrizPaises = () => {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };

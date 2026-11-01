@@ -60,9 +60,6 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('docx') || id.includes('jspdf') || id.includes('mammoth') || id.includes('pdfjs-dist')) {
-              return 'vendor-doc-engine';
-            }
             if (id.includes('xlsx')) {
               return 'vendor-excel-engine';
             }

@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../context/ToastContext';
@@ -79,6 +80,17 @@ export const NetworkCrashMonitor = () => {
   const wasOfflineRef = useRef(false);
   const lastRestoredToastRef = useRef(0);
   const lastOfflineToastRef = useRef(0);
+
+  useEffect(() => {
+    const handleStorageFailure = () => addToast({
+      id: 'openmun_storage_failure', type: 'error', duration: 0,
+      title: t('toast.storageFullTitle', 'No se ha podido guardar en este navegador'),
+      message: t('toast.storageFullMessage', 'La sesión sigue en memoria. Descarga el respaldo antes de cerrar o recargar esta pestaña.'),
+      action: { label: t('toast.networkCrashDownloadBtn', 'Descargar archivo'), onClick: () => stateRef.current.descargarSesionJSON() }
+    });
+    window.addEventListener('openmun_storage_failure', handleStorageFailure);
+    return () => window.removeEventListener('openmun_storage_failure', handleStorageFailure);
+  }, [addToast, t]);
 
   useEffect(() => {
     const handleNetworkLost = () => {

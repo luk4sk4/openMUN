@@ -19,6 +19,7 @@ import {
   Target
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
+import { BotonesConDerechos, ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
 
@@ -132,11 +133,11 @@ const VotacionOficial = () => {
   } else if (votosEmitidos === 0) {
     estadoVotacion = 'SIN_VOTOS';
     mensajeDictamen = `${t('voting.noVotesRegistered', 'No se han registrado votos todavía.')} ${t('voting.requires', 'Requiere')} ${requeridos} ${t('voting.vote', 'voto')}(s) ${t('voting.toApprove', 'para aprobar.')} ${t('voting.startRollCall', 'Inicia el Roll Call o vota manualmente.')}`;
-  } else if (vetoEjercido) {
+  } else if (vetoEjercido && votosPendientes === 0) {
     estadoVotacion = 'VETADA';
     const nombresVeto = paisesConVetoEfectuado.map(p => p.nombre).join(', ');
     mensajeDictamen = `${t('voting.vetoedBy', 'REPROBADA POR VETO (Veto ejercido por:')} ${nombresVeto})`;
-  } else if (votosPendientes === 0 || (favor >= requeridos && tipoMayoria !== 'consensus')) {
+  } else if (votosPendientes === 0) {
     if (pasaSuperaMayoria) {
       estadoVotacion = 'APROBADA';
       mensajeDictamen = `${t('voting.passedExclamation', '¡APROBADA!')} (${favor} ${t('voting.inFavor', 'A Favor')} vs ${contra} ${t('voting.against', 'En Contra')}${tipoVotacion === 'substantive' ? `, ${abstencion} ${t('voting.abstentions', 'Abstenciones')}` : ''})`;
@@ -552,6 +553,7 @@ const VotacionOficial = () => {
 
               {/* Botones de Voto Roll Call */}
               <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={registrarYAvanzarRollCall} />
                 <button
                   onClick={() => registrarYAvanzarRollCall('favor')}
                   style={{
@@ -637,6 +639,8 @@ const VotacionOficial = () => {
           )}
         </div>
       )}
+
+      <ListaDerechos paises={paises} sesion={votacionSesion} />
 
       {/* ── Contadores y Barra de Distribución (VOTOS DE LA GENTE DESTACADOS) ── */}
       <div style={{
@@ -826,7 +830,7 @@ const VotacionOficial = () => {
               {esAusente ? (
                 <span style={{ fontSize: '0.72rem', color: '#ef4444', fontStyle: 'italic' }}>{t('countries.absent', 'Ausente')}</span>
               ) : (
-                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.35rem', alignItems: 'center', flexShrink: 1 }}>
                   {/* Badge Prominente de Estado de Voto */}
                   {votoActual === 'favor' && (
                     <span style={{ fontSize: '0.68rem', fontWeight: '800', backgroundColor: '#15803d', color: '#ffffff', padding: '0.15rem 0.45rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -849,6 +853,7 @@ const VotacionOficial = () => {
                     </span>
                   )}
 
+                  <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={v => registrarVotoPais(p.id, v)} voto={votoActual} conDerechos={votacionSesion?.derechos?.[p.id]} />
                   {/* Botón A FAVOR */}
                   <button
                     onClick={() => registrarVotoPais(p.id, votoActual === 'favor' ? null : 'favor')}

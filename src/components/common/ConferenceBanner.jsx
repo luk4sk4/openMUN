@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Megaphone, AlertCircle, Info, AlertTriangle, X, Radio, EyeOff, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

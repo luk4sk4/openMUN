@@ -1,3 +1,4 @@
+import { sessionStore as localStorage, setSessionScope } from '../utils/sessionStorage';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import peerService, { MSG_TYPES, generateRoomCode, DEFAULT_ROOM_SETTINGS } from '../services/peerService';
@@ -52,15 +53,18 @@ export const P2PProvider = ({ children }) => {
   });
 
   const [secretPassword, setSecretPassword] = useState(() => {
-    return localStorage.getItem('openmun_secret_pass') || 'secreto123';
+    const saved = localStorage.getItem('openmun_secret_pass');
+    return saved && saved !== 'secreto123' ? saved : crypto.randomUUID().slice(0, 12);
   });
 
   const [backroomPassword, setBackroomPassword] = useState(() => {
-    return localStorage.getItem('openmun_backroom_pass') || 'crisis123';
+    const saved = localStorage.getItem('openmun_backroom_pass');
+    return saved && saved !== 'crisis123' ? saved : crypto.randomUUID().slice(0, 12);
   });
 
   const [staffPassword, setStaffPassword] = useState(() => {
-    return localStorage.getItem('openmun_staff_pass') || 'staff123';
+    const saved = localStorage.getItem('openmun_staff_pass');
+    return saved && saved !== 'staff123' ? saved : crypto.randomUUID().slice(0, 12);
   });
 
   // Ajustes de Sala y Permisos de Delegados
@@ -191,9 +195,18 @@ export const P2PProvider = ({ children }) => {
   // ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const unsubscribe = peerService.subscribe((event, data) => {
+      if (event === 'initial_state_loaded') {
+        sessionActionHandlersRef.current.onSyncState?.(data);
+        if (Array.isArray(data.notes)) setNotes(data.notes);
+        if (Array.isArray(data.eventosCrisis)) localStorage.setItem('openmun_crisis_eventos', JSON.stringify(data.eventosCrisis));
+        if (data.relojCrisis) localStorage.setItem('openmun_crisis_reloj', JSON.stringify(data.relojCrisis));
+        window.dispatchEvent(new CustomEvent('openmun_crisis_update', { detail: { eventos: data.eventosCrisis || [], reloj: data.relojCrisis } }));
+      }
+
       if (event === 'host_ready') {
         setConnectionStatus('host_active');
         setRole('chair');
+        setNotes(peerService.latestNotes || []);
         setError(null);
         setRoomId(data.roomId);
         if (data.roomSettings) setRoomSettings(data.roomSettings);
@@ -269,6 +282,8 @@ export const P2PProvider = ({ children }) => {
         setConnectionStatus('disconnected');
         addNotification(data.reason || 'Desconectado de la sala', 'warning');
       }
+
+      if (event === 'action_error') addNotification(data.error, 'warning');
 
       if (event === 'error') {
         const errorMsg = typeof data === 'string' ? data : (data?.error || '');
@@ -373,12 +388,7 @@ export const P2PProvider = ({ children }) => {
 
       // Recepción de Notas con de-duplicación estricta
       if (event === 'note_for_chair') {
-        setNotes(prev => {
-          if (prev.some(n => n.id === data.id || (n.from === data.from && n.to === data.to && n.text === data.text && Math.abs((n.timestamp || 0) - (data.timestamp || 0)) < 3000))) {
-            return prev;
-          }
-          return [data, ...prev];
-        });
+        setNotes(prev => [data, ...prev.filter(n => n.id !== data.id)]);
         setUnreadNotesCount(prev => prev + 1);
         addNotification(`Nota de ${data.from} para ${data.to}`, 'info');
       }
@@ -518,12 +528,7 @@ export const P2PProvider = ({ children }) => {
           const { success, mode, message: msgText } = message.payload || {};
           addNotification(msgText || (success ? 'Solicitud procesada' : 'No se pudo procesar'), success ? 'success' : 'warning');
         } else if (message.type === MSG_TYPES.NOTE_RECEIVED) {
-          setNotes(prev => {
-            if (prev.some(n => n.id === message.payload.id || (n.from === message.payload.from && n.to === message.payload.to && n.text === message.payload.text && Math.abs((n.timestamp || 0) - (message.payload.timestamp || 0)) < 3000))) {
-              return prev;
-            }
-            return [message.payload, ...prev];
-          });
+          setNotes(prev => [message.payload, ...prev.filter(n => n.id !== message.payload.id)]);
           setUnreadNotesCount(prev => prev + 1);
           addNotification(`Nueva nota de ${message.payload.from}`, 'info');
         } else if (message.type === MSG_TYPES.BROADCAST_ANNOUNCEMENT) {
@@ -553,7 +558,11 @@ export const P2PProvider = ({ children }) => {
     localStorage.setItem('openmun_secret_pass', secretPassword);
     localStorage.setItem('openmun_backroom_pass', backroomPassword);
     localStorage.setItem('openmun_staff_pass', staffPassword);
-  }, [secretPassword, backroomPassword, staffPassword]);
+    peerService.secretPassword = secretPassword;
+    peerService.backroomPassword = backroomPassword;
+    peerService.staffPassword = staffPassword;
+    if (connectionStatus === 'host_active') peerService.emitSocketMessage({ type: 'ROOM_CREDENTIALS', payload: { secretariat: secretPassword, backroom: backroomPassword, staff: staffPassword } });
+  }, [secretPassword, backroomPassword, staffPassword, connectionStatus]);
 
   useEffect(() => {
     localStorage.setItem('openmun_room_settings', JSON.stringify(roomSettings));
@@ -611,8 +620,10 @@ export const P2PProvider = ({ children }) => {
     setConnectionStatus('connecting');
     setError(null);
     try {
+      localStorage.setItem('openmun_mesa_activa', 'false');
       const finalTargetId = (targetRoomId || roomId || '').trim();
       const previousRoomId = typeof window !== 'undefined' ? localStorage.getItem('openmun_last_room_id') : null;
+      setSessionScope(finalTargetId);
       const isDifferentRoom = Boolean(previousRoomId && finalTargetId && previousRoomId.trim().toUpperCase() !== finalTargetId.toUpperCase());
 
       // Si es una sala distinta a la previa, limpiar datos de la sala anterior ANTES de conectar
@@ -797,6 +808,7 @@ export const P2PProvider = ({ children }) => {
         to,
         text,
         type,
+        status: role === 'delegate' && roomSettings.requireStaffNoteApproval ? 'pending' : 'delivered',
         timestamp: Date.now(),
         isOutgoing: true
       };
@@ -806,7 +818,12 @@ export const P2PProvider = ({ children }) => {
       });
     }
     return ok;
-  }, [clientCountry, role]);
+  }, [clientCountry, role, roomSettings.requireStaffNoteApproval]);
+
+  const reviewNote = useCallback((id, status) => {
+    if (role !== 'staff' || !['approved', 'rejected'].includes(status)) return false;
+    return peerService.reviewNoteAsClient(id, status);
+  }, [role]);
 
   const broadcastAnnouncement = useCallback((annData) => {
     const ann = {
@@ -1030,6 +1047,7 @@ export const P2PProvider = ({ children }) => {
     selectCountry,
     resetCountrySelection,
     sendNote,
+    reviewNote,
     requestSpeaking,
     kickPeer,
     broadcastCurrentState,
@@ -1086,6 +1104,7 @@ export const P2PProvider = ({ children }) => {
     selectCountry,
     resetCountrySelection,
     sendNote,
+    reviewNote,
     requestSpeaking,
     kickPeer,
     broadcastCurrentState,

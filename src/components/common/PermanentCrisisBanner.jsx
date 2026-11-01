@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Flame, 

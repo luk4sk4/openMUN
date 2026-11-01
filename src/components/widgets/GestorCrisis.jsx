@@ -1,3 +1,5 @@
+import { useElapsedInterval } from '../../hooks/useElapsedInterval';
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   AlertTriangle,
@@ -433,37 +435,13 @@ const GestorCrisis = () => {
     e.target.value = '';
   };
 
-  // Manejador del reloj de simulación
-  useEffect(() => {
-    let timer = null;
-    if (relojSimulacion.activo) {
-      const intervalMs = Math.max(100, Math.floor(1000 / relojSimulacion.velocidad));
-      timer = setInterval(() => {
-        setRelojSimulacion(prev => {
-          let nuevosMin = prev.minutos + 1;
-          let nuevasHoras = prev.horas;
-          let nuevoDia = prev.dia;
-
-          if (nuevosMin >= 60) {
-            nuevosMin = 0;
-            nuevasHoras += 1;
-          }
-          if (nuevasHoras >= 24) {
-            nuevasHoras = 0;
-            nuevoDia += 1;
-          }
-
-          return {
-            ...prev,
-            minutos: nuevosMin,
-            horas: nuevasHoras,
-            dia: nuevoDia
-          };
-        });
-      }, intervalMs);
-    }
-    return () => clearInterval(timer);
-  }, [relojSimulacion.activo, relojSimulacion.velocidad]);
+  // Simulation speed converts elapsed real time into simulated minutes.
+  useElapsedInterval(relojSimulacion.activo, elapsed => {
+    setRelojSimulacion(prev => {
+      const total = prev.minutos + prev.horas * 60 + elapsed;
+      return { ...prev, minutos: total % 60, horas: Math.floor(total / 60) % 24, dia: prev.dia + Math.floor(total / 1440) };
+    });
+  }, 1000 / Math.max(0.01, Number(relojSimulacion.velocidad) || 1));
 
   const showToast = (msg) => {
     setFeedbackToast(msg);

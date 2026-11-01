@@ -123,7 +123,7 @@ openMUN prioriza la inclusión en el entorno académico y de debate:
 ## 🚀 Instalación y Despliegue
 
 ### Requisitos Previos
-- [Node.js](https://nodejs.org/) (v18 o superior)
+- [Node.js](https://nodejs.org/) (v22.13 o superior para ejecutar también el backend)
 - Gestor de paquetes: `npm`, `pnpm` o `yarn`
 
 ### Pasos de Instalación
@@ -189,3 +189,8 @@ openMUN/
 ## 📄 Licencia
 
 Este proyecto está licenciado bajo los términos de la **GNU Affero General Public License v3.0 (AGPLv3)**. Consulta el archivo `LICENSE` para más detalles.
+
+
+## Backend y moderación de notas
+
+El backend requiere Node.js 22.13 o posterior. Consulta [la guía de correcciones y configuración](docs/reliability-and-notes.md) para el esquema SQLite, permisos, despliegue conjunto y aprobación de notas de delegados por staff. Ejecuta `npm ci --prefix backend` para instalar sus dependencias y `npm test` para las pruebas de regresión.

@@ -26,6 +26,10 @@ export function createStateDelta(oldState, newState, prefix = '') {
   if (oldIsArray !== newIsArray) {
     return { [prefix]: newState };
   }
+  // Replacing resized arrays keeps deletions from shifting later indexes.
+  if (oldIsArray && oldState.length !== newState.length) {
+    return { [prefix]: newState };
+  }
 
   const diff = {};
 
@@ -79,6 +83,11 @@ export function applyStateDelta(currentState, diff) {
 
   for (const [path, value] of Object.entries(diff)) {
     const keys = path.split('.');
+    if (keys.some(key => ['__proto__', 'prototype', 'constructor'].includes(key))) continue;
+    if (path === '') {
+      updatedState = value;
+      continue;
+    }
     
     // Navegar y clonar la ruta hasta la penúltima clave
     let curr = updatedState;

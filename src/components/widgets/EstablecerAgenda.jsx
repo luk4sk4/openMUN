@@ -30,6 +30,7 @@ import {
 import { useSession } from '../../context/SessionContext';
 import { useTranslation } from 'react-i18next';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import DebateAgenda from './DebateAgenda';
 
 const COMITES_PREDEFINIDOS = [
   { nombre: 'Consejo de Seguridad (UNSC / CSNU)', icon: Shield, color: '#3b82f6' },
@@ -539,6 +540,7 @@ const EstablecerAgenda = () => {
         paddingRight: '2px',
         minHeight: 0
       }}>
+        <DebateAgenda />
         {temas.length === 0 ? (
           <div style={{
             margin: 'auto',

@@ -117,6 +117,7 @@ const MensajeriaComite = ({
   const effectiveRole = propRole || p2p.role || 'chair';
   const effectiveCountry = propCountry || p2p.clientCountry || '';
   const settings = p2p.roomSettings || {};
+  const reviewButtonStyle = { backgroundColor: 'var(--card-header-bg)', color: 'var(--text-color)', borderRadius: '7px', padding: '0.45rem 0.75rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };
 
   // Lista de países del comité
   const rawPaises = propPaises || session.paises || p2p.remoteSessionState?.paises || [];
@@ -187,6 +188,7 @@ const MensajeriaComite = ({
   const notasRol = useMemo(() => {
     return notes.filter(n => {
       if (!n || !n.text) return false;
+      if (['pending', 'rejected'].includes(n.status)) return ['staff', 'chair', 'secretariat'].includes(effectiveRole) || (effectiveRole === 'delegate' && n.from?.toLowerCase().trim() === effectiveCountry.toLowerCase().trim());
 
       // Host Chair y Secretaría ven todas las notas del comité
       if (effectiveRole === 'chair' || effectiveRole === 'secretariat') {
@@ -197,6 +199,7 @@ const MensajeriaComite = ({
       if (effectiveRole === 'staff') {
         const dest = (n.to || '').toUpperCase().trim();
         return (
+          Boolean(n.reviewedAt) ||
           dest === 'STAFF' ||
           dest === 'CHAIR' ||
           dest === 'MESA' ||
@@ -288,7 +291,7 @@ const MensajeriaComite = ({
         try { playChimeAlert(0.35); } catch {}
       }
       setTextoNota('');
-      setFeedbackEnvio('Nota enviada con éxito');
+      setFeedbackEnvio(effectiveRole === 'delegate' && settings.requireStaffNoteApproval ? t('messaging.waitingStaff', 'Nota pendiente de aprobación de staff') : t('messaging.noteSent', 'Nota enviada con éxito'));
       setTimeout(() => setFeedbackEnvio(null), 2500);
 
       if (typeof onNoteSent === 'function') {
@@ -541,6 +544,7 @@ const MensajeriaComite = ({
               </span>
             </div>
 
+            {effectiveRole === 'delegate' && settings.requireStaffNoteApproval && <p role="status" style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted-text)' }}>{t('messaging.waitingStaffDescription', 'Tus notas serán revisadas por staff antes de entregarse.')}</p>}
             <form onSubmit={handleEnviarNota} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {/* Selector de Destinatario */}
               <div>
@@ -900,6 +904,17 @@ const MensajeriaComite = ({
                         transition: 'all 0.15s ease'
                       }}
                     >
+                      {nota.status && (
+                        <div role="status" style={{ fontSize: '0.75rem', color: 'var(--text-color)', borderLeft: `3px solid ${nota.status === 'rejected' ? '#ef4444' : nota.status === 'pending' ? '#eab308' : '#22c55e'}`, paddingLeft: '0.4rem' }}>
+                          {nota.status === 'pending' ? t('messaging.waitingStaff', 'Pendiente de aprobación de staff') : nota.status === 'rejected' ? t('messaging.rejectedByStaff', 'Rechazada por staff; no entregada') : nota.status === 'approved' ? t('messaging.approvedByStaff', 'Aprobada por staff y entregada') : t('messaging.delivered', 'Entregada')}
+                        </div>
+                      )}
+                      {effectiveRole === 'staff' && nota.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button type="button" style={{ ...reviewButtonStyle, border: '1px solid #22c55e' }} onClick={() => p2p.reviewNote(nota.id, 'approved')}>{t('messaging.approveNote', 'Aprobar y entregar')}</button>
+                          <button type="button" style={{ ...reviewButtonStyle, border: '1px solid #ef4444' }} onClick={() => p2p.reviewNote(nota.id, 'rejected')}>{t('messaging.rejectNote', 'Rechazar')}</button>
+                        </div>
+                      )}
                       {/* Cabecera de la nota */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>

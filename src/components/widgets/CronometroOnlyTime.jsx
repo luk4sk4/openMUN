@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useDebateRunning } from '../../hooks/useDebateRunning';
+import { useElapsedInterval } from '../../hooks/useElapsedInterval';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Plus, Clock, ShieldAlert, Edit, Check, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useTranslation } from 'react-i18next';
@@ -9,13 +11,12 @@ const CronometroOnlyTime = () => {
 
   const [tiempoTotalSeg, setTiempoTotalSeg] = useState(caucusActivo?.tiempoTotal || 600); // 10 min
   const [tiempoTotalInicial, setTiempoTotalInicial] = useState(caucusActivo?.tiempoTotal || 600);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
   const [editando, setEditando] = useState(false);
 
   const [inputMin, setInputMin] = useState(10);
   const [inputSeg, setInputSeg] = useState(0);
 
-  const timerRef = useRef(null);
 
   useEffect(() => {
     if (caucusActivo?.tiempoTotal) {
@@ -25,22 +26,12 @@ const CronometroOnlyTime = () => {
     }
   }, [caucusActivo]);
 
-  useEffect(() => {
-    if (corriendo) {
-      timerRef.current = setInterval(() => {
-        setTiempoTotalSeg(prev => {
-          if (prev <= 1) {
-            setCorriendo(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [corriendo]);
+  useElapsedInterval(corriendo, elapsed => {
+    setTiempoTotalSeg(prev => {
+      if (prev <= elapsed) setCorriendo(false);
+      return Math.max(0, prev - elapsed);
+    });
+  });
 
   // Sincronizar inputs cuando cambia el tiempo y no se está editando
   useEffect(() => {

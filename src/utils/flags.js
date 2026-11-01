@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from './sessionStorage';
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilidades de Banderas e Imágenes de Delegaciones para openMUN
 // ─────────────────────────────────────────────────────────────────────────────

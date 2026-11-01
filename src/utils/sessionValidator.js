@@ -1,9 +1,13 @@
+import { sessionStore as localStorage } from './sessionStorage.js';
 /**
  * sessionValidator.js
  * Validador robusto de archivos de sesión JSON para OpenMUN.
  * Comprueba sintaxis, estructura requerida y tipos de datos antes de importar
  * para prevenir errores de ejecución, inyecciones XSS y roturas de estado.
  */
+
+import { normalizarDebateAgenda } from './agendaDebate.js';
+import { normalizarSesionesDebate } from './debateSessions.js';
 
 export const SESSION_STORAGE_KEYS = [
   'openmun_tipo_sesion',
@@ -95,6 +99,7 @@ export function sanitizeString(str, maxLength = 50000) {
   if (typeof str !== 'string') return '';
   let clean = str;
   if (clean.length > maxLength) {
+    if (maxLength === 1024 * 1024) throw new Error('La imagen de bandera supera el límite de 1 MiB.');
     clean = clean.slice(0, maxLength);
   }
   clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
@@ -122,12 +127,19 @@ export function deepSanitize(val, depth = 0) {
     if (k === '__proto__' || k === 'constructor' || k === 'prototype') {
       continue;
     }
-    cleanObj[k] = deepSanitize(v, depth + 1);
+    cleanObj[k] = (k === 'bandera' || k === 'flag') && typeof v === 'string'
+      ? sanitizeString(v, 1024 * 1024)
+      : deepSanitize(v, depth + 1);
   }
   return cleanObj;
 }
 
 export function validateSessionJSON(rawInput) {
+  try { return validateSessionData(rawInput); }
+  catch (error) { return { valid: false, errorType: 'INVALID_DATA', message: error.message || 'El respaldo contiene datos no válidos.' }; }
+}
+
+function validateSessionData(rawInput) {
   let parsed = null;
 
   // 1. Validar sintaxis JSON si viene como texto
@@ -182,15 +194,27 @@ export function validateSessionJSON(rawInput) {
   }
 
   // 4. Comprobar si tiene claves representativas de openMUN y sanear snapshot
-  const rawSnapshot = parsed.localStorageSnapshot && typeof parsed.localStorageSnapshot === 'object'
-    ? parsed.localStorageSnapshot
-    : {};
+  const rawSnapshot = {
+    ...Object.fromEntries(Object.entries(parsed).filter(([key]) => ALLOWED_STORAGE_KEYS.has(key))),
+    ...(parsed.localStorageSnapshot && typeof parsed.localStorageSnapshot === 'object' ? parsed.localStorageSnapshot : {})
+  };
 
   const snapshot = {};
   for (const [key, value] of Object.entries(rawSnapshot)) {
     if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
-      if (ALLOWED_STORAGE_KEYS.has(key) || (key.startsWith('openmun_') && !key.includes('__'))) {
-        snapshot[key] = typeof value === 'string' ? sanitizeString(value) : deepSanitize(value);
+        if (ALLOWED_STORAGE_KEYS.has(key)) {
+          let decoded = value;
+          if (typeof value === 'string' && !['openmun_comite', 'openmun_tipo_sesion'].includes(key)) {
+            try { decoded = JSON.parse(value); } catch {
+              return { valid: false, errorType: 'CORRUPT_SNAPSHOT', message: `El campo ${key} no contiene JSON válido.` };
+            }
+          }
+          const arrayKeys = ['openmun_paises', 'openmun_oradores', 'openmun_oradores_caucus', 'openmun_intervenciones', 'openmun_mociones', 'openmun_historico_mociones', 'openmun_crisis_eventos', 'openmun_notes', 'openmun_announcements'];
+          if (arrayKeys.includes(key) ? !Array.isArray(decoded) : !['openmun_comite', 'openmun_tipo_sesion'].includes(key) && decoded !== null && (typeof decoded !== 'object' || Array.isArray(decoded))) {
+            return { valid: false, errorType: 'CORRUPT_SNAPSHOT', message: `El campo ${key} tiene un formato incorrecto.` };
+          }
+          if (['openmun_comite', 'openmun_tipo_sesion'].includes(key) && typeof decoded !== 'string') return { valid: false, errorType: 'CORRUPT_SNAPSHOT', message: `El campo ${key} debe ser texto.` };
+          snapshot[key] = deepSanitize(decoded);
       }
     }
   }
@@ -259,7 +283,12 @@ export function validateSessionJSON(rawInput) {
 
   // 5. Validar y sanear estructuras internas para evitar crashes
   const sanitized = deepSanitize(parsed) || {};
+  const objects = ['agendaSesion', 'caucusActivo', 'votacionSesion', 'enmiendasSesion', 'proyectoResolucion', 'relojCrisis', 'roomSettings'];
+  if (objects.some(key => sanitized[key] != null && (typeof sanitized[key] !== 'object' || Array.isArray(sanitized[key])))) return { valid: false, errorType: 'CORRUPT_STATE', message: 'Una configuración de la sesión tiene un formato incorrecto.' };
   sanitized.localStorageSnapshot = snapshot;
+  for (const key of ALLOWED_STORAGE_KEYS) delete sanitized[key];
+  const arrays = ['registroIntervenciones', 'intervenciones', 'mociones', 'historicoMociones', 'eventosCrisis', 'alertasCrisis', 'notes', 'announcements'];
+  if (arrays.some(key => sanitized[key] !== undefined && !Array.isArray(sanitized[key]))) return { valid: false, errorType: 'CORRUPT_LIST', message: 'Una lista de la sesión tiene un formato incorrecto.' };
 
   // Países
   const rawPaises = sanitized.paises || snapshot.openmun_paises;
@@ -277,7 +306,7 @@ export function validateSessionJSON(rawInput) {
       id: sanitizeString(p.id || `pais_${Date.now()}_${idx}`, 100),
       nombre: sanitizeString(typeof p.nombre === 'string' ? p.nombre : (p.name || `Delegación ${idx + 1}`), 200),
       estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Presente', 50),
-      bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 50),
+      bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 1024 * 1024),
       tieneVeto: Boolean(p.tieneVeto || p.veto),
     }));
   }
@@ -420,7 +449,7 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
   const paisesNormalizados = rawPaises.filter(p => p && typeof p === 'object').map((p, idx) => ({
     id: sanitizeString(p.id || `pais_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`, 100),
     nombre: sanitizeString(typeof p.nombre === 'string' && p.nombre.trim() ? p.nombre.trim() : (p.name || `Delegación ${idx + 1}`), 200),
-    bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 50),
+    bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 1024 * 1024),
     veto: Boolean(p.veto !== undefined ? p.veto : (p.tieneVeto !== undefined ? p.tieneVeto : false)),
     estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Ausente', 50),
     equipo: sanitizeString(typeof p.equipo === 'string' ? p.equipo.trim() : (p.team || p.colegio || p.escuela || p.institucion || ''), 150),
@@ -441,6 +470,9 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
     temasPropuestos: Array.isArray(rawAgenda.temasPropuestos) ? rawAgenda.temasPropuestos : (Array.isArray(rawAgenda.temas) ? rawAgenda.temas : []),
     ordenDia: Array.isArray(rawAgenda.ordenDia) ? rawAgenda.ordenDia : (Array.isArray(rawAgenda.agenda) ? rawAgenda.agenda : [])
   };
+  agendaNormalizada.debateAgenda = normalizarDebateAgenda(rawAgenda.debateAgenda, agendaNormalizada.temasPropuestos);
+  agendaNormalizada.sesionesDebate = normalizarSesionesDebate(rawAgenda.sesionesDebate);
+  agendaNormalizada.ultimaActividadDebate = Number.isSafeInteger(rawAgenda.ultimaActividadDebate) && rawAgenda.ultimaActividadDebate > 0 ? rawAgenda.ultimaActividadDebate : null;
 
   // 5. Oradores y Listas
   let rawOradores = inner.oradoresCola || inner.oradoresGSL || snapshot.openmun_oradores;

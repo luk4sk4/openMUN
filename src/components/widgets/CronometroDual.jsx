@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useDebateRunning } from '../../hooks/useDebateRunning';
+import { useElapsedInterval } from '../../hooks/useElapsedInterval';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, SkipForward, Clock, Trash2, ArrowUpDown, GripVertical, Mic, ChevronUp, ChevronDown, Plus, Minus, PictureInPicture2 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
@@ -30,12 +32,11 @@ const CronometroDual = ({ modoInicial = null }) => {
   const [tiempoTotalInicial, setTiempoTotalInicial] = useState(caucusActivo?.tiempoTotal || 600);
   const [tiempoOradorSeg, setTiempoOradorSeg] = useState(caucusActivo?.tiempoOrador || 45);
   const [limiteOradorSeg, setLimiteOradorSeg] = useState(caucusActivo?.tiempoOrador || 45);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
 
   const [busquedaPais, setBusquedaPais] = useState('');
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
-  const timerRef = useRef(null);
 
   // Hook de Picture-in-Picture interactivo
   const { isPipActive, isSupported: isPipSupported, pipContainer, togglePip, closePip } = usePictureInPictureTimer();
@@ -53,24 +54,10 @@ const CronometroDual = ({ modoInicial = null }) => {
   }, [caucusActivo]);
 
   // Conteo reactivo e ininterrumpido
-  useEffect(() => {
-    if (corriendo) {
-      timerRef.current = setInterval(() => {
-        // Conteo del Tiempo Total Caucus
-        if (tipoMocion !== 'Tour de Table') {
-          setTiempoTotalSeg(prev => prev - 1);
-        }
-
-        // Conteo del Tiempo Orador
-        if (!esTiempoSoloGeneral) {
-          setTiempoOradorSeg(prev => prev - 1);
-        }
-      }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [corriendo, tipoMocion, esTiempoSoloGeneral]);
+  useElapsedInterval(corriendo, elapsed => {
+    if (tipoMocion !== 'Tour de Table') setTiempoTotalSeg(prev => prev - elapsed);
+    if (!esTiempoSoloGeneral) setTiempoOradorSeg(prev => prev - elapsed);
+  });
 
   const handleStartPause = () => setCorriendo(!corriendo);
 

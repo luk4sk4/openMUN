@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Radio, 
@@ -51,6 +52,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import CountryFlag from '../common/CountryFlag';
+import SpeakerNotesPanel from '../common/SpeakerNotesPanel';
+import { getCurrentSpeaker } from '../../utils/speakerNotes';
 import { getFlagEmoji } from '../../utils/flags';
 import { useP2P } from '../../context/P2PContext';
 import { useSession } from '../../context/SessionContext';
@@ -330,10 +333,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const state = remoteSessionState || {};
   const nombreComite = sessionNombreComite || state.comision || state.nombreComite || 'Comité en Vivo';
   const temaActual = sessionAgendaSesion?.temaActual || sessionCaucusActivo?.tema || state.agendaSesion?.temaActual || state.caucusActivo?.tema || 'En Discusión';
-  const oradoresGSL = sessionOradoresCola?.length > 0 ? sessionOradoresCola : (state.oradoresCola || []);
-  const oradoresCaucus = sessionOradoresCaucus?.length > 0 ? sessionOradoresCaucus : (state.oradoresCaucus || []);
+  const oradoresGSL = sessionOradoresCola ?? state.oradoresCola ?? [];
+  const oradoresCaucus = sessionOradoresCaucus ?? state.oradoresCaucus ?? [];
   const caucusActivo = (sessionCaucusActivo && sessionCaucusActivo.activo !== undefined) ? sessionCaucusActivo : (state.caucusActivo || {});
-  const oradorActual = caucusActivo.activo ? (oradoresCaucus[0]?.nombre || 'Sin orador') : (oradoresGSL[0]?.nombre || 'Sin orador');
+  const oradorActual = getCurrentSpeaker(oradoresGSL, oradoresCaucus, caucusActivo);
   const paises = sessionPaises?.length > 0 ? sessionPaises : (state.paises || []);
 
   const handleExportarNotasCSV = () => {
@@ -897,6 +900,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
       {/* ── Contenido Principal de Secretaría ── */}
       <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+        <SpeakerNotesPanel orador={oradorActual} modalidad={caucusActivo.activo ? caucusActivo.tipo || 'Caucus' : 'GSL'} tema={temaActual} />
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA: CRISIS & NOTICIERO                             */}
         {/* ═══════════════════════════════════════════════════════ */}

@@ -1,3 +1,5 @@
+import { sessionStore as localStorage } from '../utils/sessionStorage';
+import { authorizedFetch } from './accessCredentials';
 /**
  * Servicio de Cliente HTTP para la API de Conferencias y Sincronización OpenMUN
  * Conectado al backend Node.js + Express + SQLite + Socket.io
@@ -19,7 +21,7 @@ export const API_BASE_URL = getApiBaseUrl();
 
 async function safeFetch(url, options) {
   try {
-    const res = await fetch(url, options);
+    const res = await authorizedFetch(url, options);
     return res;
   } catch (err) {
     if (typeof window !== 'undefined') {
@@ -117,7 +119,7 @@ export const conferenceService = {
   async crearConferencia({ id, nombre, pin_admin, pin_acceso, email_admin }) {
     const cleanId = id.toLowerCase().trim();
     const cleanEmail = email_admin ? email_admin.trim() : null;
-    const res = await fetch(`${API_BASE_URL}/api/conferencias`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/conferencias`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -130,6 +132,7 @@ export const conferenceService = {
     });
     const data = await handleResponse(res);
     if (!data.id) data.id = cleanId;
+    localStorage.setItem(`openmun_conf_admin_pin_${cleanId}`, pin_admin.trim());
     if (cleanEmail && !data.email_admin) data.email_admin = cleanEmail;
     invalidateConferenceCache(cleanId);
     return data;
@@ -138,7 +141,7 @@ export const conferenceService = {
   async accederConferencia(id, pin = '') {
     const cleanId = String(id).trim().toLowerCase();
     const effectivePin = pin ? String(pin).trim() : (localStorage.getItem(`openmun_conf_pin_${cleanId}`) || '');
-    const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}/acceso`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}/acceso`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: effectivePin ? effectivePin : undefined })
@@ -198,7 +201,7 @@ export const conferenceService = {
       payload.email_admin = email_admin ? String(email_admin).trim() : null;
     }
 
-    const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -234,13 +237,13 @@ export const conferenceService = {
   async crearOActualizarComite(conferenciaId, { id, nombre, pin_mesa, datos_json }) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
     const finalId = id ? id.toLowerCase().trim() : `${cleanConfId}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
-    const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/comites`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/comites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: finalId,
         nombre: nombre ? nombre.trim() : undefined,
-        pin_mesa: pin_mesa ? pin_mesa.trim() : null,
+        pin_mesa: pin_mesa === undefined ? undefined : pin_mesa ? pin_mesa.trim() : null,
         datos_json: datos_json || {}
       })
     });
@@ -259,48 +262,12 @@ export const conferenceService = {
     if (topico_actual !== undefined) payload.topico_actual = topico_actual !== null ? String(topico_actual).trim() : '';
     if (datos_json !== undefined) payload.datos_json = datos_json;
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.status === 404 && (payload.tipo_sesion || payload.topico_actual)) {
-        const estadoRes = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}/estado`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tipo_sesion: payload.tipo_sesion,
-            topico_actual: payload.topico_actual
-          })
-        });
-        if (estadoRes.ok) {
-          requestCache.clear();
-          return await handleResponse(estadoRes);
-        }
-      }
-      const data = await handleResponse(res);
-      requestCache.clear();
-      return data;
-    } catch (e) {
-      if (payload.tipo_sesion || payload.topico_actual) {
-        try {
-          const estadoRes = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}/estado`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tipo_sesion: payload.tipo_sesion,
-              topico_actual: payload.topico_actual
-            })
-          });
-          if (estadoRes.ok) {
-            requestCache.clear();
-            return await estadoRes.json().catch(() => ({ ok: true }));
-          }
-        } catch (errEstado) {}
-      }
-      throw e;
-    }
+    const res = await authorizedFetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const data = await handleResponse(res);
+    requestCache.clear();
+    return data;
   },
 
   async actualizarEstadoComite(comiteIdOrConfId, comiteIdOrData, maybeData = null) {
@@ -316,7 +283,7 @@ export const conferenceService = {
   // ── 3. AVISOS Y BROADCAST ──
   async crearAviso(conferenciaId, { comite_id, emisor, tipo, mensaje }) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
-    const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/avisos`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/avisos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -363,15 +330,15 @@ export const conferenceService = {
       return data;
     } catch (err) {
       // Si falla la red, intentar devolver avisos en memoria para mantener la UI funcionando
-      if (_avisosMemoria.length > 0) {
-        return { avisos: _avisosMemoria };
-      }
+      if (err.status === 401 || err.status === 403) throw err;
+      const cached = _avisosMemoria.filter(a => a.conferencia_id === cleanConfId);
+      if (cached.length > 0) return { avisos: cached };
       throw err;
     }
   },
 
   async desactivarAviso(avisoId, conferenciaId = null) {
-    const res = await fetch(`${API_BASE_URL}/api/avisos/${encodeURIComponent(avisoId)}/desactivar`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/avisos/${encodeURIComponent(avisoId)}/desactivar`, {
       method: 'PATCH'
     });
     const data = await handleResponse(res);
@@ -398,7 +365,7 @@ export const conferenceService = {
 
   async crearTareaChecklist(conferenciaId, { comite_id, titulo, asignado_a }) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
-    const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -413,7 +380,7 @@ export const conferenceService = {
   },
 
   async toggleTareaChecklist(tareaId, completado) {
-    const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}/toggle`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}/toggle`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completado: Boolean(completado) })
@@ -424,7 +391,7 @@ export const conferenceService = {
   },
 
   async eliminarTareaChecklist(tareaId) {
-    const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}`, {
       method: 'DELETE'
     });
     const data = await handleResponse(res);
@@ -438,7 +405,7 @@ export const conferenceService = {
     if (comiteId) {
       url += `?comite_id=${encodeURIComponent(String(comiteId).trim())}`;
     }
-    const res = await fetch(url, {
+    const res = await authorizedFetch(url, {
       method: 'DELETE'
     });
     const data = await handleResponse(res);
@@ -468,13 +435,15 @@ export const conferenceService = {
     }
 
     // Validar siempre con el servidor backend mediante PATCH /api/conferencias/:id
-    const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}`, {
+    const res = await authorizedFetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin_admin_actual: cleanPin })
     });
 
     const data = await handleResponse(res);
+
+    invalidateConferenceCache(cleanId);
 
     // Guardar PIN verificado en la sesión activa local y en localStorage
     try {
@@ -494,56 +463,23 @@ export const conferenceService = {
     if (!comiteId) throw new Error('ID de comité requerido');
     const cleanComiteId = String(comiteId).trim();
     const cleanPin = String(pin || '').trim();
-    if (!cleanPin) {
-      const err = new Error('PIN de mesa directiva requerido.');
-      err.status = 400;
-      throw err;
-    }
-
-    // 1. Si se conoce el pin_mesa esperado del comité, verificar coincidencia estricta
-    if (pinEsperado && String(pinEsperado).trim() !== cleanPin) {
-      const err = new Error('PIN de mesa directiva incorrecto.');
-      err.status = 401;
-      throw err;
-    }
-
-    // 2. Intentar validación en el backend si el endpoint existe
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}/acceso`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: cleanPin })
-      });
-      if (res.status === 404) {
-        try {
-          localStorage.setItem(`openmun_comite_pin_${cleanComiteId}`, cleanPin);
-        } catch (e) {}
-        return { ok: true, comiteId: cleanComiteId };
-      }
-      const data = await handleResponse(res);
-      try {
-        localStorage.setItem(`openmun_comite_pin_${cleanComiteId}`, cleanPin);
-      } catch (e) {}
-      return data;
-    } catch (e) {
-      if (e.status === 401 || e.status === 403) throw e;
-      if (pinEsperado) {
-        try {
-          localStorage.setItem(`openmun_comite_pin_${cleanComiteId}`, cleanPin);
-        } catch (e) {}
-        return { ok: true, comiteId: cleanComiteId };
-      }
-      throw e;
-    }
+    const res = await authorizedFetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}/acceso`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: cleanPin })
+    });
+    const data = await handleResponse(res);
+    localStorage.setItem(`openmun_comite_pin_${cleanComiteId.toLowerCase()}`, cleanPin);
+    return data;
   },
 
   async obtenerComite(comiteId) {
     if (!comiteId) throw new Error('ID de comité requerido');
     const cleanId = String(comiteId).trim();
-    const res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanId)}`);
+    const res = await authorizedFetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanId)}`);
     if (res.ok) {
       return await handleResponse(res);
     }
+    if (res.status === 401 || res.status === 403) return await handleResponse(res);
 
     // Respaldo de datos locales del comité
     try {
@@ -566,13 +502,13 @@ export const conferenceService = {
     if (!comiteId) throw new Error('ID de comité requerido');
     const cleanComiteId = String(comiteId).trim();
 
-    let res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}`, {
+    let res = await authorizedFetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}`, {
       method: 'DELETE'
     });
 
     if (res.status === 404 && conferenciaId) {
       const cleanConfId = String(conferenciaId).trim().toLowerCase();
-      res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/comites/${encodeURIComponent(cleanComiteId)}`, {
+      res = await authorizedFetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/comites/${encodeURIComponent(cleanComiteId)}`, {
         method: 'DELETE'
       });
     }
@@ -666,7 +602,7 @@ export const conferenceService = {
       localStorage.removeItem('openmun_cloud_account');
       localStorage.removeItem('openmun_descartados_avisos');
       localStorage.removeItem('openmun_mis_avisos');
-      if (typeof window !== 'undefined' && window.localStorage) {
+      if (typeof window !== 'undefined' && localStorage) {
         Object.keys(localStorage).forEach(k => {
           if (
             k.startsWith('openmun_conf_') ||

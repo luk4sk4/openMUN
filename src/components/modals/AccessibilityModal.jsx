@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState } from 'react';
 import { X, Type, Eye, Palette, Sun, Moon, RotateCcw, Flame, Globe, Minimize2, LayoutGrid, Monitor } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

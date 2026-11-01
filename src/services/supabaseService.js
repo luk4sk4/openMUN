@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../utils/sessionStorage';
 import { getSupabaseClient } from './supabaseClient';
 
 const STORAGE_ACCOUNT_KEY = 'openmun_cloud_account';

@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from './utils/sessionStorage';
 import React, { useEffect, Suspense } from 'react';
 import { SessionProvider } from './context/SessionContext';
 import { P2PProvider, useP2P } from './context/P2PContext';

@@ -141,7 +141,9 @@
     "networkCrashGeneral": "Internet connection lost. OpenMUN will continue working normally in local mode.",
     "networkCrashDownloadBtn": "Download file",
     "networkRestoredTitle": "Connection restored",
-    "networkRestoredDesc": "Internet connection has been restored."
+    "networkRestoredDesc": "Internet connection has been restored.",
+    "storageFullTitle": "Unable to save in this browser",
+    "storageFullMessage": "Your session is still in memory. Download a backup before closing or reloading this tab."
   },
   "home": {
     "libreWidgetBanner": "Use the widgets tab on the top left to add or remove any widgets you want!",
@@ -657,6 +659,11 @@
     "speed": "Simulation Speed"
   },
   "voting": {
+    "withRights": "With rights",
+    "inFavorWithRights": "In favor with rights",
+    "againstWithRights": "Against with rights",
+    "rightsRequested": "Delegations with rights",
+    "rightsExplanation": "Right to explain the vote after voting ends.",
     "title": "Voting Panel",
     "subtitle": "Roll Call & Nominal Scrutiny",
     "worldMapTitle": "World Voting Map",
@@ -803,6 +810,9 @@
     "next": "NEXT"
   },
   "countries": {
+    "addOrImport": "Add / import delegations",
+    "backToMatrix": "Back to the matrix",
+    "matrixImportHelp": "Use the button above to add individual countries, import a file, paste a list or load a template.",
     "title": "Delegations Management",
     "importTitle": "Import Countries List",
     "pasteList": "Paste Plain Text",
@@ -844,6 +854,25 @@
     "noMatchingResults": "No matching results"
   },
   "agenda": {
+    "orderDebate": "Agenda order debate",
+    "discussFirst": "Discuss first",
+    "ifRejected": "If rejected, discuss",
+    "startOrderDebate": "Start mini debate",
+    "speakersFor": "Speakers in favor",
+    "speakersAgainst": "Speakers against",
+    "addSpeaker": "Add speaker…",
+    "removeSpeaker": "Remove speaker",
+    "finishSpeech": "Finish speech",
+    "addDelegationsFirst": "Add committee delegations to register speakers.",
+    "closeAndVote": "Close debate and proceed to voting",
+    "recordDecision": "Record the voting result announced by the chair:",
+    "motionPasses": "Proposal passes",
+    "motionFails": "Proposal fails: open the other topic",
+    "resumeDebate": "Return to debate",
+    "orderApproved": "Proposal approved.",
+    "orderRejected": "Proposal rejected.",
+    "newOrderDebate": "Prepare another debate",
+    "cancelOrderDebate": "Cancel mini debate",
     "title": "Committee & Agenda",
     "committeeName": "Official Committee Name",
     "committeePlaceholder": "Committee name (e.g. Security Council)...",
@@ -909,6 +938,14 @@
     "drawnAt": "Drawn at"
   },
   "history": {
+    "filterBySession": "FILTER BY SESSION:",
+    "allSessions": "All sessions",
+    "unassignedSession": "Unassigned (older records)",
+    "sessionNumber": "Session {{number}}",
+    "newSessionQuestion": "IS THIS A NEW SESSION?",
+    "newSessionMessage": "At least 30 minutes have passed without debate. Would you like to start a new session for the history breakdown?",
+    "startNewSession": "Yes, new session",
+    "continueSession": "No, continue session",
     "title": "Delegations History & Analytics",
     "filterDay": "Filter by Day",
     "allDays": "All Days (Global)",
@@ -1035,7 +1072,7 @@
       "matriz_paises": {
         "title": "Delegations Matrix",
         "category": "Setup",
-        "description": "Grid of present countries, quorum calculation, veto powers and flag assignment."
+        "description": "Import and add delegations, track attendance, calculate quorum, assign veto powers and flags."
       },
       "pizarra_mociones": {
         "title": "Motions Board",
@@ -1299,5 +1336,17 @@
     "chairsDais": "🏛️ Chair Daises",
     "roomStaff": "👥 Room-Specific Staff",
     "fullCommittees": "🌐 Full Committees (Room + Delegations)"
+  },
+  "messaging": {
+    "staffApprovalSetting": "Require staff approval for delegate notes",
+    "staffApprovalDescription": "Staff must approve each note before delivery. Turning this off does not release pending notes.",
+    "waitingStaff": "Awaiting staff approval",
+    "rejectedByStaff": "Rejected by staff; not delivered",
+    "approvedByStaff": "Approved by staff and delivered",
+    "delivered": "Delivered",
+    "approveNote": "Approve and deliver",
+    "rejectNote": "Reject",
+    "noteSent": "Note sent successfully",
+    "waitingStaffDescription": "Staff will review your notes before they are delivered."
   }
 }

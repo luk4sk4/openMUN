@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../utils/sessionStorage';
 import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { lazyWithRetry } from '../utils/lazyWithRetry';

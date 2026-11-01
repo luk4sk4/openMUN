@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
@@ -26,6 +27,7 @@ import GraficosParticipacion from '../dashboard/GraficosParticipacion';
 import { exportCommitteeReportPdf } from '../../utils/committeeReportGenerator';
 import { useTranslation } from 'react-i18next';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { normalizarSesionesDebate, sesionDelRegistro } from '../../utils/debateSessions';
 
 // Helper para extraer la clave de fecha (YYYY-MM-DD) de cualquier entrada
 const extraerClaveFecha = (item) => {
@@ -94,6 +96,7 @@ const HistoricoDelegaciones = () => {
   const [columnaOrden, setColumnaOrden] = useState('tiempoHablado'); // 'nombre' | 'mociones' | 'aprobadas' | 'enmiendas' | 'enmiendasAprobadas' | 'tiempoHablado' | 'preguntas'
   const [ordenAsc, setOrdenAsc] = useState(false);
   const [diaSeleccionado, setDiaSeleccionado] = useState('TODOS'); // 'TODOS' | 'YYYY-MM-DD'
+  const [sesionSeleccionada, setSesionSeleccionada] = useState('TODAS');
   const [filtroEquipo, setFiltroEquipo] = useState('TODOS');
   const [vistaModo, setVistaModo] = useState('tabla'); // 'tabla' | 'graficos'
   const [exportandoPdf, setExportandoPdf] = useState(false);
@@ -126,6 +129,21 @@ const HistoricoDelegaciones = () => {
 
   const listaMocionesFuente = (historicoMociones && historicoMociones.length > 0) ? historicoMociones : mociones;
   const listaEnmiendasFuente = useMemo(() => enmiendasSesion?.enmiendas || [], [enmiendasSesion]);
+  const sesionesDebate = useMemo(() => normalizarSesionesDebate(agendaSesion?.sesionesDebate), [agendaSesion?.sesionesDebate]);
+  const sesionesDisponibles = useMemo(() => {
+    const registros = [...registroIntervenciones, ...listaMocionesFuente, ...listaEnmiendasFuente];
+    const delDia = registros.filter(item => diaSeleccionado === 'TODOS' || extraerClaveFecha(item) === diaSeleccionado);
+    const ids = new Set(delDia.map(item => sesionDelRegistro(item, sesionesDebate)));
+    sesionesDebate.forEach(inicio => {
+      if (diaSeleccionado === 'TODOS' || extraerClaveFecha({ fecha: inicio }) === diaSeleccionado) ids.add(inicio);
+    });
+    return [...ids].sort((a, b) => a === 'SIN_SESION' ? -1 : b === 'SIN_SESION' ? 1 : a - b);
+  }, [registroIntervenciones, listaMocionesFuente, listaEnmiendasFuente, sesionesDebate, diaSeleccionado]);
+  useEffect(() => {
+    if (sesionSeleccionada !== 'TODAS' && !sesionesDisponibles.some(id => String(id) === sesionSeleccionada)) {
+      setSesionSeleccionada('TODAS');
+    }
+  }, [sesionesDisponibles, sesionSeleccionada]);
 
   // 1. Detectar y ordenar cronológicamente todos los días registrados en el MUN
   const diasDisponibles = useMemo(() => {
@@ -134,6 +152,7 @@ const HistoricoDelegaciones = () => {
     // Fecha de hoy como referencia disponible
     const hoyStr = new Date().toISOString().slice(0, 10);
     fechasSet.add(hoyStr);
+    sesionesDebate.forEach(inicio => fechasSet.add(extraerClaveFecha({ fecha: inicio })));
 
     registroIntervenciones.forEach(item => {
       const f = extraerClaveFecha(item);
@@ -159,10 +178,12 @@ const HistoricoDelegaciones = () => {
       labelCorta: `Día ${index + 1} (${formatearFechaCorta(fStr)})`,
       labelCompleta: `Día ${index + 1} - ${formatearFechaCorta(fStr)}`
     }));
-  }, [registroIntervenciones, listaMocionesFuente, listaEnmiendasFuente]);
+  }, [registroIntervenciones, listaMocionesFuente, listaEnmiendasFuente, sesionesDebate]);
 
   // Helpers para ajustes manuales
-  const getAdjustmentKey = (paisId) => `${diaSeleccionado}_${paisId}`;
+  const getAdjustmentKey = (paisId) => sesionSeleccionada === 'TODAS'
+    ? `${diaSeleccionado}_${paisId}`
+    : `${diaSeleccionado}_sesion_${sesionSeleccionada}_${paisId}`;
 
   const handleIncrementarPregunta = (paisId) => {
     const key = getAdjustmentKey(paisId);
@@ -190,19 +211,22 @@ const HistoricoDelegaciones = () => {
 
   // 2. Filtrar intervenciones, mociones y enmiendas según el día seleccionado
   const intervencionesFiltradas = useMemo(() => {
-    if (diaSeleccionado === 'TODOS') return registroIntervenciones;
-    return registroIntervenciones.filter(i => extraerClaveFecha(i) === diaSeleccionado);
-  }, [registroIntervenciones, diaSeleccionado]);
+    return registroIntervenciones.filter(i =>
+      (diaSeleccionado === 'TODOS' || extraerClaveFecha(i) === diaSeleccionado) &&
+      (sesionSeleccionada === 'TODAS' || String(sesionDelRegistro(i, sesionesDebate)) === sesionSeleccionada));
+  }, [registroIntervenciones, diaSeleccionado, sesionSeleccionada, sesionesDebate]);
 
   const mocionesFiltradas = useMemo(() => {
-    if (diaSeleccionado === 'TODOS') return listaMocionesFuente;
-    return listaMocionesFuente.filter(m => extraerClaveFecha(m) === diaSeleccionado);
-  }, [listaMocionesFuente, diaSeleccionado]);
+    return listaMocionesFuente.filter(m =>
+      (diaSeleccionado === 'TODOS' || extraerClaveFecha(m) === diaSeleccionado) &&
+      (sesionSeleccionada === 'TODAS' || String(sesionDelRegistro(m, sesionesDebate)) === sesionSeleccionada));
+  }, [listaMocionesFuente, diaSeleccionado, sesionSeleccionada, sesionesDebate]);
 
   const enmiendasFiltradas = useMemo(() => {
-    if (diaSeleccionado === 'TODOS') return listaEnmiendasFuente;
-    return listaEnmiendasFuente.filter(e => extraerClaveFecha(e) === diaSeleccionado);
-  }, [listaEnmiendasFuente, diaSeleccionado]);
+    return listaEnmiendasFuente.filter(e =>
+      (diaSeleccionado === 'TODOS' || extraerClaveFecha(e) === diaSeleccionado) &&
+      (sesionSeleccionada === 'TODAS' || String(sesionDelRegistro(e, sesionesDebate)) === sesionSeleccionada));
+  }, [listaEnmiendasFuente, diaSeleccionado, sesionSeleccionada, sesionesDebate]);
 
   // 3. Calcular métricas para cada país
   const datosPaises = useMemo(() => {
@@ -270,7 +294,7 @@ const HistoricoDelegaciones = () => {
         mocionesAprobadas: mocAprobadas
       };
     });
-  }, [paises, intervencionesFiltradas, mocionesFiltradas, enmiendasFiltradas, registroIntervenciones, tiempoExtra, preguntasExtras, diaSeleccionado]);
+  }, [paises, intervencionesFiltradas, mocionesFiltradas, enmiendasFiltradas, registroIntervenciones, tiempoExtra, preguntasExtras, diaSeleccionado, sesionSeleccionada]);
 
   // Cómputo global de todo el comité para las métricas de cabecera
   const estadisticasGenerales = useMemo(() => {
@@ -390,9 +414,9 @@ const HistoricoDelegaciones = () => {
         agendaSesion,
         paises,
         estadisticasDelegaciones: delegacionesParaReporte,
-        registroIntervenciones,
-        mociones: listaMocionesFuente,
-        enmiendasSesion,
+        registroIntervenciones: intervencionesFiltradas,
+        mociones: mocionesFiltradas,
+        enmiendasSesion: { ...enmiendasSesion, enmiendas: enmiendasFiltradas },
         votacionSesion
       });
     } catch (err) {
@@ -602,7 +626,7 @@ const HistoricoDelegaciones = () => {
 
         {/* Opción Global: Todos los Días */}
         <button
-          onClick={() => setDiaSeleccionado('TODOS')}
+          onClick={() => { setDiaSeleccionado('TODOS'); setSesionSeleccionada('TODAS'); }}
           style={{
             padding: '0.3rem 0.65rem',
             borderRadius: '6px',
@@ -631,7 +655,7 @@ const HistoricoDelegaciones = () => {
           return (
             <button
               key={dia.key}
-              onClick={() => setDiaSeleccionado(dia.key)}
+              onClick={() => { setDiaSeleccionado(dia.key); setSesionSeleccionada('TODAS'); }}
               style={{
                 padding: '0.3rem 0.65rem',
                 borderRadius: '6px',
@@ -671,6 +695,20 @@ const HistoricoDelegaciones = () => {
       </div>
 
       {/* ─── CONTENIDO: VISTA GRÁFICOS O VISTA TABLA + KPIs ─── */}
+      <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.75rem' }}>
+        <Layers size={13} />
+        {t('history.filterBySession', 'FILTRAR POR SESIÓN:')}
+        <select value={sesionSeleccionada} onChange={e => setSesionSeleccionada(e.target.value)} style={{
+          padding: '0.3rem', borderRadius: '6px', border: '1px solid var(--border-color)',
+          background: 'var(--panel-color)', color: 'var(--text-color)', minWidth: 0
+        }}>
+          <option value="TODAS">{t('history.allSessions', 'Todas las sesiones')}</option>
+          {sesionesDisponibles.map(inicio => <option key={inicio} value={inicio}>
+            {inicio === 'SIN_SESION' ? t('history.unassignedSession', 'Sin sesión (registros anteriores)')
+              : `${t('history.sessionNumber', 'Sesión {{number}}', { number: sesionesDebate.indexOf(inicio) + 1 })} · ${new Date(inicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+          </option>)}
+        </select>
+      </label>
       {vistaModo === 'graficos' ? (
         <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
           <GraficosParticipacion

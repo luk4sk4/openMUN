@@ -1,3 +1,4 @@
+import { sessionStore as localStorage, setSessionScope } from '../../utils/sessionStorage';
 import React, { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import {
   Building2,
@@ -241,6 +242,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const [comiteEnEdicion, setComiteEnEdicion] = useState(null);
   const [secretariaWidgetTab, setSecretariaWidgetTab] = useState('AGENDA'); // 'AGENDA' | 'IMPORTAR' | 'MATRIZ' | 'AJUSTES'
   const [comiteEditorPinMesa, setComiteEditorPinMesa] = useState('');
+  const [comiteEditorQuitarPin, setComiteEditorQuitarPin] = useState(false);
+  const pinMesaProtegido = !comiteEditorQuitarPin && Boolean(comiteEditorPinMesa || comiteEnEdicion?.requierePinMesa);
   const [mostrarComiteEditorPinMesa, setMostrarComiteEditorPinMesa] = useState(false);
   const [comiteEditorTipoSesion, setComiteEditorTipoSesion] = useState('formal');
   const [guardandoComite, setGuardandoComite] = useState(false);
@@ -1443,7 +1446,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     setComiteEnEdicion(comite);
     setSecretariaWidgetTab('AGENDA');
     setGuardadoFeedback(null);
-    setComiteEditorPinMesa(comite.pin_mesa || '');
+    setComiteEditorPinMesa('');
+    setComiteEditorQuitarPin(false);
     setComiteEditorTipoSesion(comite.tipo_sesion || 'formal');
 
     // Cargar datos aislados estrictos de este comité
@@ -1495,7 +1499,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     setGuardadoFeedback(null);
     try {
       const nombreActualizado = (nombreComite || comiteEnEdicion.nombre || '').trim();
-      const pinMesaActualizado = comiteEditorPinMesa.trim() || null;
+      const pinMesaActualizado = comiteEditorQuitarPin ? null : comiteEditorPinMesa.trim() || undefined;
       const tipoSesionActualizado = comiteEditorTipoSesion || tipoSesion || 'formal';
 
       let prevDatos = comiteEnEdicion.datos_json;
@@ -1533,7 +1537,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         localStorage.setItem(`openmun_comite_data_${comiteEnEdicion.id}`, JSON.stringify(estadoActual));
         if (pinMesaActualizado) {
           localStorage.setItem(`openmun_comite_pin_${comiteEnEdicion.id}`, pinMesaActualizado);
-        } else {
+        } else if (pinMesaActualizado === null) {
           localStorage.removeItem(`openmun_comite_pin_${comiteEnEdicion.id}`);
         }
       } catch (e) { }
@@ -1551,7 +1555,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           ...c,
           nombre: nombreActualizado,
           pin_mesa: pinMesaActualizado,
-          requierePinMesa: Boolean(pinMesaActualizado),
+          requierePinMesa: pinMesaActualizado === undefined ? Boolean(comiteEnEdicion.requierePinMesa) : Boolean(pinMesaActualizado),
           tipo_sesion: tipoSesionActualizado,
           datos_json: estadoActual
         } : c);
@@ -1565,7 +1569,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         ...r,
         nombre: nombreActualizado,
         pin_mesa: pinMesaActualizado,
-        requierePinMesa: Boolean(pinMesaActualizado),
+        requierePinMesa: pinMesaActualizado === undefined ? Boolean(comiteEnEdicion.requierePinMesa) : Boolean(pinMesaActualizado),
         tipo_sesion: tipoSesionActualizado,
         datos_json: estadoActual
       } : r));
@@ -1574,7 +1578,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         ...prev,
         nombre: nombreActualizado,
         pin_mesa: pinMesaActualizado,
-        requierePinMesa: Boolean(pinMesaActualizado),
+        requierePinMesa: pinMesaActualizado === undefined ? Boolean(comiteEnEdicion.requierePinMesa) : Boolean(pinMesaActualizado),
         tipo_sesion: tipoSesionActualizado,
         datos_json: estadoActual
       } : null);
@@ -1622,17 +1626,21 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const ejecutarEntradaMesa = async (comite, pin = '') => {
     setLoading(true);
     try {
+      let authorizedCommittee;
       if (comite.requierePinMesa) {
-        if (!pin || !pin.trim()) {
+        if ((!pin || !pin.trim()) && !isAdminAuthenticated) {
           throw new Error('Debes introducir el PIN de la mesa directiva para acceder a este comité.');
         }
-        await conferenceService.verificarPinMesa(comite.id, pin, comite.pin_mesa);
+        authorizedCommittee = await conferenceService.verificarPinMesa(comite.id, pin, comite.pin_mesa);
         try {
           localStorage.setItem(`openmun_comite_pin_${comite.id}`, pin.trim());
         } catch (e) {}
+      } else {
+        authorizedCommittee = await conferenceService.verificarPinMesa(comite.id, '');
       }
 
       const prevComiteId = localStorage.getItem('openmun_current_comite_id') || localStorage.getItem('openmun_last_room_id');
+      setSessionScope(comite.id);
       if (prevComiteId && prevComiteId !== comite.id) {
         SESSION_STORAGE_KEYS.forEach(k => {
           // No borrar el PIN que acabamos de guardar
@@ -1646,12 +1654,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
       localStorage.setItem('openmun_current_comite_id', comite.id);
       localStorage.setItem('openmun_current_conf_id', conferencia.id);
-      localStorage.setItem('openmun_mesa_activa', 'true');
       localStorage.setItem('openmun_user_role', 'chair');
       localStorage.setItem('openmun_last_room_id', comite.id);
 
       // Cargar JSON aislado del comité
-      let datosComite = comite.datos_json;
+      let datosComite = authorizedCommittee?.datos_json || comite.datos_json;
       if (typeof datosComite === 'string') {
         try {
           datosComite = JSON.parse(datosComite);
@@ -1688,6 +1695,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         tipoSesion: comite.tipo_sesion || 'formal'
       }, comite.nombre);
 
+      localStorage.setItem('openmun_mesa_activa', 'true');
+
       if (comite.tipo_sesion) {
         cambiarTipoSesion(comite.tipo_sesion, false);
       }
@@ -1717,6 +1726,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   // Entrar directamente como Staff a un comité específico
   const handleEntrarComoStaff = (comite) => {
     const prevComiteId = localStorage.getItem('openmun_current_comite_id') || localStorage.getItem('openmun_last_room_id');
+    setSessionScope(comite.id);
     if (prevComiteId && prevComiteId !== comite.id) {
       SESSION_STORAGE_KEYS.forEach(k => {
         try { localStorage.removeItem(k); } catch (e) {}
@@ -1728,8 +1738,15 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     localStorage.setItem('openmun_current_comite_id', comite.id);
     localStorage.setItem('openmun_current_conf_id', conferencia.id);
     localStorage.setItem('openmun_user_role', 'staff');
+    localStorage.setItem('openmun_mesa_activa', 'false');
     localStorage.setItem('openmun_last_room_id', comite.id);
-    setViewMode('staff');
+    const url = new URL(window.location.href);
+    ['conf', 'admin', 'local'].forEach(key => url.searchParams.delete(key));
+    url.searchParams.set('room', comite.id);
+    url.searchParams.set('role', 'staff');
+    url.searchParams.set('mode', 'join');
+    window.history.replaceState({}, '', url);
+    setViewMode('join');
   };
 
   // Helper con colores vivos y destacados para todos los estados
@@ -4573,14 +4590,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       fontWeight: '700',
                       padding: '0.2rem 0.6rem',
                       borderRadius: '6px',
-                      backgroundColor: comiteEditorPinMesa ? 'rgba(245, 158, 11, 0.15)' : 'rgba(107, 114, 128, 0.15)',
-                      color: comiteEditorPinMesa ? '#f59e0b' : textMuted,
+                      backgroundColor: pinMesaProtegido ? 'rgba(245, 158, 11, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                      color: pinMesaProtegido ? '#f59e0b' : textMuted,
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.3rem'
                     }}>
-                      {comiteEditorPinMesa ? <Lock size={12} /> : <Unlock size={12} />}
-                      {comiteEditorPinMesa ? 'PIN Mesa Activado' : 'Sin PIN de Mesa'}
+                      {pinMesaProtegido ? <Lock size={12} /> : <Unlock size={12} />}
+                      {pinMesaProtegido ? 'PIN Mesa Activado' : 'Sin PIN de Mesa'}
                     </span>
                   </div>
                 </div>
@@ -4837,7 +4854,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             type={mostrarComiteEditorPinMesa ? 'text' : 'password'}
                             value={comiteEditorPinMesa}
                             onChange={(e) => setComiteEditorPinMesa(e.target.value)}
-                            placeholder="Dejar vacío para acceso libre sin PIN"
+                            placeholder="Deja vacío para conservar el PIN actual"
+                            disabled={comiteEditorQuitarPin}
                             style={{
                               width: '100%',
                               padding: '0.75rem 2.5rem 0.75rem 2.4rem',
@@ -4875,15 +4893,21 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             {mostrarComiteEditorPinMesa ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
+                        {comiteEnEdicion.requierePinMesa && (
+                          <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.85rem' }}>
+                            <input type="checkbox" checked={comiteEditorQuitarPin} onChange={event => setComiteEditorQuitarPin(event.target.checked)} />
+                            Quitar el PIN actual y permitir acceso libre a la mesa
+                          </label>
+                        )}
 
-                        {comiteEditorPinMesa ? (
+                        {pinMesaProtegido ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                               <CheckCircle2 size={14} /> PIN configurado para este comité
                             </span>
                             <button
                               type="button"
-                              onClick={() => setComiteEditorPinMesa('')}
+                              onClick={() => { setComiteEditorPinMesa(''); setComiteEditorQuitarPin(Boolean(comiteEnEdicion.requierePinMesa)); }}
                               style={{
                                 background: 'transparent',
                                 border: 'none',

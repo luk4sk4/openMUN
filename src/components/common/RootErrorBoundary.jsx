@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { Component } from 'react';
 import { RefreshCw, AlertTriangle, Sparkles, Copy, Check, Home } from 'lucide-react';
 import OpenMunLogo from './OpenMunLogo';

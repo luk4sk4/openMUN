@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Megaphone, 
@@ -362,6 +363,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     if (!n || !n.text) return false;
     const dest = (n.to || '').toUpperCase().trim();
     return (
+      n.status === 'pending' || n.status === 'rejected' || n.reviewedAt ||
       dest === 'STAFF' ||
       dest === 'CHAIR' ||
       dest === 'MESA' ||

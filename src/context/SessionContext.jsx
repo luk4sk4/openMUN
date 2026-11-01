@@ -1,3 +1,10 @@
+import { sessionStore as localStorage, getSessionScope } from '../utils/sessionStorage';
+import { registrarVotoConDerechos } from '../utils/votingRights';
+import { createSessionSnapshot, readStoredJSON } from '../utils/sessionSnapshot';
+import { normalizarDebateAgenda } from '../utils/agendaDebate';
+import { normalizarSesionesDebate, necesitaConfirmarSesion, fechaRegistro } from '../utils/debateSessions';
+import ConfirmModal from '../components/modals/ConfirmModal';
+import { useTranslation } from 'react-i18next';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { googleDriveService } from '../services/googleDriveService';
 import { conferenceService } from '../services/conferenceService';
@@ -11,7 +18,7 @@ import {
   eliminarComite,
   obtenerCuentaActiva
 } from '../services/supabaseService';
-import { validateSessionJSON, normalizarDatosComite, SESSION_STORAGE_KEYS } from '../utils/sessionValidator';
+import { validateSessionJSON, normalizarDatosComite, SESSION_STORAGE_KEYS, ALLOWED_STORAGE_KEYS } from '../utils/sessionValidator';
 import { getFlagEmoji } from '../utils/flags';
 import { parsearResolucion, reconstruirTextoResolucion, aplicarEnmiendaAArticulos } from '../utils/resolutionUtils';
 
@@ -21,46 +28,48 @@ const PAISES_INICIALES = [];
 const SESSION_SYNC_CHANNEL_NAME = 'openmun_session_sync';
 
 export const SessionProvider = ({ children }) => {
+  const { t } = useTranslation();
+  const [confirmarSesion, setConfirmarSesion] = useState(false);
+  const confirmarSesionRef = useRef(null);
   const tabInstanceId = useRef(`tab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`).current;
   const broadcastChannelRef = useRef(null);
+  const [auxiliaryRevision, setAuxiliaryRevision] = useState(0);
+  useEffect(() => {
+    const handleAuxiliaryChange = () => setAuxiliaryRevision(value => value + 1);
+    window.addEventListener('openmun_session_auxiliary_changed', handleAuxiliaryChange);
+    return () => window.removeEventListener('openmun_session_auxiliary_changed', handleAuxiliaryChange);
+  }, []);
 
   const [tipoSesion, setTipoSesionState] = useState(() => {
     return localStorage.getItem('openmun_tipo_sesion') || 'formal';
   });
 
   const [paises, setPaisesState] = useState(() => {
-    const saved = localStorage.getItem('openmun_paises');
-    return saved ? JSON.parse(saved) : PAISES_INICIALES;
+    return readStoredJSON('openmun_paises', PAISES_INICIALES);
   });
 
   const [oradoresCola, setOradoresColaState] = useState(() => {
-    const saved = localStorage.getItem('openmun_oradores');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON('openmun_oradores', []);
   });
 
   const [oradoresCaucus, setOradoresCaucusState] = useState(() => {
-    const saved = localStorage.getItem('openmun_oradores_caucus');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON('openmun_oradores_caucus', []);
   });
 
   const [registroIntervenciones, setRegistroIntervencionesState] = useState(() => {
-    const saved = localStorage.getItem('openmun_intervenciones');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON('openmun_intervenciones', []);
   });
 
   const [mociones, setMocionesState] = useState(() => {
-    const saved = localStorage.getItem('openmun_mociones');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON('openmun_mociones', []);
   });
 
   const [historicoMociones, setHistoricoMocionesState] = useState(() => {
-    const saved = localStorage.getItem('openmun_historico_mociones');
-    return saved ? JSON.parse(saved) : [];
+    return readStoredJSON('openmun_historico_mociones', []);
   });
 
   const [caucusActivo, setCaucusActivoState] = useState(() => {
-    const saved = localStorage.getItem('openmun_caucus');
-    return saved ? JSON.parse(saved) : {
+    return readStoredJSON('openmun_caucus', {
       activo: false,
       proponente: '',
       posicionProponente: 'Primero',
@@ -69,27 +78,25 @@ export const SessionProvider = ({ children }) => {
       tema: '',
       tiempoTotal: 600,
       tiempoOrador: 45
-    };
+    });
   });
 
   const [votacionSesion, setVotacionSesionState] = useState(() => {
-    const saved = localStorage.getItem('openmun_votacion');
-    return saved ? JSON.parse(saved) : {
+    return readStoredJSON('openmun_votacion', {
       asunto: 'Proyecto de Resolución / Moción',
       tipoVotacion: 'procedural',
       tipoMayoria: 'simple',
       aplicarVeto: true,
       votos: {}
-    };
+    });
   });
 
   const [agendaSesion, setAgendaSesionState] = useState(() => {
-    const saved = localStorage.getItem('openmun_agenda');
-    return saved ? JSON.parse(saved) : {
+    return readStoredJSON('openmun_agenda', {
       establecida: false,
       temaActual: '',
       temasPropuestos: []
-    };
+    });
   });
 
   const [nombreComite, setNombreComiteState] = useState(() => {
@@ -97,13 +104,12 @@ export const SessionProvider = ({ children }) => {
   });
 
   const [enmiendasSesion, setEnmiendasSesionState] = useState(() => {
-    const saved = localStorage.getItem('openmun_enmiendas');
-    return saved ? JSON.parse(saved) : {
+    return readStoredJSON('openmun_enmiendas', {
       tituloProyecto: 'Proyecto de Resolución A/RES/79/1',
       textoResolucion: '',
       articulos: [],
       enmiendas: []
-    };
+    });
   });
 
   const [relojGSLState, setRelojGSLState] = useState({ segundosRestantes: 60, tiempoInicial: 60, corriendo: false });
@@ -123,6 +129,8 @@ export const SessionProvider = ({ children }) => {
   const [driveRemoteModifiedTime, setDriveRemoteModifiedTime] = useState(null);
   const driveRemoteModifiedTimeRef = useRef(null);
   const isInitialSyncRef = useRef(false);
+  const driveConflictRef = useRef(false);
+  driveConflictRef.current = driveSyncStatus === 'conflict';
 
   // Estados de Supabase Cloud
   const [cloudAccount, setCloudAccount] = useState(() => obtenerCuentaActiva());
@@ -134,6 +142,28 @@ export const SessionProvider = ({ children }) => {
     return (typeof window !== 'undefined' ? localStorage.getItem('openmun_cloud_active_comite') : '') || '';
   });
   const isInitialCloudSyncRef = useRef(false);
+
+  useEffect(() => {
+    const handleScopeChange = event => {
+      if (event.detail?.copyCurrent) return;
+      localStorage.setItem('openmun_mesa_activa', 'false');
+      localStorage.removeItem('openmun_drive_file_id');
+      localStorage.removeItem('openmun_drive_file_name');
+      setIsDriveLinked(false);
+      setDriveFileId(null);
+      setDriveSyncStatus('disconnected');
+      driveRemoteModifiedTimeRef.current = null;
+      setIsCloudLinked(false);
+      setCloudActiveComiteName('');
+      setCloudSyncStatus('idle');
+    };
+    window.addEventListener('openmun_session_scope_changed', handleScopeChange);
+    window.addEventListener('openmun_session_role_changed', handleScopeChange);
+    return () => {
+      window.removeEventListener('openmun_session_scope_changed', handleScopeChange);
+      window.removeEventListener('openmun_session_role_changed', handleScopeChange);
+    };
+  }, []);
 
   // Mantener referencias actualizadas para lectura en callbacks
   const stateRef = useRef({
@@ -185,31 +215,10 @@ export const SessionProvider = ({ children }) => {
     localStorage.setItem('openmun_comite', nombreComite);
     localStorage.setItem('openmun_enmiendas', JSON.stringify(enmiendasSesion));
 
-    const sesionDataCompleta = {
-      version: '2.0',
-      ultimaActualizacion: new Date().toISOString(),
-      comision: nombreComite || 'Asamblea General - openMUN',
-      tipoSesion,
-      paises,
-      oradoresCola,
-      oradoresCaucus,
-      registroIntervenciones,
-      mociones,
-      historicoMociones,
-      caucusActivo,
-      votacionSesion,
-      agendaSesion,
-      proyectoResolucion: {
-        titulo: enmiendasSesion?.tituloProyecto || 'Proyecto de Resolución A/RES/79/1',
-        texto: enmiendasSesion?.textoResolucion || '',
-        articulos: enmiendasSesion?.articulos || [],
-        enmiendas: enmiendasSesion?.enmiendas || []
-      },
-      enmiendasSesion
-    };
+    const sesionDataCompleta = createSessionSnapshot(stateRef.current);
 
     localStorage.setItem('sesion_activa.json', JSON.stringify(sesionDataCompleta));
-  }, [tipoSesion, paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion]);
+  }, [tipoSesion, paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, auxiliaryRevision]);
 
   // EMITIR ACCIONES A CANALES LOCALES Y EVENTOS DOM PARA P2P
   const emitirAccion = useCallback((accion, payload) => {
@@ -218,6 +227,7 @@ export const SessionProvider = ({ children }) => {
       try {
         broadcastChannelRef.current.postMessage({
           type: 'SESSION_ACTION',
+          sessionId: getSessionScope(),
           accion,
           payload,
           senderTab: tabInstanceId,
@@ -235,6 +245,49 @@ export const SessionProvider = ({ children }) => {
       }));
     }
   }, [tabInstanceId]);
+
+  const actualizarSesionesDebate = useCallback((sesiones, ultimaActividad, emitir = true) => {
+    const agenda = {
+      ...stateRef.current.agendaSesion,
+      sesionesDebate: normalizarSesionesDebate(sesiones),
+      ultimaActividadDebate: Number.isSafeInteger(ultimaActividad) && ultimaActividad > 0 ? ultimaActividad : null
+    };
+    stateRef.current.agendaSesion = agenda;
+    setAgendaSesionState(agenda);
+    if (emitir) emitirAccion('actualizarSesionesDebate', { sesiones: agenda.sesionesDebate, ultimaActividad: agenda.ultimaActividadDebate });
+  }, [emitirAccion]);
+
+  const registrarActividadDebate = useCallback(() => {
+    const agenda = stateRef.current.agendaSesion;
+    if (agenda.sesionesDebate?.length) actualizarSesionesDebate(agenda.sesionesDebate, Date.now());
+  }, [actualizarSesionesDebate]);
+
+  const iniciarActividadDebate = useCallback(async () => {
+    if (confirmarSesionRef.current) return confirmarSesionRef.current.promise;
+    const agenda = stateRef.current.agendaSesion;
+    const sesiones = normalizarSesionesDebate(agenda.sesionesDebate);
+    const ultimaActividad = agenda.ultimaActividadDebate ?? stateRef.current.registroIntervenciones.reduce(
+      (ultima, i) => Math.max(ultima, fechaRegistro(i) || 0), 0);
+    let nueva = sesiones.length === 0;
+    if (ultimaActividad > 0 && necesitaConfirmarSesion(ultimaActividad)) {
+      let resolve;
+      const promise = new Promise(done => { resolve = done; });
+      confirmarSesionRef.current = { promise, resolve };
+      setConfirmarSesion(true);
+      nueva = await promise;
+      confirmarSesionRef.current = null;
+      setConfirmarSesion(false);
+    }
+    const ahora = Date.now();
+    if (nueva || sesiones.length === 0) {
+      // Legacy records stay unassigned unless the chair explicitly continues them.
+      const inicio = !nueva && ultimaActividad > 0
+        ? stateRef.current.registroIntervenciones.reduce((inicio, i) => Math.min(inicio, fechaRegistro(i) || inicio), ahora)
+        : ahora;
+      sesiones.push(inicio);
+    }
+    actualizarSesionesDebate(sesiones, ahora);
+  }, [actualizarSesionesDebate]);
 
   // CARGAR / REEMPLAZAR ESTADO COMPLETO Y AISLADO DE UN COMITÉ ESPECÍFICO
   const establecerEstadoComiteCompleto = useCallback((datosComite, defaultNombre = '') => {
@@ -261,6 +314,7 @@ export const SessionProvider = ({ children }) => {
       config
     } = normalizado;
 
+    stateRef.current = { ...stateRef.current, ...normalizado, nombreComite: comision };
     setNombreComiteState(comision);
     setPaisesState(nuevosPaises);
     setAgendaSesionState(nuevaAgenda);
@@ -345,23 +399,7 @@ export const SessionProvider = ({ children }) => {
         const currentTipo = stateRef.current.tipoSesion || 'formal';
         const currentAgenda = stateRef.current.agendaSesion || {};
 
-        const sesionData = {
-          version: '2.0',
-          ultimaActualizacion: new Date().toISOString(),
-          comision: currentNombre,
-          nombreComite: currentNombre,
-          tipoSesion: currentTipo,
-          paises: currentPaises,
-          oradoresCola: stateRef.current.oradoresCola || [],
-          oradoresCaucus: stateRef.current.oradoresCaucus || [],
-          registroIntervenciones: stateRef.current.registroIntervenciones || [],
-          mociones: stateRef.current.mociones || [],
-          historicoMociones: stateRef.current.historicoMociones || [],
-          caucusActivo: stateRef.current.caucusActivo || null,
-          votacionSesion: stateRef.current.votacionSesion || null,
-          agendaSesion: currentAgenda,
-          enmiendasSesion: stateRef.current.enmiendasSesion || null
-        };
+        const sesionData = createSessionSnapshot(stateRef.current);
 
         // Guardar snapshot local indexado por id de comité
         localStorage.setItem(`openmun_comite_data_${comiteId}`, JSON.stringify(sesionData));
@@ -371,10 +409,11 @@ export const SessionProvider = ({ children }) => {
         try {
           await conferenceService.actualizarComite(comiteId, {
             tipo_sesion: currentTipo,
-            topico_actual: currentAgenda?.topico || currentAgenda?.tema || undefined,
+            topico_actual: currentAgenda?.temaActual || currentAgenda?.topico || currentAgenda?.tema || '',
             datos_json: sesionData
           });
         } catch (errPatch) {
+          if (errPatch.status !== 404) throw errPatch;
           // Si el comité no existiera aún en BD, crearlo vía POST
           await conferenceService.crearOActualizarComite(confId, {
             id: comiteId,
@@ -402,14 +441,14 @@ export const SessionProvider = ({ children }) => {
     };
 
     if (typeof window !== 'undefined') {
-      window.addEventListener('visibilitychange', handleVisibility);
+      document.addEventListener('visibilitychange', handleVisibility);
       window.addEventListener('beforeunload', handleBeforeUnload);
     }
 
     return () => {
       clearInterval(interval);
       if (typeof window !== 'undefined') {
-        window.removeEventListener('visibilitychange', handleVisibility);
+        document.removeEventListener('visibilitychange', handleVisibility);
         window.removeEventListener('beforeunload', handleBeforeUnload);
       }
       sincronizarMesaBD();
@@ -493,13 +532,8 @@ export const SessionProvider = ({ children }) => {
         }
       }
 
-      const copyVotos = { ...prev.votos };
-      if (normalizedVoto === null || normalizedVoto === undefined) {
-        delete copyVotos[targetId];
-      } else {
-        copyVotos[targetId] = normalizedVoto;
-      }
-      return { ...prev, votos: copyVotos };
+      if ((voto === 'favor_derechos' || voto === 'contra_derechos') && (!paisObj || paisObj.estatus === 'Ausente')) return prev;
+      return registrarVotoConDerechos(prev, targetId, normalizedVoto);
     });
 
     if (emitir) {
@@ -510,7 +544,8 @@ export const SessionProvider = ({ children }) => {
   const configurarVotacion = useCallback((ajustes, emitir = true) => {
     setVotacionSesionState(prev => ({
       ...prev,
-      ...ajustes
+      ...ajustes,
+      derechos: ajustes.tipoVotacion === 'procedural' || ajustes.votos ? {} : (ajustes.derechos ?? prev.derechos)
     }));
     if (emitir) {
       emitirAccion('configurarVotacion', { ajustes });
@@ -520,7 +555,8 @@ export const SessionProvider = ({ children }) => {
   const resetearVotacion = useCallback((emitir = true) => {
     setVotacionSesionState(prev => ({
       ...prev,
-      votos: {}
+      votos: {},
+      derechos: {}
     }));
     if (emitir) {
       emitirAccion('resetearVotacion', {});
@@ -827,16 +863,18 @@ export const SessionProvider = ({ children }) => {
   }, [emitirAccion]);
 
   // Agenda & Comité
-  const establecerAgenda = useCallback((temaActual, temasPropuestos = [], emitir = true) => {
-    setAgendaSesionState({
+  const establecerAgenda = useCallback((temaActual, temasPropuestos = [], emitir = true, debateAgenda) => {
+    setAgendaSesionState(prev => ({
+      ...prev,
       establecida: true,
       temaActual,
+      debateAgenda: normalizarDebateAgenda(debateAgenda === undefined ? (prev.temaActual === temaActual ? prev.debateAgenda : null) : debateAgenda, temasPropuestos),
       temasPropuestos: temasPropuestos.length > 0 ? temasPropuestos : [
         { id: 't1', titulo: temaActual, estado: 'En Discusión' }
       ]
-    });
+    }));
     if (emitir) {
-      emitirAccion('establecerAgenda', { temaActual, temasPropuestos });
+      emitirAccion('establecerAgenda', { temaActual, temasPropuestos, debateAgenda });
     }
   }, [emitirAccion]);
 
@@ -844,6 +882,7 @@ export const SessionProvider = ({ children }) => {
     setAgendaSesionState(prev => ({
       ...prev,
       temaActual: nuevoTema,
+      debateAgenda: null,
       temasPropuestos: (prev.temasPropuestos || []).map(t =>
         t.titulo === nuevoTema ? { ...t, estado: 'En Discusión' } : { ...t, estado: 'Pendiente' }
       )
@@ -1212,7 +1251,10 @@ export const SessionProvider = ({ children }) => {
         setCaucusActivo(payload.caucus, false);
         break;
       case 'establecerAgenda':
-        establecerAgenda(payload.temaActual, payload.temasPropuestos, false);
+        establecerAgenda(payload.temaActual, payload.temasPropuestos, false, payload.debateAgenda);
+        break;
+      case 'actualizarSesionesDebate':
+        actualizarSesionesDebate(payload.sesiones, payload.ultimaActividad, false);
         break;
       case 'cambiarTemaActual':
         cambiarTemaActual(payload.nuevoTema, false);
@@ -1268,7 +1310,7 @@ export const SessionProvider = ({ children }) => {
     agregarOrador, removerOrador, moverOrador, vaciarOradoresGSL, ordenarOradoresGSLAlfabetico,
     reordenarOradoresGSL, cederTiempo, agregarOradorCaucus, removerOradorCaucus, avanzarOradorCaucus,
     vaciarOradoresDebate, ordenarOradoresDebateAlfabetico, reordenarOradoresDebate, moverOradorCaucus,
-    setCaucusActivo, establecerAgenda, cambiarTemaActual, setNombreComite, agregarMocion, activarMocion,
+    setCaucusActivo, establecerAgenda, actualizarSesionesDebate, cambiarTemaActual, setNombreComite, agregarMocion, activarMocion,
     votarMocion, eliminarMocion, reordenarMociones, ordenarMocionesDisruptividad, registrarIntervencion,
     actualizarRelojGSL, setEnmiendasSesion, guardarResolucionEnmiendas, agregarEnmiendaResolucion,
     resolverEnmiendaResolucion, eliminarEnmiendaResolucion
@@ -1285,7 +1327,7 @@ export const SessionProvider = ({ children }) => {
 
         bc.onmessage = (event) => {
           const data = event.data;
-          if (!data || data.senderTab === tabInstanceId) return;
+          if (!data || data.senderTab === tabInstanceId || data.sessionId !== getSessionScope()) return;
 
           if (data.type === 'SESSION_ACTION') {
             ejecutarAccion(data.accion, data.payload);
@@ -1300,18 +1342,19 @@ export const SessionProvider = ({ children }) => {
 
     // Escuchar eventos storage de otras pestañas
     const handleStorage = (e) => {
-      if (!e.key || !e.newValue) return;
+      const key = localStorage.eventKey(e.key);
+      if (!key || !e.newValue) return;
       try {
-        if (e.key === 'openmun_paises') setPaisesState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_oradores') setOradoresColaState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_oradores_caucus') setOradoresCaucusState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_intervenciones') setRegistroIntervencionesState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_mociones') setMocionesState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_historico_mociones') setHistoricoMocionesState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_caucus') setCaucusActivoState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_votacion') setVotacionSesionState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_agenda') setAgendaSesionState(JSON.parse(e.newValue));
-        if (e.key === 'openmun_comite') setNombreComiteState(e.newValue);
+        if (key === 'openmun_paises') setPaisesState(JSON.parse(e.newValue));
+        if (key === 'openmun_oradores') setOradoresColaState(JSON.parse(e.newValue));
+        if (key === 'openmun_oradores_caucus') setOradoresCaucusState(JSON.parse(e.newValue));
+        if (key === 'openmun_intervenciones') setRegistroIntervencionesState(JSON.parse(e.newValue));
+        if (key === 'openmun_mociones') setMocionesState(JSON.parse(e.newValue));
+        if (key === 'openmun_historico_mociones') setHistoricoMocionesState(JSON.parse(e.newValue));
+        if (key === 'openmun_caucus') setCaucusActivoState(JSON.parse(e.newValue));
+        if (key === 'openmun_votacion') setVotacionSesionState(JSON.parse(e.newValue));
+        if (key === 'openmun_agenda') setAgendaSesionState(JSON.parse(e.newValue));
+        if (key === 'openmun_comite') setNombreComiteState(e.newValue);
       } catch (err) {
         console.error('Error rehidratando desde storage event:', err);
       }
@@ -1389,71 +1432,7 @@ export const SessionProvider = ({ children }) => {
   }, [ejecutarAccion, aplicarEstadoExterno, tabInstanceId]);
 
   // 1. GENERAR SNAPSHOT sesion_activa.json OPTIMIZADO
-  const generarSnapshotSesion = useCallback(() => {
-    // Recuperar alertas y eventos de crisis
-    let crisisEventosExport = [];
-    let crisisRelojExport = null;
-    try {
-      const savedEventos = localStorage.getItem('openmun_crisis_eventos');
-      if (savedEventos) crisisEventosExport = JSON.parse(savedEventos);
-    } catch (e) {}
-    try {
-      const savedReloj = localStorage.getItem('openmun_crisis_reloj');
-      if (savedReloj) crisisRelojExport = JSON.parse(savedReloj);
-    } catch (e) {}
-
-    // Recuperar mensajes y notas
-    let notesExport = [];
-    try {
-      const savedNotes = localStorage.getItem('openmun_notes');
-      if (savedNotes) notesExport = JSON.parse(savedNotes);
-    } catch (e) {}
-
-    // Recuperar configuración de UI
-    let configExport = undefined;
-    try {
-      const savedConfig = localStorage.getItem('openmun_config');
-      if (savedConfig) configExport = JSON.parse(savedConfig);
-    } catch (e) {}
-
-    // Recuperar ajustes de sala
-    let roomSettingsExport = undefined;
-    try {
-      const savedRoomSettings = localStorage.getItem('openmun_room_settings');
-      if (savedRoomSettings) roomSettingsExport = JSON.parse(savedRoomSettings);
-    } catch (e) {}
-
-    const resolucionData = {
-      titulo: enmiendasSesion?.tituloProyecto || enmiendasSesion?.titulo || 'Proyecto de Resolución A/RES/79/1',
-      texto: enmiendasSesion?.textoResolucion || enmiendasSesion?.texto || '',
-      articulos: Array.isArray(enmiendasSesion?.articulos) ? enmiendasSesion.articulos : [],
-      enmiendas: Array.isArray(enmiendasSesion?.enmiendas) ? enmiendasSesion.enmiendas : []
-    };
-
-    return {
-      version: '2.0',
-      tipo: 'openmun_full_backup',
-      fechaExportacion: new Date().toISOString(),
-      comision: nombreComite || 'Asamblea General - openMUN',
-      tipoSesion,
-      paises,
-      oradoresCola,
-      oradoresCaucus,
-      registroIntervenciones,
-      mociones,
-      historicoMociones,
-      caucusActivo,
-      votacionSesion,
-      agendaSesion,
-      proyectoResolucion: resolucionData,
-      enmiendasSesion: resolucionData,
-      eventosCrisis: crisisEventosExport,
-      relojCrisis: crisisRelojExport,
-      notes: notesExport,
-      roomSettings: roomSettingsExport,
-      config: configExport
-    };
-  }, [tipoSesion, paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion]);
+  const generarSnapshotSesion = useCallback(() => createSessionSnapshot(stateRef.current), []);
 
   // 2. EXPORTAR sesion_activa.json A ARCHIVO LOCAL
   const descargarSesionJSON = (customFileName) => {
@@ -1744,7 +1723,7 @@ export const SessionProvider = ({ children }) => {
   // 6. AUTO-GUARDADO CONTINUO EN GOOGLE DRIVE (Debounce de 2.5s)
   useEffect(() => {
     if (!isDriveLinked || !driveFileId || !googleDriveService.isAuthenticated()) return;
-    if (driveSyncStatus === 'conflict') return; // Pausar auto-guardado si hay conflicto pendiente
+    if (driveConflictRef.current) return; // Pausar auto-guardado si hay conflicto pendiente
 
     if (!isInitialSyncRef.current) {
       isInitialSyncRef.current = true;
@@ -1752,7 +1731,9 @@ export const SessionProvider = ({ children }) => {
     }
 
     setDriveSyncStatus('syncing');
+    const scope = getSessionScope();
     const debounceTimer = setTimeout(async () => {
+      if (scope !== getSessionScope() || ['delegate', 'staff', 'secretariat', 'backroom'].includes(localStorage.getItem('openmun_user_role'))) return;
       try {
         const snapshot = generarSnapshotSesion();
         const updated = await googleDriveService.actualizarArchivoSesion(driveFileId, snapshot, {
@@ -1779,7 +1760,7 @@ export const SessionProvider = ({ children }) => {
     }, 2500);
 
     return () => clearTimeout(debounceTimer);
-  }, [paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, isDriveLinked, driveFileId, driveSyncStatus, generarSnapshotSesion]);
+  }, [paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, isDriveLinked, driveFileId, generarSnapshotSesion, auxiliaryRevision]);
 
   // 7. RESOLVER CONFLICTO DE GOOGLE DRIVE
   const resolverConflictoDrive = async (accion = 'recargar') => {
@@ -1921,7 +1902,9 @@ export const SessionProvider = ({ children }) => {
     if (!comiteNameTarget) return;
 
     setCloudSyncStatus('syncing');
+    const scope = getSessionScope();
     const debounceTimer = setTimeout(async () => {
+      if (scope !== getSessionScope() || ['delegate', 'staff', 'secretariat', 'backroom'].includes(localStorage.getItem('openmun_user_role'))) return;
       try {
         const snapshot = generarSnapshotSesion();
         await guardarComite(comiteNameTarget, snapshot);
@@ -1953,7 +1936,8 @@ export const SessionProvider = ({ children }) => {
     enmiendasSesion,
     isCloudLinked,
     cloudActiveComiteName,
-    generarSnapshotSesion
+    generarSnapshotSesion,
+    auxiliaryRevision
   ]);
 
   // 2. CARGAR sesion_activa.json
@@ -1970,7 +1954,7 @@ export const SessionProvider = ({ children }) => {
       if (sesionData.localStorageSnapshot && typeof sesionData.localStorageSnapshot === 'object') {
         Object.entries(sesionData.localStorageSnapshot).forEach(([key, val]) => {
           if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
-            if (key.startsWith('openmun_') && !key.includes('__')) {
+            if (ALLOWED_STORAGE_KEYS.has(key)) {
               if (val !== undefined && val !== null) {
                 const stringVal = typeof val === 'string' ? val : JSON.stringify(val);
                 localStorage.setItem(key, stringVal);
@@ -2068,6 +2052,7 @@ export const SessionProvider = ({ children }) => {
       }
 
       // Mensajes y Notas (Chairs - Backroom - Delegados)
+      if (Array.isArray(sesionData.announcements)) localStorage.setItem('openmun_announcements', JSON.stringify(sesionData.announcements));
       const notesData = sesionData.notes || sesionData.openmun_notes || snapshot.openmun_notes;
       if (Array.isArray(notesData)) {
         localStorage.setItem('openmun_notes', JSON.stringify(notesData));
@@ -2096,7 +2081,7 @@ export const SessionProvider = ({ children }) => {
 
       Object.keys(sesionData).forEach(key => {
         if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
-          if (key.startsWith('openmun_') && !key.includes('__')) {
+          if (ALLOWED_STORAGE_KEYS.has(key)) {
             const val = sesionData[key];
             localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
           }
@@ -2187,7 +2172,7 @@ export const SessionProvider = ({ children }) => {
     });
 
     // 4. Limpiar cualquier clave dinámica de conferencias, comités o tokens
-    if (typeof window !== 'undefined' && window.localStorage) {
+    if (typeof window !== 'undefined' && localStorage) {
       try {
         Object.keys(localStorage).forEach(k => {
           if (
@@ -2242,6 +2227,8 @@ export const SessionProvider = ({ children }) => {
     moverOradorCaucus,
     registroIntervenciones,
     registrarIntervencion,
+    iniciarActividadDebate,
+    registrarActividadDebate,
     descargarSesionJSON,
     cargarSesionJSON,
     borrarDatosLocales,
@@ -2336,6 +2323,8 @@ export const SessionProvider = ({ children }) => {
     moverOradorCaucus,
     registroIntervenciones,
     registrarIntervencion,
+    iniciarActividadDebate,
+    registrarActividadDebate,
     descargarSesionJSON,
     cargarSesionJSON,
     borrarDatosLocales,
@@ -2404,6 +2393,15 @@ export const SessionProvider = ({ children }) => {
   return (
     <SessionContext.Provider value={contextValue}>
       {children}
+      <ConfirmModal
+        isOpen={confirmarSesion}
+        title={t('history.newSessionQuestion', '¿ES ESTO UNA NUEVA SESIÓN?')}
+        message={t('history.newSessionMessage', 'Ha pasado un rato desde el último debate. ¿Quieres iniciar una nueva sesión para el desglose del histórico?')}
+        confirmText={t('history.startNewSession', 'Sí, nueva sesión')}
+        cancelText={t('history.continueSession', 'No, continuar sesión')}
+        onConfirm={() => confirmarSesionRef.current?.resolve(true)}
+        onClose={() => confirmarSesionRef.current?.resolve(false)}
+      />
     </SessionContext.Provider>
   );
 };

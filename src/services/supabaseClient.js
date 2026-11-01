@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../utils/sessionStorage';
 import { createClient } from '@supabase/supabase-js';
 
 const DEFAULT_SUPABASE_URL = 'https://przhpubwzwgulaoprnda.supabase.co';

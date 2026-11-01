@@ -124,22 +124,19 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
 
   const handleOpenLocalSecretariat = () => {
     if (typeof window !== 'undefined') {
-      window.open(`${window.location.origin}${window.location.pathname}?mode=secretariat&local=true`, '_blank');
+      window.open(`${window.location.origin}${window.location.pathname}?mode=secretariat&local=true&room=${encodeURIComponent(roomId)}`, '_blank');
     }
   };
 
   const handleOpenLocalStaff = () => {
     if (typeof window !== 'undefined') {
-      window.open(`${window.location.origin}${window.location.pathname}?mode=staff&local=true`, '_blank');
+      window.open(`${window.location.origin}${window.location.pathname}?mode=staff&local=true&room=${encodeURIComponent(roomId)}`, '_blank');
     }
   };
 
   const generarPasswordRandom = (tipo) => {
     const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
-    let res = '';
-    for (let i = 0; i < 8; i++) {
-      res += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    const res = Array.from(crypto.getRandomValues(new Uint8Array(12)), value => chars[value % chars.length]).join('');
     if (tipo === 'secret') setSecretPassword(res);
     if (tipo === 'backroom') setBackroomPassword(res);
     if (tipo === 'staff') setStaffPassword(res);
@@ -1223,6 +1220,14 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
                     />
                   </div>
+
+                  <label style={{ gridColumn: '1 / -1', border: '1px solid var(--subborder-color)', borderRadius: '10px', padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <span>
+                      <strong style={{ display: 'block', fontSize: '0.82rem' }}>{t('messaging.staffApprovalSetting', 'Requerir aprobación de staff para las notas de delegados')}</strong>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('messaging.staffApprovalDescription', 'El staff debe aprobar cada nota antes de entregarla a su destinatario. Las notas pendientes conservan su revisión aunque desactives esta opción.')}</span>
+                    </span>
+                    <input type="checkbox" checked={Boolean(roomSettings.requireStaffNoteApproval)} onChange={e => updateRoomSettings({ requireStaffNoteApproval: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#22c55e', flexShrink: 0 }} />
+                  </label>
 
                   {/* Toggle Notas a la Mesa */}
                   <div style={{

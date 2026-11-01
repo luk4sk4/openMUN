@@ -1,3 +1,5 @@
+import { useDebateRunning } from '../../../hooks/useDebateRunning';
+import { useElapsedInterval } from '../../../hooks/useElapsedInterval';
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import {
   Clock,
@@ -28,7 +30,7 @@ const CronometroEnmiendasRapido = memo(({
   const [cronometroPais, setCronometroPais] = useState('');
   const [cronometroSegundos, setCronometroSegundos] = useState(60);
   const [cronometroInicial, setCronometroInicial] = useState(60);
-  const [cronometroCorriendo, setCronometroCorriendo] = useState(false);
+  const [cronometroCorriendo, setCronometroCorriendo] = useDebateRunning();
   const [sonidoHabilitado, setSonidoHabilitado] = useState(true);
   const [intervencionGuardadaFeedback, setIntervencionGuardadaFeedback] = useState(false);
   const [colapsado, setColapsado] = useState(false);
@@ -41,22 +43,12 @@ const CronometroEnmiendasRapido = memo(({
   }, [paisesAsistentes, cronometroPais]);
 
   // Intervalo del temporizador
-  useEffect(() => {
-    let interval = null;
-    if (cronometroCorriendo) {
-      interval = setInterval(() => {
-        setCronometroSegundos(prev => {
-          if (prev === 1 && sonidoHabilitado) {
-            playTimerAlarm(0.3);
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [cronometroCorriendo, sonidoHabilitado]);
+  useElapsedInterval(cronometroCorriendo, elapsed => {
+    setCronometroSegundos(prev => {
+      if (prev > 0 && prev <= elapsed && sonidoHabilitado) playTimerAlarm(0.3);
+      return prev - elapsed;
+    });
+  });
 
   const handleGuardar = () => {
     if (!cronometroPais) return;

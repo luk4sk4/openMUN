@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from '../../utils/sessionStorage';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Upload,

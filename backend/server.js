@@ -1,20 +1,44 @@
+require('dotenv').config({ path: require('node:path').join(__dirname, '.env'), quiet: true });
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const { instrument } = require('@socket.io/admin-ui');
 const db = require('./db.js');
+const { hashPin, verifyPin, publicState, createSecurity, removeStoredCredentials } = require('./security.js');
+const security = createSecurity(db);
+for (const conf of db.prepare('SELECT id, pin_admin, pin_acceso FROM conferencias').all()) {
+  db.prepare('UPDATE conferencias SET pin_admin = ?, pin_acceso = ? WHERE id = ?').run(hashPin(conf.pin_admin), hashPin(conf.pin_acceso), conf.id);
+}
+for (const com of db.prepare('SELECT id, pin_mesa, datos_json FROM comites').all()) {
+  db.prepare('UPDATE comites SET pin_mesa = ? WHERE id = ?').run(hashPin(com.pin_mesa), com.id);
+  try {
+    const state = JSON.parse(com.datos_json);
+    if (state && typeof state === 'object' && !Array.isArray(state)) db.prepare('UPDATE comites SET datos_json = ? WHERE id = ?').run(JSON.stringify(removeStoredCredentials(state)), com.id);
+  } catch { /* Keep an invalid legacy snapshot intact for manual recovery. */ }
+}
 const app = express();
 const server = http.createServer(app);
 const nodemailer = require('nodemailer');
+const supabaseKeepAlive = require('./supabaseKeepAlive.js');
 // Middlewares
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean) : ['https://openmun.app', 'http://localhost:5173', 'http://localhost:4173'], exposedHeaders: ['X-OpenMUN-Session'] }));
 app.use(express.json({ limit: '25mb' }));
-// Cargar variables de entorno si existe dotenv
-try {
-	require('dotenv').config();
-} catch (e) {}
-
+const attempts = new Map();
+app.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    const now = Date.now();
+    const key = req.ip;
+    const entry = attempts.get(key);
+    const current = entry && now - entry.start < 60000 ? entry : { start: now, count: 0 };
+    attempts.set(key, current);
+    const isLogin = req.path.endsWith('/acceso') || req.body?.pin_admin_actual;
+    if (isLogin && ++current.count > 20) return res.status(429).json({ error: 'Demasiados intentos. Espera un minuto.' });
+  }
+  next();
+});
+setInterval(() => { for (const [key, value] of attempts) if (Date.now() - value.start > 60000) attempts.delete(key); }, 60000).unref();
+app.use(security.middleware);
 // Configuración SMTP para respaldos por correo
 const smtpConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
 const transporter = smtpConfigured ? nodemailer.createTransport({
@@ -45,12 +69,11 @@ if (transporter) {
 // Configuración de Socket.io
 const io = new Server(server, {
 	cors: {
-		origin: function (origin, callback) {
-			callback(null, true);
-		},
+		origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean) : ['https://openmun.app', 'http://localhost:5173', 'http://localhost:4173'],
 		credentials: true
 	},
-	perMessageDeflate: true
+	perMessageDeflate: true,
+  maxHttpBufferSize: 1024 * 1024
 });
 
 // Panel de control (@socket.io/admin-ui)
@@ -63,7 +86,6 @@ if (process.env.SOCKET_ADMIN_PASSWORD_HASH) {
 		}
 	});
 }
-const salasConTemporizador = new Set();
 // ==========================================
 // CONSULTAS PREPARADAS SQLITE
 // ==========================================
@@ -95,7 +117,7 @@ const qUpsertComite = db.prepare(`
   VALUES (@id, @conferencia_id, @nombre, @pin_mesa, @datos_json, CURRENT_TIMESTAMP)
   ON CONFLICT(id) DO UPDATE SET
     nombre = COALESCE(excluded.nombre, comites.nombre),
-    pin_mesa = COALESCE(excluded.pin_mesa, comites.pin_mesa),
+    pin_mesa = CASE WHEN @actualizar_pin THEN excluded.pin_mesa ELSE comites.pin_mesa END,
     datos_json = excluded.datos_json,
     actualizado_en = CURRENT_TIMESTAMP
 `);
@@ -119,8 +141,8 @@ const qUpdateComiteEstado = db.prepare(`
 const qDeleteComite = db.prepare(`DELETE FROM comites WHERE id = ?`);
 // Avisos
 const qInsertAviso = db.prepare(`
-  INSERT INTO avisos (conferencia_id, comite_id, emisor, tipo, mensaje) 
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO avisos (conferencia_id, comite_id, emisor, tipo, mensaje, creado_por)
+  VALUES (?, ?, ?, ?, ?, ?)
 `);
 const qGetAvisosActivos = db.prepare(`
   SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
@@ -290,32 +312,36 @@ const qGetComitesDeConf = db.prepare(`
   WHERE conferencia_id = ?
 `);
 const qDeleteConferencia = db.prepare(`
-  DELETE FROM conferencias WHERE id = ?
+  DELETE FROM conferencias WHERE id = ? AND ultimo_cambio < datetime('now', '-30 days')
 `);
 // Helper para parsear comités
-function mapearComites(rawList) {
+function mapearComites(rawList, identity) {
         return (rawList || []).map(c => {
                 let parsedDatos = c.datos_json;
                 if (typeof parsedDatos === 'string') {
                         try { parsedDatos = JSON.parse(parsedDatos); } catch (e) { parsedDatos = {}; }
                 }
                 return {
-                        ...c,
+                        id: c.id, conferencia_id: c.conferencia_id, nombre: c.nombre, tipo_sesion: c.tipo_sesion, topico_actual: c.topico_actual, actualizado_en: c.actualizado_en,
                         requierePinMesa: Boolean(c.pin_mesa),
-                        datos_json: parsedDatos || {}
+                        datos_json: identity?.role === 'secretariat' || (identity?.role === 'chair' && identity.comiteId === c.id) ? parsedDatos || {} : publicState(parsedDatos)
                 };
         });
 }
 // ==========================================
 // AUTO-LIMPIEZA Y RESPALDO (30 DÍAS)
 // ==========================================
-async function limpiarConferenciasInactivas() {
+async function limpiarConferenciasInactivas(mailTransport = transporter) {
         try {
                 const inactivas = qGetConferenciasInactivas.all();
                 if (inactivas.length === 0) return;
                 for (const conf of inactivas) {
                         console.log(`[Auto-Limpieza] Archivando conferencia: ${conf.nombre} (${conf.id})`);
                         const comites = qGetComitesDeConf.all(conf.id);
+                        if (!conf.email_admin || !mailTransport) {
+                          console.warn(`[Auto-Limpieza] ${conf.id}: conservada sin respaldo confirmado.`);
+                          continue;
+                        }
                         if (conf.email_admin) {
                                 const backupData = JSON.stringify({
                                         conferencia: {
@@ -336,9 +362,9 @@ async function limpiarConferenciasInactivas() {
                                                 };
                                         })
                                 }, null, 2);
-                                				if (transporter && smtpConfigured) {
+                                if (mailTransport) {
 					try {
-						await transporter.sendMail({
+						await mailTransport.sendMail({
 							from: process.env.SMTP_FROM || `"OpenMUN" <${process.env.SMTP_USER}>`,
 							to: conf.email_admin,
 							subject: `Respaldo y Cierre por Inactividad: ${conf.nombre}`,
@@ -353,6 +379,7 @@ async function limpiarConferenciasInactivas() {
 						});
 					} catch (emailErr) {
 						console.error(`[Auto-Limpieza] Error enviando email a ${conf.email_admin}:`, emailErr.message);
+                        continue;
 					}
 				}
                         }
@@ -362,7 +389,7 @@ async function limpiarConferenciasInactivas() {
                 console.error('[Auto-Limpieza] Error:', err.message);
         }
 }
-setInterval(limpiarConferenciasInactivas, 24 * 60 * 60 * 1000);
+setInterval(limpiarConferenciasInactivas, 24 * 60 * 60 * 1000).unref();
 limpiarConferenciasInactivas();
 setInterval(() => {
         try {
@@ -370,22 +397,38 @@ setInterval(() => {
         } catch (err) {
                 console.error('Error limpiando avisos antiguos:', err.message);
         }
-}, 60 * 60 * 1000);
+}, 60 * 60 * 1000).unref();
+// Supabase Keep-Alive: prevención de pausa por inactividad del free-tier (7 días)
+if (process.env.SUPABASE_KEEPALIVE_ENABLED !== 'false') supabaseKeepAlive.startKeepAlive();
+
 // ==========================================
 // ENDPOINTS REST API
 // ==========================================
+// 0. Supabase Keep-Alive Status & Ping manual
+app.get('/api/supabase/status', (req, res) => {
+	res.json(supabaseKeepAlive.getStatus());
+});
+app.get('/api/supabase/ping', async (req, res) => {
+	try {
+		const resultado = await supabaseKeepAlive.pingSupabase();
+		res.json(resultado);
+	} catch (err) {
+		res.status(500).json({ ok: false, error: err.message });
+	}
+});
+
 // 1. Crear Conferencia
 app.post('/api/conferencias', (req, res) => {
         const { id, nombre, pin_admin, pin_acceso, email_admin } = req.body;
-        if (!id || !nombre || !pin_admin) {
-                return res.status(400).json({ error: 'Faltan campos obligatorios (id, nombre, pin_admin)' });
+        if (typeof id !== 'string' || !/^[a-zA-Z0-9_-]{3,80}$/.test(id) || typeof nombre !== 'string' || !nombre.trim() || nombre.length > 200 || typeof pin_admin !== 'string' || pin_admin.trim().length < 4 || pin_admin.length > 128) {
+                return res.status(400).json({ error: 'Se requiere un ID válido, nombre y un PIN de al menos 4 caracteres.' });
         }
         try {
                 qInsertConferencia.run({
                         id: id.toLowerCase().trim(),
                         nombre: nombre.trim(),
-                        pin_admin: pin_admin.toString().trim(),
-                        pin_acceso: pin_acceso ? pin_acceso.toString().trim() : null,
+                        pin_admin: hashPin(pin_admin.toString().trim()),
+                        pin_acceso: hashPin(pin_acceso ? pin_acceso.toString().trim() : null),
                         email_admin: email_admin ? email_admin.toString().trim() : null
                 });
                 res.json({ ok: true, mensaje: 'Conferencia creada exitosamente' });
@@ -403,16 +446,16 @@ app.post('/api/conferencias/:id/acceso', (req, res) => {
         if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
         const { pin } = req.body;
         const pinRecibido = pin ? pin.toString().trim() : '';
-        if (conf.pin_acceso && conf.pin_acceso !== pinRecibido) {
+        if (conf.pin_acceso && !verifyPin(pinRecibido, conf.pin_acceso)) {
                 return res.status(401).json({ error: 'PIN de acceso incorrecto' });
         }
         const rawComites = qGetComitesResumen.all(conf.id);
         res.json({
                 id: conf.id,
                 nombre: conf.nombre,
-                email_admin: conf.email_admin,
+                ...(req.identity?.role === 'secretariat' ? { email_admin: conf.email_admin } : {}),
                 requierePin: Boolean(conf.pin_acceso),
-                comites: mapearComites(rawComites)
+                comites: mapearComites(rawComites, req.identity)
         });
 });
 // 3. Resumen de Conferencia (Dashboard Secretaría)
@@ -424,9 +467,9 @@ app.get('/api/conferencias/:id/resumen', (req, res) => {
         res.json({
                 id: conf.id,
                 nombre: conf.nombre,
-                email_admin: conf.email_admin,
+                ...(req.identity?.role === 'secretariat' ? { email_admin: conf.email_admin } : {}),
                 requierePin: Boolean(conf.pin_acceso),
-                comites: mapearComites(rawComites)
+                comites: mapearComites(rawComites, req.identity)
         });
 });
 // 4. Actualizar Conferencia
@@ -438,7 +481,7 @@ app.patch('/api/conferencias/:id', (req, res) => {
         }
         const conf = qGetConferencia.get(confId);
         if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
-        if (conf.pin_admin !== pin_admin_actual.toString().trim()) {
+        if (!verifyPin(pin_admin_actual.toString().trim(), conf.pin_admin)) {
                 return res.status(401).json({ error: 'PIN de administración incorrecto' });
         }
         try {
@@ -449,8 +492,8 @@ app.patch('/api/conferencias/:id', (req, res) => {
                 qUpdateConferencia.run({
                         id: confId,
                         nombre: finalNombre,
-                        pin_admin: finalPinAdmin,
-                        pin_acceso: finalPinAcceso,
+                        pin_admin: hashPin(finalPinAdmin),
+                        pin_acceso: hashPin(finalPinAcceso),
                         email_admin: finalEmail
                 });
                 res.json({ ok: true, mensaje: 'Conferencia actualizada correctamente' });
@@ -463,13 +506,16 @@ app.post('/api/conferencias/:id/comites', (req, res) => {
         const conferencia_id = req.params.id.toLowerCase().trim();
         const { id, nombre, pin_mesa, datos_json } = req.body;
         const comiteId = id ? id.toLowerCase().trim() : `${conferencia_id}_${Date.now()}`;
+        const existing = qGetComite.get(comiteId);
+        if (existing && existing.conferencia_id !== conferencia_id) return res.status(403).json({ error: 'El comité pertenece a otra conferencia.' });
         const jsonStr = typeof datos_json === 'object' ? JSON.stringify(datos_json) : (datos_json || '{}');
         try {
                 qUpsertComite.run({
                         id: comiteId,
                         conferencia_id,
                         nombre: nombre ? nombre.trim() : 'Comité sin nombre',
-                        pin_mesa: pin_mesa ? pin_mesa.toString().trim() : null,
+                        pin_mesa: hashPin(pin_mesa ? pin_mesa.toString().trim() : null),
+                        actualizar_pin: pin_mesa !== undefined ? 1 : 0,
                         datos_json: jsonStr
                 });
                 qTouchConferencia.run(conferencia_id);
@@ -491,9 +537,9 @@ app.get('/api/comites/:id', (req, res) => {
                         try { parsedDatos = JSON.parse(parsedDatos); } catch (e) { parsedDatos = {}; }
                 }
                 res.json({
-                        ...comite,
+                        ...mapearComites([comite], req.identity)[0],
                         requierePinMesa: Boolean(comite.pin_mesa),
-                        datos_json: parsedDatos || {}
+                        datos_json: req.identity?.role === 'secretariat' || req.identity?.role === 'chair' ? parsedDatos || {} : publicState(parsedDatos)
                 });
         } catch (err) {
                 res.status(500).json({ error: err.message });
@@ -507,7 +553,7 @@ app.post('/api/comites/:id/acceso', (req, res) => {
                 if (!comite) return res.status(404).json({ error: 'Comité no encontrado' });
                 const { pin } = req.body;
                 const pinRecibido = pin ? pin.toString().trim() : '';
-                if (comite.pin_mesa && comite.pin_mesa !== pinRecibido) {
+                if (req.identity.role !== 'secretariat' && comite.pin_mesa && !verifyPin(pinRecibido, comite.pin_mesa)) {
                         return res.status(401).json({ error: 'PIN de Mesa Directiva incorrecto' });
                 }
                 let parsedDatos = comite.datos_json;
@@ -518,9 +564,8 @@ app.post('/api/comites/:id/acceso', (req, res) => {
                         ok: true,
                         id: comite.id,
                         nombre: comite.nombre,
-                        pin_mesa: comite.pin_mesa,
                         requierePinMesa: Boolean(comite.pin_mesa),
-                        datos_json: parsedDatos || {}
+                        datos_json: req.identity?.role === 'secretariat' || req.identity?.role === 'chair' ? parsedDatos || {} : publicState(parsedDatos)
                 });
         } catch (err) {
                 res.status(500).json({ error: err.message });
@@ -546,7 +591,7 @@ app.patch('/api/comites/:id', (req, res) => {
                 qUpdateComiteCompleto.run({
                         id: comiteId,
                         nombre: finalNombre,
-                        pin_mesa: finalPin,
+                        pin_mesa: hashPin(finalPin),
                         tipo_sesion: finalTipo,
                         topico_actual: finalTopico,
                         datos_json: finalDatosJson
@@ -589,6 +634,8 @@ app.delete('/api/conferencias/:conferencia_id/comites/:id', (req, res) => {
         const comiteId = req.params.id.toLowerCase().trim();
         const confId = req.params.conferencia_id.toLowerCase().trim();
         try {
+                const existing = qGetComite.get(comiteId);
+                if (existing?.conferencia_id !== confId) return res.status(404).json({ error: 'Comité no encontrado en esta conferencia.' });
                 const info = qDeleteComite.run(comiteId);
                 qTouchConferencia.run(confId);
                 res.json({ ok: true, eliminados: info.changes });
@@ -605,7 +652,7 @@ app.post('/api/conferencias/:id/avisos', (req, res) => {
 	}
 	try {
 		const targetComite = comite_id ? comite_id.trim() : null;
-		const emisorNombre = emisor ? emisor.trim() : 'Organización';
+		const emisorNombre = req.identity.role === 'secretariat' ? (emisor ? emisor.trim() : 'Organización') : `${req.identity.role} (${req.identity.comiteId || confId})`;
 		const tipoAviso = tipo || 'info';
 		const textoMensaje = mensaje.trim();
 
@@ -614,7 +661,8 @@ app.post('/api/conferencias/:id/avisos', (req, res) => {
 			targetComite,
 			emisorNombre,
 			tipoAviso,
-			textoMensaje
+			textoMensaje,
+      `${req.identity.role}:${req.identity.comiteId || ''}`
 		);
 
 		const nuevoAviso = {
@@ -628,13 +676,10 @@ app.post('/api/conferencias/:id/avisos', (req, res) => {
 		};
 
 		// Broadcast en tiempo real por Socket.io
-		io.emit('nuevo-aviso', nuevoAviso);
-		io.to(confId).emit('nuevo-aviso', nuevoAviso);
-		if (targetComite) {
-			io.to(targetComite).emit('nuevo-aviso', nuevoAviso);
-			io.to(`${confId}_${targetComite}`).emit('nuevo-aviso', nuevoAviso);
-		}
-
+		for (const peer of io.sockets.sockets.values()) {
+      const identity = peer.data.identity;
+      if (identity?.confId === confId && avisoCorrespondeBackend(nuevoAviso, identity.role === 'secretariat' ? 'secretaria' : identity.role, identity.comiteId)) peer.emit('nuevo-aviso', nuevoAviso);
+    }
 		res.json({ ok: true, id: info.lastInsertRowid, aviso: nuevoAviso });
 	} catch (err) {
 		res.status(500).json({ error: err.message });
@@ -798,11 +843,12 @@ function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], cur
 app.get('/api/conferencias/:id/avisos', (req, res) => {
 	const confId = req.params.id.toLowerCase().trim();
 	const { comite_id, role, rol, todos, comite_nombre } = req.query;
-	const userRole = (role || rol || '').toLowerCase().trim();
+	const userRole = req.identity.role === 'secretariat' ? 'secretaria' : req.identity.role;
+  const effectiveComiteId = req.identity.comiteId || comite_id;
 
 	try {
 		const todosAvisos = qGetAvisosActivos.all(confId) || [];
-		if (todos === 'true' || userRole === 'secretaria' || userRole === 'organizacion' || userRole === 'admin') {
+		if (userRole === 'secretaria') {
 			return res.json({ avisos: todosAvisos });
 		}
 
@@ -812,7 +858,7 @@ app.get('/api/conferencias/:id/avisos', (req, res) => {
 		} catch (e) {}
 
 		const avisosFiltrados = todosAvisos.filter(a =>
-			avisoCorrespondeBackend(a, userRole, comite_id, comitesConf, comite_nombre)
+			avisoCorrespondeBackend(a, userRole, effectiveComiteId, comitesConf, comite_nombre)
 		);
 		res.json({ avisos: avisosFiltrados });
 	} catch (err) {
@@ -824,7 +870,7 @@ app.patch('/api/avisos/:id/desactivar', (req, res) => {
 	const avisoId = req.params.id;
 	try {
 		qDesactivarAviso.run(avisoId);
-		io.emit('aviso-desactivado', { id: Number(avisoId) || avisoId });
+		io.to(`conf:${req.identity.confId}`).emit('aviso-desactivado', { id: Number(avisoId) || avisoId });
 		res.json({ ok: true });
 	} catch (err) {
 		res.status(500).json({ error: err.message });
@@ -835,7 +881,7 @@ app.delete('/api/avisos/:id', (req, res) => {
 	const avisoId = req.params.id;
 	try {
 		qDesactivarAviso.run(avisoId);
-		io.emit('aviso-desactivado', { id: Number(avisoId) || avisoId });
+		io.to(`conf:${req.identity.confId}`).emit('aviso-desactivado', { id: Number(avisoId) || avisoId });
 		res.json({ ok: true });
 	} catch (err) {
 		res.status(500).json({ error: err.message });
@@ -844,7 +890,7 @@ app.delete('/api/avisos/:id', (req, res) => {
 
 // 13. Checklist Staff
 app.get('/api/conferencias/:id/checklist', (req, res) => {
-	const { comite_id } = req.query;
+	const comite_id = req.identity.comiteId || req.query.comite_id;
 	const confId = req.params.id.toLowerCase().trim();
 	try {
 		let checklist;
@@ -895,7 +941,7 @@ app.delete('/api/checklist/:id', (req, res) => {
 	}
 });
 app.delete('/api/conferencias/:id/checklist/completados', (req, res) => {
-	const { comite_id } = req.query;
+	const comite_id = req.identity.comiteId || req.query.comite_id;
 	const confId = req.params.id.toLowerCase().trim();
 	try {
 		let info;
@@ -914,74 +960,11 @@ app.delete('/api/conferencias/:id/checklist/completados', (req, res) => {
 // ==========================================
 // EVENTOS WEBSOCKET (SOCKET.IO)
 // ==========================================
-io.on('connection', (socket) => {
-	console.log(`Usuario conectado: ${socket.id}`);
-	socket.on('unirse-conferencia', (confId) => {
-		if (!confId) return;
-		const confNorm = confId.toString().trim().toLowerCase();
-		socket.join(confNorm);
-	});
-	socket.on('unirse-comite', (sala) => {
-		if (!sala) return;
-		const salaNorm = sala.toString().trim();
-		socket.join(salaNorm);
-		try {
-			const comiteGuardado = qGetComite.get(salaNorm.toLowerCase());
-			if (comiteGuardado && comiteGuardado.datos_json) {
-				const datos = typeof comiteGuardado.datos_json === 'string'
-					? JSON.parse(comiteGuardado.datos_json)
-					: comiteGuardado.datos_json;
-				socket.emit('cargar-estado-inicial', datos);
-			}
-		} catch (e) {
-			console.error('Error recuperando estado de SQLite en socket:', e.message);
-		}
-                if (!salasConTemporizador.has(salaNorm)) {
-                        salasConTemporizador.add(salaNorm);
-                        setTimeout(() => {
-                                io.to(salaNorm).emit('cierre-forzado', 'La sala ha excedido el límite de 12 horas.');
-                                io.in(salaNorm).socketsLeave(salaNorm);
-                                salasConTemporizador.delete(salaNorm);
-                        }, 12 * 60 * 60 * 1000);
-                }
-        });
-        socket.on('enviar-datos', (data) => {
-                if (!data || !data.sala) return;
-                const salaNorm = data.sala.toString().trim();
-                socket.to(salaNorm).emit('nuevos-datos', data.json);
-                try {
-                        if (data.json && typeof data.json === 'object' && !data.json.type && !data.json._c) {
-                                const jsonStr = JSON.stringify(data.json);
-                                const confId = salaNorm.includes('_') ? salaNorm.split('_')[0] : salaNorm;
-
-                                qUpsertComite.run({
-                                        id: salaNorm.toLowerCase(),
-                                        conferencia_id: confId.toLowerCase(),
-                                        nombre: data.json.nombreComite || data.json.comision || null,
-                                        pin_mesa: null,
-                                        datos_json: jsonStr
-                                });
-                                qTouchConferencia.run(confId.toLowerCase());
-                        }
-                } catch (err) { }
-        });
-        socket.on('disconnecting', () => {
-                for (const sala of socket.rooms) {
-                        if (sala !== socket.id) {
-                                socket.to(sala).emit('nuevos-datos', {
-                                        type: 'PEER_DISCONNECTED',
-                                        payload: { socketId: socket.id }
-                                });
-                        }
-                }
-        });
-        socket.on('disconnect', () => {
-                console.log(`Usuario desconectado: ${socket.id}`);
-        });
-});
+require('./realtime.js').attachRealtime(io, db, security);
 // Iniciar servidor
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 server.listen(PORT, HOST, () => {
         console.log(`Servidor OpenMUN activo y escuchando en ${HOST}:${PORT}`);
 });
+module.exports = { app, server, io, db, limpiarConferenciasInactivas };

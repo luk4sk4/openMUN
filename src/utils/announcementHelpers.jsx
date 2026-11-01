@@ -1,3 +1,4 @@
+import { sessionStore as localStorage } from './sessionStorage';
 import React from 'react';
 import { Globe, Users, Shield, Landmark, MessageSquare, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 

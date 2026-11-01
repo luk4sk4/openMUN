@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useDebateRunning } from '../../hooks/useDebateRunning';
+import { useElapsedInterval } from '../../hooks/useElapsedInterval';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Plus, Minus, Square, Download, Clock, CheckCircle2, ArrowRightLeft, Shield, HelpCircle, SkipForward, AlertTriangle, ChevronUp, ChevronDown, PictureInPicture2, Search, X, Users } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
@@ -13,7 +15,7 @@ const CronometroPrincipal = () => {
   const [tiempoInicial, setTiempoInicial] = useState(60);
   const [inputSegundos, setInputSegundos] = useState(60);
   const [segundosRestantes, setSegundosRestantes] = useState(60);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
   const [mensajeGuardado, setMensajeGuardado] = useState(false);
   const [modalYieldOpen, setModalYieldOpen] = useState(false);
   const [delegacionDropdownOpen, setDelegacionDropdownOpen] = useState(false);
@@ -32,7 +34,6 @@ const CronometroPrincipal = () => {
     return lista.filter(p => (p.nombre || '').toLowerCase().includes(q));
   }, [paises, oradorActual.nombre, delegacionBusqueda]);
 
-  const timerRef = useRef(null);
 
   // Sincronizar estado del reloj con SessionContext (sin forzar re-renders masivos del árbol)
   useEffect(() => {
@@ -53,16 +54,9 @@ const CronometroPrincipal = () => {
     }
   }, [yieldEvento, tiempoInicial]);
 
-  useEffect(() => {
-    if (corriendo) {
-      timerRef.current = setInterval(() => {
-        setSegundosRestantes(prev => prev - 1);
-      }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [corriendo]);
+  useElapsedInterval(corriendo, elapsed => {
+    setSegundosRestantes(prev => prev - elapsed);
+  });
 
   const handleStartPause = () => setCorriendo(!corriendo);
 

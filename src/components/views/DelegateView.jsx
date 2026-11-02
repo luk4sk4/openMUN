@@ -11,7 +11,7 @@ import {
   AlertTriangle, 
   ShieldCheck, 
   Layers, 
-  Sparkles,
+  Hand,
   Inbox,
   PenTool,
   HelpCircle,
@@ -1782,7 +1782,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     gap: '0.35rem'
                   }}
                 >
-                  <Sparkles size={14} /> Levantar Punto / POI
+                  <Hand size={14} /> Levantar Punto / POI
                 </button>
               </div>
             </div>
@@ -2907,7 +2907,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       alignItems: 'center',
                       gap: '0.3rem'
                     }}>
-                      <Sparkles size={12} color="#eab308" />
+                      <Eye size={12} />
                       <span>Previsualización del Cambio en el Documento</span>
                     </div>
 
@@ -3358,7 +3358,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             {/* Cabecera del Formulario */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <Sparkles size={16} style={{ color: '#38bdf8' }} />
+                <Vote size={16} style={{ color: 'var(--accent-color)' }} />
                 <div>
                   <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', letterSpacing: '-0.01em', color: 'var(--text-color)' }}>
                     Proponer Moción de Debate

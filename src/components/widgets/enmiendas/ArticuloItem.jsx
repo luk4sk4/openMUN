@@ -7,7 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
   FilePlus,
-  Sparkles,
+
   Scissors
 } from 'lucide-react';
 import EnmiendaCard from './EnmiendaCard';

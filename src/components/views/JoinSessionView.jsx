@@ -8,7 +8,7 @@ import {
   Lock, 
   Globe, 
   AlertCircle, 
-  Sparkles, 
+
   Layers, 
   Eye, 
   EyeOff, 

@@ -12,7 +12,7 @@ import {
   Globe,
   Star,
   Zap,
-  Sparkles,
+
   Flame,
   Dices
 } from 'lucide-react';
@@ -39,7 +39,7 @@ const ICON_MAP = {
   Globe,
   Star,
   Zap,
-  Sparkles,
+
   Flame,
   Dices
 };

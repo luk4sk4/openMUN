@@ -6,7 +6,8 @@ import {
   Vote,
   FileSignature,
   BarChart2,
-  LayoutGrid
+  LayoutGrid,
+  Siren
 } from 'lucide-react';
 
 // Configuración de pestañas con iconos SVG y claves de traducción i18n
@@ -18,10 +19,11 @@ export const TAB_CONFIG = {
   VOTING: { labelKey: 'tabs.voting', label: 'Votación', Icon: Vote },
   ENMIENDAS: { labelKey: 'tabs.amendments', label: 'Enmiendas', Icon: FileSignature },
   INFO: { labelKey: 'tabs.info', label: 'Info', Icon: BarChart2 },
+  CRISIS: { labelKey: 'tabs.crisis', label: 'Crisis', Icon: Siren },
   LIBRE: { labelKey: 'tabs.custom', label: 'Libre', Icon: LayoutGrid },
 };
 
-export const DASHBOARD_TABS = ['HOME', 'COMIENZO', 'GSL', 'DEBATE', 'VOTING', 'ENMIENDAS', 'INFO', 'LIBRE'];
+export const DASHBOARD_TABS = ['COMIENZO', 'GSL', 'DEBATE', 'VOTING', 'ENMIENDAS', 'INFO', 'LIBRE'];
 
 export const TAB_TITLES = {
   HOME: 'OpenMUN - Plataforma Libre de Gestión para Modelos de Naciones Unidas (MUN)',
@@ -31,6 +33,7 @@ export const TAB_TITLES = {
   VOTING: 'OpenMUN - Sistema de Votación Oficial y Mapa de Votos',
   ENMIENDAS: 'OpenMUN - Controlador de Enmiendas y Proyecto de Resolución',
   INFO: 'OpenMUN - Matriz de Quórum e Información de Delegaciones',
+  CRISIS: 'OpenMUN - Centro de Crisis',
   LIBRE: 'OpenMUN - Panel de Widgets Personalizable',
 };
 
@@ -41,3 +44,5 @@ export const TAB_TITLES = {
 export function updateDocumentTitleForTab(tab) {
   document.title = TAB_TITLES[tab] || TAB_TITLES.HOME;
 }
+
+export const getDashboardTabs = (isModular) => DASHBOARD_TABS.map(tab => tab === 'LIBRE' && !isModular ? 'CRISIS' : tab);

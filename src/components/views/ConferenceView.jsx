@@ -21,7 +21,7 @@ import {
   Clock,
   ExternalLink,
   Layers,
-  Sparkles,
+
   RefreshCw,
   Sliders,
   Settings,

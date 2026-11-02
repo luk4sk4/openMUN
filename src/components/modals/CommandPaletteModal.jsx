@@ -8,7 +8,6 @@ import {
   RotateCcw,
   Plus,
   Minus,
-  Home,
   Settings,
   Mic,
   Timer,
@@ -38,6 +37,7 @@ const CommandPaletteModal = ({
   isOpen,
   onClose,
   activeTab,
+  isModular = false,
   setActiveTab,
   openLiveModal,
   openExportModal,
@@ -152,27 +152,18 @@ const CommandPaletteModal = ({
         title: 'Ver Analíticas y Gráficos de Participación',
         desc: 'Visualiza el podio de oradores, balance GSL/Caucus y delegaciones silenciosas',
         icon: BarChart2,
-        shortcut: 'Alt + 7',
+        shortcut: 'Alt + 6',
         action: () => setActiveTab('INFO')
       },
 
       // ── NAVEGACIÓN DE PESTAÑAS ──
-      {
-        id: 'tab-home',
-        category: 'Navegación',
-        title: t('tabs.home', 'Ir a Inicio'),
-        desc: t('palette.tabHomeDesc', 'Vista principal y bienvenida'),
-        icon: Home,
-        shortcut: 'Alt + 1',
-        action: () => setActiveTab('HOME')
-      },
       {
         id: 'tab-setup',
         category: 'Navegación',
         title: t('tabs.setup', 'Ir a Comienzo y Agenda'),
         desc: t('palette.tabSetupDesc', 'Matriz de asistencia, agenda e importación'),
         icon: Settings,
-        shortcut: 'Alt + 2',
+        shortcut: 'Alt + 1',
         action: () => setActiveTab('COMIENZO')
       },
       {
@@ -181,7 +172,7 @@ const CommandPaletteModal = ({
         title: t('tabs.gsl', 'Ir a Lista General de Oradores (GSL)'),
         desc: t('palette.tabGslDesc', 'Cronómetro principal y cola de discursos'),
         icon: Mic,
-        shortcut: 'Alt + 3',
+        shortcut: 'Alt + 2',
         action: () => setActiveTab('GSL')
       },
       {
@@ -190,7 +181,7 @@ const CommandPaletteModal = ({
         title: t('tabs.debate', 'Ir a Debate y Mociones'),
         desc: t('palette.tabDebateDesc', 'Pizarra de mociones y cronómetro de caucus'),
         icon: Timer,
-        shortcut: 'Alt + 4 / M',
+        shortcut: 'Alt + 3 / M',
         action: () => setActiveTab('DEBATE')
       },
       {
@@ -199,7 +190,7 @@ const CommandPaletteModal = ({
         title: t('tabs.voting', 'Ir a Votación Oficial'),
         desc: t('palette.tabVotingDesc', 'Votación nominal, mapa de votos y quórum'),
         icon: Vote,
-        shortcut: 'Alt + 5 / V',
+        shortcut: 'Alt + 4 / V',
         action: () => setActiveTab('VOTING')
       },
       {
@@ -208,7 +199,7 @@ const CommandPaletteModal = ({
         title: t('tabs.amendments', 'Ir a Enmiendas y Resolución'),
         desc: t('palette.tabAmendmentsDesc', 'Controlador de enmiendas y proyecto de resolución'),
         icon: FileSignature,
-        shortcut: 'Alt + 6',
+        shortcut: 'Alt + 5',
         action: () => setActiveTab('ENMIENDAS')
       },
       {
@@ -217,17 +208,17 @@ const CommandPaletteModal = ({
         title: t('tabs.info', 'Ir a Información y Quórum'),
         desc: t('palette.tabInfoDesc', 'Histórico de oradores y matriz de países'),
         icon: BarChart2,
-        shortcut: 'Alt + 7',
+        shortcut: 'Alt + 6',
         action: () => setActiveTab('INFO')
       },
       {
         id: 'tab-custom',
         category: 'Navegación',
-        title: t('tabs.custom', 'Ir a Panel Libre'),
-        desc: t('palette.tabCustomDesc', 'Tablero personalizado de widgets'),
+        title: isModular ? t('tabs.custom', 'Ir a Panel Libre') : t('tabs.crisis', 'Crisis'),
+        desc: isModular ? t('palette.tabCustomDesc', 'Tablero personalizado de widgets') : 'Gestión de crisis, noticias y pizarra',
         icon: LayoutGrid,
-        shortcut: 'Alt + 8',
-        action: () => setActiveTab('LIBRE')
+        shortcut: 'Alt + 7',
+        action: () => setActiveTab(isModular ? 'LIBRE' : 'CRISIS')
       },
 
       // ── AJUSTES Y PREFERENCIAS ──
@@ -268,7 +259,7 @@ const CommandPaletteModal = ({
         action: () => openExportModal?.()
       }
     ];
-  }, [t, setActiveTab, toggleThemeMode, isLight, openAccessModal, openLiveModal, openExportModal]);
+  }, [t, isModular, setActiveTab, toggleThemeMode, isLight, openAccessModal, openLiveModal, openExportModal]);
 
   // Filtrar comandos según texto de búsqueda
   const filteredCommands = useMemo(() => {

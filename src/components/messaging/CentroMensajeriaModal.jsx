@@ -4,7 +4,7 @@ import {
   Globe,
   X,
   Radio,
-  Sparkles,
+
   Layers,
   Shield,
   Users,
@@ -73,21 +73,21 @@ const CentroMensajeriaModal = ({
       <div style={{
         backgroundColor: 'var(--panel-color)',
         border: '1px solid var(--border-color)',
-        borderRadius: '18px',
+        borderRadius: '10px',
         width: '1100px',
         maxWidth: '96vw',
         height: '88vh',
         maxHeight: '920px',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 30px 80px rgba(0,0,0,0.65)',
+        boxShadow: '0 16px 36px rgba(0,0,0,0.4)',
         color: 'var(--text-color)',
-        fontFamily: 'Inter, system-ui, sans-serif',
+        fontFamily: 'var(--font-family)',
         overflow: 'hidden'
       }}>
         {/* Cabecera del Centro de Mensajería */}
         <div style={{
-          padding: '1.15rem 1.5rem',
+          padding: '1rem 1.25rem',
           borderBottom: '1px solid var(--subborder-color)',
           backgroundColor: 'var(--card-header-bg)',
           display: 'flex',
@@ -98,34 +98,35 @@ const CentroMensajeriaModal = ({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              backgroundColor: activeTab === 'COMITE' ? 'rgba(59, 130, 246, 0.16)' : 'rgba(139, 92, 246, 0.16)',
-              border: `1px solid ${activeTab === 'COMITE' ? '#3b82f644' : '#8b5cf644'}`,
+              width: '40px',
+              height: '40px',
+              borderRadius: 'var(--border-radius, 6px)',
+              backgroundColor: 'var(--accent-soft)',
+              border: '1px solid var(--accent-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: activeTab === 'COMITE' ? '#3b82f6' : '#8b5cf6',
-              transition: 'all 0.2s ease'
+              color: 'var(--accent-color)',
+              transition: 'all 0.15s ease'
             }}>
-              {activeTab === 'COMITE' ? <MessageSquare size={22} /> : <Globe size={22} />}
+              {activeTab === 'COMITE' ? <MessageSquare size={20} /> : <Globe size={20} />}
             </div>
 
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', letterSpacing: '-0.01em' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', letterSpacing: '-0.01em' }}>
                   Centro Unificado de Mensajería & Avisos
                 </h3>
                 <span style={{
                   fontSize: '0.68rem',
-                  fontWeight: '800',
+                  fontWeight: '700',
                   textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
                   padding: '0.15rem 0.55rem',
-                  borderRadius: '100px',
-                  backgroundColor: isLiveActive ? 'rgba(34, 197, 94, 0.18)' : 'rgba(113, 113, 122, 0.2)',
-                  color: isLiveActive ? '#22c55e' : '#a1a1aa',
-                  border: `1px solid ${isLiveActive ? '#22c55e44' : '#71717a44'}`
+                  borderRadius: 'var(--border-radius, 6px)',
+                  backgroundColor: isLiveActive ? 'var(--success-soft)' : 'var(--panel-color)',
+                  color: isLiveActive ? 'var(--success-color)' : 'var(--muted-text)',
+                  border: `1px solid ${isLiveActive ? 'var(--success-color)' : 'var(--border-color)'}`
                 }}>
                   {isLiveActive ? `Sala ${p2p.roomId}` : 'Local / Offline'}
                 </span>
@@ -138,13 +139,14 @@ const CentroMensajeriaModal = ({
 
           <button
             onClick={onClose}
+            aria-label="Cerrar modal"
             style={{
               background: 'transparent',
               border: 'none',
               color: 'var(--muted-text)',
               cursor: 'pointer',
               padding: '6px',
-              borderRadius: '8px',
+              borderRadius: 'var(--border-radius, 6px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -165,14 +167,17 @@ const CentroMensajeriaModal = ({
           gap: '0.5rem'
         }}>
           <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'COMITE'}
             onClick={() => setActiveTab('COMITE')}
             style={{
-              padding: '0.55rem 1.1rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'COMITE' ? 'var(--btn-bg)' : 'transparent',
-              color: activeTab === 'COMITE' ? 'var(--btn-text)' : 'var(--muted-text)',
-              fontWeight: '700',
+              padding: '0.5rem 1rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${activeTab === 'COMITE' ? 'var(--accent-color)' : 'transparent'}`,
+              backgroundColor: activeTab === 'COMITE' ? 'var(--accent-soft)' : 'transparent',
+              color: activeTab === 'COMITE' ? 'var(--accent-color)' : 'var(--muted-text)',
+              fontWeight: activeTab === 'COMITE' ? '700' : '500',
               fontSize: '0.84rem',
               cursor: 'pointer',
               display: 'flex',
@@ -185,13 +190,14 @@ const CentroMensajeriaModal = ({
             <span>Mensajería de Comité (Notas & Pajes)</span>
             {p2p.unreadNotesCount > 0 && (
               <span style={{
-                backgroundColor: activeTab === 'COMITE' ? '#ffffff' : '#ef4444',
-                color: activeTab === 'COMITE' ? '#3b82f6' : '#ffffff',
+                backgroundColor: 'var(--danger-color)',
+                color: 'var(--btn-text)',
                 fontSize: '0.66rem',
-                fontWeight: '800',
-                padding: '0.1rem 0.45rem',
+                fontWeight: '700',
+                padding: '1px 6px',
                 borderRadius: '100px',
-                marginLeft: '4px'
+                marginLeft: '4px',
+                fontVariantNumeric: 'tabular-nums'
               }}>
                 {p2p.unreadNotesCount}
               </span>
@@ -199,14 +205,17 @@ const CentroMensajeriaModal = ({
           </button>
 
           <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'CONFERENCIA'}
             onClick={() => setActiveTab('CONFERENCIA')}
             style={{
-              padding: '0.55rem 1.1rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'CONFERENCIA' ? 'var(--btn-bg)' : 'transparent',
-              color: activeTab === 'CONFERENCIA' ? 'var(--btn-text)' : 'var(--muted-text)',
-              fontWeight: '700',
+              padding: '0.5rem 1rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${activeTab === 'CONFERENCIA' ? 'var(--accent-color)' : 'transparent'}`,
+              backgroundColor: activeTab === 'CONFERENCIA' ? 'var(--accent-soft)' : 'transparent',
+              color: activeTab === 'CONFERENCIA' ? 'var(--accent-color)' : 'var(--muted-text)',
+              fontWeight: activeTab === 'CONFERENCIA' ? '700' : '500',
               fontSize: '0.84rem',
               cursor: 'pointer',
               display: 'flex',

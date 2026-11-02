@@ -27,7 +27,7 @@
 
 ---
 
-## ✨ Características Principales
+## Características Principales
 
 - ⏱️ **Cronómetros Dinámicos y Precisos**:
   - Cronómetro Principal con alertas sonoras y visuales.

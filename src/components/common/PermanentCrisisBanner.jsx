@@ -16,7 +16,7 @@ import {
   Eye, 
   EyeOff,
   Globe,
-  Sparkles
+
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useTranslation } from 'react-i18next';

@@ -3,47 +3,26 @@ import {
   Play,
   Radio,
   ExternalLink,
-  Edit3,
   Mail,
   Copy,
   Check,
-  Users,
-  Clock,
-  FileText,
-  Vote,
-  Sliders,
   Search,
   ChevronDown,
   ChevronUp,
-  Zap,
-  Globe,
-  Laptop,
-  Trash2,
-  Save,
   HelpCircle,
   Code2,
-  ShieldCheck,
   Coffee,
-  Heart,
-  X,
   Building2,
-  Sparkles,
-  Shield,
-  Layers,
-  GraduationCap,
-  Cloud,
-  Lock
+  Layers
 } from 'lucide-react';
 import OpenMunLogo from '../common/OpenMunLogo';
 import YoutubeIcon from '../common/YoutubeIcon';
 import { useTranslation } from 'react-i18next';
 import { lazyWithRetry } from '../../utils/lazyWithRetry';
 const CreateConferenceModal = lazyWithRetry(() => import('../modals/CreateConferenceModal'), 'CreateConferenceModal');
+import HowToUseModal from '../modals/HowToUseModal';
 import KineticGrid from '../../assets/Kinetic';
 import { navigateTo } from '../../utils/router';
-import WorkflowSection from './WorkflowSection';
-import FooterLinks from './FooterLinks';
-import InfoBar from './InfoBar';
 
 const FAQ_ITEMS = [
   {
@@ -80,7 +59,7 @@ const FAQ_ITEMS = [
     id: 'importar-paises',
     categoria: 'Comité',
     pregunta: '¿Cómo puedo importar mi lista de países o delegaciones?',
-    respuesta: 'En la pestaña "Comienzo" o mediante el widget de "Importar Países", puedes cargar archivos Excel (.xlsx/.xls) o pegar una lista en formato de texto. El sistema genera automáticamente la matriz de países y el quorum de la sesión. Para tener banderas personalizadas puedes usar imágenes, emojis o SVG. Si son de países actuales, nosotros te crubrimos automáticamente.'
+    respuesta: 'En la pestaña "Comienzo" o mediante el widget de "Importar Países", puedes cargar archivos Excel (.xlsx/.xls) o pegar una lista en formato de texto. El sistema genera automáticamente la matriz de países y el quorum de la sesión. Para tener banderas personalizadas puedes usar imágenes, emojis o SVG. Si son de países actuales, nosotros te cubrimos automáticamente.'
   },
   {
     id: 'modo-offline',
@@ -95,7 +74,6 @@ const FAQ_ITEMS = [
     respuesta: 'Cuando creas una conferencia, guardamos un archivo en nuestra base de datos. Cuando te unes a ella, modificas o lees ese archivo. La base de datos es privada y nadie más que vosotros y nosotros tenemos acceso. Como ese espacio es limitado, los avisos se borran a las 24 horas y las conferencias completas, tras un mes sin actividad en la conferencia. Si pones un correo electrónico, te mandaremos un archivo con toda la información de la conferencia para que no pierdas nada.'
   },
   {
-
     id: 'donar',
     categoria: 'Comunidad',
     pregunta: '¿Cómo se mantiene OpenMUN?',
@@ -109,62 +87,10 @@ const FAQ_ITEMS = [
   }
 ];
 
-const FEATURES = [
-  {
-    icon: Users,
-    title: 'Lista General de Oradores (GSL)',
-    desc: 'Gestión fluida de delegaciones con tiempos configurables por orador, cesiones de palabra y visualización en cola en tiempo real.'
-  },
-  {
-    icon: Clock,
-    title: 'Cronómetros Dinámicos',
-    desc: 'Temporizadores para caucuses y tiempos individuales por orador con indicadores de semáforo y alertas sonoras optativas.'
-  },
-  {
-    icon: FileText,
-    title: 'Pizarra de Mociones',
-    desc: 'Registro rápido de propuestas parlamentarias con orden de precedencia automático, tipo de debate y votación inmediata.'
-  },
-  {
-    icon: Vote,
-    title: 'Sistema de Votaciones & Quorum',
-    desc: 'Cálculo instantáneo de mayorías (simple, 2/3, cualificada), votación en rol, registro de presentes y abstenciones automáticas.'
-  },
-  {
-    icon: Radio,
-    title: 'Transmisión en Directo',
-    desc: 'Sincronización en tiempo real entre la Mesa, delegados y pantallas de proyección utilizando WebSockets seguros (WSS) y canales locales de alta velocidad.'
-  },
-  {
-    icon: Sliders,
-    title: 'Tablero Modular Personalizable',
-    desc: 'Disposición drag-and-drop de widgets, soporte para modo claro/oscuro, ajuste de tipografía para dislexia y exportación de datos.'
-  }
-];
-
 const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
   const { t } = useTranslation();
-  // Estado para visibilidad del modal de Crear Conferencia
   const [isCreateConfModalOpen, setIsCreateConfModalOpen] = useState(false);
-  // Estado para visibilidad del banner de donaciones (oculto temporalmente)
-  const [showDonationBanner, setShowDonationBanner] = useState(false);
-
-  // Sincronizar si cambia en storage
-  useEffect(() => {
-    const handleStorageUpdate = () => {
-      const savedNotes = localStorage.getItem('openmun_home_notes');
-      if (savedNotes !== null) {
-        setNotasUsuario(savedNotes);
-        setNotasTemp(savedNotes);
-      }
-    };
-    window.addEventListener('openmun_session_imported', handleStorageUpdate);
-    window.addEventListener('storage', handleStorageUpdate);
-    return () => {
-      window.removeEventListener('openmun_session_imported', handleStorageUpdate);
-      window.removeEventListener('storage', handleStorageUpdate);
-    };
-  }, []);
+  const [isHowToUseModalOpen, setIsHowToUseModalOpen] = useState(false);
 
   // Copiar email
   const [copiado, setCopiado] = useState(false);
@@ -195,14 +121,14 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
     return ['Todas', ...new Set(FAQ_ITEMS.map((item) => item.categoria))];
   }, []);
 
-  // Tokens de estilo limpios y consistentes
-  const surfaceBg = isLight ? '#ffffff' : 'var(--panel-color)';
-  const headerBg = isLight ? '#f8fafc' : 'var(--card-header-bg)';
+  // Tokens de diseño del sistema OpenMUN
+  const cardBg = isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(28, 30, 36, 0.92)';
+  const innerBg = isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)';
   const borderColor = 'var(--border-color)';
   const subBorderColor = 'var(--subborder-color)';
   const textPrimary = 'var(--text-color)';
   const textMuted = 'var(--muted-text)';
-  const accentColor = '#3b82f6';
+  const accentColor = 'var(--accent-color)';
 
   return (
     <div style={{
@@ -213,7 +139,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
       fontFamily: 'var(--font-family, Inter, system-ui, sans-serif)'
     }}>
 
-      {/* ── FONDO FONDO INTERACTIVO KINETIC GRID (DETRÁS DE TODA LA PÁGINA) ── */}
+      {/* ── FONDO INTERACTIVO KINETIC GRID (DETRÁS DE TODA LA PÁGINA) ── */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -237,452 +163,269 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
         />
       </div>
 
-      {/* ── CONTENIDO PRINCIPAL POR ENCIMA DEL FONDO ── */}
+      {/* Contenedor Principal */}
       <div style={{
         position: 'relative',
         zIndex: 1,
         maxWidth: '1100px',
         margin: '0 auto',
-        padding: '1rem 1rem 3rem 1rem',
+        padding: '1.25rem 1rem 3rem 1rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '2.5rem'
+        gap: '2rem'
       }}>
 
-        {/* ── BANNER DE DONACIONES PARA MANTENER LA PLATAFORMA ── */}
-        {showDonationBanner && (
+        {/* ── 1. HERO SECTION (Logo a la izq con descripción, botones a la der, enlaces debajo) ── */}
+        <section style={{
+          backgroundColor: cardBg,
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${borderColor}`,
+          borderRadius: '16px',
+          padding: '2.5rem 2rem 2rem 2rem',
+          boxShadow: isLight ? '0 4px 24px rgba(0, 0, 0, 0.05)' : '0 10px 30px rgba(0, 0, 0, 0.3)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2rem'
+        }}>
+          {/* Bloque Superior: Logo + descripción (izq) y Botones (der) */}
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1.25rem',
-            padding: '1rem 1.25rem',
-            borderRadius: '14px',
-            background: isLight
-              ? 'linear-gradient(135deg, rgba(254, 243, 199, 0.95) 0%, rgba(253, 230, 138, 0.75) 100%)'
-              : 'linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(180, 83, 9, 0.1) 100%)',
-            border: isLight
-              ? '1px solid rgba(245, 158, 11, 0.4)'
-              : '1px solid rgba(245, 158, 11, 0.3)',
-            boxShadow: isLight
-              ? '0 4px 16px rgba(245, 158, 11, 0.12)'
-              : '0 4px 20px rgba(0, 0, 0, 0.25)',
-            backdropFilter: 'blur(10px)',
-            position: 'relative',
-            flexWrap: 'wrap'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '2.5rem',
+            alignItems: 'center'
           }}>
+            {/* Columna Izquierda: Logo grande y descripción */}
             <div style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '0.85rem',
-              flex: '1 1 320px'
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: '1rem'
             }}>
-              <div style={{
-                width: '42px',
-                height: '42px',
-                minWidth: '42px',
-                borderRadius: '10px',
-                backgroundColor: isLight ? '#f59e0b' : 'rgba(245, 158, 11, 0.25)',
-                color: isLight ? '#ffffff' : '#fbbf24',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: isLight ? '0 2px 8px rgba(245, 158, 11, 0.3)' : 'none'
-              }}>
-                <Heart size={20} fill={isLight ? '#ffffff' : '#fbbf24'} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                <div style={{
-                  fontSize: '0.95rem',
-                  fontWeight: '700',
-                  color: isLight ? '#92400e' : '#fef3c7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem'
+              <OpenMunLogo height={88} isLight={isLight} showText={true} />
+
+              <div>
+                <h1 style={{
+                  fontSize: 'clamp(1.5rem, 2.6vw, 2.05rem)',
+                  fontWeight: '800',
+                  lineHeight: '1.25',
+                  margin: '0.4rem 0 0.75rem 0',
+                  letterSpacing: '-0.02em',
+                  color: textPrimary
                 }}>
-                  <span>{t('home.donationBannerTitle', '¡Apoya el mantenimiento de OpenMUN!')}</span>
-                </div>
-                <div style={{
-                  fontSize: '0.84rem',
-                  color: isLight ? '#78350f' : '#d1d5db',
-                  lineHeight: '1.4'
+                  {t('home.heroTitle', 'La plataforma abierta y definitiva para Modelos de Naciones Unidas')}
+                </h1>
+
+                <p style={{
+                  fontSize: '0.94rem',
+                  lineHeight: '1.6',
+                  color: textMuted,
+                  margin: 0
                 }}>
-                  {t('home.donationBannerDesc', 'OpenMUN es 100% gratuito, libre y sin publicidad. Tu donación nos ayuda a costear los servidores y mantener la plataforma activa para todas las delegaciones.')}
-                </div>
+                  {t('home.heroPurpose', 'Plataforma educativa web diseñada para estudiantes, docentes y comités que participan en simulaciones de Modelos de Naciones Unidas (MUN). Modera debates diplomáticos, gestiona oradores, cronómetros y votaciones en tiempo real de forma inmediata y sin barreras.')}
+                </p>
               </div>
             </div>
 
+            {/* Columna Derecha: Botones estilizados directamente ejecutables */}
             <div style={{
               display: 'flex',
-              alignItems: 'center',
+              flexDirection: 'column',
               gap: '0.75rem',
-              marginLeft: 'auto'
+              width: '100%'
             }}>
-              <a
-                href="https://buymeacoffee.com"
-                target="_blank"
-                rel="noopener noreferrer"
+              {/* Acción Principal: Iniciar Mesa de Presidencia */}
+              <button
+                onClick={onNavigateToComienzo}
                 style={{
-                  display: 'inline-flex',
+                  width: '100%',
+                  padding: '0.9rem 1.25rem',
+                  backgroundColor: 'var(--btn-bg)',
+                  color: 'var(--btn-text)',
+                  border: '1px solid var(--btn-bg)',
+                  borderRadius: 'var(--border-radius, 8px)',
+                  cursor: 'pointer',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.55rem 1.15rem',
-                  borderRadius: '8px',
-                  backgroundColor: '#ffdd00',
-                  color: '#000000',
-                  fontSize: '0.85rem',
-                  fontWeight: '800',
-                  textDecoration: 'none',
-                  boxShadow: '0 3px 10px rgba(255, 221, 0, 0.3)',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap'
+                  justifyContent: 'space-between',
+                  transition: 'filter 0.15s ease',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                  <span style={{ fontSize: '0.96rem', fontWeight: '700' }}>
+                    {t('home.chairCardTitle', 'Iniciar Mesa de Presidencia')}
+                  </span>
+                  <span style={{ fontSize: '0.78rem', opacity: 0.9, fontWeight: '400' }}>
+                    {t('home.chairCardDescShort', 'Panel de moderación, oradores, caucuses y votaciones')}
+                  </span>
+                </div>
+                <Play size={18} fill="currentColor" />
+              </button>
+
+              {/* Acción Secundaria: Unirse como Delegación */}
+              {onNavigateToJoin && (
+                <button
+                  onClick={onNavigateToJoin}
+                  style={{
+                    width: '100%',
+                    padding: '0.8rem 1.15rem',
+                    backgroundColor: innerBg,
+                    color: textPrimary,
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: 'var(--border-radius, 8px)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                    textAlign: 'left'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = subBorderColor;
+                    e.currentTarget.style.borderColor = accentColor;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = innerBg;
+                    e.currentTarget.style.borderColor = borderColor;
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: '650' }}>
+                      {t('home.joinCardTitle', 'Unirse como Delegación')}
+                    </span>
+                    <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400' }}>
+                      {t('home.joinCardDescShort', 'Conéctate a una sala activa con código o QR')}
+                    </span>
+                  </div>
+                  <Radio size={16} style={{ color: textMuted }} />
+                </button>
+              )}
+
+              {/* Acción Secundaria: Crear Conferencia */}
+              <button
+                onClick={() => setIsCreateConfModalOpen(true)}
+                style={{
+                  width: '100%',
+                  padding: '0.8rem 1.15rem',
+                  backgroundColor: innerBg,
+                  color: textPrimary,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 'var(--border-radius, 8px)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                  textAlign: 'left'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 5px 14px rgba(255, 221, 0, 0.45)';
+                  e.currentTarget.style.backgroundColor = subBorderColor;
+                  e.currentTarget.style.borderColor = accentColor;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 3px 10px rgba(255, 221, 0, 0.3)';
+                  e.currentTarget.style.backgroundColor = innerBg;
+                  e.currentTarget.style.borderColor = borderColor;
                 }}
               >
-                <Coffee size={16} /> {t('home.coffee', 'Invítanos a un café')}
-              </a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '650' }}>
+                    {t('conferences.createTitle', 'Crear Nueva Conferencia')}
+                  </span>
+                  <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400' }}>
+                    {t('conferences.createDescShort', 'Organiza un evento multi-comité sincronizado en vivo')}
+                  </span>
+                </div>
+                <Building2 size={16} style={{ color: textMuted }} />
+              </button>
+
+              {/* Acción Secundaria: Unirse a Conferencia */}
               <button
-                onClick={() => setShowDonationBanner(false)}
-                title="Cerrar banner"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
+                    detail: { view: 'conference', mode: 'explore' }
+                  }));
+                }}
                 style={{
-                  background: 'transparent',
-                  border: 'none',
+                  width: '100%',
+                  padding: '0.8rem 1.15rem',
+                  backgroundColor: innerBg,
+                  color: textPrimary,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: 'var(--border-radius, 8px)',
                   cursor: 'pointer',
-                  color: isLight ? '#92400e' : '#9ca3af',
-                  padding: '0.35rem',
-                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                  textAlign: 'left'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = subBorderColor;
+                  e.currentTarget.style.borderColor = accentColor;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = innerBg;
+                  e.currentTarget.style.borderColor = borderColor;
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '650' }}>
+                    {t('conferences.joinTitle', 'Unirse a una Conferencia')}
+                  </span>
+                  <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400' }}>
+                    {t('conferences.joinDescShort', 'Explora comités de un evento o entra como mesa directiva')}
+                  </span>
+                </div>
+                <Layers size={16} style={{ color: textMuted }} />
+              </button>
+
+              {/* Acceso al modal: ¿Cómo usar OpenMUN? */}
+              <button
+                onClick={() => setIsHowToUseModalOpen(true)}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 1.15rem',
+                  backgroundColor: 'transparent',
+                  color: accentColor,
+                  border: `1px dashed ${borderColor}`,
+                  borderRadius: 'var(--border-radius, 8px)',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: 0.75,
+                  gap: '0.45rem',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '1';
-                  e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.1)';
+                  e.currentTarget.style.backgroundColor = 'var(--accent-soft)';
+                  e.currentTarget.style.borderColor = accentColor;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '0.75';
                   e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = borderColor;
                 }}
               >
-                <X size={18} />
+                <HelpCircle size={15} />
+                <span>{t('home.howToUseOpenMun', '¿Cómo usar OpenMUN?')}</span>
               </button>
             </div>
           </div>
-        )}
 
-        {/* ── 1. HERO SECTION PRINCIPAL ── */}
-        <section style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          padding: '3rem 2rem 2.5rem 2rem',
-          borderRadius: '16px',
-          backgroundColor: isLight ? 'rgba(255, 255, 255, 0.9)' : 'rgba(22, 25, 34, 0.9)',
-          backdropFilter: 'blur(12px)',
-          border: `1px solid ${borderColor}`,
-          boxShadow: isLight ? '0 4px 20px rgba(0, 0, 0, 0.04)' : '0 10px 30px rgba(0, 0, 0, 0.25)'
-        }}>
-          {/* Logo oficial y Badge de Versión */}
-          <div style={{
-            marginBottom: '1.25rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '0.75rem'
-          }}>
-            <OpenMunLogo height={80} isLight={isLight} />
-          </div>
-
-          {/* Título principal */}
-          <h1 style={{
-            fontSize: 'clamp(1.75rem, 3.5vw, 2.4rem)',
-            fontWeight: '800',
-            lineHeight: '1.25',
-            maxWidth: '820px',
-            margin: '0 0 0.85rem 0',
-            letterSpacing: '-0.02em',
-            color: textPrimary
-          }}>
-            {t('home.heroTitle', 'La plataforma abierta y definitiva para Modelos de Naciones Unidas')}
-          </h1>
-
-          {/* Propósito Educativo Principal */}
-          <p style={{
-            fontSize: '1.05rem',
-            lineHeight: '1.6',
-            maxWidth: '750px',
-            color: textPrimary,
-            fontWeight: '500',
-            margin: '0 0 0.6rem 0'
-          }}>
-            {t('home.heroPurpose', 'Plataforma educativa web diseñada para estudiantes, docentes y comités que participan en simulaciones de Modelos de Naciones Unidas (MUN). Modera debates diplomáticos, gestiona oradores, cronómetros y votaciones en tiempo real de forma inmediata y sin barreras.')}
-          </p>
-
-          {/* Accesos Rápidos Principales (Hub de Acción Directa) */}
+          {/* Bloque Inferior: Donaciones, YouTube y Ver Código */}
           <div style={{
             display: 'flex',
-            flexDirection: 'column',
-            gap: '1.25rem',
-            width: '100%',
-            maxWidth: '1000px',
-            marginBottom: '1.75rem'
-          }}>
-            {/* Fila Superior: Mesa de Presidencia y Unirse a Sesión */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: '1rem',
-              width: '100%'
-            }}>
-              {/* Card 1: Mesa de Presidencia */}
-              <div style={{
-                backgroundColor: headerBg,
-                border: `1px solid ${subBorderColor}`,
-                borderRadius: '12px',
-                padding: '1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '1rem',
-                textAlign: 'left'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    <Play size={18} style={{ color: accentColor }} />
-                    <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                      {t('home.chairCardTitle', 'Iniciar Mesa de Presidencia')}
-                    </h3>
-                  </div>
-                  <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0, lineHeight: '1.45' }}>
-                    {t('home.chairCardDesc', 'Panel de control completo para moderar oradores, caucuses y votaciones. Acceso libre e inmediato sin cuenta.')}
-                  </p>
-                </div>
-                <button
-                  onClick={onNavigateToComienzo}
-                  style={{
-                    padding: '0.65rem 1rem',
-                    backgroundColor: accentColor,
-                    color: '#ffffff',
-                    fontWeight: '700',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    transition: 'background-color 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = accentColor}
-                >
-                  <Play size={16} fill="#ffffff" /> {t('home.startModerating', 'Iniciar Moderación')}
-                </button>
-              </div>
-
-              {/* Card 4: Unirse a Sala (Delegados / P2P) */}
-              {onNavigateToJoin && (
-                <div style={{
-                  backgroundColor: headerBg,
-                  border: `1px solid ${subBorderColor}`,
-                  borderRadius: '12px',
-                  padding: '1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  gap: '1rem',
-                  textAlign: 'left'
-                }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                      <Radio size={18} style={{ color: '#10b981' }} />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                        {t('home.joinCardTitle', 'Unirse como Delegación')}
-                      </h3>
-                    </div>
-                    <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0, lineHeight: '1.45' }}>
-                      {t('home.joinCardDesc', 'Conéctate a una sala activa con el código o QR compartido por la Mesa para seguir el debate en vivo.')}
-                    </p>
-                  </div>
-                  <button
-                    onClick={onNavigateToJoin}
-                    style={{
-                      padding: '0.65rem 1rem',
-                      backgroundColor: isLight ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.15)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      color: isLight ? '#059669' : '#34d399',
-                      fontWeight: '700',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isLight ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.25)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isLight ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.15)'}
-                  >
-                    <Radio size={16} /> {t('home.joinLive', 'Unirse a Sesión en Vivo')}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Divider con texto/icono para indicar que esto es para conferencias */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              margin: '0.5rem 0'
-            }}>
-              <div style={{ flex: 1, height: '1px', backgroundColor: borderColor, opacity: 0.6 }}></div>
-              <span style={{
-                padding: '0 1rem',
-                fontSize: '0.78rem',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: textMuted,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                whiteSpace: 'nowrap'
-              }}>
-                <Building2 size={14} style={{ color: '#8b5cf6' }} /> Eventos & Conferencias Online
-              </span>
-              <div style={{ flex: 1, height: '1px', backgroundColor: borderColor, opacity: 0.6 }}></div>
-            </div>
-
-            {/* Fila Inferior: Crear Conferencia y Unirse a Conferencia */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: '1rem',
-              width: '100%'
-            }}>
-              {/* Card 2: Crear Conferencia */}
-              <div style={{
-                backgroundColor: headerBg,
-                border: `1px solid ${subBorderColor}`,
-                borderRadius: '12px',
-                padding: '1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '1rem',
-                textAlign: 'left'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    <Building2 size={18} style={{ color: '#8b5cf6' }} />
-                    <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                      {t('conferences.createTitle', 'Crear Conferencia')}
-                    </h3>
-                  </div>
-                  <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0, lineHeight: '1.45' }}>
-                    Crea un evento central, organiza comités con PIN y sincroniza todo en vivo.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsCreateConfModalOpen(true)}
-                  style={{
-                    padding: '0.65rem 1rem',
-                    backgroundColor: isLight ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.18)',
-                    border: '1px solid rgba(139, 92, 246, 0.4)',
-                    color: isLight ? '#7c3aed' : '#a78bfa',
-                    fontWeight: '700',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isLight ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.28)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isLight ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.18)'}
-                >
-                  <Sparkles size={16} /> {t('conferences.createBtn', 'Crear Conferencia')}
-                </button>
-              </div>
-
-              {/* Card 3: Unirse a Conferencia */}
-              <div style={{
-                backgroundColor: headerBg,
-                border: `1px solid ${subBorderColor}`,
-                borderRadius: '12px',
-                padding: '1.25rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '1rem',
-                textAlign: 'left'
-              }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                    <Layers size={18} style={{ color: '#0284c7' }} />
-                    <h3 style={{ fontSize: '1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                      {t('conferences.joinTitle', 'Unirse a Conferencia')}
-                    </h3>
-                  </div>
-                  <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0, lineHeight: '1.45' }}>
-                    Explora comités de un evento, entra como mesa directiva o abre el panel general.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
-                      detail: { view: 'conference', mode: 'explore' }
-                    }));
-                  }}
-                  style={{
-                    padding: '0.65rem 1rem',
-                    backgroundColor: isLight ? 'rgba(2, 132, 199, 0.1)' : 'rgba(2, 132, 199, 0.18)',
-                    border: '1px solid rgba(2, 132, 199, 0.4)',
-                    color: isLight ? '#0284c7' : '#38bdf8',
-                    fontWeight: '700',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isLight ? 'rgba(2, 132, 199, 0.2)' : 'rgba(2, 132, 199, 0.28)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isLight ? 'rgba(2, 132, 199, 0.1)' : 'rgba(2, 132, 199, 0.18)'}
-                >
-                  <Layers size={16} /> {t('conferences.enterConference', 'Entrar en conferencia')}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Botones Complementarios: Donación (Café) y GitHub */}
-          <div style={{
-            display: 'flex',
-            gap: '0.75rem',
             flexWrap: 'wrap',
-            justifyContent: 'center',
+            gap: '0.75rem',
             alignItems: 'center',
-            marginBottom: '1.75rem'
+            justifyContent: 'center',
+            paddingTop: '1.25rem',
+            borderTop: `1px solid ${subBorderColor}`
           }}>
-            {/* Botón de Donaciones */}
+            {/* Donaciones */}
             <a
               href="https://buymeacoffee.com"
               target="_blank"
@@ -690,25 +433,31 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.6rem 1.25rem',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: '#ffdd00',
-                color: '#000000',
-                fontSize: '0.88rem',
-                fontWeight: '800',
+                gap: '0.45rem',
+                padding: '0.55rem 1rem',
+                borderRadius: 'var(--border-radius, 8px)',
+                border: `1px solid ${borderColor}`,
+                backgroundColor: innerBg,
+                color: textPrimary,
+                fontSize: '0.84rem',
+                fontWeight: '600',
                 textDecoration: 'none',
-                boxShadow: '0 4px 12px rgba(255, 221, 0, 0.25)',
-                transition: 'transform 0.15s ease'
+                transition: 'background-color 0.15s ease, border-color 0.15s ease'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = subBorderColor;
+                e.currentTarget.style.borderColor = accentColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = innerBg;
+                e.currentTarget.style.borderColor = borderColor;
+              }}
             >
-              <Coffee size={17} /> {t('home.coffee', 'Invítanos a un café')}
+              <Coffee size={15} style={{ color: textMuted }} />
+              <span>{t('home.coffee', 'Invítanos a un café')}</span>
             </a>
 
-            {/* Botón de Tutoriales YouTube */}
+            {/* YouTube */}
             <a
               href="https://www.youtube.com/playlist?list=PLYm1G3W5Ex2k"
               target="_blank"
@@ -716,32 +465,32 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.6rem 1.25rem',
-                borderRadius: '8px',
-                border: isLight ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(239, 68, 68, 0.45)',
-                backgroundColor: isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)',
-                color: isLight ? '#dc2626' : '#f87171',
-                fontSize: '0.88rem',
-                fontWeight: '700',
+                gap: '0.45rem',
+                padding: '0.55rem 1rem',
+                borderRadius: 'var(--border-radius, 8px)',
+                border: `1px solid ${borderColor}`,
+                backgroundColor: innerBg,
+                color: textPrimary,
+                fontSize: '0.84rem',
+                fontWeight: '600',
                 textDecoration: 'none',
-                boxShadow: isLight ? '0 2px 8px rgba(239, 68, 68, 0.08)' : '0 2px 10px rgba(0, 0, 0, 0.2)',
-                transition: 'all 0.15s ease'
+                transition: 'background-color 0.15s ease, border-color 0.15s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.backgroundColor = isLight ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.25)';
+                e.currentTarget.style.backgroundColor = subBorderColor;
+                e.currentTarget.style.borderColor = accentColor;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.backgroundColor = isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)';
+                e.currentTarget.style.backgroundColor = innerBg;
+                e.currentTarget.style.borderColor = borderColor;
               }}
-              title={t('header.tutorialsTooltip', 'Ver Vídeos Tutoriales de OpenMUN (YouTube)')}
             >
-              <YoutubeIcon size={18} color="#ef4444" /> {t('header.tutorials', 'Vídeos Tutoriales')} <ExternalLink size={13} style={{ opacity: 0.7 }} />
+              <YoutubeIcon size={15} color="var(--muted-text)" />
+              <span>{t('header.tutorials', 'Tutoriales')}</span>
+              <ExternalLink size={12} style={{ opacity: 0.6 }} />
             </a>
 
-            {/* Botón de GitHub */}
+            {/* GitHub */}
             <a
               href="https://github.com/luk4sk4/OPENMUN"
               target="_blank"
@@ -749,225 +498,135 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.6rem 1.25rem',
-                borderRadius: '8px',
+                gap: '0.45rem',
+                padding: '0.55rem 1rem',
+                borderRadius: 'var(--border-radius, 8px)',
                 border: `1px solid ${borderColor}`,
-                backgroundColor: headerBg,
+                backgroundColor: innerBg,
                 color: textPrimary,
-                fontSize: '0.88rem',
-                fontWeight: '700',
+                fontSize: '0.84rem',
+                fontWeight: '600',
                 textDecoration: 'none',
-                transition: 'all 0.15s ease'
+                transition: 'background-color 0.15s ease, border-color 0.15s ease'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = subBorderColor;
+                e.currentTarget.style.borderColor = accentColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = innerBg;
+                e.currentTarget.style.borderColor = borderColor;
+              }}
             >
-              <Code2 size={17} /> {t('home.github', 'Ver Código en GitHub')} <ExternalLink size={13} style={{ opacity: 0.6 }} />
+              <Code2 size={15} style={{ color: textMuted }} />
+              <span>{t('home.github', 'Ver Código en GitHub')}</span>
+              <ExternalLink size={12} style={{ opacity: 0.6 }} />
             </a>
-          </div>
-
-          {/* Barra informativa de características clave */}
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '1.25rem',
-            justifyContent: 'center',
-            paddingTop: '1.25rem',
-            borderTop: `1px solid ${subBorderColor}`,
-            width: '100%',
-            maxWidth: '850px',
-            fontSize: '0.84rem',
-            color: textMuted
-          }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: '500' }}>
-              <ShieldCheck size={16} style={{ color: '#22c55e' }} /> {t('home.freeSoftware', 'Software 100% Libre')}
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: '500' }}>
-              <Zap size={16} style={{ color: '#eab308' }} /> {t('home.noRegistration', 'Sin Registro Obligatorio')}
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: '500' }}>
-              <Globe size={16} style={{ color: accentColor }} /> {t('home.p2pSync', 'Sincronización P2P')}
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: '500' }}>
-              <Laptop size={16} style={{ color: '#a855f7' }} /> {t('home.offlineCompatible', 'Compatible Offline')}
-            </span>
           </div>
         </section>
 
-        {/* ── 2. SECCIÓN: PROPÓSITO EDUCATIVO DE OPENMUN ── */}
+        {/* ── 2. PROPÓSITO EDUCATIVO DE OPENMUN ── */}
         <section style={{
+          backgroundColor: cardBg,
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${borderColor}`,
+          borderRadius: '16px',
+          padding: '2.25rem 2rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.25rem',
-          padding: '2.5rem 2rem',
-          borderRadius: '16px',
-          backgroundColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(22, 25, 34, 0.92)',
-          border: `1px solid ${borderColor}`,
-          backdropFilter: 'blur(12px)'
+          gap: '1.25rem'
         }}>
-          <div style={{ textAlign: 'center', maxWidth: '750px', margin: '0 auto 0.5rem auto' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', margin: '0 0 0.5rem 0', color: textPrimary, letterSpacing: '-0.02em' }}>
+          <div style={{ textAlign: 'center', maxWidth: '750px', margin: '0 auto' }}>
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '800',
+              margin: '0 0 0.35rem 0',
+              color: textPrimary,
+              letterSpacing: '-0.02em'
+            }}>
               {t('home.purposeSectionTitle', 'Propósito Educativo de OpenMUN')}
             </h2>
-            <p style={{ fontSize: '0.95rem', color: textMuted, margin: 0, lineHeight: '1.6' }}>
+            <p style={{ fontSize: '0.9rem', color: textMuted, margin: 0, lineHeight: '1.6' }}>
               {t('home.purposeSectionSubtitle', 'Fomentando el debate diplomático, la oratoria y la resolución constructiva de controversias internacionales en colegios y universidades.')}
             </p>
           </div>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '1.25rem'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '1rem'
           }}>
             {/* Card 1: Qué es MUN */}
             <div style={{
-              padding: '1.5rem',
-              borderRadius: '14px',
-              backgroundColor: headerBg,
+              padding: '1.25rem',
+              borderRadius: 'var(--border-radius, 8px)',
+              backgroundColor: innerBg,
               border: `1px solid ${subBorderColor}`,
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem'
+              gap: '0.65rem'
             }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+              <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0, color: textPrimary }}>
                 {t('home.purposeMunTitle', '¿Qué es un Modelo de Naciones Unidas (MUN)?')}
               </h3>
-              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+              <p style={{ fontSize: '0.86rem', color: textMuted, lineHeight: '1.55', margin: 0 }}>
                 {t('home.purposeMunDesc', 'Un Modelo de Naciones Unidas es una actividad pedagógica donde estudiantes asumen el papel de diplomáticos de Estados Miembros de la ONU para debatir problemas globales reales, redactar resoluciones y negociar acuerdos siguiendo procedimientos parlamentarios formales.')}
               </p>
             </div>
 
             {/* Card 2: Cómo ayuda OpenMUN */}
             <div style={{
-              padding: '1.5rem',
-              borderRadius: '14px',
-              backgroundColor: headerBg,
+              padding: '1.25rem',
+              borderRadius: 'var(--border-radius, 8px)',
+              backgroundColor: innerBg,
               border: `1px solid ${subBorderColor}`,
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem'
+              gap: '0.65rem'
             }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+              <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0, color: textPrimary }}>
                 {t('home.purposeRoleTitle', '¿Cómo ayuda OpenMUN a la educación?')}
               </h3>
-              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+              <p style={{ fontSize: '0.86rem', color: textMuted, lineHeight: '1.55', margin: 0 }}>
                 {t('home.purposeRoleDesc', 'OpenMUN digitaliza y simplifica las herramientas de moderación. Permite a las Mesas calcular quórums, gestionar listas de oradores (GSL), cronometrar discursos y registrar votaciones en tiempo real, transmitiendo a delegados y proyectores sin costes ni servidores.')}
               </p>
             </div>
 
             {/* Card 3: 100% Libre */}
             <div style={{
-              padding: '1.5rem',
-              borderRadius: '14px',
-              backgroundColor: headerBg,
+              padding: '1.25rem',
+              borderRadius: 'var(--border-radius, 8px)',
+              backgroundColor: innerBg,
               border: `1px solid ${subBorderColor}`,
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem'
+              gap: '0.65rem'
             }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+              <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0, color: textPrimary }}>
                 {t('home.purposeOpenTitle', '100% Gratuito y Libre (AGPLv3)')}
               </h3>
-              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
+              <p style={{ fontSize: '0.86rem', color: textMuted, lineHeight: '1.55', margin: 0 }}>
                 {t('home.purposeOpenDesc', 'OpenMUN es software libre accesible para cualquier institución educativa del mundo. Sin muros de pago, sin suscripciones, sin publicidad y sin recopilación de datos invasiva.')}
               </p>
             </div>
           </div>
         </section>
 
-        {/* ── 4. MOSTRADOR DE HERRAMIENTAS (GRID LIMPIO Y HOMOGÉNEO) ── */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <h2 style={{
-              fontSize: '1.35rem',
-              fontWeight: '800',
-              margin: 0,
-              color: textPrimary,
-              letterSpacing: '-0.01em'
-            }}>
-              {t('home.systemTools', 'Herramientas del Sistema')}
-            </h2>
-            <p style={{ fontSize: '0.9rem', color: textMuted, margin: 0 }}>
-              {t('home.systemToolsSubtitle', 'Módulos integrados para la moderación eficiente del debate parlamentario.')}
-            </p>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '1rem'
-          }}>
-            {FEATURES.map((feat, index) => {
-              const IconComponent = feat.icon;
-              const title = t(`home.features.${index}.title`, feat.title);
-              const desc = t(`home.features.${index}.desc`, feat.desc);
-              return (
-                <div
-                  key={index}
-                  style={{
-                    backgroundColor: surfaceBg,
-                    border: `1px solid ${borderColor}`,
-                    borderRadius: '12px',
-                    padding: '1.25rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.65rem'
-                  }}
-                >
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '8px',
-                    backgroundColor: isLight ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.15)',
-                    color: accentColor
-                  }}>
-                    <IconComponent size={20} />
-                  </div>
-
-                  <h3 style={{
-                    fontSize: '1rem',
-                    fontWeight: '700',
-                    margin: 0,
-                    color: textPrimary
-                  }}>
-                    {title}
-                  </h3>
-
-                  <p style={{
-                    fontSize: '0.86rem',
-                    lineHeight: '1.5',
-                    color: textMuted,
-                    margin: 0
-                  }}>
-                    {desc}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ── 3. FLUJO DE TRABAJO RÁPIDO ── */}
-        <WorkflowSection isLight={isLight} t={t} accentColor={accentColor} borderColor={borderColor} textPrimary={textPrimary} textMuted={textMuted} surfaceBg={surfaceBg} headerBg={headerBg} subBorderColor={subBorderColor} />
-
-        {/* ── 4. PREGUNTAS FRECUENTES (FAQ) ── */}
+        {/* ── 3. PREGUNTAS FRECUENTES (FAQ) ── */}
         <section style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.25rem',
-          backgroundColor: surfaceBg,
+          backgroundColor: cardBg,
+          backdropFilter: 'blur(12px)',
           border: `1px solid ${borderColor}`,
           borderRadius: '16px',
-          padding: '1.75rem 1.5rem'
+          padding: '2rem 1.75rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem'
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <HelpCircle size={18} style={{ color: accentColor }} />
-              <h2 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: textPrimary }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: 0, color: textPrimary }}>
                 {t('home.faqTitle', 'Preguntas Frecuentes')}
               </h2>
             </div>
@@ -998,12 +657,13 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem 0.65rem 2.4rem',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--border-radius, 8px)',
                   border: `1px solid ${borderColor}`,
-                  backgroundColor: 'var(--bg-color)',
+                  backgroundColor: innerBg,
                   color: textPrimary,
                   fontSize: '0.88rem',
-                  outline: 'none'
+                  outline: 'none',
+                  boxSizing: 'border-box'
                 }}
               />
               {busquedaFaq && (
@@ -1036,14 +696,15 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                     key={cat}
                     onClick={() => setCategoriaFaq(cat)}
                     style={{
-                      padding: '0.3rem 0.7rem',
-                      borderRadius: '6px',
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: 'var(--border-radius, 6px)',
                       fontSize: '0.78rem',
                       fontWeight: activa ? '700' : '500',
                       border: `1px solid ${activa ? accentColor : borderColor}`,
-                      backgroundColor: activa ? accentColor : 'transparent',
-                      color: activa ? '#ffffff' : textPrimary,
-                      cursor: 'pointer'
+                      backgroundColor: activa ? 'var(--btn-bg)' : innerBg,
+                      color: activa ? 'var(--btn-text)' : textPrimary,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
                   >
                     {catLabel}
@@ -1069,10 +730,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   <div
                     key={faq.id}
                     style={{
-                      backgroundColor: headerBg,
+                      backgroundColor: innerBg,
                       border: `1px solid ${estaAbierto ? accentColor : subBorderColor}`,
-                      borderRadius: '8px',
-                      overflow: 'hidden'
+                      borderRadius: 'var(--border-radius, 8px)',
+                      overflow: 'hidden',
+                      transition: 'border-color 0.15s ease'
                     }}
                   >
                     <button
@@ -1095,8 +757,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                         <span style={{
                           padding: '0.15rem 0.45rem',
                           borderRadius: '4px',
-                          backgroundColor: isLight ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.18)',
-                          color: accentColor,
+                          backgroundColor: cardBg,
+                          border: `1px solid ${subBorderColor}`,
+                          color: textMuted,
                           fontSize: '0.7rem',
                           fontWeight: '700'
                         }}>
@@ -1106,7 +769,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                           {pregunta}
                         </span>
                       </div>
-                      {estaAbierto ? <ChevronUp size={18} style={{ color: accentColor }} /> : <ChevronDown size={18} style={{ color: textMuted }} />}
+                      {estaAbierto ? (
+                        <ChevronUp size={18} style={{ color: accentColor }} />
+                      ) : (
+                        <ChevronDown size={18} style={{ color: textMuted }} />
+                      )}
                     </button>
 
                     {estaAbierto && (
@@ -1128,10 +795,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           </div>
         </section>
 
-        {/* ── 5. SUGERENCIAS Y COMUNIDAD ── */}
+        {/* ── 4. SUGERENCIAS Y COMUNIDAD ── */}
         <section style={{
-          backgroundColor: headerBg,
-          border: `1px solid ${subBorderColor}`,
+          backgroundColor: cardBg,
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${borderColor}`,
           borderRadius: '16px',
           padding: '1.75rem 1.5rem',
           display: 'flex',
@@ -1153,16 +821,16 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
-            backgroundColor: surfaceBg,
-            border: `1px solid ${borderColor}`,
-            borderRadius: '10px',
+            backgroundColor: innerBg,
+            border: `1px solid ${subBorderColor}`,
+            borderRadius: 'var(--border-radius, 8px)',
             padding: '0.6rem 1rem',
             flexWrap: 'wrap',
             justifyContent: 'center'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Mail size={18} style={{ color: accentColor }} />
-              <span style={{ fontSize: '0.92rem', fontWeight: '700', fontFamily: 'monospace', color: textPrimary }}>
+              <Mail size={16} style={{ color: textMuted }} />
+              <span style={{ fontSize: '0.9rem', fontWeight: '600', fontFamily: 'monospace', color: textPrimary }}>
                 {emailPlaceholder}
               </span>
             </div>
@@ -1174,14 +842,15 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.35rem',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
+                  padding: '0.38rem 0.75rem',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: 'none',
-                  backgroundColor: copiado ? '#22c55e' : 'var(--btn-bg)',
+                  backgroundColor: copiado ? 'var(--success-color)' : 'var(--btn-bg)',
                   color: 'var(--btn-text)',
                   fontSize: '0.8rem',
                   fontWeight: '600',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'background-color 0.15s ease'
                 }}
               >
                 {copiado ? <Check size={14} /> : <Copy size={14} />}
@@ -1196,171 +865,23 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.35rem',
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
+                  padding: '0.38rem 0.75rem',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: `1px solid ${borderColor}`,
-                  backgroundColor: 'transparent',
+                  backgroundColor: cardBg,
                   color: textPrimary,
                   fontSize: '0.8rem',
                   fontWeight: '600',
                   textDecoration: 'none'
                 }}
               >
-                <Code2 size={14} /> GitHub <ExternalLink size={12} style={{ opacity: 0.6 }} />
+                <Code2 size={14} style={{ color: textMuted }} /> GitHub <ExternalLink size={12} style={{ opacity: 0.6 }} />
               </a>
             </div>
           </div>
         </section>
 
-        {/* ── SECCIÓN: INTEGRACIÓN GOOGLE DRIVE Y TRANSPARENCIA DE DATOS (AL FINAL) ── */}
-        <section style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.25rem',
-          padding: '2.5rem 2rem',
-          borderRadius: '16px',
-          backgroundColor: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(22, 25, 34, 0.92)',
-          border: `1px solid ${borderColor}`,
-          backdropFilter: 'blur(12px)'
-        }}>
-          <div style={{ textAlign: 'center', maxWidth: '750px', margin: '0 auto 0.5rem auto' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', margin: '0 0 0.5rem 0', color: textPrimary, letterSpacing: '-0.02em' }}>
-              {t('home.driveSectionTitle', 'Integración Opcional con Google Drive')}
-            </h2>
-            <p style={{ fontSize: '0.95rem', color: textMuted, margin: 0, lineHeight: '1.6' }}>
-              {t('home.driveSectionSubtitle', 'Respalda tus comités de debate directamente en tu propio almacenamiento en la nube con total seguridad y control.')}
-            </p>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '1.25rem'
-          }}>
-            {/* Drive Feature 1 */}
-            <div style={{
-              padding: '1.5rem',
-              borderRadius: '14px',
-              backgroundColor: headerBg,
-              border: `1px solid ${subBorderColor}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem'
-            }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(14, 165, 233, 0.15)',
-                color: '#0ea5e9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Save size={20} />
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                {t('home.driveFeature1Title', 'Copia de Seguridad Personal')}
-              </h3>
-              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
-                {t('home.driveFeature1Desc', 'Almacena la configuración de comités, listas de países, notas y resoluciones en tu carpeta personal "openMUN" de Google Drive.')}
-              </p>
-            </div>
-
-            {/* Drive Feature 2 */}
-            <div style={{
-              padding: '1.5rem',
-              borderRadius: '14px',
-              backgroundColor: headerBg,
-              border: `1px solid ${subBorderColor}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem'
-            }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                color: '#10b981',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Lock size={20} />
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                {t('home.driveFeature2Title', 'Arquitectura Segura en Cliente (Zero-Server)')}
-              </h3>
-              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
-                {t('home.driveFeature2Desc', 'OpenMUN se ejecuta íntegramente en tu navegador. Tus credenciales de Google y archivos jamás pasan ni se almacenan en servidores externos.')}
-              </p>
-            </div>
-
-            {/* Drive Feature 3 */}
-            <div style={{
-              padding: '1.5rem',
-              borderRadius: '14px',
-              backgroundColor: headerBg,
-              border: `1px solid ${subBorderColor}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem'
-            }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                color: '#3b82f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <ShieldCheck size={20} />
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0, color: textPrimary }}>
-                {t('home.driveFeature3Title', 'Privacidad y Cumplimiento Estricto')}
-              </h3>
-              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
-                {t('home.driveFeature3Desc', 'No vendemos datos ni los usamos para entrenar modelos de IA. Cumplimos con los requisitos de Uso Limitado de Google y puedes desconectar tu cuenta en cualquier momento.')}
-              </p>
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-            <button
-              onClick={() => navigateTo('/privacy')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.65rem 1.35rem',
-                borderRadius: '10px',
-                backgroundColor: isLight ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.18)',
-                border: '1.5px solid rgba(59, 130, 246, 0.4)',
-                color: '#3b82f6',
-                fontWeight: '700',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#2563eb';
-                e.currentTarget.style.color = '#ffffff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = isLight ? 'rgba(37, 99, 235, 0.1)' : 'rgba(37, 99, 235, 0.18)';
-                e.currentTarget.style.color = '#3b82f6';
-              }}
-            >
-              <ShieldCheck size={16} />
-              <span>{t('home.drivePolicyBtn', 'Consultar Política de Privacidad')}</span>
-            </button>
-          </div>
-        </section>
-
-        {/* ── 6. FOOTER SOBRIO Y ELEGANTE ── */}
+        {/* ── 5. FOOTER ── */}
         <footer style={{
           paddingTop: '1.25rem',
           borderTop: `1px solid ${subBorderColor}`,
@@ -1374,41 +895,68 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <span>{t('home.developedBy', 'Desarrollado por')} <strong>Lucas R. Kowalski</strong></span>
+            <span style={{ color: subBorderColor }}>•</span>
             <a
               href="https://github.com/luk4sk4"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: textPrimary, textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+              style={{ color: textMuted, textDecoration: 'none', fontWeight: '500' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = textPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
             >
               GitHub
             </a>
-            <span>•</span>
+            <span style={{ color: subBorderColor }}>•</span>
             <a
               href="https://linkedin.com/in/lucas-kowalski"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: textPrimary, textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+              style={{ color: textMuted, textDecoration: 'none', fontWeight: '500' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = textPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
             >
               LinkedIn
             </a>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', margin: '0.25rem 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button
               onClick={() => navigateTo('/privacy')}
-              style={{ background: 'none', border: 'none', padding: 0, color: accentColor, cursor: 'pointer', fontSize: '0.82rem', fontWeight: '600', textDecoration: 'underline' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: textMuted,
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: '500',
+                textDecoration: 'underline'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = textPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
             >
               {t('legalBanner.privacyLink', 'Política de Privacidad')}
             </button>
-            <span>•</span>
+            <span style={{ color: subBorderColor }}>•</span>
             <button
               onClick={() => navigateTo('/terms')}
-              style={{ background: 'none', border: 'none', padding: 0, color: accentColor, cursor: 'pointer', fontSize: '0.82rem', fontWeight: '600', textDecoration: 'underline' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: textMuted,
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: '500',
+                textDecoration: 'underline'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = textPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.color = textMuted}
             >
               {t('legalBanner.termsLink', 'Términos y Condiciones')}
             </button>
-            <span>•</span>
-            <span style={{ color: '#10b981', fontWeight: '700', fontSize: '0.8rem' }}>
+            <span style={{ color: subBorderColor }}>•</span>
+            <span style={{ color: textMuted, fontWeight: '500', fontSize: '0.8rem' }}>
               0 Cookies / 100% LocalStorage
             </span>
           </div>
@@ -1430,9 +978,15 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           isLight={isLight}
         />
       </Suspense>
+
+      {/* Modal Cómo Usar OpenMUN */}
+      <HowToUseModal
+        isOpen={isHowToUseModalOpen}
+        onClose={() => setIsHowToUseModalOpen(false)}
+        onStartModeration={onNavigateToComienzo}
+      />
     </div>
   );
 };
 
 export default HomePage;
-

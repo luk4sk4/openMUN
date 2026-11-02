@@ -13,7 +13,7 @@ import {
   TrendingUp, 
   Zap, 
   Clock, 
-  Sparkles, 
+
   Sliders, 
   X, 
   Check, 

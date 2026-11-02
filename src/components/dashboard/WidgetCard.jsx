@@ -8,6 +8,7 @@ import WidgetErrorBoundary from '../common/WidgetErrorBoundary';
 
 const WidgetCard = ({
   widget,
+  fixedLayout = false,
   cellW,
   cellH,
   gap,
@@ -34,21 +35,24 @@ const WidgetCard = ({
 
   return (
     <div
-      className={`widget-card ${isInteracting ? 'is-interacting' : ''}`}
+      className={`widget-card ${fixedLayout ? 'fixed-panel' : ''} ${isInteracting ? 'is-interacting' : ''}`}
+      aria-label={meta.title}
       onMouseDown={onFocus}
       onTouchStart={onFocus}
       style={{
-        position: 'absolute',
-        left: x,
-        top: y,
-        width,
-        height,
+        position: fixedLayout ? 'relative' : 'absolute',
+        left: fixedLayout ? undefined : x,
+        top: fixedLayout ? undefined : y,
+        width: fixedLayout ? undefined : width,
+        height: fixedLayout ? undefined : height,
+        gridColumn: fixedLayout ? `${col + 1} / span ${colSpan}` : undefined,
+        gridRow: fixedLayout ? `${row + 1} / span ${rowSpan}` : undefined,
+        minWidth: 0,
+        minHeight: 0,
         backgroundColor: 'var(--panel-color)',
-        border: isInteracting ? '2px solid var(--text-color)' : '1px solid var(--border-color)',
+        border: isInteracting ? '2px solid var(--text-color)' : '1px solid transparent',
         borderRadius: 'var(--border-radius)',
-        boxShadow: isFocused || isInteracting
-          ? (isLight ? '0 10px 30px rgba(0,0,0,0.15)' : '0 12px 35px rgba(0,0,0,0.85)')
-          : (isLight ? '0 4px 15px rgba(0,0,0,0.06)' : '0 6px 20px rgba(0,0,0,0.6)'),
+        boxShadow: 'none',
         display: 'flex',
         flexDirection: 'column',
         transition: isInteracting
@@ -59,7 +63,7 @@ const WidgetCard = ({
       }}
     >
       {/* Borde Superior Draggable Fino (Reserva de arrastre) */}
-      <div
+      {!fixedLayout && <div
         onMouseDown={onStartDrag}
         onTouchStart={onStartDrag}
         style={{
@@ -74,10 +78,10 @@ const WidgetCard = ({
           borderTopRightRadius: 'var(--border-radius)'
         }}
         title={`Arrastrar widget: ${meta.title}`}
-      />
+      />}
 
       {/* Botones Flotantes Compactos de Control (Visibles al pasar el ratón) */}
-      <div
+      {!fixedLayout && <div
         className="widget-floating-controls"
         style={{
           position: 'absolute',
@@ -153,11 +157,12 @@ const WidgetCard = ({
         >
           <X size={14} />
         </button>
-      </div>
+      </div>}
 
       {/* Contenido del Widget */}
       <div style={{
         flex: 1,
+        minHeight: 0,
         overflow: 'auto',
         borderRadius: 'var(--border-radius)',
         pointerEvents: isInteracting ? 'none' : 'auto'
@@ -176,7 +181,7 @@ const WidgetCard = ({
       </div>
 
       {/* Handle de Resize Esquina */}
-      <div
+      {!fixedLayout && <div
         onMouseDown={onStartResize}
         onTouchStart={onStartResize}
         style={{
@@ -199,7 +204,7 @@ const WidgetCard = ({
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M10 2L2 10M10 6L6 10M10 10L10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
-      </div>
+      </div>}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { RefreshCw, AlertTriangle, Sparkles, Copy, Check, Home } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Copy, Check, Home } from 'lucide-react';
 import OpenMunLogo from './OpenMunLogo';
 
 function isDynamicChunkError(error) {
@@ -121,7 +121,7 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
             {/* Badge */}
             {isChunk ? (
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 mb-4">
-                <Sparkles className="w-4 h-4 text-blue-400" />
+                <RefreshCw className="w-4 h-4 text-blue-400" />
                 <span>Nueva versión de OpenMUN</span>
               </div>
             ) : (

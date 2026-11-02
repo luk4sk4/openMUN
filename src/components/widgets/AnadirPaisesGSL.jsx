@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Users, Check, Plus, X, Crown, Sparkles, UserPlus, Trash2, ArrowUpDown, GripVertical, Globe } from 'lucide-react';
+import { Search, Users, Check, Plus, X, Crown, Trash2, ArrowUpDown, GripVertical, Globe } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
@@ -124,18 +124,6 @@ const AnadirPaisesGSL = () => {
         borderBottom: '1px solid var(--border-color)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            backgroundColor: 'rgba(168, 85, 247, 0.18)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#c084fc'
-          }}>
-            <UserPlus size={16} />
-          </div>
           <div>
             <h3 style={{
               margin: 0,
@@ -192,9 +180,9 @@ const AnadirPaisesGSL = () => {
               fontSize: '0.72rem',
               fontWeight: '600',
               borderRadius: '6px',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              color: '#f87171',
+              border: '1px solid var(--danger-soft)',
+              backgroundColor: 'var(--danger-soft)',
+              color: 'var(--danger-color)',
               cursor: oradoresCola.length === 0 ? 'not-allowed' : 'pointer',
               opacity: oradoresCola.length === 0 ? 0.4 : 1
             }}
@@ -212,16 +200,15 @@ const AnadirPaisesGSL = () => {
             fontSize: '0.74rem',
             fontWeight: '700',
             borderRadius: '6px',
-            backgroundColor: 'rgba(168, 85, 247, 0.15)',
-            border: '1px solid rgba(168, 85, 247, 0.3)',
-            color: '#c084fc'
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'var(--muted-text)'
           }}>
-            <Users size={13} />
             <span>{t('timers.inGSL', 'En GSL:')}</span>
             <span style={{
               fontSize: '0.7rem',
-              backgroundColor: '#a855f7',
-              color: '#ffffff',
+              backgroundColor: 'transparent',
+              color: 'var(--muted-text)',
               padding: '0.05rem 0.4rem',
               borderRadius: '9999px',
               fontWeight: '800'
@@ -238,7 +225,7 @@ const AnadirPaisesGSL = () => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          backgroundColor: 'var(--card-header-bg)',
+          backgroundColor: 'transparent',
           border: '1px solid var(--border-color)',
           borderRadius: '6px',
           padding: '0.35rem 0.65rem',
@@ -307,8 +294,8 @@ const AnadirPaisesGSL = () => {
                   fontSize: '0.7rem',
                   borderRadius: '4px',
                   border: filtroVista === 'DISPONIBLES' ? '1px solid #22c55e44' : '1px solid transparent',
-                  backgroundColor: filtroVista === 'DISPONIBLES' ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
-                  color: filtroVista === 'DISPONIBLES' ? '#22c55e' : 'var(--muted-text)',
+                  backgroundColor: filtroVista === 'DISPONIBLES' ? 'var(--success-soft)' : 'transparent',
+                  color: filtroVista === 'DISPONIBLES' ? 'var(--success-color)' : 'var(--muted-text)',
                   cursor: 'pointer',
                   fontWeight: filtroVista === 'DISPONIBLES' ? '700' : '500'
                 }}
@@ -322,9 +309,9 @@ const AnadirPaisesGSL = () => {
                   padding: '0.15rem 0.5rem',
                   fontSize: '0.7rem',
                   borderRadius: '4px',
-                  border: filtroVista === 'EN_GSL' ? '1px solid #a855f7' : '1px solid transparent',
-                  backgroundColor: filtroVista === 'EN_GSL' ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
-                  color: filtroVista === 'EN_GSL' ? '#a855f7' : 'var(--muted-text)',
+                  border: filtroVista === 'EN_GSL' ? '1px solid var(--accent-color)' : '1px solid transparent',
+                  backgroundColor: filtroVista === 'EN_GSL' ? 'var(--accent-soft)' : 'transparent',
+                  color: filtroVista === 'EN_GSL' ? 'var(--accent-color)' : 'var(--muted-text)',
                   cursor: 'pointer',
                   fontWeight: filtroVista === 'EN_GSL' ? '700' : '500'
                 }}
@@ -355,12 +342,11 @@ const AnadirPaisesGSL = () => {
             margin: 'auto',
             textAlign: 'center',
             padding: '1.5rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px dashed var(--border-color)',
+            backgroundColor: 'transparent',
+            border: 'none',
             borderRadius: '8px',
             maxWidth: '340px'
           }}>
-            <Sparkles size={24} color="#a855f7" style={{ marginBottom: '0.5rem' }} />
             <div style={{ fontSize: '0.86rem', fontWeight: '700', color: 'var(--text-color)', marginBottom: '0.3rem' }}>
               {t('countries.noDelegationsLoaded', 'No hay delegaciones cargadas')}
             </div>
@@ -471,10 +457,10 @@ const AnadirPaisesGSL = () => {
                     gap: '0.4rem',
                     transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
                     backgroundColor: isDragging
-                      ? 'rgba(168, 85, 247, 0.2)'
+                      ? 'var(--accent-soft)'
                       : (estaEnLista ? 'var(--card-header-bg)' : 'var(--panel-color)'),
                     border: isDragOver
-                      ? '2px dashed #a855f7'
+                      ? '2px dashed var(--accent-color)'
                       : (estaEnLista ? '1px solid var(--subborder-color)' : '1px solid var(--border-color)'),
                     opacity: isDragging ? 0.4 : (estaEnLista ? 0.55 : 1),
                     filter: estaEnLista ? 'grayscale(70%)' : 'none',
@@ -482,8 +468,8 @@ const AnadirPaisesGSL = () => {
                   }}
                   onMouseEnter={e => {
                     if (!estaEnLista) {
-                      e.currentTarget.style.borderColor = '#a855f7';
-                      e.currentTarget.style.backgroundColor = 'rgba(168, 85, 247, 0.12)';
+                      e.currentTarget.style.borderColor = 'var(--accent-color)';
+                      e.currentTarget.style.backgroundColor = 'var(--accent-soft)';
                       e.currentTarget.style.transform = 'translateY(-1px)';
                     } else {
                       e.currentTarget.style.opacity = '0.85';
@@ -515,7 +501,7 @@ const AnadirPaisesGSL = () => {
                       {pais.nombre}
                     </span>
                     {pais.veto && (
-                      <Crown size={11} color="#eab308" style={{ flexShrink: 0 }} title="Miembro Permanente (P5)" />
+                      <Crown size={11} color="var(--warning-color)" style={{ flexShrink: 0 }} title="Miembro Permanente (P5)" />
                     )}
                   </div>
 
@@ -526,7 +512,7 @@ const AnadirPaisesGSL = () => {
                         fontSize: '0.65rem',
                         fontWeight: '800',
                         backgroundColor: '#27272a',
-                        color: '#c084fc',
+                        color: 'var(--accent-color)',
                         padding: '0.1rem 0.35rem',
                         borderRadius: '4px',
                         display: 'flex',
@@ -556,32 +542,6 @@ const AnadirPaisesGSL = () => {
           </div>
         )}
       </div>
-
-      {/* ── FOOTER RESUMEN ──────────────────────────────────────────────────── */}
-      {paises.length > 0 && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: '0.4rem',
-          borderTop: '1px solid var(--border-color)',
-          fontSize: '0.72rem',
-          color: '#71717a'
-        }}>
-          <span>
-            Destino: <strong style={{ color: '#c084fc' }}>Lista General de Oradores (GSL)</strong>
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: cantEnLista > 0 ? '#a855f7' : '#52525b'
-            }} />
-            {cantEnLista} en GSL
-          </span>
-        </div>
-      )}
     </div>
   );
 };

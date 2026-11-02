@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Crown,
   Search,
-  Users,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
+  Plus,
+  X,
   Play,
-  Sparkles,
+  UserCheck,
   RotateCcw,
   ArrowUpDown,
   GripVertical,
@@ -19,6 +17,7 @@ import CountryFlag from '../common/CountryFlag';
 import EditarPaisModal from '../modals/EditarPaisModal';
 import EmptyState from '../common/EmptyState';
 import VirtualizedList from '../common/VirtualizedList';
+import ImportarPaises from './ImportarPaises';
 import { useTranslation } from 'react-i18next';
 
 const MatrizPaises = () => {
@@ -39,6 +38,8 @@ const MatrizPaises = () => {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [paisAEditar, setPaisAEditar] = useState(null);
+  const [mostrarImportador, setMostrarImportador] = useState(false);
+  const importDialogRef = useRef(null);
 
   // Estado para Roll Call Nominal de Asistencia
   const [modoRollCall, setModoRollCall] = useState(false);
@@ -129,7 +130,7 @@ const MatrizPaises = () => {
     const isDragOver = dragOverIndex === index;
 
     return (
-      <div
+      <div className="attendance-row"
         key={p.id}
         draggable
         onDragStart={() => setDraggedIndex(index)}
@@ -157,8 +158,9 @@ const MatrizPaises = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0.45rem 0.75rem',
-          backgroundColor: isDragging ? 'rgba(59, 130, 246, 0.15)' : 'var(--card-header-bg)',
-          border: isDragOver ? '2px dashed #3b82f6' : '1px solid var(--border-color)',
+          backgroundColor: isDragging ? 'var(--info-soft)' : 'transparent',
+          border: isDragOver ? '2px dashed var(--info-color)' : '1px solid transparent',
+          borderBottom: '1px solid var(--subborder-color)',
           borderRadius: '6px',
           fontSize: '0.82rem',
           opacity: isDragging ? 0.5 : 1,
@@ -207,7 +209,7 @@ const MatrizPaises = () => {
             }}
             title={p.veto ? 'Tiene derecho a Veto (P5)' : 'Sin derecho a Veto'}
           >
-            <Crown size={14} color={p.veto ? '#facc15' : '#888888'} fill={p.veto ? '#facc15' : 'none'} />
+            <Crown size={14} color={p.veto ? 'var(--warning-color)' : '#888888'} fill={p.veto ? 'var(--warning-color)' : 'none'} />
           </button>
 
           {/* Botón editar delegación */}
@@ -230,17 +232,18 @@ const MatrizPaises = () => {
         </div>
 
         {/* Selector de Estatus Roll Call */}
-        <div style={{ display: 'flex', gap: '0.25rem' }}>
+        <div className="attendance-status" style={{ display: 'flex', gap: '0.25rem' }}>
           <button
+            aria-pressed={p.estatus === 'Presente'}
             onClick={() => cambiarEstatusPais(p.id, 'Presente')}
             style={{
               padding: '0.2rem 0.45rem',
               fontSize: '0.7rem',
               fontWeight: '600',
               borderRadius: '4px',
-              border: '1px solid #15803d',
-              backgroundColor: p.estatus === 'Presente' ? '#15803d' : 'transparent',
-              color: p.estatus === 'Presente' ? '#ffffff' : '#22c55e',
+              border: '1px solid transparent',
+              backgroundColor: p.estatus === 'Presente' ? 'var(--success-soft)' : 'transparent',
+              color: p.estatus === 'Presente' ? 'var(--success-color)' : 'var(--muted-text)',
               cursor: 'pointer'
             }}
           >
@@ -248,15 +251,16 @@ const MatrizPaises = () => {
           </button>
 
           <button
+            aria-pressed={p.estatus === 'Presente y Votando'}
             onClick={() => cambiarEstatusPais(p.id, 'Presente y Votando')}
             style={{
               padding: '0.2rem 0.45rem',
               fontSize: '0.7rem',
               fontWeight: '600',
               borderRadius: '4px',
-              border: '1px solid #1d4ed8',
-              backgroundColor: p.estatus === 'Presente y Votando' ? '#1d4ed8' : 'transparent',
-              color: p.estatus === 'Presente y Votando' ? '#ffffff' : '#3b82f6',
+              border: '1px solid transparent',
+              backgroundColor: p.estatus === 'Presente y Votando' ? 'var(--info-soft)' : 'transparent',
+              color: p.estatus === 'Presente y Votando' ? 'var(--info-color)' : 'var(--muted-text)',
               cursor: 'pointer'
             }}
           >
@@ -264,15 +268,16 @@ const MatrizPaises = () => {
           </button>
 
           <button
+            aria-pressed={p.estatus === 'Ausente'}
             onClick={() => cambiarEstatusPais(p.id, 'Ausente')}
             style={{
               padding: '0.2rem 0.45rem',
               fontSize: '0.7rem',
               fontWeight: '600',
               borderRadius: '4px',
-              border: '1px solid #b91c1c',
-              backgroundColor: p.estatus === 'Ausente' ? '#b91c1c' : 'transparent',
-              color: p.estatus === 'Ausente' ? '#ffffff' : '#ef4444',
+              border: '1px solid transparent',
+              backgroundColor: p.estatus === 'Ausente' ? 'var(--danger-soft)' : 'transparent',
+              color: p.estatus === 'Ausente' ? 'var(--danger-color)' : 'var(--muted-text)',
               cursor: 'pointer'
             }}
           >
@@ -293,7 +298,9 @@ const MatrizPaises = () => {
       backgroundColor: 'var(--panel-color)',
       color: 'var(--text-color)',
       gap: '0.75rem',
-      position: 'relative'
+      position: 'relative',
+      minHeight: 0,
+      overflow: 'hidden'
     }}>
       {/* Modal de edición rápida de país */}
       {paisAEditar && (
@@ -313,13 +320,13 @@ const MatrizPaises = () => {
       )}
 
       {/* HEADER & BARRA DE ESTADÍSTICAS / QUÓRUM */}
-      <div style={{
+      <div className="attendance-summary" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
         gap: '0.5rem',
-        padding: '0.6rem 0.8rem',
-        backgroundColor: 'var(--card-header-bg)',
-        border: '1px solid var(--border-color)',
+        padding: '0.3rem 0 1.25rem',
+        backgroundColor: 'transparent',
+        borderBottom: '1px solid var(--subborder-color)',
         borderRadius: '8px'
       }}>
         {/* Total Delegaciones */}
@@ -328,7 +335,7 @@ const MatrizPaises = () => {
             {t('countries.totalQuorum', 'Total Quórum')}
           </span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
-            <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-color)' }}>
+            <span style={{ fontSize: '1.8rem', fontWeight: '650', color: 'var(--text-color)' }}>
               {totalAsistentes}
             </span>
             <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>/ {totalPaises} ({porcentajeAsistencia}%)</span>
@@ -337,45 +344,45 @@ const MatrizPaises = () => {
 
         {/* Presentes */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: '0.7rem', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('countries.present', 'Presentes')}
           </span>
-          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#22c55e' }}>
+          <span style={{ fontSize: '1.8rem', fontWeight: '650', color: 'var(--text-color)' }}>
             {presentes}
           </span>
         </div>
 
         {/* Presentes y Votando */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: '0.7rem', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('countries.presentAndVotingShort', 'P. y Votando')}
           </span>
-          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#3b82f6' }}>
+          <span style={{ fontSize: '1.8rem', fontWeight: '650', color: 'var(--text-color)' }}>
             {presentesYVotando}
           </span>
         </div>
 
         {/* Ausentes */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: '0.7rem', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('countries.absent', 'Ausentes')}
           </span>
-          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#ef4444' }}>
+          <span style={{ fontSize: '1.8rem', fontWeight: '650', color: 'var(--text-color)' }}>
             {ausentes}
           </span>
         </div>
 
         {/* Mayorías Calculadas */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: '0.7rem', color: '#eab308', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             {t('voting.majorityRequired', 'Mayorías (Simp / 2/3)')}
           </span>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
-            <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#eab308' }} title="Mayoría Simple">
+            <span style={{ fontSize: '1.5rem', fontWeight: '650', color: 'var(--text-color)' }} title="Mayoría Simple">
               {mayoriaSimple}
             </span>
             <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>|</span>
-            <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#f59e0b' }} title="Mayoría Cualificada (2/3)">
+            <span style={{ fontSize: '1.5rem', fontWeight: '650', color: 'var(--text-color)' }} title="Mayoría Cualificada (2/3)">
               {mayoriaCualificada}
             </span>
           </div>
@@ -465,7 +472,7 @@ const MatrizPaises = () => {
               backgroundColor: 'var(--card-header-bg)',
               border: '1px solid var(--border-color)',
               borderRadius: '6px',
-              color: '#ef4444',
+              color: 'var(--danger-color)',
               fontSize: '0.78rem',
               fontWeight: '600',
               cursor: 'pointer'
@@ -483,7 +490,7 @@ const MatrizPaises = () => {
               alignItems: 'center',
               gap: '0.35rem',
               padding: '0.4rem 0.85rem',
-              backgroundColor: modoRollCall ? '#ef4444' : '#3b82f6',
+              backgroundColor: modoRollCall ? 'var(--danger-solid)' : 'var(--btn-bg)',
               border: 'none',
               borderRadius: '6px',
               color: '#ffffff',
@@ -503,7 +510,7 @@ const MatrizPaises = () => {
       {modoRollCall && (
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
-          border: '2px solid #3b82f6',
+          border: '2px solid var(--info-color)',
           borderRadius: '8px',
           padding: '0.75rem 1rem',
           display: 'flex',
@@ -514,8 +521,8 @@ const MatrizPaises = () => {
           {/* Banner de Ronda */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.35rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Sparkles size={15} color={rondaRollCall === 2 ? '#f59e0b' : '#3b82f6'} />
-              <span style={{ fontWeight: '800', fontSize: '0.82rem', color: rondaRollCall === 2 ? '#f59e0b' : '#60a5fa' }}>
+              <UserCheck size={15} color={rondaRollCall === 2 ? 'var(--warning-color)' : 'var(--info-color)'} />
+              <span style={{ fontWeight: '800', fontSize: '0.82rem', color: rondaRollCall === 2 ? 'var(--warning-color)' : 'var(--info-color)' }}>
                 {rondaRollCall === 1 ? t('countries.round1', 'PRIMERA RONDA - PASO DE LISTA NOMINAL') : t('countries.round2', 'SEGUNDA RONDA - PASADOS / AUSENTES')}
               </span>
             </div>
@@ -534,7 +541,7 @@ const MatrizPaises = () => {
                   </div>
                   <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                     <span>{paisActualRollCall.nombre}</span>
-                    {paisActualRollCall.veto && <Crown size={16} color="#facc15" fill="#facc15" title="Veto P5" />}
+                    {paisActualRollCall.veto && <Crown size={16} color="var(--warning-color)" fill="var(--warning-color)" title="Veto P5" />}
                   </div>
                 </div>
               </div>
@@ -544,7 +551,7 @@ const MatrizPaises = () => {
                 <button
                   onClick={() => registrarYAvanzarRollCall('Presente')}
                   style={{
-                    backgroundColor: '#22c55e',
+                    backgroundColor: 'var(--success-solid)',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '6px',
@@ -560,7 +567,7 @@ const MatrizPaises = () => {
                 <button
                   onClick={() => registrarYAvanzarRollCall('Presente y Votando')}
                   style={{
-                    backgroundColor: '#3b82f6',
+                    backgroundColor: 'var(--info-solid)',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '6px',
@@ -576,7 +583,7 @@ const MatrizPaises = () => {
                 <button
                   onClick={() => registrarYAvanzarRollCall('Ausente')}
                   style={{
-                    backgroundColor: '#ef4444',
+                    backgroundColor: 'var(--danger-solid)',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '6px',
@@ -591,7 +598,7 @@ const MatrizPaises = () => {
               </div>
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '0.75rem', color: '#22c55e', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+            <div style={{ textAlign: 'center', padding: '0.75rem', color: 'var(--success-color)', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
               <Check size={16} />
               <span>{t('countries.rollCallCompleted', 'Paso de lista nominal completado para todas las delegaciones.')}</span>
             </div>
@@ -609,9 +616,8 @@ const MatrizPaises = () => {
       }}>
         {paisesFiltrados.length === 0 ? (
           <EmptyState
-            icon={Users}
-            title={paises.length === 0 ? t('countries.noDelegationsLoaded', 'No hay delegaciones cargadas') : t('countries.noMatchFound', 'Sin coincidencias')}
-            description={paises.length === 0 ? t('countries.importHelp', 'Carga delegaciones desde la pestaña "Comienzo" o importa un archivo Excel/CSV.') : t('countries.filterHelp', 'Prueba con otro término de búsqueda o limpia el filtro de estatus.')}
+            title={totalPaises === 0 ? t('countries.noDelegationsLoaded', 'No hay delegaciones cargadas') : t('countries.noMatchFound', 'Sin coincidencias')}
+            description={totalPaises === 0 ? t('countries.importBelow', 'Usa «Añadir países» para empezar.') : t('countries.filterHelp', 'Prueba con otro término de búsqueda o limpia el filtro de estatus.')}
             compact={true}
           />
         ) : paisesFiltrados.length > 25 ? (
@@ -624,6 +630,7 @@ const MatrizPaises = () => {
         ) : (
           <div style={{
             flex: 1,
+            minHeight: 0,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -634,6 +641,18 @@ const MatrizPaises = () => {
           </div>
         )}
       </div>
+      <button type="button" className="country-matrix-add" onClick={() => {
+        setMostrarImportador(true);
+        importDialogRef.current.showModal();
+      }}>
+        <Plus size={14} /> {t('countries.addCountries', 'Añadir países')}
+      </button>
+      <dialog ref={importDialogRef} className="country-import-dialog" aria-label={t('countries.addCountries', 'Añadir países')} onClose={() => setMostrarImportador(false)}>
+        <div className="country-import-dialog-body">
+          <button type="button" className="country-import-dialog-close" aria-label={t('common.close', 'Cerrar')} onClick={() => importDialogRef.current.close()}><X size={18} /></button>
+          <div className="country-import-dialog-content">{mostrarImportador && <ImportarPaises />}</div>
+        </div>
+      </dialog>
     </div>
   );
 };

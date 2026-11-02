@@ -19,6 +19,7 @@ import { useSession } from '../../context/SessionContext';
 import { navigateTo } from '../../utils/router';
 
 const SessionMenuDropdown = ({
+  placement,
   sessionMenuOpen,
   setSessionMenuOpen,
   isLight,
@@ -139,10 +140,13 @@ const SessionMenuDropdown = ({
       {sessionMenuOpen && (
         <div
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            right: 0,
-            width: '275px',
+            position: placement === 'sidebar' ? 'fixed' : 'absolute',
+            top: placement === 'sidebar' ? 'calc(var(--dashboard-tools-top, 64px) + 8px)' : 'calc(100% + 6px)',
+            left: undefined,
+            right: placement === 'sidebar' ? 'calc(var(--dashboard-sidebar-width) + 8px)' : 0,
+            width: placement === 'sidebar' ? 'min(275px, calc(100vw - var(--dashboard-sidebar-width) - 16px))' : '275px',
+            maxHeight: placement === 'sidebar' ? 'calc(100dvh - var(--dashboard-tools-top, 64px) - 24px)' : undefined,
+            overflowY: placement === 'sidebar' ? 'auto' : undefined,
             backgroundColor: isLight ? 'rgba(255, 255, 255, 0.98)' : 'rgba(22, 27, 39, 0.96)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',

@@ -1,8 +1,11 @@
 import React, { useMemo } from 'react';
 import { COLS, GAP } from '../../utils/gridUtils';
+import { FIXED_LAYOUTS } from '../../utils/fixedLayouts';
 import WidgetCard from './WidgetCard';
 
 const WidgetGridBoard = ({
+  activeTab,
+  fixedLayout = false,
   boardRef,
   boardW,
   boardHeight,
@@ -44,6 +47,16 @@ const WidgetGridBoard = ({
       })
     );
   }, [boardW, maxRowUsed, cellW, cellH]);
+
+  if (fixedLayout) {
+    const panels = FIXED_LAYOUTS[activeTab] || [];
+    const rows = Math.max(1, ...panels.map(panel => panel.row + panel.rowSpan));
+    return <main className="dashboard-fixed-view">
+      <div className={`dashboard-fixed-grid dashboard-fixed-grid--${activeTab.toLowerCase()}`} style={{ '--fixed-rows': rows, '--fixed-panel-count': panels.length }}>
+        {panels.map(widget => <WidgetCard key={widget.i} widget={widget} fixedLayout isLight={isLight} />)}
+      </div>
+    </main>;
+  }
 
   return (
     <main style={{

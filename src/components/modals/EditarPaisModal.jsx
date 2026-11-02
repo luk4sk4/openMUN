@@ -10,7 +10,7 @@ import {
   Globe2,
   Image as ImageIcon,
   RotateCcw,
-  Sparkles,
+
   CheckCircle2
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
@@ -271,7 +271,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                     gap: '0.3rem'
                   }}
                 >
-                  <Sparkles size={14} color="#eab308" />
+                  <Search size={14} />
                   Auto
                 </button>
               </div>

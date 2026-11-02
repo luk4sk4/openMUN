@@ -4,15 +4,9 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Plus,
-  Minus,
   Check,
   Volume2,
-  VolumeX,
-  Users,
-  Mic,
-  Award,
-  History
+  VolumeX
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
@@ -23,8 +17,7 @@ const CronometroEnmiendas = () => {
   const { t } = useTranslation();
   const {
     paises = [],
-    registrarIntervencion,
-    registroIntervenciones = []
+    registrarIntervencion
   } = useSession();
 
   // Países asistentes en sala
@@ -114,12 +107,12 @@ const CronometroEnmiendas = () => {
 
   // Color de reloj dinámico
   const colorReloj = segundosRestantes < 0
-    ? '#ef4444'
+    ? 'var(--danger-color, #edaaa1)'
     : segundosRestantes <= 10
-      ? '#f87171'
+      ? 'var(--danger-color, #edaaa1)'
       : segundosRestantes <= 20
-        ? '#eab308'
-        : '#22c55e';
+        ? '#f97316'
+        : 'var(--text-color, #f7f2eb)';
 
   // Porcentaje de progreso
   const porcentaje = tiempoInicial > 0
@@ -150,10 +143,10 @@ const CronometroEnmiendas = () => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
           <div style={{
-            backgroundColor: 'rgba(234, 179, 8, 0.15)',
+            backgroundColor: 'var(--warning-soft, rgba(203, 181, 141, 0.15))',
             padding: '0.25rem',
             borderRadius: '4px',
-            color: '#eab308',
+            color: 'var(--warning-color, #cbb58d)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -171,7 +164,7 @@ const CronometroEnmiendas = () => {
           style={{
             background: 'transparent',
             border: 'none',
-            color: sonidoHabilitado ? '#3b82f6' : 'var(--muted-text)',
+            color: sonidoHabilitado ? 'var(--accent-color)' : 'var(--muted-text)',
             cursor: 'pointer',
             padding: '2px',
             display: 'flex',
@@ -199,10 +192,10 @@ const CronometroEnmiendas = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '0.4rem',
-          backgroundColor: 'var(--card-hover, rgba(255,255,255,0.03))',
+          backgroundColor: 'var(--input-bg, rgba(255,255,255,0.04))',
           padding: '0.35rem 0.5rem',
           borderRadius: '6px',
-          border: '1px solid var(--subborder-color)'
+          border: '1px solid var(--border-color)'
         }}>
           <CountryFlag
             country={paisObj}
@@ -219,7 +212,7 @@ const CronometroEnmiendas = () => {
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: 'var(--text-color)',
-                fontSize: '0.76rem',
+                fontSize: '0.78rem',
                 fontWeight: '700',
                 outline: 'none',
                 cursor: 'pointer'
@@ -242,14 +235,14 @@ const CronometroEnmiendas = () => {
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: 'var(--text-color)',
-                fontSize: '0.76rem',
+                fontSize: '0.78rem',
                 outline: 'none'
               }}
             />
           )}
         </div>
 
-        {/* Display del Tiempo (Grande y Dinámico) */}
+        {/* Display del Tiempo (Estilo Debate Agenda con Tabular Nums) */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -259,13 +252,14 @@ const CronometroEnmiendas = () => {
           padding: '0.2rem 0'
         }}>
           <div style={{
-            fontSize: '2.4rem',
-            fontWeight: '900',
-            fontFamily: 'monospace',
-            letterSpacing: '0.04em',
+            fontSize: '3rem',
+            fontWeight: '800',
+            fontFamily: 'var(--font-family)',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '0.02em',
             color: colorReloj,
             lineHeight: 1,
-            textShadow: `0 0 20px ${colorReloj}33`,
+            textShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
             transition: 'color 0.3s ease'
           }}>
             {formatTiempo(segundosRestantes)}
@@ -274,22 +268,23 @@ const CronometroEnmiendas = () => {
           {/* Barra de Progreso */}
           <div style={{
             width: '100%',
-            height: '4px',
+            height: '6px',
             backgroundColor: 'rgba(255,255,255,0.08)',
-            borderRadius: '2px',
-            marginTop: '0.35rem',
+            borderRadius: '999px',
+            marginTop: '0.45rem',
             overflow: 'hidden'
           }}>
             <div style={{
               width: `${porcentaje}%`,
               height: '100%',
-              backgroundColor: colorReloj,
+              backgroundColor: segundosRestantes <= 10 ? 'var(--danger-color, #edaaa1)' : segundosRestantes <= 20 ? '#f97316' : 'var(--accent-color, #efa37f)',
+              borderRadius: '999px',
               transition: 'width 1s linear, background-color 0.3s ease'
             }} />
           </div>
         </div>
 
-        {/* Presets Rápidos */}
+        {/* Presets Rápidos estilo Debate Agenda */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
@@ -301,15 +296,16 @@ const CronometroEnmiendas = () => {
               key={s}
               onClick={() => handleSeleccionarPreset(s)}
               style={{
-                backgroundColor: tiempoInicial === s ? 'rgba(59, 130, 246, 0.2)' : 'var(--card-hover, rgba(255,255,255,0.03))',
-                border: `1px solid ${tiempoInicial === s ? '#3b82f6' : 'var(--subborder-color)'}`,
-                color: tiempoInicial === s ? '#60a5fa' : 'var(--muted-text)',
-                borderRadius: '4px',
-                padding: '0.25rem 0',
-                fontSize: '0.66rem',
-                fontWeight: '800',
+                backgroundColor: tiempoInicial === s ? 'var(--accent-color)' : 'transparent',
+                border: `1px solid ${tiempoInicial === s ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                color: tiempoInicial === s ? '#1a1a1a' : 'var(--text-color)',
+                borderRadius: '5px',
+                padding: '0.28rem 0',
+                fontSize: '0.72rem',
+                fontWeight: tiempoInicial === s ? '800' : '600',
                 cursor: 'pointer',
-                textAlign: 'center'
+                textAlign: 'center',
+                transition: 'all 0.12s ease'
               }}
             >
               {s}s
@@ -317,23 +313,23 @@ const CronometroEnmiendas = () => {
           ))}
         </div>
 
-        {/* Controles Principales (Iniciar / Pausar / Reset / +-10s) */}
+        {/* Controles Principales */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'auto 1fr auto auto',
-          gap: '0.3rem',
+          gap: '0.35rem',
           width: '100%'
         }}>
           <button
             onClick={() => handleAjustarTiempo(-10)}
             title="Restar 10 segundos"
             style={{
-              backgroundColor: 'var(--card-hover, rgba(255,255,255,0.05))',
-              border: '1px solid var(--subborder-color)',
+              backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
+              border: '1px solid var(--border-color)',
               color: 'var(--text-color)',
-              borderRadius: '5px',
-              padding: '0.35rem 0.5rem',
-              fontSize: '0.68rem',
+              borderRadius: '6px',
+              padding: '0.35rem 0.55rem',
+              fontSize: '0.72rem',
               fontWeight: '700',
               cursor: 'pointer'
             }}
@@ -344,13 +340,13 @@ const CronometroEnmiendas = () => {
           <button
             onClick={() => setCorriendo(c => !c)}
             style={{
-              backgroundColor: corriendo ? '#ca8a04' : '#16a34a',
-              border: 'none',
-              color: '#ffffff',
-              borderRadius: '5px',
-              padding: '0.35rem 0.5rem',
+              backgroundColor: corriendo ? 'var(--accent-soft, rgba(239, 163, 127, 0.12))' : 'var(--btn-bg)',
+              border: corriendo ? '1px solid var(--accent-color)' : 'none',
+              color: corriendo ? 'var(--accent-color)' : '#ffffff',
+              borderRadius: '6px',
+              padding: '0.35rem 0.55rem',
               fontSize: '0.78rem',
-              fontWeight: '900',
+              fontWeight: '800',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -367,12 +363,12 @@ const CronometroEnmiendas = () => {
             onClick={() => handleAjustarTiempo(10)}
             title="Sumar 10 segundos"
             style={{
-              backgroundColor: 'var(--card-hover, rgba(255,255,255,0.05))',
-              border: '1px solid var(--subborder-color)',
+              backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
+              border: '1px solid var(--border-color)',
               color: 'var(--text-color)',
-              borderRadius: '5px',
-              padding: '0.35rem 0.5rem',
-              fontSize: '0.68rem',
+              borderRadius: '6px',
+              padding: '0.35rem 0.55rem',
+              fontSize: '0.72rem',
               fontWeight: '700',
               cursor: 'pointer'
             }}
@@ -385,10 +381,10 @@ const CronometroEnmiendas = () => {
             title="Reiniciar a tiempo inicial"
             style={{
               backgroundColor: 'transparent',
-              border: '1px solid var(--subborder-color)',
+              border: '1px solid var(--border-color)',
               color: 'var(--muted-text)',
-              borderRadius: '5px',
-              padding: '0.35rem 0.5rem',
+              borderRadius: '6px',
+              padding: '0.35rem 0.55rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -404,12 +400,12 @@ const CronometroEnmiendas = () => {
           onClick={handleGuardarIntervencion}
           style={{
             width: '100%',
-            backgroundColor: intervencionGuardadaFeedback ? '#16a34a' : 'var(--btn-bg)',
+            backgroundColor: intervencionGuardadaFeedback ? 'var(--success-solid)' : 'var(--btn-bg)',
             border: 'none',
             color: 'var(--btn-text)',
-            borderRadius: '5px',
-            padding: '0.4rem 0.6rem',
-            fontSize: '0.74rem',
+            borderRadius: '6px',
+            padding: '0.45rem 0.6rem',
+            fontSize: '0.76rem',
             fontWeight: '800',
             cursor: 'pointer',
             display: 'flex',
@@ -419,7 +415,7 @@ const CronometroEnmiendas = () => {
             transition: 'all 0.2s ease'
           }}
         >
-          <Check size={13} />
+          <Check size={14} />
           <span>{intervencionGuardadaFeedback ? '¡Guardado en Histórico!' : 'Concluir y Guardar en Histórico'}</span>
         </button>
       </div>

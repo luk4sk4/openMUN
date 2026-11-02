@@ -8,8 +8,7 @@ import {
   CheckCircle2,
   AlertCircle,
   FileSpreadsheet,
-  Globe2,
-  Sparkles,
+  Layers,
   X,
   Camera,
   Image as ImageIcon,
@@ -1133,31 +1132,20 @@ const ImportarPaises = () => {
         flexWrap: 'wrap',
         gap: '0.5rem',
         padding: '0.5rem 0.65rem',
-        backgroundColor: 'var(--card-header-bg)',
-        border: '1px solid var(--border-color)',
+        backgroundColor: 'transparent',
+        border: 'none',
+        borderBottom: '1px solid var(--subborder-color)',
         borderRadius: '8px'
       }}>
         {/* Lado izquierdo: Título y Contadores */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            backgroundColor: 'rgba(59, 130, 246, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#3b82f6'
-          }}>
-            <Globe2 size={16} />
-          </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', fontSize: '0.86rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '650', fontSize: '0.95rem' }}>
               <span>Importar Países</span>
               <span style={{
                 fontSize: '0.68rem',
-                backgroundColor: 'rgba(59, 130, 246, 0.18)',
-                color: '#60a5fa',
+                backgroundColor: 'transparent',
+                color: 'var(--muted-text)',
                 padding: '0.1rem 0.4rem',
                 borderRadius: '4px',
                 fontWeight: '700'
@@ -1167,8 +1155,8 @@ const ImportarPaises = () => {
               {totalVetosSesion > 0 && (
                 <span style={{
                   fontSize: '0.66rem',
-                  backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                  color: '#22c55e',
+                  backgroundColor: 'var(--success-soft)',
+                  color: 'var(--success-color)',
                   padding: '0.1rem 0.35rem',
                   borderRadius: '4px',
                   display: 'flex',
@@ -1195,7 +1183,8 @@ const ImportarPaises = () => {
               gap: '0.3rem',
               padding: '0.25rem 0.5rem',
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--border-color)',
+              border: 'none',
+        borderBottom: '1px solid var(--subborder-color)',
               borderRadius: '5px',
               color: 'var(--text-color)',
               fontSize: '0.7rem',
@@ -1204,7 +1193,7 @@ const ImportarPaises = () => {
               transition: 'all 0.15s ease'
             }}
           >
-            <Download size={12} color="#3b82f6" />
+            <Download size={12} color="var(--accent-color)" />
             <span>Plantilla</span>
           </button>
 
@@ -1217,10 +1206,10 @@ const ImportarPaises = () => {
                 alignItems: 'center',
                 gap: '0.25rem',
                 padding: '0.25rem 0.5rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
+                backgroundColor: 'var(--danger-soft)',
+                border: '1px solid var(--danger-soft)',
                 borderRadius: '5px',
-                color: '#ef4444',
+                color: 'var(--danger-color)',
                 fontSize: '0.7rem',
                 fontWeight: '600',
                 cursor: 'pointer'
@@ -1233,12 +1222,12 @@ const ImportarPaises = () => {
           )}
 
           {confirmandoVaciar && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', backgroundColor: 'rgba(239,68,68,0.2)', padding: '0.15rem 0.4rem', borderRadius: '5px', border: '1px solid #ef4444' }}>
-              <span style={{ fontSize: '0.68rem', color: '#ef4444', fontWeight: '700' }}>¿Vaciar?</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', backgroundColor: 'var(--danger-soft)', padding: '0.15rem 0.4rem', borderRadius: '5px', border: '1px solid var(--danger-solid)' }}>
+              <span style={{ fontSize: '0.68rem', color: 'var(--danger-color)', fontWeight: '700' }}>¿Vaciar?</span>
               <button
                 type="button"
                 onClick={handleVaciarLista}
-                style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '3px', padding: '1px 6px', fontSize: '0.66rem', fontWeight: '700', cursor: 'pointer' }}
+                style={{ background: 'var(--danger-solid)', color: '#fff', border: 'none', borderRadius: '3px', padding: '1px 6px', fontSize: '0.66rem', fontWeight: '700', cursor: 'pointer' }}
               >
                 Sí
               </button>
@@ -1259,16 +1248,17 @@ const ImportarPaises = () => {
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '0.3rem',
-        backgroundColor: 'var(--card-header-bg)',
+        backgroundColor: 'transparent',
         padding: '3px',
         borderRadius: '8px',
-        border: '1px solid var(--border-color)'
+        border: 'none',
+        borderBottom: '1px solid var(--subborder-color)'
       }}>
         {[
           { key: 'archivo', label: t('countries.tabFile', 'Archivo'), icon: Upload, desc: 'Excel, CSV, JSON' },
           { key: 'pegar', label: t('countries.tabPaste', 'Pegar'), icon: ClipboardPaste, desc: 'Texto directo' },
           { key: 'individual', label: t('countries.tabSingle', 'Añadir País'), icon: UserPlus, desc: 'Añadir único' },
-          { key: 'presets', label: t('countries.tabPresets', 'Plantillas'), icon: Sparkles, desc: 'Comités listos' }
+          { key: 'presets', label: t('countries.tabPresets', 'Plantillas'), icon: Layers, desc: 'Comités listos' }
         ].map(m => {
           const Icon = m.icon;
           const activo = tab === m.key && !preview;
@@ -1290,14 +1280,14 @@ const ImportarPaises = () => {
                 gap: '0.35rem',
                 padding: '0.45rem 0.2rem',
                 fontSize: '0.75rem',
-                fontWeight: activo ? '800' : '600',
+                fontWeight: activo ? '700' : '500',
                 borderRadius: '6px',
                 border: 'none',
-                backgroundColor: activo ? '#3b82f6' : 'transparent',
-                color: activo ? '#ffffff' : 'var(--muted-text)',
+                backgroundColor: 'transparent',
+                color: activo ? 'var(--text-color)' : 'var(--muted-text)',
                 cursor: 'pointer',
                 transition: 'all 0.18s ease',
-                boxShadow: activo ? '0 2px 6px rgba(59, 130, 246, 0.3)' : 'none'
+                boxShadow: activo ? 'inset 0 -2px var(--text-color)' : 'none'
               }}
             >
               <Icon size={14} />
@@ -1313,16 +1303,16 @@ const ImportarPaises = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '0.45rem',
-          backgroundColor: 'rgba(239, 68, 68, 0.12)',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
+          backgroundColor: 'var(--danger-soft)',
+          border: '1px solid var(--danger-soft)',
           borderRadius: '6px',
           padding: '0.45rem 0.65rem',
           fontSize: '0.74rem',
-          color: '#f87171'
+          color: 'var(--danger-color)'
         }}>
           <AlertCircle size={14} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1 }}>{error}</span>
-          <button onClick={() => setError('')} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer' }}>
+          <button onClick={() => setError('')} style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer' }}>
             <X size={12} />
           </button>
         </div>
@@ -1332,16 +1322,16 @@ const ImportarPaises = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '0.45rem',
-          backgroundColor: 'rgba(34, 197, 94, 0.12)',
-          border: '1px solid rgba(34, 197, 94, 0.4)',
+          backgroundColor: 'var(--success-soft)',
+          border: '1px solid var(--success-soft)',
           borderRadius: '6px',
           padding: '0.45rem 0.65rem',
           fontSize: '0.74rem',
-          color: '#4ade80'
+          color: 'var(--success-color)'
         }}>
           <CheckCircle2 size={14} style={{ flexShrink: 0 }} />
           <span style={{ flex: 1 }}>{exito}</span>
-          <button onClick={() => setExito('')} style={{ background: 'transparent', border: 'none', color: '#4ade80', cursor: 'pointer' }}>
+          <button onClick={() => setExito('')} style={{ background: 'transparent', border: 'none', color: 'var(--success-color)', cursor: 'pointer' }}>
             <X size={12} />
           </button>
         </div>
@@ -1358,13 +1348,13 @@ const ImportarPaises = () => {
             onDrop={handleDrop}
             style={{
               flex: 1,
-              border: isDraggingFile ? '2px dashed #3b82f6' : '2px dashed var(--border-color)',
+              border: isDraggingFile ? '2px dashed var(--accent-color)' : '2px dashed var(--border-color)',
               borderRadius: '10px',
               padding: '1rem',
               textAlign: 'center',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              backgroundColor: isDraggingFile ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.02)',
+              backgroundColor: isDraggingFile ? 'var(--accent-soft)' : 'transparent',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -1373,14 +1363,14 @@ const ImportarPaises = () => {
             }}
             onMouseEnter={e => {
               if (!isDraggingFile) {
-                e.currentTarget.style.borderColor = '#3b82f6';
-                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+                e.currentTarget.style.borderColor = 'var(--accent-color)';
+                e.currentTarget.style.backgroundColor = 'var(--accent-soft)';
               }
             }}
             onMouseLeave={e => {
               if (!isDraggingFile) {
                 e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.02)';
+                e.currentTarget.style.backgroundColor = 'transparent';
               }
             }}
           >
@@ -1388,11 +1378,11 @@ const ImportarPaises = () => {
               width: '42px',
               height: '42px',
               borderRadius: '50%',
-              backgroundColor: 'rgba(59, 130, 246, 0.15)',
+              backgroundColor: 'var(--accent-soft)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#3b82f6'
+              color: 'var(--accent-color)'
             }}>
               <Upload size={22} />
             </div>
@@ -1420,7 +1410,7 @@ const ImportarPaises = () => {
             {cargando && (
               <div style={{
                 fontSize: '0.72rem',
-                color: '#3b82f6',
+                color: 'var(--accent-color)',
                 marginTop: '0.2rem',
                 display: 'flex',
                 alignItems: 'center',
@@ -1454,7 +1444,7 @@ const ImportarPaises = () => {
               justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <FileSpreadsheet size={13} color="#3b82f6" />
+                <FileSpreadsheet size={13} color="var(--accent-color)" />
                 <span>Columnas Soportadas</span>
               </div>
               <button
@@ -1463,7 +1453,7 @@ const ImportarPaises = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#3b82f6',
+                  color: 'var(--accent-color)',
                   cursor: 'pointer',
                   fontSize: '0.68rem',
                   fontWeight: '700',
@@ -1487,8 +1477,8 @@ const ImportarPaises = () => {
                   padding: '0.35rem 0.45rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '2px' }}>
-                    <code style={{ fontSize: '0.7rem', fontWeight: '700', color: '#60a5fa' }}>{c.col}</code>
-                    {c.req && <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: '800' }}>*</span>}
+                    <code style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--accent-color)' }}>{c.col}</code>
+                    {c.req && <span style={{ color: 'var(--danger-color)', fontSize: '0.7rem', fontWeight: '800' }}>*</span>}
                   </div>
                   <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', lineHeight: '1.2' }}>
                     {c.desc}
@@ -1522,10 +1512,10 @@ const ImportarPaises = () => {
                   alignItems: 'center',
                   gap: '0.25rem',
                   padding: '0.25rem 0.5rem',
-                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  backgroundColor: 'var(--accent-soft)',
+                  border: '1px solid var(--accent-soft)',
                   borderRadius: '4px',
-                  color: '#60a5fa',
+                  color: 'var(--accent-color)',
                   fontSize: '0.7rem',
                   fontWeight: '700',
                   cursor: 'pointer'
@@ -1629,7 +1619,7 @@ const ImportarPaises = () => {
             onClick={handleProcesarPegado}
             style={{
               padding: '0.55rem',
-              backgroundColor: '#3b82f6',
+              backgroundColor: 'var(--btn-bg)',
               color: '#ffffff',
               fontWeight: '800',
               border: 'none',
@@ -1640,10 +1630,10 @@ const ImportarPaises = () => {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.4rem',
-              boxShadow: '0 2px 6px rgba(59, 130, 246, 0.25)'
+              boxShadow: '0 2px 6px var(--accent-soft)'
             }}
           >
-            <Sparkles size={14} />
+            <CheckCircle2 size={14} />
             <span>Interpretar y Previsualizar</span>
           </button>
         </div>
@@ -1766,7 +1756,7 @@ const ImportarPaises = () => {
                           borderBottom: '1px solid var(--subborder-color, rgba(255,255,255,0.05))',
                           transition: 'background 0.15s ease'
                         }}
-                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.15)'}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--accent-soft)'}
                         onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
                         <CountryFlag bandera={sug.iso} nombre={sug.nombre} size="xs" />
@@ -1790,9 +1780,9 @@ const ImportarPaises = () => {
                   gap: '0.3rem',
                   padding: '0.45rem 0.55rem',
                   borderRadius: '6px',
-                  border: nuevoVeto ? '1px solid #eab308' : '1px solid var(--border-color)',
-                  backgroundColor: nuevoVeto ? 'rgba(234, 179, 8, 0.15)' : 'transparent',
-                  color: nuevoVeto ? '#eab308' : 'var(--muted-text)',
+                  border: nuevoVeto ? '1px solid var(--warning-color)' : '1px solid var(--border-color)',
+                  backgroundColor: nuevoVeto ? 'var(--warning-soft)' : 'transparent',
+                  color: nuevoVeto ? 'var(--warning-color)' : 'var(--muted-text)',
                   cursor: 'pointer',
                   fontSize: '0.74rem',
                   fontWeight: nuevoVeto ? '700' : '500',
@@ -1801,7 +1791,7 @@ const ImportarPaises = () => {
                 }}
                 title={nuevoVeto ? 'Miembro Permanente con Derecho a Veto (P5) activado' : 'Hacer clic para otorgar derecho a veto (P5)'}
               >
-                <Crown size={13} fill={nuevoVeto ? '#eab308' : 'none'} color={nuevoVeto ? '#eab308' : 'currentColor'} />
+                <Crown size={13} fill={nuevoVeto ? 'var(--warning-color)' : 'none'} color={nuevoVeto ? 'var(--warning-color)' : 'currentColor'} />
                 <span>{nuevoVeto ? 'Veto P5' : 'Veto'}</span>
               </button>
 
@@ -1813,7 +1803,7 @@ const ImportarPaises = () => {
                   alignItems: 'center',
                   gap: '0.3rem',
                   padding: '0.48rem 0.8rem',
-                  backgroundColor: '#22c55e',
+                  backgroundColor: 'var(--success-solid)',
                   color: '#ffffff',
                   fontWeight: '800',
                   border: 'none',
@@ -1821,7 +1811,7 @@ const ImportarPaises = () => {
                   cursor: 'pointer',
                   fontSize: '0.78rem',
                   flexShrink: 0,
-                  boxShadow: '0 2px 6px rgba(34, 197, 94, 0.25)',
+                  boxShadow: '0 2px 6px var(--success-soft)',
                   transition: 'all 0.15s ease'
                 }}
               >
@@ -1833,7 +1823,7 @@ const ImportarPaises = () => {
             {/* Fila informativa inferior */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--muted-text)', paddingTop: '2px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Check size={12} color="#22c55e" />
+                <Check size={12} color="var(--success-color)" />
                 {nuevaBandera ? 'Bandera personalizada activa' : 'Bandera y Veto detectados automáticamente'}
               </span>
               <button
@@ -1842,7 +1832,7 @@ const ImportarPaises = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: mostrarPersonalizarBandera ? '#3b82f6' : 'var(--muted-text)',
+                  color: mostrarPersonalizarBandera ? 'var(--accent-color)' : 'var(--muted-text)',
                   fontSize: '0.7rem',
                   cursor: 'pointer',
                   display: 'flex',
@@ -1871,11 +1861,11 @@ const ImportarPaises = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <ImageIcon size={13} color="#3b82f6" />
+                  <ImageIcon size={13} color="var(--accent-color)" />
                   Personalizar imagen de bandera
                 </span>
                 {mensajeFeedbackIndividual && (
-                  <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '600' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', fontWeight: '600' }}>
                     {mensajeFeedbackIndividual}
                   </span>
                 )}
@@ -1919,7 +1909,7 @@ const ImportarPaises = () => {
                   onClick={() => individualFileInputRef.current?.click()}
                   style={{
                     padding: '0.35rem 0.6rem',
-                    backgroundColor: '#3b82f6',
+                    backgroundColor: 'var(--btn-bg)',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '5px',
@@ -2015,7 +2005,7 @@ const ImportarPaises = () => {
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = '#3b82f6'}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-color)'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
                   >
                     <CountryFlag bandera={item.iso} nombre={item.nombre} size="xs" />
@@ -2106,9 +2096,9 @@ const ImportarPaises = () => {
                       fontWeight: '700',
                       padding: '0.1rem 0.35rem',
                       borderRadius: '4px',
-                      backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                      border: '1px solid rgba(59, 130, 246, 0.25)',
-                      color: '#60a5fa',
+                      backgroundColor: 'var(--accent-soft)',
+                      border: '1px solid var(--accent-soft)',
+                      color: 'var(--accent-color)',
                       whiteSpace: 'nowrap'
                     }}>
                       {p.categoria}
@@ -2129,11 +2119,11 @@ const ImportarPaises = () => {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <span style={{ fontSize: '0.68rem', fontWeight: '700', color: '#3b82f6' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--accent-color)' }}>
                         {p.paises.length} delegaciones
                       </span>
                       {vetosCount > 0 && (
-                        <span style={{ fontSize: '0.64rem', color: '#22c55e', display: 'inline-flex', alignItems: 'center', gap: '1px', fontWeight: '700' }}>
+                        <span style={{ fontSize: '0.64rem', color: 'var(--success-color)', display: 'inline-flex', alignItems: 'center', gap: '1px', fontWeight: '700' }}>
                           • <Crown size={10} /> {vetosCount} Veto
                         </span>
                       )}
@@ -2169,7 +2159,7 @@ const ImportarPaises = () => {
                       onClick={() => handleCargarPreset(p, true)}
                       style={{
                         padding: '0.3rem',
-                        backgroundColor: '#22c55e',
+                        backgroundColor: 'var(--success-solid)',
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '5px',
@@ -2207,9 +2197,9 @@ const ImportarPaises = () => {
             borderRadius: '6px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Sparkles size={14} color="#3b82f6" />
+              <CheckCircle2 size={14} color="var(--accent-color)" />
               <span style={{ fontWeight: '800', fontSize: '0.8rem' }}>
-                Revisión: <strong style={{ color: '#3b82f6' }}>{preview.length} delegaciones</strong>
+                Revisión: <strong style={{ color: 'var(--accent-color)' }}>{preview.length} delegaciones</strong>
               </span>
             </div>
 
@@ -2289,9 +2279,9 @@ const ImportarPaises = () => {
                   padding: '0.2rem 0.45rem',
                   fontSize: '0.68rem',
                   borderRadius: '4px',
-                  border: filtroPreview === 'VETO' ? '1px solid #3b82f6' : '1px solid var(--border-color)',
-                  backgroundColor: filtroPreview === 'VETO' ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
-                  color: filtroPreview === 'VETO' ? '#60a5fa' : 'var(--muted-text)',
+                  border: filtroPreview === 'VETO' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                  backgroundColor: filtroPreview === 'VETO' ? 'var(--accent-soft)' : 'transparent',
+                  color: filtroPreview === 'VETO' ? 'var(--accent-color)' : 'var(--muted-text)',
                   cursor: 'pointer',
                   fontWeight: '700'
                 }}
@@ -2310,7 +2300,7 @@ const ImportarPaises = () => {
             gap: '0.3rem',
             padding: '0.15rem 0.2rem'
           }}>
-            <Camera size={12} color="#3b82f6" />
+            <Camera size={12} color="var(--accent-color)" />
             <span>Haz clic en una fila y presiona <strong>Ctrl+V</strong> o el icono de cámara para cambiar la bandera.</span>
           </div>
 
@@ -2347,8 +2337,8 @@ const ImportarPaises = () => {
                       fontSize: '0.75rem',
                       padding: '0.25rem 0.45rem',
                       borderRadius: '5px',
-                      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                      border: isSelected ? '1px solid #3b82f6' : '1px solid transparent',
+                      backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
+                      border: isSelected ? '1px solid var(--accent-color)' : '1px solid transparent',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
@@ -2369,7 +2359,7 @@ const ImportarPaises = () => {
                         background: 'transparent',
                         border: 'none',
                         padding: '2px',
-                        color: isSelected ? '#3b82f6' : 'var(--muted-text)',
+                        color: isSelected ? 'var(--accent-color)' : 'var(--muted-text)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center'
@@ -2409,9 +2399,9 @@ const ImportarPaises = () => {
                         title={`Delegado asignado: ${p.delegado}`}
                         style={{
                           fontSize: '0.66rem',
-                          color: '#60a5fa',
-                          backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                          border: '1px solid rgba(59, 130, 246, 0.25)',
+                          color: 'var(--accent-color)',
+                          backgroundColor: 'var(--accent-soft)',
+                          border: '1px solid var(--accent-soft)',
                           padding: '0.1rem 0.4rem',
                           borderRadius: '4px',
                           whiteSpace: 'nowrap',
@@ -2446,7 +2436,7 @@ const ImportarPaises = () => {
                         opacity: p.veto ? 1 : 0.25
                       }}
                     >
-                      <Crown size={14} color="#3b82f6" fill={p.veto ? '#3b82f6' : 'none'} />
+                      <Crown size={14} color="var(--accent-color)" fill={p.veto ? 'var(--accent-color)' : 'none'} />
                     </button>
 
                     {/* Eliminar fila */}
@@ -2478,16 +2468,16 @@ const ImportarPaises = () => {
           {sesionCompletaDetectada && (
             <div style={{
               padding: '0.45rem 0.65rem',
-              backgroundColor: 'rgba(59, 130, 246, 0.12)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
+              backgroundColor: 'var(--accent-soft)',
+              border: '1px solid var(--accent-soft)',
               borderRadius: '6px',
               fontSize: '0.72rem',
-              color: '#60a5fa',
+              color: 'var(--accent-color)',
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem'
             }}>
-              <Sparkles size={13} style={{ flexShrink: 0 }} />
+              <CheckCircle2 size={13} style={{ flexShrink: 0 }} />
               <span>
                 Se detectaron datos completos de <strong>"{sesionCompletaDetectada.nombreComite}"</strong> (Agenda, Tópicos y Módulos). Al reemplazar se restaurará el comité al 100%.
               </span>
@@ -2501,14 +2491,14 @@ const ImportarPaises = () => {
               onClick={() => handleAplicar('reemplazar')}
               style={{
                 padding: '0.55rem',
-                backgroundColor: '#3b82f6',
+                backgroundColor: 'var(--btn-bg)',
                 color: '#ffffff',
                 fontWeight: '800',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 fontSize: '0.76rem',
-                boxShadow: '0 2px 6px rgba(59, 130, 246, 0.25)'
+                boxShadow: '0 2px 6px var(--accent-soft)'
               }}
             >
               {t('countries.importReplace', 'Reemplazar Lista Actual')}
@@ -2518,14 +2508,14 @@ const ImportarPaises = () => {
               onClick={() => handleAplicar('fusionar')}
               style={{
                 padding: '0.55rem',
-                backgroundColor: '#22c55e',
+                backgroundColor: 'var(--success-solid)',
                 color: '#ffffff',
                 fontWeight: '800',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 fontSize: '0.76rem',
-                boxShadow: '0 2px 6px rgba(34, 197, 94, 0.25)'
+                boxShadow: '0 2px 6px var(--success-soft)'
               }}
             >
               {t('countries.importAppend', 'Añadir a la Actual (Fusionar)')}

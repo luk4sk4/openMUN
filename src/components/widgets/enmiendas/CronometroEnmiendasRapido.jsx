@@ -9,7 +9,7 @@ import {
   VolumeX,
   ChevronDown,
   ChevronUp,
-  Sparkles
+
 } from 'lucide-react';
 import CountryFlag from '../../common/CountryFlag';
 import { playTimerAlarm } from '../../../utils/audioAlerts';

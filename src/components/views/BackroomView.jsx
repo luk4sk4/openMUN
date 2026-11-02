@@ -9,7 +9,7 @@ import {
   FileText, 
   Users, 
   Clock,
-  Sparkles,
+
   Zap,
   Building2,
   Bell,

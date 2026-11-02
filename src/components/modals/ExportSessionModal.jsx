@@ -42,15 +42,16 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
     >
       <div
         style={{
-          backgroundColor: 'var(--card-bg, #1a1e29)',
-          border: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.12))',
+          backgroundColor: 'var(--panel-color)',
+          border: '1px solid var(--border-color)',
           borderRadius: '10px',
           width: '100%',
           maxWidth: '460px',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 16px 36px rgba(0, 0, 0, 0.4)',
-          color: 'var(--text-color, #ffffff)',
+          color: 'var(--text-color)',
+          fontFamily: 'var(--font-family)',
           overflow: 'hidden'
         }}
         onClick={(e) => e.stopPropagation()}
@@ -58,29 +59,30 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
         {/* Cabecera */}
         <div
           style={{
-            padding: '0.9rem 1.1rem',
-            borderBottom: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.08))',
+            padding: '1rem 1.25rem',
+            borderBottom: '1px solid var(--subborder-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'var(--card-header-bg, rgba(255, 255, 255, 0.02))'
+            background: 'var(--card-header-bg)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <FileJson size={18} style={{ color: '#3b82f6' }} />
+            <FileJson size={18} style={{ color: 'var(--accent-color)' }} />
             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700' }}>
               Exportar Sesión a JSON
             </h3>
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar modal"
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--muted-text, #94a3b8)',
+              color: 'var(--muted-text)',
               cursor: 'pointer',
-              padding: '4px',
-              borderRadius: '4px'
+              padding: '6px',
+              borderRadius: 'var(--border-radius, 6px)'
             }}
           >
             <X size={16} />
@@ -88,9 +90,9 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleExport} style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleExport} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--muted-text)', marginBottom: '0.4rem' }}>
+            <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--muted-text)', marginBottom: '0.4rem', fontWeight: '500' }}>
               Nombre del archivo a exportar:
             </label>
             <div style={{ position: 'relative' }}>
@@ -101,9 +103,9 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
                 placeholder="sesion_activa.json"
                 style={{
                   width: '100%',
-                  background: 'var(--input-bg, rgba(0,0,0,0.3))',
-                  border: '1px solid var(--subborder-color, rgba(255,255,255,0.15))',
-                  borderRadius: '6px',
+                  background: 'var(--input-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   color: 'var(--text-color)',
                   padding: '8px 12px',
                   fontSize: '0.82rem',
@@ -113,7 +115,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
                 autoFocus
               />
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)', marginTop: '0.4rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '0.4rem', lineHeight: '1.4' }}>
               Este archivo contiene la copia completa de delegaciones, oradores, agenda, mociones y configuraciones.
             </div>
           </div>
@@ -124,12 +126,13 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
               onClick={onClose}
               style={{
                 background: 'transparent',
-                border: '1px solid var(--subborder-color)',
-                borderRadius: '6px',
-                color: 'var(--muted-text)',
-                padding: '6px 12px',
-                fontSize: '0.78rem',
-                cursor: 'pointer'
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                color: 'var(--text-color)',
+                padding: '6px 14px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: '500'
               }}
             >
               Cancelar
@@ -141,17 +144,18 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                backgroundColor: '#3b82f6',
-                color: '#ffffff',
+                backgroundColor: 'var(--btn-bg)',
+                color: 'var(--btn-text)',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '6px 14px',
-                fontSize: '0.78rem',
+                fontSize: '0.8rem',
                 fontWeight: '600',
-                cursor: 'pointer'
+                cursor: fileName.trim() ? 'pointer' : 'not-allowed',
+                opacity: fileName.trim() ? 1 : 0.45
               }}
             >
-              <Download size={13} />
+              <Download size={14} />
               <span>Descargar Archivo</span>
             </button>
           </div>

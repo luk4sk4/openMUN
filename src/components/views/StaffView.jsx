@@ -27,7 +27,7 @@ import {
   Printer, 
   BatteryCharging, 
   ShieldCheck, 
-  Sparkles,
+
   Layers,
   ArrowRight,
   ArrowLeft,

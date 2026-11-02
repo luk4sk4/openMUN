@@ -39,9 +39,9 @@ export const NOTE_TYPES_CONFIG = {
     label: 'General / Mensaje',
     shortLabel: 'General',
     icon: FileText,
-    color: '#94a3b8',
-    bg: 'rgba(148, 163, 184, 0.12)',
-    border: 'rgba(148, 163, 184, 0.3)',
+    color: 'var(--muted-text)',
+    bg: 'var(--card-header-bg)',
+    border: 'var(--subborder-color)',
     badgeText: '📄 GENERAL'
   },
   paje: {
@@ -49,9 +49,9 @@ export const NOTE_TYPES_CONFIG = {
     label: 'Mensaje de Paje / Entrega',
     shortLabel: 'Paje',
     icon: Mail,
-    color: '#38bdf8',
-    bg: 'rgba(56, 189, 248, 0.14)',
-    border: 'rgba(56, 189, 248, 0.35)',
+    color: 'var(--info-color)',
+    bg: 'rgba(56, 189, 248, 0.12)',
+    border: 'rgba(56, 189, 248, 0.3)',
     badgeText: '✉️ PAJE'
   },
   urgente: {
@@ -59,9 +59,9 @@ export const NOTE_TYPES_CONFIG = {
     label: 'Urgente / Prioritario',
     shortLabel: 'Urgente',
     icon: Zap,
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.14)',
-    border: 'rgba(239, 68, 68, 0.4)',
+    color: 'var(--danger-color)',
+    bg: 'rgba(239, 68, 68, 0.12)',
+    border: 'rgba(239, 68, 68, 0.35)',
     badgeText: '🚨 URGENTE'
   },
   logistica: {
@@ -69,9 +69,9 @@ export const NOTE_TYPES_CONFIG = {
     label: 'Logística / Asistencia',
     shortLabel: 'Logística',
     icon: Coffee,
-    color: '#60a5fa',
-    bg: 'rgba(96, 165, 250, 0.14)',
-    border: 'rgba(96, 165, 250, 0.35)',
+    color: 'var(--accent-color)',
+    bg: 'var(--accent-soft)',
+    border: 'var(--subborder-color)',
     badgeText: '🛠️ LOGÍSTICA'
   },
   crisis: {
@@ -79,9 +79,9 @@ export const NOTE_TYPES_CONFIG = {
     label: 'Crisis / Confidencial',
     shortLabel: 'Crisis',
     icon: Flame,
-    color: '#f97316',
-    bg: 'rgba(249, 115, 22, 0.14)',
-    border: 'rgba(249, 115, 22, 0.4)',
+    color: 'var(--warning-color)',
+    bg: 'rgba(249, 115, 22, 0.12)',
+    border: 'rgba(249, 115, 22, 0.35)',
     badgeText: '🛡️ CRISIS'
   },
   pregunta: {
@@ -89,9 +89,9 @@ export const NOTE_TYPES_CONFIG = {
     label: 'Duda de Procedimiento',
     shortLabel: 'Procedimiento',
     icon: HelpCircle,
-    color: '#eab308',
-    bg: 'rgba(234, 179, 8, 0.14)',
-    border: 'rgba(234, 179, 8, 0.4)',
+    color: 'var(--warning-color)',
+    bg: 'rgba(234, 179, 8, 0.12)',
+    border: 'rgba(234, 179, 8, 0.35)',
     badgeText: '❓ PROCEDIMIENTO'
   }
 };
@@ -386,13 +386,13 @@ const MensajeriaComite = ({
             <div style={{
               width: '36px',
               height: '36px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(59, 130, 246, 0.16)',
-              border: '1px solid rgba(59, 130, 246, 0.35)',
+              borderRadius: 'var(--border-radius, 6px)',
+              backgroundColor: 'var(--accent-soft)',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#3b82f6'
+              color: 'var(--accent-color)'
             }}>
               <MessageSquare size={18} />
             </div>
@@ -406,9 +406,9 @@ const MensajeriaComite = ({
                   fontWeight: '800',
                   padding: '0.12rem 0.5rem',
                   borderRadius: '100px',
-                  backgroundColor: 'rgba(34, 197, 94, 0.16)',
-                  color: '#22c55e',
-                  border: '1px solid rgba(34, 197, 94, 0.35)'
+                  backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                  color: 'var(--success-color)',
+                  border: '1px solid rgba(34, 197, 94, 0.25)'
                 }}>
                   {p2p.connectionStatus === 'host_active' ? 'Host P2P' : 'Enlace en Vivo'}
                 </span>
@@ -425,7 +425,7 @@ const MensajeriaComite = ({
               style={{
                 background: 'transparent',
                 border: '1px solid var(--subborder-color)',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius, 6px)',
                 color: sonidoHabilitado ? 'var(--text-color)' : 'var(--muted-text)',
                 padding: '0.4rem 0.6rem',
                 fontSize: '0.75rem',
@@ -436,7 +436,7 @@ const MensajeriaComite = ({
               }}
               title={sonidoHabilitado ? 'Silenciar alertas' : 'Activar sonido de notas'}
             >
-              {sonidoHabilitado ? <Volume2 size={14} color="#3b82f6" /> : <VolumeX size={14} />}
+              {sonidoHabilitado ? <Volume2 size={14} color="var(--accent-color)" /> : <VolumeX size={14} />}
             </button>
 
             {notasRol.length > 0 && (
@@ -445,7 +445,7 @@ const MensajeriaComite = ({
                 style={{
                   background: 'transparent',
                   border: '1px solid var(--subborder-color)',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   color: 'var(--text-color)',
                   padding: '0.4rem 0.65rem',
                   fontSize: '0.75rem',
@@ -466,16 +466,18 @@ const MensajeriaComite = ({
 
       {/* Contenido en modo Tabs (móvil) o modo Split (2 columnas) */}
       {useMobileTabs && (
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
+        <div role="tablist" style={{ display: 'flex', gap: '0.4rem' }}>
           <button
+            role="tab"
+            aria-selected={tabMovil === 'BUZON'}
             onClick={() => setTabMovil('BUZON')}
             style={{
               flex: 1,
               padding: '0.55rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabMovil === 'BUZON' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-              color: tabMovil === 'BUZON' ? 'var(--btn-text)' : 'var(--muted-text)',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabMovil === 'BUZON' ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+              backgroundColor: tabMovil === 'BUZON' ? 'var(--accent-soft)' : 'transparent',
+              color: tabMovil === 'BUZON' ? 'var(--accent-color)' : 'var(--muted-text)',
               fontWeight: '700',
               fontSize: '0.82rem',
               cursor: 'pointer',
@@ -488,14 +490,16 @@ const MensajeriaComite = ({
             <MessageSquare size={15} /> Buzón ({notasRol.length})
           </button>
           <button
+            role="tab"
+            aria-selected={tabMovil === 'REDACTAR'}
             onClick={() => setTabMovil('REDACTAR')}
             style={{
               flex: 1,
               padding: '0.55rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabMovil === 'REDACTAR' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-              color: tabMovil === 'REDACTAR' ? 'var(--btn-text)' : 'var(--muted-text)',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabMovil === 'REDACTAR' ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+              backgroundColor: tabMovil === 'REDACTAR' ? 'var(--accent-soft)' : 'transparent',
+              color: tabMovil === 'REDACTAR' ? 'var(--accent-color)' : 'var(--muted-text)',
               fontWeight: '700',
               fontSize: '0.82rem',
               cursor: 'pointer',
@@ -522,21 +526,20 @@ const MensajeriaComite = ({
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
-            borderRadius: '16px',
+            borderRadius: 'var(--border-radius, 6px)',
             padding: '1.25rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+            gap: '1rem'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <Send size={17} color="#3b82f6" />
+                <Send size={17} color="var(--accent-color)" />
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800' }}>
                   {t('messaging.composeTitle', 'Redactar Mensaje')}
                 </h4>
               </div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontWeight: '600' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontWeight: '600', fontVariantNumeric: 'tabular-nums' }}>
                 {textoNota.length}/400
               </span>
             </div>
@@ -553,9 +556,9 @@ const MensajeriaComite = ({
                   style={{
                     width: '100%',
                     marginTop: '0.35rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.6rem 0.8rem',
                     color: 'var(--text-color)',
                     fontSize: '0.85rem',
@@ -609,11 +612,12 @@ const MensajeriaComite = ({
                       <button
                         key={typeCfg.id}
                         type="button"
+                        aria-pressed={isSelected}
                         onClick={() => setTipoNota(typeCfg.id)}
                         style={{
                           backgroundColor: isSelected ? typeCfg.bg : 'var(--card-header-bg)',
                           border: `1.5px solid ${isSelected ? typeCfg.color : 'var(--subborder-color)'}`,
-                          borderRadius: '8px',
+                          borderRadius: 'var(--border-radius, 6px)',
                           padding: '0.45rem 0.35rem',
                           color: isSelected ? typeCfg.color : 'var(--muted-text)',
                           fontWeight: isSelected ? '800' : '600',
@@ -658,9 +662,9 @@ const MensajeriaComite = ({
                   style={{
                     width: '100%',
                     marginTop: '0.35rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.65rem 0.8rem',
                     color: 'var(--text-color)',
                     fontSize: '0.85rem',
@@ -683,7 +687,7 @@ const MensajeriaComite = ({
                   backgroundColor: 'var(--btn-bg)',
                   color: 'var(--btn-text)',
                   border: 'none',
-                  borderRadius: '9px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '0.75rem',
                   fontWeight: '800',
                   fontSize: '0.88rem',
@@ -693,7 +697,6 @@ const MensajeriaComite = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  boxShadow: '0 4px 14px rgba(59, 130, 246, 0.25)',
                   transition: 'all 0.15s ease'
                 }}
               >
@@ -704,7 +707,7 @@ const MensajeriaComite = ({
                 <div style={{
                   fontSize: '0.78rem',
                   fontWeight: '700',
-                  color: '#10b981',
+                  color: 'var(--success-color)',
                   textAlign: 'center',
                   display: 'flex',
                   alignItems: 'center',
@@ -723,12 +726,11 @@ const MensajeriaComite = ({
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
-            borderRadius: '16px',
+            borderRadius: 'var(--border-radius, 6px)',
             padding: '1.25rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.85rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+            gap: '0.85rem'
           }}>
             {/* Barra superior del buzón: Filtros y Búsqueda */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -739,7 +741,7 @@ const MensajeriaComite = ({
                   </h4>
                   {p2p.unreadNotesCount > 0 && (
                     <span style={{
-                      backgroundColor: '#ef4444',
+                      backgroundColor: 'var(--danger-color)',
                       color: '#ffffff',
                       fontSize: '0.65rem',
                       fontWeight: '800',
@@ -752,25 +754,30 @@ const MensajeriaComite = ({
                 </div>
 
                 {/* Filtro de Dirección */}
-                <div style={{ display: 'flex', gap: '2px', backgroundColor: 'var(--card-header-bg)', padding: '2px', borderRadius: '7px' }}>
-                  {['TODAS', 'RECIBIDAS', 'ENVIADAS'].map(dir => (
-                    <button
-                      key={dir}
-                      onClick={() => setFiltroDireccion(dir)}
-                      style={{
-                        backgroundColor: filtroDireccion === dir ? 'var(--btn-bg)' : 'transparent',
-                        color: filtroDireccion === dir ? 'var(--btn-text)' : 'var(--muted-text)',
-                        border: 'none',
-                        borderRadius: '5px',
-                        padding: '0.28rem 0.55rem',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {dir === 'TODAS' ? 'Todas' : dir === 'RECIBIDAS' ? 'Recibidas' : 'Enviadas'}
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', gap: '3px', backgroundColor: 'var(--card-header-bg)', padding: '2px', borderRadius: 'var(--border-radius, 6px)' }}>
+                  {['TODAS', 'RECIBIDAS', 'ENVIADAS'].map(dir => {
+                    const isSelected = filtroDireccion === dir;
+                    return (
+                      <button
+                        key={dir}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => setFiltroDireccion(dir)}
+                        style={{
+                          backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--muted-text)',
+                          border: `1px solid ${isSelected ? 'var(--accent-color)' : 'transparent'}`,
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '0.28rem 0.55rem',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {dir === 'TODAS' ? 'Todas' : dir === 'RECIBIDAS' ? 'Recibidas' : 'Enviadas'}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -781,9 +788,9 @@ const MensajeriaComite = ({
                   minWidth: '150px',
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: 'var(--card-header-bg)',
-                  border: '1px solid var(--subborder-color)',
-                  borderRadius: '7px',
+                  backgroundColor: 'var(--input-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '0 0.55rem'
                 }}>
                   <Search size={13} color="var(--muted-text)" />
@@ -818,25 +825,30 @@ const MensajeriaComite = ({
                     { id: 'URGENTES', label: '🚨 Urgentes' },
                     { id: 'PAJES', label: '✉️ Pajes' },
                     { id: 'CRISIS', label: '🛡️ Crisis' }
-                  ].map(tFilter => (
-                    <button
-                      key={tFilter.id}
-                      onClick={() => setFiltroTipo(tFilter.id)}
-                      style={{
-                        backgroundColor: filtroTipo === tFilter.id ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
-                        color: filtroTipo === tFilter.id ? '#3b82f6' : 'var(--muted-text)',
-                        border: `1px solid ${filtroTipo === tFilter.id ? 'rgba(59, 130, 246, 0.35)' : 'var(--subborder-color)'}`,
-                        borderRadius: '6px',
-                        padding: '0.28rem 0.55rem',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {tFilter.label}
-                    </button>
-                  ))}
+                  ].map(tFilter => {
+                    const isSelected = filtroTipo === tFilter.id;
+                    return (
+                      <button
+                        key={tFilter.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => setFiltroTipo(tFilter.id)}
+                        style={{
+                          backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--muted-text)',
+                          border: `1px solid ${isSelected ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '0.28rem 0.55rem',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {tFilter.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -855,7 +867,7 @@ const MensajeriaComite = ({
                   padding: '3rem 1.5rem',
                   textAlign: 'center',
                   backgroundColor: 'var(--card-header-bg)',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: '1px dashed var(--subborder-color)',
                   color: 'var(--muted-text)'
                 }}>
@@ -889,10 +901,10 @@ const MensajeriaComite = ({
                     <div
                       key={nota.id}
                       style={{
-                        backgroundColor: isOutgoing ? 'rgba(59, 130, 246, 0.05)' : 'var(--card-header-bg)',
-                        border: `1px solid ${isOutgoing ? 'rgba(59, 130, 246, 0.25)' : 'var(--subborder-color)'}`,
-                        borderLeft: `4px solid ${typeCfg.color}`,
-                        borderRadius: '11px',
+                        backgroundColor: isOutgoing ? 'var(--accent-soft)' : 'var(--card-header-bg)',
+                        border: `1px solid ${isOutgoing ? 'var(--border-color)' : 'var(--subborder-color)'}`,
+                        borderLeft: `3px solid ${typeCfg.color}`,
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '0.85rem 1rem',
                         display: 'flex',
                         flexDirection: 'column',
@@ -909,9 +921,9 @@ const MensajeriaComite = ({
                             fontWeight: '800',
                             padding: '0.1rem 0.4rem',
                             borderRadius: '4px',
-                            backgroundColor: isOutgoing ? 'rgba(16, 185, 129, 0.18)' : 'rgba(59, 130, 246, 0.18)',
-                            color: isOutgoing ? '#10b981' : '#3b82f6',
-                            border: `1px solid ${isOutgoing ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`
+                            backgroundColor: isOutgoing ? 'rgba(34, 197, 94, 0.12)' : 'var(--accent-soft)',
+                            color: isOutgoing ? 'var(--success-color)' : 'var(--accent-color)',
+                            border: `1px solid ${isOutgoing ? 'rgba(34, 197, 94, 0.25)' : 'var(--subborder-color)'}`
                           }}>
                             {isOutgoing ? '➔ Enviada' : '⬅ Recibida'}
                           </span>
@@ -921,7 +933,7 @@ const MensajeriaComite = ({
                             {nota.from}
                           </span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--muted-text)' }}>➔</span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#60a5fa' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--accent-color)' }}>
                             {nota.to === 'TODOS' ? '📢 Toda la Sala' : nota.to === 'CHAIR' ? '🏛️ Mesa' : nota.to}
                           </span>
 
@@ -941,7 +953,7 @@ const MensajeriaComite = ({
 
                         {/* Hora y Acción Responder */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '3px', fontVariantNumeric: 'tabular-nums' }}>
                             <Clock size={11} /> {fechaHora}
                           </span>
 
@@ -949,10 +961,10 @@ const MensajeriaComite = ({
                             <button
                               onClick={() => handleResponder(nota)}
                               style={{
-                                background: 'rgba(59, 130, 246, 0.12)',
-                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                borderRadius: '5px',
-                                color: '#60a5fa',
+                                background: 'var(--accent-soft)',
+                                border: '1px solid var(--subborder-color)',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                color: 'var(--accent-color)',
                                 padding: '0.2rem 0.45rem',
                                 fontSize: '0.7rem',
                                 fontWeight: '700',

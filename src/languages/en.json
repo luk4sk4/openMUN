@@ -82,6 +82,8 @@
     "custom": "Custom"
   },
   "header": {
+    "tools": "Committee tools",
+    "toggleTools": "Toggle committee tools",
     "widgets": "Widgets",
     "widgetsTooltip": "Open Widget Manager",
     "loadSession": "Load Session",

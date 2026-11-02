@@ -4,7 +4,7 @@ import {
   FilePlus,
   FileMinus,
   Edit3,
-  Sparkles,
+
   Info,
   Check
 } from 'lucide-react';
@@ -134,7 +134,7 @@ const ProponerEnmiendaModal = ({
         {/* Cabecera del modal */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: '800' }}>
-            <FilePlus size={18} color="#3b82f6" />
+            <FilePlus size={18} style={{ color: 'var(--accent-color)' }} />
             <span>Proponer Enmienda a la Resolución</span>
           </div>
           <button

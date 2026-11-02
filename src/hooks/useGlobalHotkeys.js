@@ -1,3 +1,4 @@
+import { DASHBOARD_TABS } from '../utils/dashboardTabs';
 import { useEffect } from 'react';
 
 /**
@@ -11,7 +12,8 @@ export function useGlobalHotkeys({
   onNextSpeaker,
   onResetTimer,
   onSwitchTab,
-  activeTab
+  activeTab,
+  tabs = DASHBOARD_TABS
 }) {
   useEffect(() => {
     const isInputElement = (el) => {
@@ -37,7 +39,7 @@ export function useGlobalHotkeys({
 
       // 3. Atajos con Alt + Número para cambiar de pestañas (Alt+1 .. Alt+8)
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key >= '1' && e.key <= '8') {
-        const tabList = ['HOME', 'COMIENZO', 'GSL', 'DEBATE', 'VOTING', 'ENMIENDAS', 'INFO', 'LIBRE'];
+        const tabList = tabs;
         const targetTab = tabList[parseInt(e.key, 10) - 1];
         if (targetTab) {
           e.preventDefault();
@@ -115,6 +117,7 @@ export function useGlobalHotkeys({
     onNextSpeaker,
     onResetTimer,
     onSwitchTab,
-    activeTab
+    activeTab,
+    tabs
   ]);
 }

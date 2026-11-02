@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Check, X, Clock, MessageSquare, Users, Mic, Sparkles, RotateCcw, AlertCircle, ArrowUpDown, GripVertical, Pin, Hourglass, BarChart2, Timer, ChevronDown, Search, Globe, Trash2 } from 'lucide-react';
+import { Plus, Check, X, Clock, MessageSquare, Users, Mic, RotateCcw, AlertCircle, ArrowUpDown, GripVertical, Hourglass, BarChart2, Timer, ChevronDown, Search, Trash2, StopCircle } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import EmptyState from '../common/EmptyState';
@@ -7,15 +7,35 @@ import { useTranslation } from 'react-i18next';
 
 const PizarraMociones = () => {
   const { t } = useTranslation();
-  const { paises, mociones, agregarMocion, votarMocion, eliminarMocion, reordenarMociones, ordenarMocionesDisruptividad } = useSession();
+  const {
+    paises,
+    mociones,
+    agregarMocion,
+    votarMocion,
+    eliminarMocion,
+    reordenarMociones,
+    ordenarMocionesDisruptividad,
+    caucusActivo,
+    setCaucusActivo,
+    oradoresCaucus,
+    agregarOradorCaucus,
+    removerOradorCaucus,
+    vaciarOradoresDebate,
+    ordenarOradoresDebateAlfabetico,
+    reordenarOradoresDebate
+  } = useSession();
 
+  // Vista activa: 'mociones' o 'oradores'
+  const [vistaActiva, setVistaActiva] = useState(caucusActivo?.activo ? 'oradores' : 'mociones');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  // Estados del Formulario de Moción
   const [proponente, setProponente] = useState('');
   const [posicionProponente, setPosicionProponente] = useState('Primero');
   const [tipo, setTipo] = useState('Caucus Moderado');
-  const [varianteConsulta, setVarianteConsulta] = useState('Estándar');
+  const [varianteConsulta, setVarianteConsulta] = useState('Cadena / Ping-Pong');
   const [tema, setTema] = useState('');
   const [tiempoTotalMin, setTiempoTotalMin] = useState(10);
   const [tiempoOradorSeg, setTiempoOradorSeg] = useState(45);
@@ -23,26 +43,43 @@ const PizarraMociones = () => {
   const [busquedaPais, setBusquedaPais] = useState('');
   const dropdownPaisRef = useRef(null);
 
-  // Cerrar dropdown de país al hacer clic fuera
+  // Estado para buscador rápido de oradores en debate
+  const [busquedaOrador, setBusquedaOrador] = useState('');
+  const [mostrarDropdownOrador, setMostrarDropdownOrador] = useState(false);
+  const dropdownOradorRef = useRef(null);
+
+  // Rastrear activación de caucus para conmutar automáticamente a la lista de oradores
+  const prevCaucusActivoRef = useRef(caucusActivo?.activo);
+  const prevTimestampRef = useRef(caucusActivo?.timestampActivacion);
+
+  useEffect(() => {
+    if (caucusActivo?.activo && (!prevCaucusActivoRef.current || prevTimestampRef.current !== caucusActivo?.timestampActivacion)) {
+      setVistaActiva('oradores');
+    }
+    prevCaucusActivoRef.current = caucusActivo?.activo;
+    prevTimestampRef.current = caucusActivo?.timestampActivacion;
+  }, [caucusActivo?.activo, caucusActivo?.timestampActivacion]);
+
+  // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownPaisRef.current && !dropdownPaisRef.current.contains(event.target)) {
         setMostrarDropdownPais(false);
+      }
+      if (dropdownOradorRef.current && !dropdownOradorRef.current.contains(event.target)) {
+        setMostrarDropdownOrador(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Quórum y Cálculo de Mayorías en tiempo real
-  const totalPaises = paises.length;
+  // Quórum y Cálculo de Mayorías
   const presentes = useMemo(() => paises.filter(p => p.estatus === 'Presente').length, [paises]);
   const presentesYVotando = useMemo(() => paises.filter(p => p.estatus === 'Presente y Votando').length, [paises]);
   const totalAsistentes = presentes + presentesYVotando;
-
   const mayoriaSimple = totalAsistentes > 0 ? Math.floor(totalAsistentes / 2) + 1 : 0;
   const mayoriaCualificada = totalAsistentes > 0 ? Math.ceil((totalAsistentes * 2) / 3) : 0;
-  const mayoriaDosTercios = mayoriaCualificada;
 
   const paisSeleccionado = useMemo(() => {
     return paises.find(p => p.nombre === proponente);
@@ -56,6 +93,14 @@ const PizarraMociones = () => {
       (p.estatus && p.estatus.toLowerCase().includes(q))
     );
   }, [paises, busquedaPais]);
+
+  const paisesDisponiblesOrador = useMemo(() => {
+    const q = busquedaOrador.toLowerCase().trim();
+    return paises.filter(p =>
+      !oradoresCaucus.some(o => o.nombre === p.nombre) &&
+      (!q || p.nombre.toLowerCase().includes(q))
+    );
+  }, [paises, oradoresCaucus, busquedaOrador]);
 
   const handleSubmitMocion = (e) => {
     e.preventDefault();
@@ -89,6 +134,16 @@ const PizarraMociones = () => {
     setMostrarForm(false);
   };
 
+  const handleAprobarMocion = (mocionId) => {
+    votarMocion(mocionId, 'Aprobada');
+    setVistaActiva('oradores');
+  };
+
+  const handleFinalizarDebate = () => {
+    setCaucusActivo({ ...caucusActivo, activo: false });
+    setVistaActiva('mociones');
+  };
+
   const formatMinutos = (segundos) => {
     if (!segundos || segundos === 0) return 'N/A';
     const mins = Math.floor(segundos / 60);
@@ -100,57 +155,39 @@ const PizarraMociones = () => {
   const esNoModerado = tipo === 'Caucus No Moderado';
   const esTour = tipo === 'Tour de Table';
 
-  // Estimación de intervenciones posibles
   const intervencionesEstimadas = useMemo(() => {
     if (!esModerado || !tiempoOradorSeg || tiempoOradorSeg <= 0) return 0;
     return Math.floor((Number(tiempoTotalMin) * 60) / Number(tiempoOradorSeg));
   }, [esModerado, tiempoTotalMin, tiempoOradorSeg]);
 
-  // ── Tipos de mociones con metadata visual ──
+  // Configuración de modalidades conforme al sistema de diseño
   const tiposMocionConfig = [
     {
       id: 'Caucus Moderado',
       nombre: 'Caucus Moderado',
       subtitulo: 'Oradores cronometrados por turnos',
-      icon: Mic,
-      color: '#3b82f6',
-      activeBg: 'rgba(59, 130, 246, 0.15)',
-      activeBorder: '#3b82f6',
-      textColor: '#93c5fd'
+      icon: Mic
     },
     {
       id: 'Caucus No Moderado',
       nombre: 'Caucus No Moderado',
       subtitulo: 'Negociación y redacción libre',
-      icon: Users,
-      color: '#a855f7',
-      activeBg: 'rgba(168, 85, 247, 0.15)',
-      activeBorder: '#a855f7',
-      textColor: '#d8b4fe'
+      icon: Users
     },
     {
       id: 'Consulta General',
       nombre: 'Consulta General',
-      subtitulo: 'Diálogo abierto o ping-pong temático',
-      icon: MessageSquare,
-      color: '#10b981',
-      activeBg: 'rgba(16, 185, 129, 0.15)',
-      activeBorder: '#10b981',
-      textColor: '#6ee7b7'
+      subtitulo: 'Diálogo temático abierto o moderado por país',
+      icon: MessageSquare
     },
     {
       id: 'Tour de Table',
       nombre: 'Tour de Table',
       subtitulo: 'Intervención de todas las delegaciones',
-      icon: RotateCcw,
-      color: '#f59e0b',
-      activeBg: 'rgba(245, 158, 11, 0.15)',
-      activeBorder: '#f59e0b',
-      textColor: '#fcd34d'
+      icon: RotateCcw
     }
   ];
 
-  // Presets de tiempo rápido
   const presetsTotalMin = [5, 10, 12, 15, 20];
   const presetsOradorSeg = [30, 45, 60, 90, 120];
 
@@ -163,1207 +200,1665 @@ const PizarraMociones = () => {
       boxSizing: 'border-box',
       backgroundColor: 'var(--panel-color)',
       color: 'var(--text-color)',
-      gap: '0.65rem',
+      gap: '0.6rem',
       overflowY: 'auto'
     }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-          <Pin size={18} color="var(--btn-bg)" />
-          <div>
-            <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: '800', letterSpacing: '-0.01em' }}>
-              Pizarra de Mociones
-            </h3>
-            <span style={{ fontSize: '0.7rem', opacity: 0.55, fontWeight: '500' }}>
-              {mociones.length} {mociones.length === 1 ? 'moción registrada' : 'mociones registradas'}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <button
-            type="button"
-            onClick={ordenarMocionesDisruptividad}
-            disabled={mociones.length <= 1}
-            style={{
-              padding: '0.45rem 0.65rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              color: 'var(--text-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '7px',
-              cursor: mociones.length <= 1 ? 'not-allowed' : 'pointer',
-              opacity: mociones.length <= 1 ? 0.4 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              transition: 'all 0.15s ease'
-            }}
-            title="Ordenar mociones por prioridad de disruptividad (No Moderado > Consulta > Tour > Moderado)"
-          >
-            <ArrowUpDown size={12} />
-            <span>{t('motions.disruptivenessOrder', 'Disruptividad')}</span>
-          </button>
-
-          <button
-            onClick={() => setMostrarForm(!mostrarForm)}
-            style={{
-              padding: '0.45rem 0.8rem',
-              fontSize: '0.78rem',
-              fontWeight: '700',
-              backgroundColor: mostrarForm ? 'rgba(239, 68, 68, 0.15)' : 'var(--btn-bg, #3b82f6)',
-              color: mostrarForm ? '#f87171' : 'var(--btn-text, #ffffff)',
-              border: mostrarForm ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: '7px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: mostrarForm ? 'none' : '0 2px 8px rgba(0, 0, 0, 0.25)'
-            }}
-          >
-            {mostrarForm ? (
-              <>
-                <X size={14} /> {t('common.close', 'Cerrar')}
-              </>
-            ) : (
-              <>
-                <Plus size={14} /> {t('motions.newMotion', 'Añadir Moción')}
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Barra Informativa de Quórum y Mayorías ── */}
-      <div style={{
-        backgroundColor: 'var(--card-header-bg, rgba(255, 255, 255, 0.03))',
-        border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
-        borderRadius: '7px',
-        padding: '0.45rem 0.75rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '0.45rem',
-        fontSize: '0.74rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <Users size={14} style={{ color: '#38bdf8' }} />
-          <span style={{ fontWeight: '600', opacity: 0.9 }}>
-            {t('voting.quorum', 'Quórum')}: <strong>{totalAsistentes}</strong>
-          </span>
-          <span style={{ fontSize: '0.68rem', opacity: 0.5 }}>
-            ({presentes} P + {presentesYVotando} PyV)
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-          <span style={{ opacity: 0.8 }}>
-            Simple: <strong style={{ color: '#38bdf8', fontWeight: '800' }}>{mayoriaSimple}</strong>
-          </span>
-          <span style={{ opacity: 0.3 }}>•</span>
-          <span style={{ opacity: 0.8 }}>
-            Cualificada: <strong style={{ color: '#c084fc', fontWeight: '800' }}>{mayoriaCualificada}</strong>
-          </span>
-        </div>
-      </div>
-
-      {/* ── Formulario Rehaul y Estilizado de Añadir Moción (Compacto y Optimizado) ── */}
-      {mostrarForm && (
-        <form
-          onSubmit={handleSubmitMocion}
+      {/* ── Conmutador / Toggle Superior entre Pizarra de Mociones y Oradores Debate ── */}
+      <div
+        role="tablist"
+        aria-label={t('motions.toggleView', 'Alternar entre Pizarra de Mociones y Oradores de Debate')}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          backgroundColor: 'var(--card-header-bg)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--border-radius, 6px)',
+          padding: '3px',
+          gap: '3px',
+          flexShrink: 0
+        }}
+      >
+        <button
+          type="button"
+          role="tab"
+          id="tab-mociones"
+          aria-selected={vistaActiva === 'mociones'}
+          aria-controls="panel-mociones"
+          tabIndex={vistaActiva === 'mociones' ? 0 : -1}
+          onClick={() => setVistaActiva('mociones')}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+              e.preventDefault();
+              setVistaActiva('oradores');
+            }
+          }}
           style={{
-            background: 'var(--panel-color)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '10px',
-            padding: '0.85rem 0.95rem',
+            padding: '0.42rem 0.65rem',
+            fontSize: '0.78rem',
+            fontWeight: vistaActiva === 'mociones' ? '650' : '500',
+            borderRadius: '4px',
+            border: `1px solid ${vistaActiva === 'mociones' ? 'var(--border-color)' : 'transparent'}`,
+            backgroundColor: vistaActiva === 'mociones' ? 'var(--panel-color)' : 'transparent',
+            color: vistaActiva === 'mociones' ? 'var(--text-color)' : 'var(--muted-text)',
+            boxShadow: vistaActiva === 'mociones' ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+            cursor: 'pointer',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-            position: 'relative'
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.45rem',
+            transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease'
           }}
         >
-          {/* Cabecera del Formulario */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Sparkles size={15} style={{ color: '#38bdf8' }} />
-              <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800', letterSpacing: '0.01em' }}>
-                {t('motions.newMotion', 'Nueva Moción')}
-              </h4>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setMostrarForm(false)}
-              style={{
-                background: 'var(--card-header-bg)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-color)',
-                borderRadius: '5px',
-                padding: '0.25rem',
-                cursor: 'pointer',
-                opacity: 0.8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'opacity 0.15s ease'
-              }}
-              title="Cerrar formulario"
-            >
-              <X size={15} />
-            </button>
-          </div>
-
-          {/* 1. Selector Visual de Tipo de Moción (Grid 2x2 compacto) */}
-          <div>
-            <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7, display: 'block', marginBottom: '0.35rem' }}>
-              {t('motions.motionType', '1. Modalidad de Debate')}
-            </label>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '0.45rem'
+          <MessageSquare size={13} style={{ color: vistaActiva === 'mociones' ? 'var(--accent-color)' : 'inherit', flexShrink: 0 }} />
+          <span>{t('motions.board', 'Pizarra de Mociones')}</span>
+          {mociones.length > 0 && (
+            <span style={{
+              fontSize: '0.65rem',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              fontVariantNumeric: 'tabular-nums',
+              backgroundColor: vistaActiva === 'mociones' ? 'var(--accent-soft)' : 'rgba(128, 128, 128, 0.12)',
+              color: vistaActiva === 'mociones' ? 'var(--accent-color)' : 'var(--muted-text)',
+              border: `1px solid ${vistaActiva === 'mociones' ? 'rgba(239, 163, 127, 0.3)' : 'transparent'}`,
+              fontWeight: '700'
             }}>
-              {tiposMocionConfig.map(tItem => {
-                const IconComponent = tItem.icon;
-                const isSelected = tipo === tItem.id;
-                return (
-                  <button
-                    key={tItem.id}
-                    type="button"
-                    onClick={() => {
-                      setTipo(tItem.id);
-                      if (tItem.id === 'Caucus Moderado') {
-                        setTiempoTotalMin(10);
-                        setTiempoOradorSeg(60);
-                      } else if (tItem.id === 'Caucus No Moderado') {
-                        setTiempoTotalMin(15);
-                      } else if (tItem.id === 'Consulta General') {
-                        setTiempoTotalMin(10);
-                        setVarianteConsulta('No Moderada');
-                      } else if (tItem.id === 'Tour de Table') {
-                        setTiempoOradorSeg(45);
-                      }
-                    }}
-                    style={{
-                      padding: '0.55rem 0.65rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      backgroundColor: isSelected ? tItem.activeBg : 'var(--card-header-bg, rgba(255, 255, 255, 0.03))',
-                      border: isSelected ? `1.5px solid ${tItem.activeBorder}` : '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                      borderRadius: '8px',
-                      color: isSelected ? tItem.textColor : 'var(--text-color)',
-                      boxShadow: isSelected ? `0 0 12px ${tItem.color}30` : 'none',
-                      transition: 'all 0.15s ease',
-                      outline: 'none'
-                    }}
-                  >
-                    <div style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '6px',
-                      backgroundColor: isSelected ? tItem.color : 'rgba(255, 255, 255, 0.08)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: isSelected ? '#ffffff' : 'var(--muted-text, #94a3b8)',
-                      flexShrink: 0
-                    }}>
-                      <IconComponent size={14} />
-                    </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{
-                        fontSize: '0.8rem',
-                        fontWeight: isSelected ? '800' : '600',
-                        color: isSelected ? tItem.textColor : 'var(--text-color)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        {tItem.nombre}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: tItem.color, flexShrink: 0 }} />
-                    )}
-                  </button>
-                );
-              })}
+              {mociones.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-oradores"
+          aria-selected={vistaActiva === 'oradores'}
+          aria-controls="panel-oradores"
+          tabIndex={vistaActiva === 'oradores' ? 0 : -1}
+          onClick={() => setVistaActiva('oradores')}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+              e.preventDefault();
+              setVistaActiva('mociones');
+            }
+          }}
+          style={{
+            padding: '0.42rem 0.65rem',
+            fontSize: '0.78rem',
+            fontWeight: vistaActiva === 'oradores' ? '650' : '500',
+            borderRadius: '4px',
+            border: `1px solid ${vistaActiva === 'oradores' ? 'var(--border-color)' : 'transparent'}`,
+            backgroundColor: vistaActiva === 'oradores' ? 'var(--panel-color)' : 'transparent',
+            color: vistaActiva === 'oradores' ? 'var(--text-color)' : 'var(--muted-text)',
+            boxShadow: vistaActiva === 'oradores' ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.45rem',
+            transition: 'background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease'
+          }}
+        >
+          <Mic size={13} style={{ color: vistaActiva === 'oradores' ? 'var(--accent-color)' : 'inherit', flexShrink: 0 }} />
+          <span>{t('timers.debateSpeakers', 'Oradores Debate')}</span>
+          {oradoresCaucus.length > 0 && (
+            <span style={{
+              fontSize: '0.65rem',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              fontVariantNumeric: 'tabular-nums',
+              backgroundColor: vistaActiva === 'oradores' ? 'var(--accent-soft)' : 'rgba(128, 128, 128, 0.12)',
+              color: vistaActiva === 'oradores' ? 'var(--accent-color)' : 'var(--muted-text)',
+              border: `1px solid ${vistaActiva === 'oradores' ? 'rgba(239, 163, 127, 0.3)' : 'transparent'}`,
+              fontWeight: '700'
+            }}>
+              {oradoresCaucus.length}
+            </span>
+          )}
+          {caucusActivo?.activo && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.62rem',
+                fontWeight: '700',
+                padding: '1px 6px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--success-soft)',
+                color: 'var(--success-color)',
+                border: '1px solid var(--success-color)',
+                lineHeight: 1.2
+              }}
+              title={t('timers.inProgress', 'Debate en curso')}
+            >
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'currentColor' }} />
+              <span>{t('timers.inProgress', 'En curso')}</span>
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* VISTA 1: PIZARRA DE MOCIONES                            */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      {vistaActiva === 'mociones' && (
+        <div
+          role="tabpanel"
+          id="panel-mociones"
+          aria-labelledby="tab-mociones"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.6rem',
+            flex: 1,
+            minHeight: 0,
+            animation: 'fadeIn 0.15s ease-out'
+          }}
+        >
+          {/* Header y Acciones de la Pizarra */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '500' }}>
+                {mociones.length} {mociones.length === 1 ? 'moción registrada' : 'mociones registradas'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <button
+                type="button"
+                onClick={ordenarMocionesDisruptividad}
+                disabled={mociones.length <= 1}
+                style={{
+                  padding: '0.4rem 0.6rem',
+                  fontSize: '0.74rem',
+                  fontWeight: '600',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  cursor: mociones.length <= 1 ? 'not-allowed' : 'pointer',
+                  opacity: mociones.length <= 1 ? 0.45 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  transition: 'background-color 0.15s ease'
+                }}
+                title="Ordenar mociones por prioridad de disruptividad (No Moderado > Consulta > Tour > Moderado)"
+              >
+                <ArrowUpDown size={12} />
+                <span>{t('motions.disruptivenessOrder', 'Disruptividad')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMostrarForm(!mostrarForm)}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  fontSize: '0.76rem',
+                  fontWeight: '700',
+                  backgroundColor: mostrarForm ? 'var(--card-header-bg)' : 'var(--btn-bg)',
+                  color: mostrarForm ? 'var(--text-color)' : 'var(--btn-text)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {mostrarForm ? (
+                  <>
+                    <X size={13} /> {t('common.close', 'Cerrar')}
+                  </>
+                ) : (
+                  <>
+                    <Plus size={13} /> {t('motions.newMotion', 'Nueva Moción')}
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* 2. País Proponente y Tema / Propósito */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-            {/* País Proponente */}
-            <div style={{ position: 'relative' }} ref={dropdownPaisRef}>
-              <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.25rem' }}>
-                <span>{t('motions.proponent', '2. País Proponente *')}</span>
-              </label>
-              {paises.length === 0 ? (
-                <div style={{ padding: '0.45rem 0.6rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', fontSize: '0.73rem', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <AlertCircle size={13} /> Sin delegaciones en la sesión.
+          {/* Barra Informativa de Quórum y Mayorías */}
+          <div style={{
+            backgroundColor: 'var(--card-header-bg)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--border-radius, 6px)',
+            padding: '0.45rem 0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.45rem',
+            fontSize: '0.74rem',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Users size={14} style={{ color: 'var(--accent-color)' }} />
+              <span style={{ fontWeight: '600', color: 'var(--text-color)' }}>
+                {t('voting.quorum', 'Quórum Actual')}: <strong>{totalAsistentes}</strong>
+              </span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
+                ({presentes} P + {presentesYVotando} PyV)
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <span style={{ color: 'var(--text-color)' }}>
+                Simple: <strong style={{ fontWeight: '700' }}>{mayoriaSimple}</strong>
+              </span>
+              <span style={{ color: 'var(--subborder-color)' }}>•</span>
+              <span style={{ color: 'var(--text-color)' }}>
+                Cualificada: <strong style={{ color: 'var(--accent-color)', fontWeight: '700' }}>{mayoriaCualificada}</strong>
+              </span>
+            </div>
+          </div>
+
+          {/* Formulario de Añadir Moción con Guía de Estilo OpenMUN */}
+          {mostrarForm && (
+            <form
+              onSubmit={handleSubmitMocion}
+              style={{
+                backgroundColor: 'var(--panel-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                padding: '0.85rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                flexShrink: 0
+              }}
+            >
+              {/* Cabecera del Formulario */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--subborder-color)', paddingBottom: '0.45rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Plus size={14} style={{ color: 'var(--accent-color)' }} />
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-color)' }}>
+                    {t('motions.newMotion', 'Nueva Moción')}
+                  </h4>
                 </div>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMostrarDropdownPais(!mostrarDropdownPais);
-                      setBusquedaPais('');
-                    }}
+
+                <button
+                  type="button"
+                  onClick={() => setMostrarForm(false)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--muted-text)',
+                    borderRadius: '4px',
+                    padding: '0.2rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Cerrar formulario"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* 1. Modalidad de Debate */}
+              <div>
+                <label style={{ fontSize: '0.68rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted-text)', display: 'block', marginBottom: '0.35rem' }}>
+                  {t('motions.motionType', '1. Modalidad de Debate')}
+                </label>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '0.4rem'
+                }}>
+                  {tiposMocionConfig.map(tItem => {
+                    const IconComponent = tItem.icon;
+                    const isSelected = tipo === tItem.id;
+                    return (
+                      <button
+                        key={tItem.id}
+                        type="button"
+                        onClick={() => {
+                          setTipo(tItem.id);
+                          if (tItem.id === 'Caucus Moderado') {
+                            setTiempoTotalMin(10);
+                            setTiempoOradorSeg(60);
+                          } else if (tItem.id === 'Caucus No Moderado') {
+                            setTiempoTotalMin(15);
+                          } else if (tItem.id === 'Consulta General') {
+                            setTiempoTotalMin(10);
+                            setVarianteConsulta('Cadena / Ping-Pong');
+                          } else if (tItem.id === 'Tour de Table') {
+                            setTiempoOradorSeg(45);
+                          }
+                        }}
+                        style={{
+                          padding: '0.5rem 0.6rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          backgroundColor: isSelected ? 'var(--accent-soft)' : 'var(--card-header-bg)',
+                          border: isSelected ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--text-color)',
+                          transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                          outline: 'none'
+                        }}
+                      >
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '4px',
+                          backgroundColor: isSelected ? 'var(--accent-color)' : 'var(--subborder-color)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: isSelected ? '#ffffff' : 'var(--muted-text)',
+                          flexShrink: 0
+                        }}>
+                          <IconComponent size={13} />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{
+                            fontSize: '0.78rem',
+                            fontWeight: isSelected ? '700' : '600',
+                            color: isSelected ? 'var(--accent-color)' : 'var(--text-color)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {tItem.nombre}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. País Proponente y Tema / Propósito */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {/* País Proponente */}
+                <div style={{ position: 'relative' }} ref={dropdownPaisRef}>
+                  <label style={{ fontSize: '0.68rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted-text)', display: 'block', marginBottom: '0.25rem' }}>
+                    {t('motions.proponent', '2. País Proponente *')}
+                  </label>
+                  {paises.length === 0 ? (
+                    <div style={{ padding: '0.45rem 0.6rem', backgroundColor: 'var(--danger-soft)', border: '1px solid var(--danger-color)', borderRadius: 'var(--border-radius, 6px)', fontSize: '0.73rem', color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <AlertCircle size={13} /> Sin delegaciones en la sesión.
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMostrarDropdownPais(!mostrarDropdownPais);
+                          setBusquedaPais('');
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '0.45rem 0.65rem',
+                          backgroundColor: 'var(--input-bg)',
+                          border: mostrarDropdownPais ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                          color: 'var(--text-color)',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '0.5rem',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
+                          {paisSeleccionado ? (
+                            <>
+                              <CountryFlag bandera={paisSeleccionado.bandera} nombre={paisSeleccionado.nombre} size="xs" />
+                              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '700', color: 'var(--text-color)' }}>
+                                {paisSeleccionado.nombre}
+                              </span>
+                              {paisSeleccionado.estatus && (
+                                <span style={{
+                                  fontSize: '0.65rem',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: paisSeleccionado.estatus.includes('Presente') ? 'var(--success-soft)' : 'var(--danger-soft)',
+                                  color: paisSeleccionado.estatus.includes('Presente') ? 'var(--success-color)' : 'var(--danger-color)',
+                                  fontWeight: '600',
+                                  marginLeft: 'auto'
+                                }}>
+                                  {paisSeleccionado.estatus}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span style={{ color: 'var(--muted-text)', fontWeight: '500' }}>
+                              {t('motions.selectProponent', 'Selecciona el país proponente...')}
+                            </span>
+                          )}
+                        </div>
+                        <ChevronDown size={14} style={{ opacity: 0.6, transform: mostrarDropdownPais ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
+                      </button>
+
+                      {mostrarDropdownPais && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 4px)',
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'var(--panel-color)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          zIndex: 100,
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column'
+                        }}>
+                          <div style={{
+                            padding: '0.4rem 0.5rem',
+                            borderBottom: '1px solid var(--border-color)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            backgroundColor: 'var(--card-header-bg)'
+                          }}>
+                            <Search size={13} style={{ opacity: 0.5, flexShrink: 0 }} />
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder={t('motions.searchCountryPlaceholder', 'Buscar país...')}
+                              value={busquedaPais}
+                              onChange={(e) => setBusquedaPais(e.target.value)}
+                              style={{
+                                width: '100%',
+                                border: 'none',
+                                background: 'transparent',
+                                color: 'var(--text-color)',
+                                fontSize: '0.78rem',
+                                outline: 'none'
+                              }}
+                            />
+                            {busquedaPais && (
+                              <button
+                                type="button"
+                                onClick={() => setBusquedaPais('')}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer', padding: 0 }}
+                              >
+                                <X size={12} />
+                              </button>
+                            )}
+                          </div>
+
+                          <div style={{ maxHeight: '180px', overflowY: 'auto', padding: '0.2rem 0' }}>
+                            {paisesFiltrados.length === 0 ? (
+                              <div style={{ padding: '0.6rem', textAlign: 'center', fontSize: '0.74rem', color: 'var(--muted-text)' }}>
+                                {t('countries.noCountriesFound', 'No se encontraron países')}
+                              </div>
+                            ) : (
+                              paisesFiltrados.map((p) => {
+                                const isSelected = proponente === p.nombre;
+                                return (
+                                  <div
+                                    key={p.id || p.nombre}
+                                    onClick={() => {
+                                      setProponente(p.nombre);
+                                      setMostrarDropdownPais(false);
+                                    }}
+                                    style={{
+                                      padding: '0.4rem 0.65rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      cursor: 'pointer',
+                                      backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
+                                      transition: 'background-color 0.1s ease'
+                                    }}
+                                  >
+                                    <CountryFlag bandera={p.bandera} nombre={p.nombre} size="xs" />
+                                    <span style={{
+                                      fontSize: '0.78rem',
+                                      fontWeight: isSelected ? '700' : '500',
+                                      color: isSelected ? 'var(--accent-color)' : 'var(--text-color)',
+                                      flex: 1,
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis'
+                                    }}>
+                                      {p.nombre}
+                                    </span>
+                                    {isSelected && <Check size={13} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />}
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Tema / Propósito */}
+                <div>
+                  <label style={{ fontSize: '0.68rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted-text)', display: 'block', marginBottom: '0.25rem' }}>
+                    {t('motions.topic', '3. Tema / Propósito del Debate *')}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t('motions.topicPlaceholder', 'Ej. Estrategias de cooperación económica...')}
+                    value={tema}
+                    onChange={e => setTema(e.target.value)}
+                    required
                     style={{
                       width: '100%',
-                      padding: '0.48rem 0.65rem',
-                      backgroundColor: 'var(--card-header-bg, rgba(255, 255, 255, 0.04))',
-                      border: mostrarDropdownPais ? '1px solid #3b82f6' : '1px solid var(--border-color)',
+                      padding: '0.45rem 0.65rem',
+                      backgroundColor: 'var(--input-bg)',
+                      border: '1px solid var(--border-color)',
                       color: 'var(--text-color)',
-                      borderRadius: '6px',
-                      fontSize: '0.82rem',
-                      fontWeight: '600',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      fontSize: '0.8rem',
                       outline: 'none',
-                      boxSizing: 'border-box',
-                      cursor: 'pointer',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Turno del Proponente en Caucus Moderado */}
+              {esModerado && (
+                <div style={{
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  padding: '0.45rem 0.65rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem'
+                }}>
+                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Mic size={12} style={{ color: 'var(--accent-color)' }} />
+                    <span>{t('motions.speakerTurn', 'Turno de la delegación')} ({proponente || 'Proponente'}):</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setPosicionProponente('Primero')}
+                      style={{
+                        flex: 1,
+                        padding: '0.35rem 0.5rem',
+                        backgroundColor: posicionProponente === 'Primero' ? 'var(--btn-bg)' : 'var(--input-bg)',
+                        color: posicionProponente === 'Primero' ? 'var(--btn-text)' : 'var(--text-color)',
+                        border: posicionProponente === 'Primero' ? '1px solid var(--btn-bg)' : '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        fontSize: '0.74rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.3rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Mic size={12} />
+                      <span>{t('motions.speakFirst', 'Hablar Primero')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPosicionProponente('Ultimo')}
+                      style={{
+                        flex: 1,
+                        padding: '0.35rem 0.5rem',
+                        backgroundColor: posicionProponente === 'Ultimo' ? 'var(--btn-bg)' : 'var(--input-bg)',
+                        color: posicionProponente === 'Ultimo' ? 'var(--btn-text)' : 'var(--text-color)',
+                        border: posicionProponente === 'Ultimo' ? '1px solid var(--btn-bg)' : '1px solid var(--border-color)',
+                        borderRadius: '4px',
+                        fontSize: '0.74rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.3rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Hourglass size={12} />
+                      <span>{t('motions.speakLast', 'Hablar Al Final')}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Modalidad de Consulta General (Sin 'Estándar', solo Ping-Pong o Moderada por País) */}
+              {esConsulta && (
+                <div style={{
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  padding: '0.45rem 0.65rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem'
+                }}>
+                  <label style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <MessageSquare size={12} style={{ color: 'var(--accent-color)' }} />
+                    <span>{t('motions.consultationMode', 'Modalidad de Consulta:')}</span>
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.35rem' }}>
+                    {[
+                      { id: 'Cadena / Ping-Pong', label: 'Ping-Pong / Abierta' },
+                      { id: 'Moderada por el Proponente', label: 'Moderada por País' }
+                    ].map(v => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setVarianteConsulta(v.id)}
+                        style={{
+                          padding: '0.35rem 0.4rem',
+                          backgroundColor: varianteConsulta === v.id ? 'var(--accent-soft)' : 'var(--input-bg)',
+                          color: varianteConsulta === v.id ? 'var(--accent-color)' : 'var(--text-color)',
+                          border: varianteConsulta === v.id ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                          borderRadius: '4px',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Configuración de Tiempos y Presets */}
+              <div style={{ display: 'grid', gridTemplateColumns: (!esTour && esModerado) ? '1fr 1fr' : '1fr', gap: '0.45rem' }}>
+                {/* Tiempo Total (excepto Tour de Table) */}
+                {tipo !== 'Tour de Table' && (
+                  <div style={{
+                    backgroundColor: 'var(--card-header-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '0.45rem 0.6rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Clock size={12} style={{ color: 'var(--accent-color)' }} /> {t('motions.totalDuration', 'Tiempo Total')}
+                      </label>
+                      <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-color)', fontVariantNumeric: 'tabular-nums', fontFamily: 'monospace' }}>
+                        {tiempoTotalMin}m
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setTiempoTotalMin(prev => Math.max(1, Number(prev) - 1))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        -
+                      </button>
+
+                      <input
+                        type="number"
+                        min="1"
+                        max="90"
+                        value={tiempoTotalMin}
+                        onChange={e => setTiempoTotalMin(Math.max(1, Number(e.target.value)))}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          textAlign: 'center',
+                          padding: '0.25rem 0.2rem',
+                          backgroundColor: 'var(--input-bg)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-color)',
+                          borderRadius: '4px',
+                          fontSize: '0.82rem',
+                          fontWeight: '700',
+                          fontVariantNumeric: 'tabular-nums',
+                          fontFamily: 'monospace'
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setTiempoTotalMin(prev => Math.min(90, Number(prev) + 1))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.2rem', justifyContent: 'space-between' }}>
+                      {presetsTotalMin.map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTiempoTotalMin(p)}
+                          style={{
+                            flex: 1,
+                            padding: '0.15rem 0',
+                            fontSize: '0.67rem',
+                            borderRadius: '3px',
+                            border: Number(tiempoTotalMin) === p ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                            backgroundColor: Number(tiempoTotalMin) === p ? 'var(--accent-soft)' : 'var(--input-bg)',
+                            color: Number(tiempoTotalMin) === p ? 'var(--accent-color)' : 'var(--muted-text)',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {p}m
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tiempo por Orador */}
+                {(esModerado || esTour) && (
+                  <div style={{
+                    backgroundColor: 'var(--card-header-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '0.45rem 0.6rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Mic size={12} style={{ color: 'var(--accent-color)' }} /> {t('motions.speakerDuration', 'Por Orador')}
+                      </label>
+                      <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--accent-color)', fontVariantNumeric: 'tabular-nums', fontFamily: 'monospace' }}>
+                        {tiempoOradorSeg}s
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setTiempoOradorSeg(prev => Math.max(10, Number(prev) - 5))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        -
+                      </button>
+
+                      <input
+                        type="number"
+                        min="10"
+                        max="300"
+                        step="5"
+                        value={tiempoOradorSeg}
+                        onChange={e => setTiempoOradorSeg(Math.max(10, Number(e.target.value)))}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          textAlign: 'center',
+                          padding: '0.25rem 0.2rem',
+                          backgroundColor: 'var(--input-bg)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-color)',
+                          borderRadius: '4px',
+                          fontSize: '0.82rem',
+                          fontWeight: '700',
+                          fontVariantNumeric: 'tabular-nums',
+                          fontFamily: 'monospace'
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setTiempoOradorSeg(prev => Math.min(300, Number(prev) + 5))}
+                        style={{
+                          width: '26px',
+                          height: '26px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.9rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.2rem', justifyContent: 'space-between' }}>
+                      {presetsOradorSeg.map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTiempoOradorSeg(p)}
+                          style={{
+                            flex: 1,
+                            padding: '0.15rem 0',
+                            fontSize: '0.67rem',
+                            borderRadius: '3px',
+                            border: Number(tiempoOradorSeg) === p ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                            backgroundColor: Number(tiempoOradorSeg) === p ? 'var(--accent-soft)' : 'var(--input-bg)',
+                            color: Number(tiempoOradorSeg) === p ? 'var(--accent-color)' : 'var(--muted-text)',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {p}s
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Capacidad estimada para Caucus Moderado */}
+              {esModerado && intervencionesEstimadas > 0 && (
+                <div style={{
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--subborder-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  padding: '0.35rem 0.65rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '0.72rem',
+                  color: 'var(--muted-text)'
+                }}>
+                  <span><BarChart2 size={13} style={{ display: 'inline', marginRight: '0.35rem', verticalAlign: '-1px' }} />Capacidad estimada:</span>
+                  <strong style={{ fontSize: '0.76rem', color: 'var(--text-color)' }}>
+                    ~{intervencionesEstimadas} {t('motions.estimatedInterventions', 'intervenciones')}
+                  </strong>
+                </div>
+              )}
+
+              {/* Botones de Envío / Cancelar */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setMostrarForm(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.45rem 0.75rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {t('common.cancel', 'Cancelar')}
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={!proponente || !tema.trim()}
+                  style={{
+                    flex: 2,
+                    padding: '0.45rem 0.85rem',
+                    backgroundColor: 'var(--btn-bg)',
+                    color: 'var(--btn-text)',
+                    border: 'none',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    fontSize: '0.82rem',
+                    fontWeight: '700',
+                    cursor: (!proponente || !tema.trim()) ? 'not-allowed' : 'pointer',
+                    opacity: (!proponente || !tema.trim()) ? 0.45 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <Plus size={14} /> {t('motions.addMotion', 'Guardar Moción')}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Lista de Tarjetas de Mociones */}
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '2px' }}>
+            {mociones.length === 0 ? (
+              <EmptyState
+                icon={MessageSquare}
+                title={t('motions.noMotionsTitle', 'Pizarra sin mociones')}
+                description={t('motions.noMotionsDesc', 'Registra mociones de caucus moderado, no moderado o consultas de debate.')}
+                actionLabel={!mostrarForm ? t('motions.createFirst', '+ Añadir Primera Moción') : undefined}
+                onAction={() => setMostrarForm(true)}
+                compact={true}
+              />
+            ) : (
+              mociones.map((m, idx) => {
+                const esAprobada = m.estado === 'Aprobada';
+                const esFallida = m.estado === 'Fallida';
+                const isDragging = draggedIndex === idx;
+                const isDragOver = dragOverIndex === idx;
+
+                const getTipoBadgeStyle = (tipoMocion = '') => {
+                  if (tipoMocion.startsWith('Caucus Moderado')) {
+                    return { bg: 'var(--accent-soft)', border: 'var(--accent-color)', text: 'var(--accent-color)' };
+                  }
+                  if (tipoMocion.startsWith('Caucus No Moderado')) {
+                    return { bg: 'var(--card-header-bg)', border: 'var(--border-color)', text: 'var(--text-color)' };
+                  }
+                  if (tipoMocion.startsWith('Consulta General')) {
+                    return { bg: 'var(--card-header-bg)', border: 'var(--border-color)', text: 'var(--accent-color)' };
+                  }
+                  if (tipoMocion.startsWith('Tour de Table')) {
+                    return { bg: 'var(--warning-soft)', border: 'var(--warning-color)', text: 'var(--warning-color)' };
+                  }
+                  return { bg: 'var(--card-header-bg)', border: 'var(--border-color)', text: 'var(--text-color)' };
+                };
+
+                const tipoBadge = getTipoBadgeStyle(m.tipo);
+
+                return (
+                  <div
+                    key={m.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', idx.toString());
+                      e.dataTransfer.effectAllowed = 'move';
+                      setDraggedIndex(idx);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      if (draggedIndex !== idx) setDragOverIndex(idx);
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverIndex === idx) setDragOverIndex(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromIndexStr = e.dataTransfer.getData('text/plain');
+                      const fromIndex = parseInt(fromIndexStr, 10);
+                      if (!isNaN(fromIndex) && fromIndex !== idx) {
+                        reordenarMociones(fromIndex, idx);
+                      }
+                      setDraggedIndex(null);
+                      setDragOverIndex(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedIndex(null);
+                      setDragOverIndex(null);
+                    }}
+                    style={{
+                      backgroundColor: isDragging
+                        ? 'var(--accent-soft)'
+                        : (esAprobada ? 'var(--success-soft)' : (esFallida ? 'var(--danger-soft)' : 'var(--card-header-bg)')),
+                      border: isDragOver
+                        ? '2px dashed var(--accent-color)'
+                        : `1px solid ${isDragging ? 'var(--accent-color)' : (esAprobada ? 'var(--success-color)' : (esFallida ? 'var(--danger-color)' : 'var(--border-color)'))}`,
+                      borderRadius: 'var(--border-radius, 6px)',
+                      padding: '0.65rem 0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.45rem',
+                      opacity: isDragging ? 0.45 : 1,
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {/* Header de la tarjeta */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.4rem',
+                      flexWrap: 'nowrap'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, flex: 1 }}>
+                        <div
+                          style={{ cursor: 'grab', display: 'flex', alignItems: 'center', opacity: 0.5, flexShrink: 0 }}
+                          title={t('motions.dragToReorder', 'Arrastrar para reordenar')}
+                        >
+                          <GripVertical size={14} />
+                        </div>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: '800',
+                          opacity: 0.6,
+                          fontFamily: 'monospace',
+                          flexShrink: 0
+                        }}>
+                          #{idx + 1}
+                        </span>
+                        <CountryFlag
+                          bandera={m.bandera || paises.find(p => p.nombre === m.proponente)?.bandera}
+                          nombre={m.proponente}
+                          size="xs"
+                        />
+                        <span style={{
+                          fontWeight: '700',
+                          fontSize: '0.86rem',
+                          color: 'var(--text-color)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          minWidth: 0
+                        }}>
+                          {m.proponente}
+                        </span>
+                        {m.posicionProponente === 'Ultimo' && (
+                          <span style={{
+                            fontSize: '0.62rem',
+                            backgroundColor: 'var(--accent-soft)',
+                            border: '1px solid var(--accent-color)',
+                            color: 'var(--accent-color)',
+                            padding: '1px 5px',
+                            borderRadius: '3px',
+                            fontWeight: '700',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                          }}>
+                            {t('motions.speaksLastBadge', 'Habla al final')}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+                        <span style={{
+                          fontSize: '0.66rem',
+                          fontWeight: '700',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: tipoBadge.bg,
+                          border: `1px solid ${tipoBadge.border}`,
+                          color: tipoBadge.text,
+                          letterSpacing: '0.02em',
+                          textTransform: 'uppercase',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {m.tipo}
+                        </span>
+
+                        {eliminarMocion && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarMocion(m.id)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--muted-text)',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              opacity: 0.6
+                            }}
+                            title={t('common.delete', 'Eliminar')}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tema / Propósito */}
+                    <div style={{
+                      fontSize: '0.84rem',
+                      fontWeight: '600',
+                      color: 'var(--text-color)',
+                      lineHeight: 1.35,
+                      wordBreak: 'break-word',
+                      padding: '0.1rem 0'
+                    }}>
+                      {m.tema}
+                    </div>
+
+                    {/* Métricas y Botonera */}
+                    <div style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: '0.5rem',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flex: 1 }}>
-                      {paisSeleccionado ? (
-                        <>
-                          <CountryFlag bandera={paisSeleccionado.bandera} nombre={paisSeleccionado.nombre} size="xs" />
-                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '700', color: 'var(--text-color)' }}>
-                            {paisSeleccionado.nombre}
-                          </span>
-                          {paisSeleccionado.estatus && (
-                            <span style={{
-                              fontSize: '0.65rem',
-                              padding: '1px 5px',
-                              borderRadius: '4px',
-                              backgroundColor: paisSeleccionado.estatus.includes('Presente') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                              color: paisSeleccionado.estatus.includes('Presente') ? '#4ade80' : '#f87171',
-                              fontWeight: '600',
-                              marginLeft: 'auto'
-                            }}>
-                              {paisSeleccionado.estatus}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span style={{ color: 'var(--muted-text, #94a3b8)', fontWeight: '500' }}>
-                          {t('motions.selectProponent', 'Selecciona el país proponente...')}
-                        </span>
-                      )}
-                    </div>
-                    <ChevronDown size={14} style={{ opacity: 0.6, transform: mostrarDropdownPais ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }} />
-                  </button>
-
-                  {/* Dropdown flotante */}
-                  {mostrarDropdownPais && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 4px)',
-                      left: 0,
-                      right: 0,
-                      backgroundColor: 'var(--panel-color, #1e293b)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
-                      zIndex: 100,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column'
+                      flexWrap: 'wrap',
+                      paddingTop: '0.3rem',
+                      borderTop: '1px solid var(--subborder-color)'
                     }}>
-                      {/* Barra de Búsqueda */}
                       <div style={{
-                        padding: '0.4rem 0.5rem',
-                        borderBottom: '1px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.4rem',
-                        backgroundColor: 'var(--card-header-bg, rgba(255, 255, 255, 0.03))'
+                        gap: '0.35rem',
+                        flexWrap: 'wrap',
+                        fontSize: '0.7rem',
+                        color: 'var(--muted-text)'
                       }}>
-                        <Search size={13} style={{ opacity: 0.5, flexShrink: 0 }} />
-                        <input
-                          type="text"
-                          autoFocus
-                          placeholder={t('motions.searchCountryPlaceholder', 'Buscar país...')}
-                          value={busquedaPais}
-                          onChange={(e) => setBusquedaPais(e.target.value)}
-                          style={{
-                            width: '100%',
-                            border: 'none',
-                            background: 'transparent',
-                            color: 'var(--text-color)',
-                            fontSize: '0.78rem',
-                            outline: 'none'
-                          }}
-                        />
-                        {busquedaPais && (
-                          <button
-                            type="button"
-                            onClick={() => setBusquedaPais('')}
-                            style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer', padding: 0, display: 'flex' }}
-                          >
-                            <X size={12} />
-                          </button>
+                        {m.tiempoTotal > 0 && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem',
+                            backgroundColor: 'var(--input-bg)',
+                            padding: '2px 5px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-color)',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            <Timer size={11} style={{ color: 'var(--accent-color)' }} />
+                            <span>Total:</span>
+                            <strong style={{ color: 'var(--text-color)', fontFamily: 'monospace' }}>{formatMinutos(m.tiempoTotal)}</strong>
+                          </span>
+                        )}
+                        {m.tiempoOrador > 0 && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem',
+                            backgroundColor: 'var(--input-bg)',
+                            padding: '2px 5px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-color)',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            <Mic size={11} style={{ color: 'var(--accent-color)' }} />
+                            <span>Orador:</span>
+                            <strong style={{ color: 'var(--text-color)', fontFamily: 'monospace' }}>{m.tiempoOrador}s</strong>
+                          </span>
+                        )}
+                        {m.tiempoTotal > 0 && m.tiempoOrador > 0 && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem',
+                            fontSize: '0.67rem',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            <BarChart2 size={11} />
+                            <span>~{Math.floor(m.tiempoTotal / m.tiempoOrador)} turnos</span>
+                          </span>
                         )}
                       </div>
 
-                      {/* Lista de países */}
-                      <div style={{
-                        maxHeight: '180px',
-                        overflowY: 'auto',
-                        padding: '0.25rem 0'
-                      }}>
-                        {paisesFiltrados.length === 0 ? (
-                          <div style={{ padding: '0.6rem', textAlign: 'center', fontSize: '0.74rem', opacity: 0.5 }}>
-                            {t('countries.noCountriesFound', 'No se encontraron países')}
-                          </div>
-                        ) : (
-                          paisesFiltrados.map((p) => {
-                            const isSelected = proponente === p.nombre;
-                            return (
-                              <div
-                                key={p.id || p.nombre}
-                                onClick={() => {
-                                  setProponente(p.nombre);
-                                  setMostrarDropdownPais(false);
-                                }}
-                                style={{
-                                  padding: '0.45rem 0.65rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.5rem',
-                                  cursor: 'pointer',
-                                  backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                                  transition: 'background 0.1s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--card-header-bg, rgba(255, 255, 255, 0.06))';
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
-                                }}
-                              >
-                                <CountryFlag bandera={p.bandera} nombre={p.nombre} size="xs" />
-                                <span style={{
-                                  fontSize: '0.8rem',
-                                  fontWeight: isSelected ? '700' : '500',
-                                  color: isSelected ? '#38bdf8' : 'var(--text-color)',
-                                  flex: 1,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis'
-                                }}>
-                                  {p.nombre}
-                                </span>
-                                {p.estatus && (
-                                  <span style={{
-                                    fontSize: '0.65rem',
-                                    padding: '1px 5px',
-                                    borderRadius: '4px',
-                                    backgroundColor: p.estatus.includes('Presente') ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                    color: p.estatus.includes('Presente') ? '#4ade80' : '#f87171',
-                                    opacity: 0.8
-                                  }}>
-                                    {p.estatus}
-                                  </span>
-                                )}
-                                {isSelected && <Check size={13} style={{ color: '#38bdf8', flexShrink: 0 }} />}
-                              </div>
-                            );
-                          })
-                        )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: 'auto' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleAprobarMocion(m.id)}
+                          style={{
+                            backgroundColor: esAprobada ? 'var(--success-solid)' : 'var(--success-soft)',
+                            border: '1px solid var(--success-color)',
+                            color: esAprobada ? '#ffffff' : 'var(--success-color)',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            padding: '0.3rem 0.55rem',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title={t('motions.approve', 'Aprobar Moción')}
+                        >
+                          <Check size={12} />
+                          <span>{t('motions.approve', 'Aprobar')}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => votarMocion(m.id, 'Fallida')}
+                          style={{
+                            backgroundColor: esFallida ? 'var(--danger-solid)' : 'var(--danger-soft)',
+                            border: '1px solid var(--danger-color)',
+                            color: esFallida ? '#ffffff' : 'var(--danger-color)',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            padding: '0.3rem 0.55rem',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title={t('motions.reject', 'Reprobar / Fallida')}
+                        >
+                          <X size={12} />
+                          <span>{t('motions.reject', 'Reprobar')}</span>
+                        </button>
                       </div>
                     </div>
-                  )}
-                </>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════ */}
+      {/* VISTA 2: LISTA DE ORADORES ACTIVOS DE DEBATE              */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      {vistaActiva === 'oradores' && (
+        <div
+          role="tabpanel"
+          id="panel-oradores"
+          aria-labelledby="tab-oradores"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            minHeight: 0,
+            animation: 'fadeIn 0.15s ease-out'
+          }}
+        >
+          {/* Header y Acciones de Oradores */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '500' }}>
+                {oradoresCaucus.length} {oradoresCaucus.length === 1 ? 'orador en lista' : 'oradores en lista'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <button
+                type="button"
+                onClick={ordenarOradoresDebateAlfabetico}
+                disabled={oradoresCaucus.length <= 1}
+                title="Ordenar debate alfabéticamente (A-Z)"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.35rem 0.55rem',
+                  fontSize: '0.72rem',
+                  fontWeight: '600',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-color)',
+                  cursor: oradoresCaucus.length <= 1 ? 'not-allowed' : 'pointer',
+                  opacity: oradoresCaucus.length <= 1 ? 0.45 : 1
+                }}
+              >
+                <ArrowUpDown size={11} />
+                <span>A-Z</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (oradoresCaucus.length > 0) {
+                    vaciarOradoresDebate();
+                  }
+                }}
+                disabled={oradoresCaucus.length === 0}
+                title="Eliminar todos los oradores de debate"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.35rem 0.55rem',
+                  fontSize: '0.72rem',
+                  fontWeight: '600',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--danger-color)',
+                  backgroundColor: 'var(--danger-soft)',
+                  color: 'var(--danger-color)',
+                  cursor: oradoresCaucus.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: oradoresCaucus.length === 0 ? 0.45 : 1
+                }}
+              >
+                <Trash2 size={11} />
+                <span>{t('common.clearAll', 'Vaciar')}</span>
+              </button>
+
+              {caucusActivo?.activo && (
+                <button
+                  type="button"
+                  onClick={handleFinalizarDebate}
+                  title="Concluir el debate actual y regresar a la Pizarra de Mociones"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    padding: '0.35rem 0.6rem',
+                    fontSize: '0.72rem',
+                    fontWeight: '700',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--card-header-bg)',
+                    color: 'var(--text-color)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <StopCircle size={12} style={{ color: 'var(--warning-color)' }} />
+                  <span>{t('timers.endDebate', 'Finalizar')}</span>
+                </button>
               )}
             </div>
-
-            {/* Tema / Propósito */}
-            <div>
-              <label style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7, display: 'block', marginBottom: '0.25rem' }}>
-                {t('motions.topic', '3. Tema / Propósito del Debate *')}
-              </label>
-              <input
-                type="text"
-                placeholder={t('motions.topicPlaceholder', 'Ej. Estrategias de cooperación económica...')}
-                value={tema}
-                onChange={e => setTema(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.45rem 0.65rem',
-                  backgroundColor: 'var(--card-header-bg)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-color)',
-                  borderRadius: '6px',
-                  fontSize: '0.82rem',
-                  outline: 'none',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
           </div>
 
-          {/* Opciones Específicas: Turno del Proponente en Caucus Moderado */}
-          {esModerado && (
+          {/* Tarjeta de Resumen del Caucus Activo */}
+          {caucusActivo?.activo && (
             <div style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.06)',
-              border: '1px solid rgba(59, 130, 246, 0.2)',
-              borderRadius: '7px',
-              padding: '0.5rem 0.65rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.35rem'
-            }}>
-              <label style={{ fontSize: '0.7rem', fontWeight: '700', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <Mic size={12} /> {t('motions.speakerTurn', 'Turno de la delegación')} ({proponente || 'Proponente'}):
-              </label>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setPosicionProponente('Primero')}
-                  style={{
-                    flex: 1,
-                    padding: '0.35rem 0.5rem',
-                    backgroundColor: posicionProponente === 'Primero' ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
-                    color: posicionProponente === 'Primero' ? '#ffffff' : 'var(--text-color)',
-                    border: posicionProponente === 'Primero' ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '5px',
-                    fontSize: '0.74rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Mic size={13} />
-                  <span>{t('motions.speakFirst', 'Hablar Primero')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPosicionProponente('Ultimo')}
-                  style={{
-                    flex: 1,
-                    padding: '0.35rem 0.5rem',
-                    backgroundColor: posicionProponente === 'Ultimo' ? '#3b82f6' : 'rgba(255, 255, 255, 0.05)',
-                    color: posicionProponente === 'Ultimo' ? '#ffffff' : 'var(--text-color)',
-                    border: posicionProponente === 'Ultimo' ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '5px',
-                    fontSize: '0.74rem',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Hourglass size={13} />
-                  <span>{t('motions.speakLast', 'Hablar Al Final')}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Opciones Específicas: Modalidad de Consulta General */}
-          {esConsulta && (
-            <div style={{
-              backgroundColor: 'rgba(16, 185, 129, 0.06)',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
-              borderRadius: '7px',
-              padding: '0.5rem 0.65rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.35rem'
-            }}>
-              <label style={{ fontSize: '0.7rem', fontWeight: '700', color: '#6ee7b7', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <MessageSquare size={12} /> {t('motions.consultationMode', 'Modalidad de Consulta:')}
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
-                {[
-                  { id: 'Estándar', label: 'Estándar' },
-                  { id: 'Cadena / Ping-Pong', label: 'Ping-Pong' },
-                  { id: 'Moderada por el Proponente', label: 'Mod. País' }
-                ].map(v => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setVarianteConsulta(v.id)}
-                    style={{
-                      padding: '0.35rem 0.4rem',
-                      backgroundColor: varianteConsulta === v.id ? '#10b981' : 'rgba(255, 255, 255, 0.05)',
-                      color: varianteConsulta === v.id ? '#000000' : 'var(--text-color)',
-                      border: varianteConsulta === v.id ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '5px',
-                      fontSize: '0.72rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 4. Configuración de Tiempos y Presets (Compacto y Elegante) */}
-          <div style={{ display: 'grid', gridTemplateColumns: (!esTour && esModerado) ? '1fr 1fr' : '1fr', gap: '0.5rem' }}>
-            {/* Tiempo Total (excepto Tour de Table) */}
-            {tipo !== 'Tour de Table' && (
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '7px',
-                padding: '0.5rem 0.65rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.35rem'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.7rem', fontWeight: '700', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Clock size={12} style={{ color: '#38bdf8' }} /> {t('motions.totalDuration', 'Total')}
-                  </label>
-                  <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#38bdf8', fontFamily: 'monospace' }}>
-                    {tiempoTotalMin}m
-                  </span>
-                </div>
-
-                {/* Controles de Stepper */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setTiempoTotalMin(prev => Math.max(1, Number(prev) - 1))}
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '5px',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      color: 'var(--text-color)',
-                      fontSize: '0.9rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
-                  >
-                    -
-                  </button>
-
-                  <input
-                    type="number"
-                    min="1"
-                    max="90"
-                    value={tiempoTotalMin}
-                    onChange={e => setTiempoTotalMin(Math.max(1, Number(e.target.value)))}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      textAlign: 'center',
-                      padding: '0.25rem 0.2rem',
-                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      color: 'var(--text-color)',
-                      borderRadius: '5px',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      fontFamily: 'monospace'
-                    }}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setTiempoTotalMin(prev => Math.min(90, Number(prev) + 1))}
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '5px',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      color: 'var(--text-color)',
-                      fontSize: '0.9rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-
-                {/* Presets Rápidos */}
-                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'space-between' }}>
-                  {presetsTotalMin.map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setTiempoTotalMin(p)}
-                      style={{
-                        flex: 1,
-                        padding: '0.15rem 0',
-                        fontSize: '0.67rem',
-                        borderRadius: '4px',
-                        border: Number(tiempoTotalMin) === p ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
-                        backgroundColor: Number(tiempoTotalMin) === p ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.03)',
-                        color: Number(tiempoTotalMin) === p ? '#38bdf8' : 'inherit',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {p}m
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Tiempo por Orador (para Caucus Moderado o Tour de Table) */}
-            {(esModerado || esTour) && (
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '7px',
-                padding: '0.5rem 0.65rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.35rem'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.7rem', fontWeight: '700', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <Mic size={12} style={{ color: '#a855f7' }} /> {t('motions.speakerDuration', 'Orador')}
-                  </label>
-                  <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#c084fc', fontFamily: 'monospace' }}>
-                    {tiempoOradorSeg}s
-                  </span>
-                </div>
-
-                {/* Controles de Stepper */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setTiempoOradorSeg(prev => Math.max(10, Number(prev) - 5))}
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '5px',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      color: 'var(--text-color)',
-                      fontSize: '0.9rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
-                  >
-                    -
-                  </button>
-
-                  <input
-                    type="number"
-                    min="10"
-                    max="300"
-                    step="5"
-                    value={tiempoOradorSeg}
-                    onChange={e => setTiempoOradorSeg(Math.max(10, Number(e.target.value)))}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      textAlign: 'center',
-                      padding: '0.25rem 0.2rem',
-                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      color: 'var(--text-color)',
-                      borderRadius: '5px',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      fontFamily: 'monospace'
-                    }}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setTiempoOradorSeg(prev => Math.min(300, Number(prev) + 5))}
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '5px',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      color: 'var(--text-color)',
-                      fontSize: '0.9rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-
-                {/* Presets Rápidos */}
-                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'space-between' }}>
-                  {presetsOradorSeg.map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setTiempoOradorSeg(p)}
-                      style={{
-                        flex: 1,
-                        padding: '0.15rem 0',
-                        fontSize: '0.67rem',
-                        borderRadius: '4px',
-                        border: Number(tiempoOradorSeg) === p ? '1px solid #c084fc' : '1px solid rgba(255, 255, 255, 0.08)',
-                        backgroundColor: Number(tiempoOradorSeg) === p ? 'rgba(192, 132, 252, 0.2)' : 'rgba(255, 255, 255, 0.03)',
-                        color: Number(tiempoOradorSeg) === p ? '#c084fc' : 'inherit',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {p}s
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Banner de cálculo inteligente para Caucus Moderado */}
-          {esModerado && intervencionesEstimadas > 0 && (
-            <div style={{
-              backgroundColor: 'rgba(56, 189, 248, 0.08)',
-              border: '1px dashed rgba(56, 189, 248, 0.3)',
-              borderRadius: '6px',
-              padding: '0.35rem 0.65rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              padding: '0.45rem 0.65rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              fontSize: '0.72rem',
-              color: '#bae6fd'
+              gap: '0.5rem',
+              fontSize: '0.75rem',
+              flexShrink: 0
             }}>
-              <span><BarChart2 size={13} style={{ display: 'inline', marginRight: '0.35rem', verticalAlign: '-1px' }} />Capacidad estimada:</span>
-              <strong style={{ fontSize: '0.76rem', color: '#38bdf8' }}>
-                ~{intervencionesEstimadas} {t('motions.estimatedInterventions', 'intervenciones')}
-              </strong>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--accent-color)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  {caucusActivo.tipo}
+                </div>
+                <div style={{ fontWeight: '700', color: 'var(--text-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {caucusActivo.tema || 'Sin Tema Asignado'}
+                </div>
+              </div>
+              {caucusActivo.proponente && (
+                <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', flexShrink: 0 }}>
+                  Prop: <strong style={{ color: 'var(--text-color)' }}>{caucusActivo.proponente}</strong>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Botones de Envío / Cancelar */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
-            <button
-              type="button"
-              onClick={() => setMostrarForm(false)}
-              style={{
-                flex: 1,
-                padding: '0.5rem 0.75rem',
-                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: 'var(--text-color)',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'background 0.15s ease'
-              }}
-            >
-              {t('common.cancel', 'Cancelar')}
-            </button>
-
-            <button
-              type="submit"
-              disabled={!proponente || !tema.trim()}
-              style={{
-                flex: 2,
-                padding: '0.5rem 0.85rem',
-                background: (!proponente || !tema.trim())
-                  ? 'rgba(255, 255, 255, 0.1)'
-                  : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '0.82rem',
-                fontWeight: '800',
-                letterSpacing: '0.02em',
-                cursor: (!proponente || !tema.trim()) ? 'not-allowed' : 'pointer',
-                opacity: (!proponente || !tema.trim()) ? 0.5 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: (!proponente || !tema.trim()) ? 'none' : '0 3px 10px rgba(37, 99, 235, 0.35)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Plus size={14} /> {t('motions.addMotion', 'Guardar Moción')}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Lista / Tarjetas de Mociones con Drag & Drop y Adaptabilidad Total */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.55rem', paddingRight: '2px' }}>
-        {mociones.length === 0 ? (
-          <EmptyState
-            icon={MessageSquare}
-            title={t('motions.noMotionsTitle', 'Pizarra sin mociones')}
-            description={t('motions.noMotionsDesc', 'Registra mociones de caucus moderado, no moderado o consultas de debate.')}
-            actionLabel={!mostrarForm ? t('motions.createFirst', '+ Añadir Primera Moción') : undefined}
-            onAction={() => setMostrarForm(true)}
-            compact={true}
-          />
-        ) : (
-          mociones.map((m, idx) => {
-            const esAprobada = m.estado === 'Aprobada';
-            const esFallida = m.estado === 'Fallida';
-            const isDragging = draggedIndex === idx;
-            const isDragOver = dragOverIndex === idx;
-
-            const getTipoBadgeStyle = (tipoMocion = '') => {
-              if (tipoMocion.startsWith('Caucus Moderado')) {
-                return { bg: 'rgba(59, 130, 246, 0.12)', border: 'rgba(59, 130, 246, 0.4)', text: '#60a5fa' };
-              }
-              if (tipoMocion.startsWith('Caucus No Moderado')) {
-                return { bg: 'rgba(168, 85, 247, 0.12)', border: 'rgba(168, 85, 247, 0.4)', text: '#c084fc' };
-              }
-              if (tipoMocion.startsWith('Consulta General')) {
-                return { bg: 'rgba(20, 184, 166, 0.12)', border: 'rgba(20, 184, 166, 0.4)', text: '#2dd4bf' };
-              }
-              if (tipoMocion.startsWith('Tour de Table')) {
-                return { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.4)', text: '#fbbf24' };
-              }
-              return { bg: 'rgba(99, 102, 241, 0.12)', border: 'rgba(99, 102, 241, 0.4)', text: '#a5b4fc' };
-            };
-
-            const tipoBadge = getTipoBadgeStyle(m.tipo);
-
-            return (
-              <div
-                key={m.id}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/plain', idx.toString());
-                  e.dataTransfer.effectAllowed = 'move';
-                  setDraggedIndex(idx);
+          {/* Buscador Rápido de Delegación para Añadir al Debate */}
+          <div style={{ position: 'relative', flexShrink: 0 }} ref={dropdownOradorRef}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: 'var(--input-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              padding: '0.35rem 0.6rem',
+              gap: '0.4rem'
+            }}>
+              <Search size={13} style={{ color: 'var(--muted-text)', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder={t('timers.addDelegatePlaceholder', 'Añadir delegado al caucus...')}
+                value={busquedaOrador}
+                onChange={e => {
+                  setBusquedaOrador(e.target.value);
+                  setMostrarDropdownOrador(true);
                 }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                }}
-                onDragEnter={(e) => {
-                  e.preventDefault();
-                  if (draggedIndex !== idx) setDragOverIndex(idx);
-                }}
-                onDragLeave={() => {
-                  if (dragOverIndex === idx) setDragOverIndex(null);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const fromIndexStr = e.dataTransfer.getData('text/plain');
-                  const fromIndex = parseInt(fromIndexStr, 10);
-                  if (!isNaN(fromIndex) && fromIndex !== idx) {
-                    reordenarMociones(fromIndex, idx);
-                  }
-                  setDraggedIndex(null);
-                  setDragOverIndex(null);
-                }}
-                onDragEnd={() => {
-                  setDraggedIndex(null);
-                  setDragOverIndex(null);
-                }}
+                onFocus={() => setMostrarDropdownOrador(true)}
                 style={{
-                  backgroundColor: isDragging
-                    ? 'rgba(59, 130, 246, 0.15)'
-                    : (esAprobada ? 'rgba(34, 197, 94, 0.08)' : (esFallida ? 'rgba(239, 68, 68, 0.08)' : 'var(--card-header-bg, rgba(255, 255, 255, 0.03))')),
-                  border: isDragOver
-                    ? `2px dashed ${tipoBadge.border || '#3b82f6'}`
-                    : `1px solid ${isDragging ? '#3b82f6' : (esAprobada ? '#166534' : (esFallida ? '#991b1b' : 'var(--border-color, rgba(255, 255, 255, 0.08))'))}`,
-                  borderRadius: '9px',
-                  padding: '0.65rem 0.75rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.45rem',
-                  opacity: isDragging ? 0.45 : 1,
-                  transition: 'all 0.15s ease',
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.08)'
+                  width: '100%',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-color)',
+                  fontSize: '0.8rem',
+                  outline: 'none'
                 }}
-              >
-                {/* 1. Header: Tirador + Índice + País + Tipo de Moción + Eliminar */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '0.4rem',
-                  flexWrap: 'nowrap'
-                }}>
-                  {/* Izquierda: Grip, Orden, Bandera y País Proponente */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, flex: 1 }}>
-                    <div
-                      style={{ cursor: 'grab', display: 'flex', alignItems: 'center', opacity: 0.5, flexShrink: 0 }}
-                      title={t('motions.dragToReorder', 'Arrastrar para reordenar')}
-                    >
-                      <GripVertical size={15} />
-                    </div>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: '800',
-                      opacity: 0.6,
-                      fontFamily: 'monospace',
-                      flexShrink: 0
-                    }}>
-                      #{idx + 1}
-                    </span>
-                    <CountryFlag
-                      bandera={m.bandera || paises.find(p => p.nombre === m.proponente)?.bandera}
-                      nombre={m.proponente}
-                      size="xs"
-                    />
-                    <span style={{
-                      fontWeight: '700',
-                      fontSize: '0.86rem',
-                      color: 'var(--text-color)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      minWidth: 0
-                    }}>
-                      {m.proponente}
-                    </span>
-                    {m.posicionProponente === 'Ultimo' && (
-                      <span style={{
-                        fontSize: '0.62rem',
-                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                        border: '1px solid rgba(59, 130, 246, 0.3)',
-                        color: '#93c5fd',
-                        padding: '1px 5px',
-                        borderRadius: '3px',
-                        fontWeight: '700',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
-                        {t('motions.speaksLastBadge', 'Habla al final')}
-                      </span>
-                    )}
+              />
+              {busquedaOrador && (
+                <button
+                  type="button"
+                  onClick={() => setBusquedaOrador('')}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer', padding: 0 }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown flotante con delegaciones disponibles */}
+            {mostrarDropdownOrador && busquedaOrador.trim().length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                right: 0,
+                backgroundColor: 'var(--panel-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                maxHeight: '160px',
+                overflowY: 'auto',
+                zIndex: 100,
+                boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
+              }}>
+                {paisesDisponiblesOrador.length === 0 ? (
+                  <div style={{ padding: '0.55rem', textAlign: 'center', fontSize: '0.74rem', color: 'var(--muted-text)' }}>
+                    No hay delegaciones disponibles
                   </div>
+                ) : (
+                  paisesDisponiblesOrador.map(p => (
+                    <div
+                      key={p.id || p.nombre}
+                      onClick={() => {
+                        agregarOradorCaucus(p);
+                        setBusquedaOrador('');
+                        setMostrarDropdownOrador(false);
+                      }}
+                      style={{
+                        padding: '0.4rem 0.65rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        color: 'var(--text-color)',
+                        transition: 'background-color 0.1s ease'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--card-header-bg)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      <CountryFlag bandera={p.bandera} nombre={p.nombre} size="xs" />
+                      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nombre}</span>
+                      <Plus size={13} style={{ color: 'var(--accent-color)' }} />
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
-                  {/* Derecha: Badge de Modalidad y Botón Eliminar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
-                    <span style={{
-                      fontSize: '0.68rem',
-                      fontWeight: '800',
-                      padding: '2px 6px',
+          {/* Lista de Oradores (Drag & Drop) */}
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--border-radius, 6px)',
+            padding: '0.45rem',
+            backgroundColor: 'var(--card-header-bg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.35rem'
+          }}>
+            {oradoresCaucus.length === 0 ? (
+              <EmptyState
+                icon={Mic}
+                title={t('timers.noSpeakersTitle', 'Sin oradores en debate')}
+                description={
+                  mociones.length > 0 && !caucusActivo?.activo
+                    ? t('timers.noSpeakersDescWithMotions', `Hay ${mociones.length} ${mociones.length === 1 ? 'moción registrada' : 'mociones registradas'} en la Pizarra de Mociones.`)
+                    : t('timers.noSpeakersDesc', 'Añade delegaciones usando el buscador superior o haciendo clic en el panel derecho.')
+                }
+                actionLabel={mociones.length > 0 && !caucusActivo?.activo ? t('motions.goToBoard', 'Ir a Pizarra de Mociones') : undefined}
+                onAction={mociones.length > 0 && !caucusActivo?.activo ? () => setVistaActiva('mociones') : undefined}
+                compact={true}
+              />
+            ) : (
+              oradoresCaucus.map((o, idx) => {
+                const isDragging = draggedIndex === idx;
+                const isDragOver = dragOverIndex === idx;
+
+                return (
+                  <div
+                    key={o.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', idx.toString());
+                      e.dataTransfer.effectAllowed = 'move';
+                      setDraggedIndex(idx);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      if (draggedIndex !== idx) setDragOverIndex(idx);
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverIndex === idx) setDragOverIndex(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromIndexStr = e.dataTransfer.getData('text/plain');
+                      const fromIndex = parseInt(fromIndexStr, 10);
+                      if (!isNaN(fromIndex) && fromIndex !== idx) {
+                        reordenarOradoresDebate(fromIndex, idx);
+                      }
+                      setDraggedIndex(null);
+                      setDragOverIndex(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedIndex(null);
+                      setDragOverIndex(null);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.45rem 0.65rem',
+                      fontSize: '0.88rem',
+                      backgroundColor: isDragging
+                        ? 'var(--accent-soft)'
+                        : (idx === 0 ? 'var(--success-soft)' : (idx === 1 ? 'var(--accent-soft)' : 'var(--panel-color)')),
+                      border: isDragOver
+                        ? '2px dashed var(--accent-color)'
+                        : `1px solid ${isDragging ? 'var(--accent-color)' : (idx === 0 ? 'var(--success-color)' : (idx === 1 ? 'var(--accent-color)' : 'var(--subborder-color)'))}`,
                       borderRadius: '4px',
-                      backgroundColor: tipoBadge.bg,
-                      border: `1px solid ${tipoBadge.border}`,
-                      color: tipoBadge.text,
-                      letterSpacing: '0.02em',
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {m.tipo}
-                    </span>
+                      opacity: isDragging ? 0.5 : 1,
+                      cursor: 'grab',
+                      transition: 'background-color 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                      <GripVertical size={13} style={{ color: 'var(--muted-text)', cursor: 'grab', flexShrink: 0 }} title="Arrastrar para reordenar" />
+                      <span style={{
+                        fontSize: '0.78rem',
+                        fontWeight: '800',
+                        color: idx === 0 ? 'var(--success-color)' : (idx === 1 ? 'var(--accent-color)' : 'var(--muted-text)'),
+                        width: '20px',
+                        fontFamily: 'monospace'
+                      }}>
+                        #{idx + 1}
+                      </span>
+                      <CountryFlag bandera={o.bandera} nombre={o.nombre} size="xs" />
+                      <span style={{ fontWeight: idx === 0 ? '800' : '600', color: 'var(--text-color)', fontSize: '0.88rem' }}>
+                        {o.nombre}
+                      </span>
+                    </div>
 
-                    {eliminarMocion && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {idx === 0 && (
+                        <span style={{ backgroundColor: 'var(--success-solid)', color: '#ffffff', fontWeight: '800', fontSize: '0.62rem', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
+                          HABLANDO
+                        </span>
+                      )}
+                      {idx === 1 && (
+                        <span style={{ backgroundColor: 'var(--accent-color)', color: '#ffffff', fontWeight: '700', fontSize: '0.62rem', padding: '0.1rem 0.4rem', borderRadius: '3px' }}>
+                          SIGUIENTE
+                        </span>
+                      )}
+                      {o.esProponenteUltimo && (
+                        <span style={{ backgroundColor: 'var(--subborder-color)', color: 'var(--text-color)', fontWeight: '700', fontSize: '0.62rem', padding: '0.1rem 0.35rem', borderRadius: '3px' }}>
+                          PROPONENTE
+                        </span>
+                      )}
                       <button
                         type="button"
-                        onClick={() => eliminarMocion(m.id)}
+                        onClick={() => removerOradorCaucus(o.id)}
                         style={{
                           background: 'transparent',
                           border: 'none',
-                          color: 'var(--muted-text, #94a3b8)',
-                          borderRadius: '4px',
+                          color: 'var(--danger-color)',
+                          opacity: 0.75,
                           cursor: 'pointer',
                           padding: '2px',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          opacity: 0.6,
-                          transition: 'all 0.15s ease'
+                          borderRadius: '3px'
                         }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.color = '#ef4444';
-                          e.currentTarget.style.opacity = '1';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.color = 'var(--muted-text, #94a3b8)';
-                          e.currentTarget.style.opacity = '0.6';
-                        }}
-                        title={t('common.delete', 'Eliminar')}
+                        title="Quitar orador del debate"
                       >
                         <Trash2 size={13} />
                       </button>
-                    )}
+                    </div>
                   </div>
-                </div>
-
-                {/* 2. Cuerpo: Tema / Propósito */}
-                <div style={{
-                  fontSize: '0.85rem',
-                  fontWeight: '600',
-                  color: 'var(--text-color)',
-                  lineHeight: 1.35,
-                  wordBreak: 'break-word',
-                  padding: '0.15rem 0'
-                }}>
-                  {m.tema}
-                </div>
-
-                {/* 3. Footer: Métricas de Tiempo a la Izquierda y Botonera a la Derecha */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '0.5rem',
-                  flexWrap: 'wrap',
-                  paddingTop: '0.3rem',
-                  borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.05))'
-                }}>
-                  {/* Chips de Tiempo */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    flexWrap: 'wrap',
-                    fontSize: '0.7rem',
-                    color: 'var(--muted-text, #94a3b8)'
-                  }}>
-                    {m.tiempoTotal > 0 && (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                        backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                        padding: '2px 5px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        <Timer size={11} style={{ color: '#38bdf8' }} />
-                        <span>Total:</span>
-                        <strong style={{ color: 'var(--text-color)', fontFamily: 'monospace' }}>{formatMinutos(m.tiempoTotal)}</strong>
-                      </span>
-                    )}
-                    {m.tiempoOrador > 0 && (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                        backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                        padding: '2px 5px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        <Mic size={11} style={{ color: '#c084fc' }} />
-                        <span>Orador:</span>
-                        <strong style={{ color: 'var(--text-color)', fontFamily: 'monospace' }}>{m.tiempoOrador}s</strong>
-                      </span>
-                    )}
-                    {m.tiempoTotal > 0 && m.tiempoOrador > 0 && (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                        opacity: 0.8,
-                        fontSize: '0.67rem',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        <BarChart2 size={11} />
-                        <span>~{Math.floor(m.tiempoTotal / m.tiempoOrador)} turnos</span>
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Botones de Votación */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: 'auto' }}>
-                    <button
-                      type="button"
-                      onClick={() => votarMocion(m.id, 'Aprobada')}
-                      style={{
-                        background: esAprobada ? '#16a34a' : 'rgba(34, 197, 94, 0.12)',
-                        border: '1px solid rgba(34, 197, 94, 0.4)',
-                        color: esAprobada ? '#ffffff' : '#4ade80',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        padding: '0.3rem 0.55rem',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem',
-                        whiteSpace: 'nowrap',
-                        transition: 'all 0.15s ease'
-                      }}
-                      title={t('motions.approve', 'Aprobar Moción')}
-                    >
-                      <Check size={12} />
-                      <span>{t('motions.approve', 'Aprobar')}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => votarMocion(m.id, 'Fallida')}
-                      style={{
-                        background: esFallida ? '#dc2626' : 'rgba(239, 68, 68, 0.12)',
-                        border: '1px solid rgba(239, 68, 68, 0.4)',
-                        color: esFallida ? '#ffffff' : '#f87171',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        padding: '0.3rem 0.55rem',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem',
-                        whiteSpace: 'nowrap',
-                        transition: 'all 0.15s ease'
-                      }}
-                      title={t('motions.reject', 'Reprobar / Fallida')}
-                    >
-                      <X size={12} />
-                      <span>{t('motions.reject', 'Reprobar')}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

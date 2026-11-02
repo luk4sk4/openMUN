@@ -147,16 +147,17 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
     >
       <div
         style={{
-          backgroundColor: 'var(--card-bg, #1a1e29)',
-          border: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.12))',
-          borderRadius: '12px',
+          backgroundColor: 'var(--panel-color)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '10px',
           width: '100%',
           maxWidth: '620px',
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
-          color: 'var(--text-color, #ffffff)',
+          boxShadow: '0 16px 36px rgba(0, 0, 0, 0.4)',
+          color: 'var(--text-color)',
+          fontFamily: 'var(--font-family)',
           overflow: 'hidden'
         }}
         onClick={(e) => e.stopPropagation()}
@@ -165,11 +166,11 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
         <div
           style={{
             padding: '1rem 1.25rem',
-            borderBottom: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.08))',
+            borderBottom: '1px solid var(--subborder-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'var(--card-header-bg, rgba(255, 255, 255, 0.02))'
+            background: 'var(--card-header-bg)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -185,7 +186,7 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>
                 Gestor de Sesiones en Google Drive
               </h3>
-              <div style={{ fontSize: '0.72rem', color: 'var(--muted-text, #94a3b8)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2px' }}>
                 <Folder size={12} />
                 <span>Carpeta dedicada: <strong>Google Drive &gt; openMUN</strong></span>
               </div>
@@ -194,13 +195,14 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
 
           <button
             onClick={onClose}
+            aria-label="Cerrar modal"
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--muted-text, #94a3b8)',
+              color: 'var(--muted-text)',
               cursor: 'pointer',
-              padding: '4px',
-              borderRadius: '4px',
+              padding: '6px',
+              borderRadius: 'var(--border-radius, 6px)',
               display: 'flex',
               alignItems: 'center'
             }}
@@ -214,9 +216,9 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
           <div
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: mensajeFeedback.type === 'success' ? 'rgba(0, 172, 71, 0.15)' : 'rgba(234, 67, 53, 0.15)',
-              borderBottom: `1px solid ${mensajeFeedback.type === 'success' ? 'rgba(0, 172, 71, 0.3)' : 'rgba(234, 67, 53, 0.3)'}`,
-              color: mensajeFeedback.type === 'success' ? '#4ade80' : '#f87171',
+              backgroundColor: mensajeFeedback.type === 'success' ? 'var(--success-soft)' : 'var(--danger-soft)',
+              borderBottom: `1px solid ${mensajeFeedback.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)'}`,
+              color: mensajeFeedback.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
               fontSize: '0.78rem',
               display: 'flex',
               alignItems: 'center',
@@ -229,13 +231,13 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
         )}
 
         {/* Cuerpo */}
-        <div style={{ padding: '1.2rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Si no está conectado */}
           {!isDriveLinked ? (
             <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
               <HardDrive size={42} style={{ color: 'var(--muted-text)', marginBottom: '0.8rem', opacity: 0.7 }} />
-              <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '1rem' }}>Conecta tu cuenta de Google</h4>
-              <p style={{ fontSize: '0.8rem', color: 'var(--muted-text)', maxWidth: '420px', margin: '0 auto 1.2rem auto' }}>
+              <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '1rem', fontWeight: '700' }}>Conecta tu cuenta de Google</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--muted-text)', maxWidth: '420px', margin: '0 auto 1.2rem auto', lineHeight: '1.4' }}>
                 Guarda tus sesiones organizadas automáticamente en la carpeta <strong>openMUN/</strong> de tu Google Drive y continúa tu debate en cualquier dispositivo.
               </p>
               <button
@@ -245,14 +247,14 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  backgroundColor: '#2684fc',
-                  color: '#ffffff',
+                  backgroundColor: 'var(--btn-bg)',
+                  color: 'var(--btn-text)',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '0.6rem 1.2rem',
                   fontSize: '0.85rem',
                   fontWeight: '600',
-                  cursor: 'pointer'
+                  cursor: driveSyncStatus === 'connecting' ? 'wait' : 'pointer'
                 }}
               >
                 {driveSyncStatus === 'connecting' ? (
@@ -269,16 +271,16 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                 style={{
                   marginTop: '1.5rem',
                   padding: '0.75rem 1rem',
-                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.08))',
-                  borderRadius: '8px',
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--subborder-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   textAlign: 'left',
                   fontSize: '0.75rem',
-                  color: 'var(--muted-text, #94a3b8)',
+                  color: 'var(--muted-text)',
                   lineHeight: '1.4'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#38bdf8', fontWeight: '600', marginBottom: '0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--info-color)', fontWeight: '600', marginBottom: '0.25rem' }}>
                   <AlertCircle size={14} />
                   <span>Privacidad y uso de datos</span>
                 </div>
@@ -292,9 +294,9 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
               {/* Tarjeta de Cuenta y Estado de Sesión Activa */}
               <div
                 style={{
-                  backgroundColor: 'var(--card-sub-bg, rgba(255, 255, 255, 0.03))',
-                  border: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.08))',
-                  borderRadius: '8px',
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--subborder-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '0.8rem 1rem',
                   display: 'flex',
                   alignItems: 'center',
@@ -310,17 +312,17 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                   </div>
                   <div style={{
                     fontSize: '0.72rem',
-                    color: driveSyncStatus === 'conflict' ? '#f59e0b' : '#00ac47',
+                    color: driveSyncStatus === 'conflict' ? 'var(--warning-color)' : 'var(--success-color)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.3rem',
+                    gap: '0.35rem',
                     marginTop: '3px'
                   }}>
                     <span style={{
                       width: '6px',
                       height: '6px',
                       borderRadius: '50%',
-                      backgroundColor: driveSyncStatus === 'conflict' ? '#f59e0b' : '#00ac47'
+                      backgroundColor: driveSyncStatus === 'conflict' ? 'var(--warning-color)' : 'var(--success-color)'
                     }} />
                     <span>
                       {driveSyncStatus === 'conflict'
@@ -338,10 +340,10 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.35rem',
-                      background: 'rgba(38, 132, 252, 0.1)',
-                      border: '1px solid rgba(38, 132, 252, 0.3)',
-                      color: '#2684fc',
-                      borderRadius: '6px',
+                      background: 'var(--accent-soft)',
+                      border: '1px solid var(--accent-color)',
+                      color: 'var(--accent-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '5px 9px',
                       fontSize: '0.75rem',
                       fontWeight: '600',
@@ -362,13 +364,13 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.35rem',
-                      background: 'rgba(234, 67, 53, 0.08)',
-                      border: '1px solid rgba(234, 67, 53, 0.25)',
-                      color: '#ea4335',
-                      borderRadius: '6px',
+                      background: 'transparent',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--danger-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '5px 9px',
                       fontSize: '0.75rem',
-                      fontWeight: '600',
+                      fontWeight: '500',
                       cursor: 'pointer'
                     }}
                   >
@@ -382,16 +384,16 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
               {driveSyncStatus === 'conflict' && (
                 <div
                   style={{
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    border: '1px solid rgba(245, 158, 11, 0.35)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--warning-soft, rgba(203, 181, 141, 0.1))',
+                    border: '1px solid var(--warning-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.85rem 1rem',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.6rem'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f59e0b', fontWeight: '600', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--warning-color)', fontWeight: '600', fontSize: '0.85rem' }}>
                     <AlertCircle size={16} />
                     <span>Conflicto de Sincronización Detectado</span>
                   </div>
@@ -407,11 +409,11 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                         if (ok) showNotification('Sesión actualizada desde Google Drive', 'success');
                       }}
                       style={{
-                        padding: '5px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(38, 132, 252, 0.3)',
-                        backgroundColor: '#2684fc',
-                        color: '#fff',
+                        padding: '6px 12px',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        border: 'none',
+                        backgroundColor: 'var(--btn-bg)',
+                        color: 'var(--btn-text)',
                         fontSize: '0.75rem',
                         fontWeight: '600',
                         cursor: 'pointer'
@@ -427,11 +429,11 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                         if (ok) showNotification('Archivo en Drive sobrescrito con la sesión local', 'info');
                       }}
                       style={{
-                        padding: '5px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        padding: '6px 12px',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        border: '1px solid var(--warning-color)',
                         backgroundColor: 'transparent',
-                        color: '#f59e0b',
+                        color: 'var(--warning-color)',
                         fontSize: '0.75rem',
                         fontWeight: '600',
                         cursor: 'pointer'
@@ -458,11 +460,11 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                         alignItems: 'center',
                         gap: '0.3rem',
                         background: 'transparent',
-                        border: '1px solid var(--subborder-color)',
-                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--border-radius, 6px)',
                         color: 'var(--text-color)',
-                        padding: '4px 8px',
-                        fontSize: '0.74rem',
+                        padding: '5px 10px',
+                        fontSize: '0.75rem',
                         cursor: 'pointer'
                       }}
                     >
@@ -476,12 +478,12 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.3rem',
-                        background: '#2684fc',
+                        background: 'var(--btn-bg)',
                         border: 'none',
-                        borderRadius: '6px',
-                        color: '#ffffff',
-                        padding: '4px 10px',
-                        fontSize: '0.74rem',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        color: 'var(--btn-text)',
+                        padding: '5px 12px',
+                        fontSize: '0.75rem',
                         fontWeight: '600',
                         cursor: 'pointer'
                       }}
@@ -495,16 +497,16 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                 <form
                   onSubmit={handleGuardarNuevo}
                   style={{
-                    backgroundColor: 'rgba(38, 132, 252, 0.05)',
-                    border: '1px solid rgba(38, 132, 252, 0.3)',
-                    borderRadius: '8px',
-                    padding: '0.8rem',
+                    backgroundColor: 'var(--card-header-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '0.85rem 1rem',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.6rem'
                   }}
                 >
-                  <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#2684fc' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-color)' }}>
                     Guardar sesión actual como nuevo archivo en Drive
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -515,9 +517,9 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                       placeholder="Nombre del archivo (ej. comite_seguridad.json)"
                       style={{
                         flex: 1,
-                        background: 'var(--input-bg, rgba(0,0,0,0.3))',
-                        border: '1px solid var(--subborder-color)',
-                        borderRadius: '6px',
+                        background: 'var(--input-bg)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--border-radius, 6px)',
                         color: 'var(--text-color)',
                         padding: '6px 10px',
                         fontSize: '0.8rem'
@@ -528,11 +530,11 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                       type="submit"
                       disabled={loading || !nuevoNombre.trim()}
                       style={{
-                        background: '#00ac47',
-                        color: '#ffffff',
+                        background: 'var(--btn-bg)',
+                        color: 'var(--btn-text)',
                         border: 'none',
-                        borderRadius: '6px',
-                        padding: '6px 12px',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        padding: '6px 14px',
                         fontSize: '0.78rem',
                         fontWeight: '600',
                         cursor: 'pointer'
@@ -545,9 +547,9 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                       onClick={() => setMostrarCrear(false)}
                       style={{
                         background: 'transparent',
-                        color: 'var(--muted-text)',
-                        border: '1px solid var(--subborder-color)',
-                        borderRadius: '6px',
+                        color: 'var(--text-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '6px 10px',
                         fontSize: '0.78rem',
                         cursor: 'pointer'
@@ -572,9 +574,9 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                       <div
                         key={file.id}
                         style={{
-                          backgroundColor: isCurrent ? 'rgba(38, 132, 252, 0.08)' : 'var(--card-sub-bg, rgba(255, 255, 255, 0.02))',
-                          border: `1px solid ${isCurrent ? 'rgba(38, 132, 252, 0.4)' : 'var(--subborder-color, rgba(255, 255, 255, 0.06))'}`,
-                          borderRadius: '8px',
+                          backgroundColor: isCurrent ? 'var(--accent-soft)' : 'var(--card-header-bg)',
+                          border: `1px solid ${isCurrent ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+                          borderRadius: 'var(--border-radius, 6px)',
                           padding: '0.65rem 0.85rem',
                           display: 'flex',
                           alignItems: 'center',
@@ -584,7 +586,7 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
-                          <FileText size={18} style={{ color: isCurrent ? '#2684fc' : 'var(--muted-text)', flexShrink: 0 }} />
+                          <FileText size={18} style={{ color: isCurrent ? 'var(--accent-color)' : 'var(--muted-text)', flexShrink: 0 }} />
                           <div style={{ minWidth: 0 }}>
                             <div style={{
                               fontSize: '0.82rem',
@@ -601,17 +603,18 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                               {isCurrent && (
                                 <span style={{
                                   fontSize: '0.65rem',
-                                  padding: '1px 5px',
-                                  borderRadius: '4px',
-                                  backgroundColor: 'rgba(38, 132, 252, 0.2)',
-                                  color: '#2684fc',
+                                  padding: '1px 6px',
+                                  borderRadius: 'var(--border-radius, 6px)',
+                                  backgroundColor: 'var(--accent-soft)',
+                                  color: 'var(--accent-color)',
+                                  border: '1px solid var(--accent-color)',
                                   fontWeight: 'bold'
                                 }}>
                                   Activo
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)', display: 'flex', gap: '0.8rem', marginTop: '2px' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)', display: 'flex', gap: '0.8rem', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
                               <span>Modificado: {file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : '---'}</span>
                               {file.size && <span>{formatFileSize(file.size)}</span>}
                             </div>
@@ -627,11 +630,11 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                               display: 'flex',
                               alignItems: 'center',
                               gap: '0.3rem',
-                              background: 'rgba(0, 172, 71, 0.12)',
-                              border: '1px solid rgba(0, 172, 71, 0.3)',
-                              color: '#00ac47',
-                              borderRadius: '5px',
-                              padding: '4px 8px',
+                              background: 'var(--btn-bg)',
+                              border: 'none',
+                              color: 'var(--btn-text)',
+                              borderRadius: 'var(--border-radius, 6px)',
+                              padding: '5px 10px',
                               fontSize: '0.72rem',
                               fontWeight: '600',
                               cursor: 'pointer'
@@ -653,10 +656,10 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                                 alignItems: 'center',
                                 gap: '0.3rem',
                                 background: 'transparent',
-                                border: '1px solid var(--subborder-color)',
+                                border: '1px solid var(--border-color)',
                                 color: 'var(--text-color)',
-                                borderRadius: '5px',
-                                padding: '4px 8px',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                padding: '5px 9px',
                                 fontSize: '0.72rem',
                                 cursor: 'pointer'
                               }}
@@ -673,15 +676,14 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
                               display: 'flex',
                               alignItems: 'center',
                               background: 'transparent',
-                              border: '1px solid transparent',
+                              border: 'none',
                               color: 'var(--muted-text)',
-                              borderRadius: '5px',
-                              padding: '4px',
-                              cursor: 'pointer',
-                              opacity: 0.7
+                              borderRadius: 'var(--border-radius, 6px)',
+                              padding: '5px',
+                              cursor: 'pointer'
                             }}
-                            onMouseEnter={(e) => { e.currentTarget.style.color = '#ea4335'; e.currentTarget.style.opacity = '1'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted-text)'; e.currentTarget.style.opacity = '0.7'; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger-color)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted-text)'; }}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -699,25 +701,25 @@ const DriveSessionsModal = ({ isOpen, onClose }) => {
         <div
           style={{
             padding: '0.75rem 1.25rem',
-            borderTop: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.08))',
+            borderTop: '1px solid var(--subborder-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '1rem',
-            background: 'var(--card-header-bg, rgba(255, 255, 255, 0.02))'
+            background: 'var(--card-header-bg)'
           }}
         >
-          <div style={{ fontSize: '0.7rem', color: 'var(--muted-text, #94a3b8)', opacity: 0.85, maxWidth: '420px' }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)', opacity: 0.85, maxWidth: '420px', lineHeight: '1.4' }}>
             🔒 Tus datos navegan únicamente entre tu navegador y Google Drive. Ningún dato pasa por servidores externos.
           </div>
           <button
             onClick={onClose}
             style={{
               background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '6px',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius, 6px)',
               color: 'var(--text-color)',
-              padding: '5px 14px',
+              padding: '6px 14px',
               fontSize: '0.8rem',
               fontWeight: '500',
               cursor: 'pointer'

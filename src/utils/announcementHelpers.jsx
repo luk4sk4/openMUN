@@ -114,9 +114,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
       label: 'Toda la Conferencia',
       shortLabel: 'Global',
       icon: Globe,
-      badgeBg: 'rgba(59, 130, 246, 0.15)',
-      badgeColor: '#3b82f6',
-      badgeBorder: 'rgba(59, 130, 246, 0.35)'
+      badgeBg: 'var(--accent-soft)',
+      badgeColor: 'var(--accent-color)',
+      badgeBorder: 'var(--subborder-color)'
     };
   }
 
@@ -128,9 +128,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
       label: 'Organización / Secretaría',
       shortLabel: 'Organización',
       icon: Shield,
-      badgeBg: 'rgba(139, 92, 246, 0.15)',
-      badgeColor: '#8b5cf6',
-      badgeBorder: 'rgba(139, 92, 246, 0.35)'
+      badgeBg: 'rgba(139, 92, 246, 0.12)',
+      badgeColor: 'var(--info-color)',
+      badgeBorder: 'rgba(139, 92, 246, 0.25)'
     };
   }
 
@@ -139,9 +139,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
       label: 'Todo el Staff',
       shortLabel: 'Todo Staff',
       icon: Users,
-      badgeBg: 'rgba(245, 158, 11, 0.15)',
-      badgeColor: '#f59e0b',
-      badgeBorder: 'rgba(245, 158, 11, 0.35)'
+      badgeBg: 'rgba(245, 158, 11, 0.12)',
+      badgeColor: 'var(--warning-color)',
+      badgeBorder: 'rgba(245, 158, 11, 0.25)'
     };
   }
 
@@ -150,9 +150,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
       label: 'Todas las Mesas',
       shortLabel: 'Todas Mesas',
       icon: Landmark,
-      badgeBg: 'rgba(16, 185, 129, 0.15)',
-      badgeColor: '#10b981',
-      badgeBorder: 'rgba(16, 185, 129, 0.35)'
+      badgeBg: 'rgba(16, 185, 129, 0.12)',
+      badgeColor: 'var(--success-color)',
+      badgeBorder: 'rgba(16, 185, 129, 0.25)'
     };
   }
 
@@ -164,9 +164,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
       label: `Staff de ${nombre}`,
       shortLabel: `Staff (${nombre})`,
       icon: Users,
-      badgeBg: 'rgba(245, 158, 11, 0.15)',
-      badgeColor: '#f59e0b',
-      badgeBorder: 'rgba(245, 158, 11, 0.35)'
+      badgeBg: 'rgba(245, 158, 11, 0.12)',
+      badgeColor: 'var(--warning-color)',
+      badgeBorder: 'rgba(245, 158, 11, 0.25)'
     };
   }
 
@@ -178,9 +178,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
       label: `Mesa de ${nombre}`,
       shortLabel: `Mesa (${nombre})`,
       icon: Landmark,
-      badgeBg: 'rgba(16, 185, 129, 0.15)',
-      badgeColor: '#10b981',
-      badgeBorder: 'rgba(16, 185, 129, 0.35)'
+      badgeBg: 'rgba(16, 185, 129, 0.12)',
+      badgeColor: 'var(--success-color)',
+      badgeBorder: 'rgba(16, 185, 129, 0.25)'
     };
   }
 
@@ -193,9 +193,9 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
     label: `Sala de ${nombre}`,
     shortLabel: nombre,
     icon: Globe,
-    badgeBg: 'rgba(59, 130, 246, 0.15)',
-    badgeColor: '#3b82f6',
-    badgeBorder: 'rgba(59, 130, 246, 0.35)'
+    badgeBg: 'var(--accent-soft)',
+    badgeColor: 'var(--accent-color)',
+    badgeBorder: 'var(--subborder-color)'
   };
 };
 
@@ -218,22 +218,22 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
     const targetClean = targetName.trim();
     const targetLower = targetClean.toLowerCase();
 
-    let badgeBg = 'rgba(59, 130, 246, 0.15)';
-    let badgeColor = '#3b82f6';
-    let badgeBorder = 'rgba(59, 130, 246, 0.35)';
+    let badgeBg = 'var(--accent-soft)';
+    let badgeColor = 'var(--accent-color)';
+    let badgeBorder = 'var(--subborder-color)';
 
     if (targetLower.includes('urgente') || targetLower.includes('alerta') || targetLower.includes('seguridad')) {
-      badgeBg = 'rgba(239, 68, 68, 0.15)';
-      badgeColor = '#ef4444';
-      badgeBorder = 'rgba(239, 68, 68, 0.35)';
+      badgeBg = 'rgba(239, 68, 68, 0.12)';
+      badgeColor = 'var(--danger-color)';
+      badgeBorder = 'rgba(239, 68, 68, 0.3)';
     } else if (targetLower.includes('staff') || targetLower.includes('logistica') || targetLower.includes('logística')) {
-      badgeBg = 'rgba(245, 158, 11, 0.15)';
-      badgeColor = '#f59e0b';
-      badgeBorder = 'rgba(245, 158, 11, 0.35)';
+      badgeBg = 'rgba(245, 158, 11, 0.12)';
+      badgeColor = 'var(--warning-color)';
+      badgeBorder = 'rgba(245, 158, 11, 0.3)';
     } else if (targetLower.includes('secretar') || targetLower.includes('organizac') || targetLower.includes('presidencia')) {
-      badgeBg = 'rgba(139, 92, 246, 0.15)';
-      badgeColor = '#a855f7';
-      badgeBorder = 'rgba(139, 92, 246, 0.35)';
+      badgeBg = 'rgba(139, 92, 246, 0.12)';
+      badgeColor = 'var(--info-color)';
+      badgeBorder = 'rgba(139, 92, 246, 0.25)';
     }
 
     return (
@@ -246,7 +246,7 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
             fontSize: '0.74rem',
             fontWeight: '800',
             padding: '0.12rem 0.5rem',
-            borderRadius: '6px',
+            borderRadius: 'var(--border-radius, 6px)',
             backgroundColor: badgeBg,
             color: badgeColor,
             border: `1px solid ${badgeBorder}`,

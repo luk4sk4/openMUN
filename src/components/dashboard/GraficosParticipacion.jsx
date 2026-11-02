@@ -6,7 +6,7 @@ import {
   MessageSquare, 
   AlertCircle, 
   TrendingUp, 
-  Sparkles, 
+ 
   UserCheck, 
   UserX, 
   Award,
@@ -469,7 +469,7 @@ const GraficosParticipacion = ({
               borderRadius: '6px',
               border: '1px dashed rgba(34, 197, 94, 0.3)'
             }}>
-              <Sparkles size={20} />
+              <CheckCircle2 size={20} />
               <span>¡Excelente participación! Todas las delegaciones registradas han intervenido en la sesión.</span>
             </div>
           ) : (

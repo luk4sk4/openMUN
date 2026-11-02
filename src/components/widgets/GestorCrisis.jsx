@@ -20,7 +20,7 @@ import {
   Filter,
   Globe,
   Users,
-  Sparkles,
+
   Download,
   Upload,
   Send,
@@ -817,7 +817,7 @@ const GestorCrisis = () => {
               cursor: 'pointer'
             }}
           >
-            <Sparkles size={12} color="#eab308" />
+            <FileText size={12} />
             {t('crisis.templates', 'Plantillas')}
           </button>
 
@@ -1665,7 +1665,7 @@ const GestorCrisis = () => {
               fontSize: '0.85rem'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={15} color="#eab308" />
+                <FileText size={15} />
                 <span>{t('crisis.quickTemplates', 'Plantillas Rápidas de Crisis')}</span>
               </div>
               <button
@@ -1778,16 +1778,7 @@ const GestorCrisis = () => {
               borderBottom: '1px solid var(--border-color)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  padding: '6px',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Clock size={16} color="#ef4444" />
-                </div>
+
                 <div>
                   <div style={{ fontSize: '0.88rem', fontWeight: '800', color: 'var(--text-color)' }}>
                     {t('crisis.adjustClock', 'Ajuste Exacto del Reloj de Crisis')}

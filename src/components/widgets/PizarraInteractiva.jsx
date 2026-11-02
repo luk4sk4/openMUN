@@ -17,7 +17,7 @@ import {
   Check,
   ChevronDown,
   Layers,
-  Sparkles,
+  Target,
   Compass,
   Grid,
   FileImage,
@@ -94,7 +94,7 @@ const BLACKBOARD_SVG = createSvgDataUrl(`
 
 const PRESET_BACKGROUNDS = [
   { id: 'world_map', name: 'Mapa Mundial', icon: Compass, src: WORLD_MAP_SVG },
-  { id: 'tactical_radar', name: 'Radar de Crisis', icon: Sparkles, src: TACTICAL_RADAR_SVG },
+  { id: 'tactical_radar', name: 'Radar de Crisis', icon: Target, src: TACTICAL_RADAR_SVG },
   { id: 'blackboard', name: 'Pizarra Oscura', icon: Grid, src: BLACKBOARD_SVG },
   { id: 'whiteboard', name: 'Pizarra Blanca', icon: Layers, src: WHITEBOARD_SVG },
 ];

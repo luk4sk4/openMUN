@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 
@@ -22,7 +22,6 @@ import HomePage from '../components/pages/HomePage';
 // Componentes modulares del Dashboard
 import FullscreenMenu from '../components/dashboard/FullscreenMenu';
 import DashboardNavbar from '../components/dashboard/DashboardNavbar';
-import DashboardSubheader from '../components/dashboard/DashboardSubheader';
 import WidgetGridBoard from '../components/dashboard/WidgetGridBoard';
 
 // Contextos
@@ -33,7 +32,7 @@ import conferenceService from '../services/conferenceService';
 
 // Utilidades y Hooks personalizados
 import { validateSessionJSON } from '../utils/sessionValidator';
-import { TAB_CONFIG, DASHBOARD_TABS, updateDocumentTitleForTab } from '../utils/dashboardTabs';
+import { TAB_CONFIG, getDashboardTabs, updateDocumentTitleForTab } from '../utils/dashboardTabs';
 import { useFullscreen } from '../hooks/useFullscreen';
 import { useDashboardP2P } from '../hooks/useDashboardP2P';
 import { useGridLayout } from '../hooks/useGridLayout';
@@ -44,7 +43,15 @@ const Dashboard = () => {
   const fileInputRef = useRef(null);
 
   // Estados de navegación y UI
-  const [activeTab, setActiveTab] = useState('HOME');
+  const [activeTab, setActiveTab] = useState('COMIENZO');
+  const [isModular, setIsModular] = useState(false);
+  const tabs = getDashboardTabs(isModular);
+  const toggleModulation = () => {
+    setIsSidebarOpen(false);
+    setFocusedWidgetId(null);
+    setActiveTab(tab => tab === 'LIBRE' ? 'CRISIS' : tab === 'CRISIS' ? 'LIBRE' : tab);
+    setIsModular(value => !value);
+  };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLibreBanner, setShowLibreBanner] = useState(true);
   const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
@@ -73,7 +80,8 @@ const Dashboard = () => {
     onOpenCommandPalette: () => setIsCommandPaletteOpen(prev => !prev),
     onOpenQuickAddCountry: () => setIsQuickCountryOpen(prev => !prev),
     onSwitchTab: (tab) => setActiveTab(tab),
-    activeTab
+    activeTab,
+    tabs
   });
 
   // Hook de pantalla completa
@@ -116,7 +124,7 @@ const Dashboard = () => {
       if (pendingNav) {
         localStorage.removeItem('openmun_pending_nav_tab');
         if (TAB_CONFIG[pendingNav]) {
-          setActiveTab(pendingNav);
+          setActiveTab(pendingNav === 'LIBRE' ? 'CRISIS' : pendingNav);
         }
       }
     } catch (e) {
@@ -209,7 +217,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={themeStyles}>
+    <div className={isMaximized ? undefined : 'dashboard-shell'} style={{ ...themeStyles, ...(!isModular && { height: '100dvh', minHeight: 0, overflow: 'hidden' }) }}>
       {/* File Input Oculto para Cargar Sesión */}
       <input
         type="file"
@@ -248,6 +256,7 @@ const Dashboard = () => {
           isOpen={isCommandPaletteOpen}
           onClose={() => setIsCommandPaletteOpen(false)}
           activeTab={activeTab}
+          isModular={isModular}
           setActiveTab={setActiveTab}
           openLiveModal={p2p.openLiveModal}
           openExportModal={() => setIsExportModalOpen(true)}
@@ -270,7 +279,7 @@ const Dashboard = () => {
           activeTab={activeTab}
         />
         <WidgetSidebar
-          isOpen={isSidebarOpen}
+          isOpen={isModular && isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           currentLayout={widgets}
           activeTab={activeTab}
@@ -287,7 +296,7 @@ const Dashboard = () => {
         <FullscreenMenu
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          tabs={DASHBOARD_TABS}
+          tabs={tabs}
           toggleMaximize={toggleMaximize}
           isLight={isLight}
           nombreComite={session.nombreComite}
@@ -298,10 +307,16 @@ const Dashboard = () => {
       {!isMaximized && (
         <>
           <DashboardNavbar
+            nombreComite={session.nombreComite}
+            agendaSesion={session.agendaSesion}
+            tipoSesion={session.tipoSesion}
+            cambiarTipoSesion={session.cambiarTipoSesion}
+            isModular={isModular}
+            toggleModulation={toggleModulation}
             setIsSidebarOpen={setIsSidebarOpen}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            tabs={DASHBOARD_TABS}
+            tabs={tabs}
             isLight={isLight}
             toggleThemeMode={toggleThemeMode}
             toggleMaximize={toggleMaximize}
@@ -340,23 +355,14 @@ const Dashboard = () => {
           <PermanentCrisisBanner isLight={isLight} />
 
           {/* Banner Informativo de pestaña libre */}
-          {activeTab === 'LIBRE' && showLibreBanner && (
+          {isModular && activeTab === 'LIBRE' && showLibreBanner && (
             <LibreWidgetBanner
               isLight={isLight}
               onClose={() => setShowLibreBanner(false)}
             />
           )}
 
-          {/* Subheader Persistente de Comité + Agenda + Estado de Sesión (Fuera de HOME) */}
-          {activeTab !== 'HOME' && (
-            <DashboardSubheader
-              nombreComite={session.nombreComite}
-              agendaSesion={session.agendaSesion}
-              tipoSesion={session.tipoSesion}
-              cambiarTipoSesion={session.cambiarTipoSesion}
-              isLight={isLight}
-            />
-          )}
+
         </>
       )}
 
@@ -371,6 +377,8 @@ const Dashboard = () => {
         </main>
       ) : (
         <WidgetGridBoard
+          activeTab={activeTab}
+          fixedLayout={!isModular}
           boardRef={boardRef}
           boardW={boardW}
           boardHeight={boardHeight}

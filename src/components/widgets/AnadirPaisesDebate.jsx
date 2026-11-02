@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Timer, Check, Plus, X, Crown, Sparkles, UserPlus, Trash2, ArrowUpDown, GripVertical, Globe } from 'lucide-react';
+import { Search, Timer, Check, Plus, X, Crown, Trash2, ArrowUpDown, GripVertical, Globe } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
@@ -124,18 +124,6 @@ const AnadirPaisesDebate = () => {
         borderBottom: '1px solid var(--border-color)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            backgroundColor: 'rgba(249, 115, 22, 0.18)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fb923c'
-          }}>
-            <Timer size={16} />
-          </div>
           <div>
             <h3 style={{
               margin: 0,
@@ -192,9 +180,9 @@ const AnadirPaisesDebate = () => {
               fontSize: '0.72rem',
               fontWeight: '600',
               borderRadius: '6px',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              color: '#f87171',
+              border: '1px solid var(--danger-soft)',
+              backgroundColor: 'var(--danger-soft)',
+              color: 'var(--danger-color)',
               cursor: oradoresCaucus.length === 0 ? 'not-allowed' : 'pointer',
               opacity: oradoresCaucus.length === 0 ? 0.4 : 1
             }}
@@ -212,16 +200,16 @@ const AnadirPaisesDebate = () => {
             fontSize: '0.74rem',
             fontWeight: '700',
             borderRadius: '6px',
-            backgroundColor: 'rgba(249, 115, 22, 0.15)',
-            border: '1px solid rgba(249, 115, 22, 0.3)',
-            color: '#fb923c'
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'var(--muted-text)'
           }}>
             <Timer size={13} />
             <span>{t('timers.inDebate', 'En Debate:')}</span>
             <span style={{
               fontSize: '0.7rem',
-              backgroundColor: '#f97316',
-              color: '#ffffff',
+              backgroundColor: 'transparent',
+              color: 'var(--muted-text)',
               padding: '0.05rem 0.4rem',
               borderRadius: '9999px',
               fontWeight: '800'
@@ -238,7 +226,7 @@ const AnadirPaisesDebate = () => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          backgroundColor: 'var(--card-header-bg)',
+          backgroundColor: 'transparent',
           border: '1px solid var(--border-color)',
           borderRadius: '6px',
           padding: '0.35rem 0.65rem',
@@ -307,8 +295,8 @@ const AnadirPaisesDebate = () => {
                   fontSize: '0.7rem',
                   borderRadius: '4px',
                   border: filtroVista === 'DISPONIBLES' ? '1px solid #22c55e44' : '1px solid transparent',
-                  backgroundColor: filtroVista === 'DISPONIBLES' ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
-                  color: filtroVista === 'DISPONIBLES' ? '#22c55e' : 'var(--muted-text)',
+                  backgroundColor: filtroVista === 'DISPONIBLES' ? 'var(--success-soft)' : 'transparent',
+                  color: filtroVista === 'DISPONIBLES' ? 'var(--success-color)' : 'var(--muted-text)',
                   cursor: 'pointer',
                   fontWeight: filtroVista === 'DISPONIBLES' ? '700' : '500'
                 }}
@@ -355,12 +343,11 @@ const AnadirPaisesDebate = () => {
             margin: 'auto',
             textAlign: 'center',
             padding: '1.5rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px dashed var(--border-color)',
+            backgroundColor: 'transparent',
+            border: 'none',
             borderRadius: '8px',
             maxWidth: '340px'
           }}>
-            <Sparkles size={24} color="#f97316" style={{ marginBottom: '0.5rem' }} />
             <div style={{ fontSize: '0.86rem', fontWeight: '700', color: 'var(--text-color)', marginBottom: '0.3rem' }}>
               No hay delegaciones cargadas
             </div>
@@ -514,7 +501,7 @@ const AnadirPaisesDebate = () => {
                       {pais.nombre}
                     </span>
                     {pais.veto && (
-                      <Crown size={11} color="#eab308" style={{ flexShrink: 0 }} title="Miembro Permanente (P5)" />
+                      <Crown size={11} color="var(--warning-color)" style={{ flexShrink: 0 }} title="Miembro Permanente (P5)" />
                     )}
                   </div>
 

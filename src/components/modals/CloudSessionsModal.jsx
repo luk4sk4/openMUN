@@ -221,16 +221,17 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
     >
       <div
         style={{
-          backgroundColor: 'var(--card-bg, #1a1e29)',
-          border: '1px solid rgba(62, 207, 142, 0.3)',
-          borderRadius: '14px',
+          backgroundColor: 'var(--panel-color)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '10px',
           width: '100%',
           maxWidth: '640px',
           maxHeight: '88vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(62, 207, 142, 0.1)',
-          color: 'var(--text-color, #ffffff)',
+          boxShadow: '0 16px 36px rgba(0, 0, 0, 0.4)',
+          color: 'var(--text-color)',
+          fontFamily: 'var(--font-family)',
           overflow: 'hidden'
         }}
         onClick={(e) => e.stopPropagation()}
@@ -238,12 +239,12 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
         {/* Cabecera */}
         <div
           style={{
-            padding: '1.1rem 1.3rem',
-            borderBottom: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.08))',
+            padding: '1rem 1.25rem',
+            borderBottom: '1px solid var(--subborder-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'linear-gradient(180deg, rgba(62, 207, 142, 0.08) 0%, rgba(0, 0, 0, 0) 100%)'
+            background: 'var(--card-header-bg)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -251,35 +252,35 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
               style={{
                 width: '36px',
                 height: '36px',
-                borderRadius: '8px',
-                backgroundColor: 'rgba(62, 207, 142, 0.15)',
-                border: '1px solid rgba(62, 207, 142, 0.35)',
+                borderRadius: 'var(--border-radius, 6px)',
+                backgroundColor: 'var(--accent-soft)',
+                border: '1px solid var(--accent-color)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#3ecf8e'
+                color: 'var(--accent-color)'
               }}
             >
               <Database size={20} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 Respaldo en la Nube (Supabase)
                 <span
                   style={{
                     fontSize: '0.65rem',
-                    backgroundColor: 'rgba(62, 207, 142, 0.2)',
-                    color: '#3ecf8e',
-                    border: '1px solid rgba(62, 207, 142, 0.4)',
+                    backgroundColor: 'var(--accent-soft)',
+                    color: 'var(--accent-color)',
+                    border: '1px solid var(--accent-color)',
                     padding: '1px 6px',
-                    borderRadius: '4px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     fontWeight: '600'
                   }}
                 >
                   PostgreSQL
                 </span>
               </h3>
-              <div style={{ fontSize: '0.72rem', color: 'var(--muted-text, #94a3b8)', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                 {isCloudLinked && cloudAccount
                   ? `Conferencia activa: ${cloudAccount.name}`
                   : 'Sincroniza y guarda los comités de tu conferencia'}
@@ -290,13 +291,14 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
               onClick={onClose}
+              aria-label="Cerrar modal"
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--muted-text, #94a3b8)',
+                color: 'var(--muted-text)',
                 cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '4px',
+                padding: '6px',
+                borderRadius: 'var(--border-radius, 6px)',
                 display: 'flex',
                 alignItems: 'center'
               }}
@@ -311,9 +313,9 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
           <div
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: mensajeFeedback.type === 'success' ? 'rgba(62, 207, 142, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              borderBottom: `1px solid ${mensajeFeedback.type === 'success' ? 'rgba(62, 207, 142, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-              color: mensajeFeedback.type === 'success' ? '#3ecf8e' : '#f87171',
+              backgroundColor: mensajeFeedback.type === 'success' ? 'var(--success-soft)' : 'var(--danger-soft)',
+              borderBottom: `1px solid ${mensajeFeedback.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)'}`,
+              color: mensajeFeedback.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
               fontSize: '0.78rem',
               display: 'flex',
               alignItems: 'center',
@@ -326,16 +328,16 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
         )}
 
         {/* Contenido Principal */}
-        <div style={{ padding: '1.2rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {!isCloudLinked ? (
             /* Vista de Inicio de Sesión / Registro */
             <div style={{ maxWidth: '420px', width: '100%', margin: '0.5rem auto' }}>
               <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
-                <Cloud size={40} style={{ color: '#3ecf8e', marginBottom: '0.6rem', opacity: 0.9 }} />
+                <Cloud size={40} style={{ color: 'var(--accent-color)', marginBottom: '0.6rem', opacity: 0.9 }} />
                 <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.1rem', fontWeight: '700' }}>
                   {authMode === 'login' ? 'Conectar con tu Conferencia' : 'Crear Cuenta para la Conferencia'}
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)' }}>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: '1.4' }}>
                   {authMode === 'login'
                     ? 'Ingresa el nombre y contraseña de tu conferencia para acceder a todos los comités guardados.'
                     : 'Registra un nombre y contraseña para tu conferencia. Las contraseñas se hashean de forma segura.'}
@@ -347,8 +349,8 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '8px',
+                  backgroundColor: 'var(--card-header-bg)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '3px',
                   marginBottom: '1rem',
                   border: '1px solid var(--subborder-color)'
@@ -357,14 +359,15 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={() => setAuthMode('login')}
+                  aria-pressed={authMode === 'login'}
                   style={{
                     padding: '6px 10px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    backgroundColor: authMode === 'login' ? '#3ecf8e' : 'transparent',
-                    color: authMode === 'login' ? '#000000' : 'var(--muted-text)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    border: `1px solid ${authMode === 'login' ? 'var(--accent-color)' : 'transparent'}`,
+                    backgroundColor: authMode === 'login' ? 'var(--accent-soft)' : 'transparent',
+                    color: authMode === 'login' ? 'var(--accent-color)' : 'var(--muted-text)',
                     fontWeight: authMode === 'login' ? '700' : '500',
-                    fontSize: '0.78rem',
+                    fontSize: '0.8rem',
                     cursor: 'pointer',
                     transition: 'all 0.15s'
                   }}
@@ -374,14 +377,15 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={() => setAuthMode('register')}
+                  aria-pressed={authMode === 'register'}
                   style={{
                     padding: '6px 10px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    backgroundColor: authMode === 'register' ? '#3ecf8e' : 'transparent',
-                    color: authMode === 'register' ? '#000000' : 'var(--muted-text)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    border: `1px solid ${authMode === 'register' ? 'var(--accent-color)' : 'transparent'}`,
+                    backgroundColor: authMode === 'register' ? 'var(--accent-soft)' : 'transparent',
+                    color: authMode === 'register' ? 'var(--accent-color)' : 'var(--muted-text)',
                     fontWeight: authMode === 'register' ? '700' : '500',
-                    fontSize: '0.78rem',
+                    fontSize: '0.8rem',
                     cursor: 'pointer',
                     transition: 'all 0.15s'
                   }}
@@ -405,9 +409,9 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     style={{
                       width: '100%',
                       padding: '8px 12px',
-                      borderRadius: '7px',
-                      border: '1px solid var(--subborder-color)',
-                      backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-color)',
                       fontSize: '0.82rem',
                       boxSizing: 'border-box'
@@ -429,9 +433,9 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                       style={{
                         width: '100%',
                         padding: '8px 36px 8px 12px',
-                        borderRadius: '7px',
-                        border: '1px solid var(--subborder-color)',
-                        backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--input-bg)',
                         color: 'var(--text-color)',
                         fontSize: '0.82rem',
                         boxSizing: 'border-box'
@@ -440,6 +444,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
                       style={{
                         position: 'absolute',
                         right: '8px',
@@ -465,9 +470,9 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   style={{
                     marginTop: '0.4rem',
                     padding: '9px 16px',
-                    borderRadius: '7px',
-                    backgroundColor: '#3ecf8e',
-                    color: '#000000',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--btn-bg)',
+                    color: 'var(--btn-text)',
                     border: 'none',
                     fontWeight: '700',
                     fontSize: '0.85rem',
@@ -476,7 +481,6 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.5rem',
-                    boxShadow: '0 4px 12px rgba(62, 207, 142, 0.25)',
                     transition: 'all 0.15s ease'
                   }}
                 >
@@ -501,13 +505,13 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '0.75rem 1rem',
-                  borderRadius: '9px',
-                  backgroundColor: 'rgba(62, 207, 142, 0.08)',
-                  border: '1px solid rgba(62, 207, 142, 0.25)'
+                  borderRadius: 'var(--border-radius, 6px)',
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--subborder-color)'
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#3ecf8e', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--accent-color)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Conferencia Vinculada
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '1px' }}>
@@ -518,17 +522,24 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                       fontSize: '0.62rem',
                       fontWeight: '700',
                       padding: '1px 6px',
-                      borderRadius: '4px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       backgroundColor: cloudSyncStatus === 'syncing'
-                        ? 'rgba(59, 130, 246, 0.2)'
+                        ? 'var(--info-soft, rgba(166, 184, 201, 0.15))'
                         : cloudSyncStatus === 'error'
-                          ? 'rgba(239, 68, 68, 0.2)'
-                          : 'rgba(62, 207, 142, 0.2)',
+                          ? 'var(--danger-soft)'
+                          : 'var(--success-soft)',
                       color: cloudSyncStatus === 'syncing'
-                        ? '#3b82f6'
+                        ? 'var(--info-color)'
                         : cloudSyncStatus === 'error'
-                          ? '#ef4444'
-                          : '#3ecf8e'
+                          ? 'var(--danger-color)'
+                          : 'var(--success-color)',
+                      border: `1px solid ${
+                        cloudSyncStatus === 'syncing'
+                          ? 'var(--info-color)'
+                          : cloudSyncStatus === 'error'
+                            ? 'var(--danger-color)'
+                            : 'var(--success-color)'
+                      }`
                     }}>
                       {cloudSyncStatus === 'syncing'
                         ? 'Guardando cambios...'
@@ -555,13 +566,13 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     disabled={loading}
                     title="Actualizar lista de comités"
                     style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid var(--subborder-color)',
+                      background: 'transparent',
+                      border: '1px solid var(--border-color)',
                       color: 'var(--text-color)',
-                      borderRadius: '6px',
-                      padding: '6px 10px',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      padding: '5px 10px',
                       fontSize: '0.75rem',
-                      cursor: 'pointer',
+                      cursor: loading ? 'wait' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.35rem'
@@ -575,11 +586,11 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     onClick={desconectarCloud}
                     title="Cerrar sesión de la conferencia"
                     style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      color: '#ef4444',
-                      borderRadius: '6px',
-                      padding: '6px 10px',
+                      background: 'transparent',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--danger-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      padding: '5px 10px',
                       fontSize: '0.75rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -603,17 +614,15 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     justifyContent: 'center',
                     gap: '0.5rem',
                     padding: '0.7rem',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(62, 207, 142, 0.12)',
-                    border: '1px dashed rgba(62, 207, 142, 0.4)',
-                    color: '#3ecf8e',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--card-header-bg)',
+                    border: '1px dashed var(--accent-color)',
+                    color: 'var(--accent-color)',
                     fontSize: '0.82rem',
-                    fontWeight: '700',
+                    fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease'
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(62, 207, 142, 0.2)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(62, 207, 142, 0.12)'; }}
                 >
                   <Plus size={16} />
                   <span>Guardar Sesión Actual como Nuevo Comité en la Nube</span>
@@ -622,16 +631,16 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                 <form
                   onSubmit={handleGuardarNuevo}
                   style={{
-                    padding: '0.85rem',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(62, 207, 142, 0.3)',
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--card-header-bg)',
+                    border: '1px solid var(--border-color)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.6rem'
                   }}
                 >
-                  <label style={{ fontSize: '0.75rem', fontWeight: '600' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-color)' }}>
                     Nombre del Comité / Proyecto
                   </label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -645,9 +654,9 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                       style={{
                         flex: 1,
                         padding: '7px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--subborder-color)',
-                        backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--input-bg)',
                         color: 'var(--text-color)',
                         fontSize: '0.82rem'
                       }}
@@ -657,13 +666,13 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                       disabled={loading}
                       style={{
                         padding: '7px 14px',
-                        borderRadius: '6px',
-                        backgroundColor: '#3ecf8e',
-                        color: '#000',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: 'var(--btn-bg)',
+                        color: 'var(--btn-text)',
                         border: 'none',
-                        fontWeight: '700',
+                        fontWeight: '600',
                         fontSize: '0.78rem',
-                        cursor: 'pointer',
+                        cursor: loading ? 'wait' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.35rem'
@@ -677,10 +686,10 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                       onClick={() => setMostrarCrear(false)}
                       style={{
                         padding: '7px 10px',
-                        borderRadius: '6px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         backgroundColor: 'transparent',
-                        color: 'var(--muted-text)',
-                        border: '1px solid var(--subborder-color)',
+                        color: 'var(--text-color)',
+                        border: '1px solid var(--border-color)',
                         fontSize: '0.78rem',
                         cursor: 'pointer'
                       }}
@@ -707,9 +716,9 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     style={{
                       textAlign: 'center',
                       padding: '2.5rem 1rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                      backgroundColor: 'var(--card-header-bg)',
                       border: '1px dashed var(--subborder-color)',
-                      borderRadius: '8px'
+                      borderRadius: 'var(--border-radius, 6px)'
                     }}
                   >
                     <FileText size={32} style={{ color: 'var(--muted-text)', opacity: 0.5, marginBottom: '0.5rem' }} />
@@ -732,16 +741,16 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             padding: '0.65rem 0.85rem',
-                            borderRadius: '8px',
-                            backgroundColor: isActive ? 'rgba(62, 207, 142, 0.1)' : 'rgba(255, 255, 255, 0.03)',
-                            border: `1px solid ${isActive ? 'rgba(62, 207, 142, 0.35)' : 'var(--subborder-color)'}`,
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: isActive ? 'var(--accent-soft)' : 'var(--card-header-bg)',
+                            border: `1px solid ${isActive ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
                             transition: 'all 0.15s ease'
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', overflow: 'hidden' }}>
                             <div
                               style={{
-                                color: isActive ? '#3ecf8e' : 'var(--muted-text)',
+                                color: isActive ? 'var(--accent-color)' : 'var(--muted-text)',
                                 display: 'flex',
                                 alignItems: 'center'
                               }}
@@ -756,7 +765,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                                   whiteSpace: 'nowrap',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
-                                  color: isActive ? '#3ecf8e' : 'var(--text-color)'
+                                  color: 'var(--text-color)'
                                 }}
                               >
                                 {comite.name}
@@ -765,10 +774,11 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                                     style={{
                                       marginLeft: '0.5rem',
                                       fontSize: '0.65rem',
-                                      backgroundColor: 'rgba(62, 207, 142, 0.2)',
-                                      color: '#3ecf8e',
+                                      backgroundColor: 'var(--accent-soft)',
+                                      color: 'var(--accent-color)',
+                                      border: '1px solid var(--accent-color)',
                                       padding: '1px 5px',
-                                      borderRadius: '4px',
+                                      borderRadius: 'var(--border-radius, 6px)',
                                       fontWeight: '600'
                                     }}
                                   >
@@ -776,7 +786,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                                   </span>
                                 )}
                               </div>
-                              <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '2px' }}>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
                                 <Calendar size={11} />
                                 <span>{formatDate(comite.updated_at)}</span>
                               </div>
@@ -791,11 +801,11 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.3rem',
-                                backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                                color: '#60a5fa',
-                                border: '1px solid rgba(59, 130, 246, 0.35)',
-                                borderRadius: '5px',
-                                padding: '4px 8px',
+                                backgroundColor: 'var(--btn-bg)',
+                                color: 'var(--btn-text)',
+                                border: 'none',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                padding: '5px 10px',
                                 fontSize: '0.74rem',
                                 fontWeight: '600',
                                 cursor: 'pointer'
@@ -812,11 +822,11 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.3rem',
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                backgroundColor: 'transparent',
                                 color: 'var(--text-color)',
-                                border: '1px solid var(--subborder-color)',
-                                borderRadius: '5px',
-                                padding: '4px 8px',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                padding: '5px 9px',
                                 fontSize: '0.74rem',
                                 fontWeight: '500',
                                 cursor: 'pointer'
@@ -833,12 +843,14 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 backgroundColor: 'transparent',
-                                color: '#ef4444',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                borderRadius: '5px',
-                                padding: '4px 6px',
+                                color: 'var(--muted-text)',
+                                border: 'none',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                padding: '5px',
                                 cursor: 'pointer'
                               }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger-color)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted-text)'; }}
                             >
                               <Trash2 size={13} />
                             </button>

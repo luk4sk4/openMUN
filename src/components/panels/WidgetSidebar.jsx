@@ -23,7 +23,7 @@ import {
   ChevronLeft,
   Download,
   Layers,
-  Sparkles,
+
   Info,
   FlaskConical,
   Dices,
@@ -62,6 +62,16 @@ export const WIDGET_METADATA = {
     iconBg: 'rgba(16, 185, 129, 0.2)',
     iconColor: '#10b981',
     defaultColSpan: 7,
+    defaultRowSpan: 6,
+  },
+  panel_enmiendas_votacion: {
+    title: 'Debate & Votación de Enmiendas',
+    category: 'Votaciones',
+    description: 'Panel unificado con orador activo, presets de cronómetro y votación rápida (mano alzada / roll call) de enmiendas.',
+    icon: Vote,
+    iconBg: 'rgba(59, 130, 246, 0.2)',
+    iconColor: '#3b82f6',
+    defaultColSpan: 5,
     defaultRowSpan: 6,
   },
   mini_votacion: {
@@ -147,7 +157,7 @@ export const WIDGET_METADATA = {
   establecer_agenda: {
     title: 'Comité y Agenda',
     category: 'Configuración',
-    description: 'Configuración del nombre del comité y gestión ordenada de los puntos de agenda.',
+    description: 'Nombre del comité, puntos de agenda, turnos a favor y en contra y votación a mano alzada.',
     icon: FileCheck2,
     iconBg: 'rgba(59, 130, 246, 0.15)',
     iconColor: '#3b82f6',
@@ -261,6 +271,7 @@ export const CANONICAL_WIDGET_IDS = [
   'votacion_oficial',
   'mini_votacion',
   'controlador_enmiendas',
+  'panel_enmiendas_votacion',
   'mapa_votacion',
   'matriz_paises',
   'historico_delegaciones',
@@ -276,7 +287,7 @@ export const DEFAULT_WIDGETS_BY_TAB = {
   GSL: ['lista_oradores', 'cronometro_principal', 'anadir_paises_gsl'],
   DEBATE: ['cronometro_dual', 'pizarra_mociones', 'anadir_paises_debate'],
   VOTING: ['votacion_oficial', 'matriz_paises', 'mapa_votacion'],
-  ENMIENDAS: ['controlador_enmiendas', 'mini_votacion', 'cronometro_enmiendas'],
+  ENMIENDAS: ['controlador_enmiendas', 'panel_enmiendas_votacion', 'mini_votacion', 'cronometro_enmiendas'],
   INFO: ['matriz_paises', 'historico_delegaciones'],
   LIBRE: [],
   HOME: ['lista_oradores', 'cronometro_principal', 'pizarra_mociones', 'votacion_oficial', 'matriz_paises']
@@ -288,7 +299,7 @@ export const RECOMMENDED_BY_TAB = {
   GSL: ['lista_oradores', 'cronometro_principal', 'anadir_paises_gsl', 'selector_aleatorio'],
   DEBATE: ['cronometro_dual', 'pizarra_mociones', 'anadir_paises_debate', 'cronometro_enmiendas', 'cronometro_only_time', 'selector_aleatorio', 'gestor_crisis', 'tele_noticias', 'pizarra_interactiva', 'mapa_votacion'],
   VOTING: ['votacion_oficial', 'matriz_paises', 'mapa_votacion', 'mini_votacion'],
-  ENMIENDAS: ['controlador_enmiendas', 'mini_votacion', 'cronometro_enmiendas', 'votacion_oficial', 'matriz_paises'],
+  ENMIENDAS: ['controlador_enmiendas', 'panel_enmiendas_votacion', 'mini_votacion', 'cronometro_enmiendas', 'votacion_oficial', 'matriz_paises'],
   INFO: ['matriz_paises', 'historico_delegaciones'],
   LIBRE: ['mapa_votacion', 'pizarra_interactiva', 'selector_aleatorio', 'gestor_crisis', 'tele_noticias', 'controlador_enmiendas', 'mini_votacion', 'cronometro_enmiendas'],
   HOME: ['lista_oradores', 'cronometro_principal', 'pizarra_mociones', 'votacion_oficial', 'matriz_paises', 'mapa_votacion', 'pizarra_interactiva', 'establecer_agenda', 'selector_aleatorio', 'gestor_crisis', 'tele_noticias', 'controlador_enmiendas', 'mini_votacion', 'cronometro_enmiendas']
@@ -889,7 +900,7 @@ const WidgetSidebar = ({
                                 alignItems: 'center',
                                 gap: '0.2rem'
                               }}>
-                                <Sparkles size={10} /> Default {activeTab}
+                                <Check size={10} /> Default {activeTab}
                               </span>
                             )}
 

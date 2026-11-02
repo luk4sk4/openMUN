@@ -56,7 +56,7 @@ const BuzonPropuestasModal = ({
         {/* Cabecera */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--subborder-color)', paddingBottom: '0.6rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: '800' }}>
-            <Inbox size={18} color="#a855f7" />
+            <Inbox size={18} style={{ color: 'var(--accent-color)' }} />
             <span>Buzón de Propuestas Telemáticas de Delegados ({propuestas.length})</span>
           </div>
           <button

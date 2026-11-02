@@ -38,7 +38,7 @@ import {
   Map,
   Globe,
   Dices,
-  Sparkles,
+
   Sun,
   Moon,
   SkipForward,

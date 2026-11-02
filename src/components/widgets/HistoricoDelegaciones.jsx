@@ -5,18 +5,14 @@ import {
   Clock, 
   FileText, 
   CheckCircle, 
-  HelpCircle, 
   ArrowUpDown, 
   Calendar, 
   Layers, 
   Mic, 
-  TrendingUp, 
   Flame, 
-  RotateCcw, 
   FileSignature,
   BarChart3,
   Table,
-  Download,
   Loader2
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
@@ -24,7 +20,6 @@ import CountryFlag from '../common/CountryFlag';
 import GraficosParticipacion from '../dashboard/GraficosParticipacion';
 import { exportCommitteeReportPdf } from '../../utils/committeeReportGenerator';
 import { useTranslation } from 'react-i18next';
-import { useAccessibility } from '../../context/AccessibilityContext';
 
 // Helper para extraer la clave de fecha (YYYY-MM-DD) de cualquier entrada
 const extraerClaveFecha = (item) => {
@@ -77,7 +72,6 @@ const formatTiempoCompacto = (totalSeg) => {
 
 const HistoricoDelegaciones = () => {
   const { t } = useTranslation();
-  const { isLight } = useAccessibility();
   const { 
     paises, 
     mociones = [], 
@@ -97,7 +91,6 @@ const HistoricoDelegaciones = () => {
   const [exportandoPdf, setExportandoPdf] = useState(false);
 
   // Ajustes manuales persistentes por país y por día (o global)
-  // Formato: { "TODOS_idPais": 60, "2026-08-15_idPais": 120 }
   const [preguntasExtras, setPreguntasExtras] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('openmun_historico_preguntas_extra')) || {};
@@ -128,8 +121,6 @@ const HistoricoDelegaciones = () => {
   // 1. Detectar y ordenar cronológicamente todos los días registrados en el MUN
   const diasDisponibles = useMemo(() => {
     const fechasSet = new Set();
-
-    // Fecha de hoy como referencia disponible
     const hoyStr = new Date().toISOString().slice(0, 10);
     fechasSet.add(hoyStr);
 
@@ -214,7 +205,7 @@ const HistoricoDelegaciones = () => {
         (m.estado === 'Aprobada' || m.estado === 'Aprobado')
       ).length;
 
-      // Enmiendas en el filtro activo (propuestas y aprobadas/aceptadas)
+      // Enmiendas en el filtro activo
       const enmPresentadas = enmiendasFiltradas.filter(e => 
         (e.paisProponente || e.proponente || '').toLowerCase().trim() === nombreNorm
       ).length;
@@ -234,7 +225,7 @@ const HistoricoDelegaciones = () => {
       const segAjuste = tiempoExtra[getAdjustmentKey(p.id)] || 0;
       const segHablados = Math.max(0, segBase + segAjuste);
 
-      // Cómputo global histórico de tiempo (para mostrar contexto cuando se filtra un día)
+      // Cómputo global histórico de tiempo
       const todasIntervencionesPais = registroIntervenciones.filter(i => {
         const pNombre = (i.pais || i.orador || '').toLowerCase().trim();
         return pNombre === nombreNorm;
@@ -247,7 +238,6 @@ const HistoricoDelegaciones = () => {
       const preguntasManuales = preguntasExtras[getAdjustmentKey(p.id)] || 0;
       const totalPreguntas = preguntasBase + preguntasManuales;
 
-      // Cómputo exacto en minutos
       const minutosExactos = (segHablados / 60).toFixed(1);
 
       return {
@@ -284,7 +274,6 @@ const HistoricoDelegaciones = () => {
       return st === 'aceptada' || st === 'aceptado' || st === 'aprobada' || st === 'aprobado';
     }).length;
 
-    // Delegación con más tiempo hablado
     const paisLider = [...datosPaises].sort((a, b) => b.segHablados - a.segHablados)[0];
 
     return {
@@ -391,7 +380,7 @@ const HistoricoDelegaciones = () => {
       boxSizing: 'border-box',
       backgroundColor: 'var(--panel-color)',
       color: 'var(--text-color)',
-      fontFamily: 'var(--font-mono)',
+      fontFamily: 'var(--font-family)',
       gap: '0.75rem',
       overflow: 'hidden'
     }}>
@@ -402,79 +391,90 @@ const HistoricoDelegaciones = () => {
         justifyContent: 'space-between', 
         alignItems: 'center', 
         gap: '0.6rem',
-        borderBottom: '1px solid var(--border-color)', 
+        borderBottom: '1px solid var(--subborder-color)', 
         paddingBottom: '0.6rem' 
       }}>
         {/* Título */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{
-            background: 'rgba(255, 0, 127, 0.15)',
-            border: '1px solid rgba(255, 0, 127, 0.4)',
-            padding: '4px',
-            borderRadius: '6px',
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--border-color)',
+            padding: '5px',
+            borderRadius: 'var(--border-radius)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            color: 'var(--accent-color)'
           }}>
-            <Trophy size={16} color="#ff007f" />
+            <Trophy size={16} />
           </div>
           <div>
-            <div style={{ fontWeight: '800', fontSize: '0.92rem', letterSpacing: '0.04em', color: 'var(--text-color)' }}>
-              {t('history.titleUpper', 'HISTÓRICO DE DELEGACIONES')}
+            <div style={{ fontWeight: '650', fontSize: '0.95rem', letterSpacing: '0.01em', color: 'var(--text-color)' }}>
+              {t('history.titleUpper', 'Histórico de delegaciones')}
             </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', marginTop: '-2px' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '-1px' }}>
               {t('history.subtitle', 'Métricas de oratoria, intervenciones y mociones')}
             </div>
           </div>
         </div>
 
-        {/* Acciones: Alternar Vista + Exportar PDF / Excel + Buscador */}
+        {/* Acciones: Alternar Vista + Exportar PDF + Buscador */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           {/* Alternador de Vista (Tabla / Gráficos) */}
-          <div style={{
-            display: 'flex',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            padding: '2px'
-          }}>
+          <div 
+            role="tablist"
+            aria-label="Vista de histórico"
+            style={{
+              display: 'flex',
+              backgroundColor: 'var(--input-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: '2px'
+            }}
+          >
             <button
+              role="tab"
+              aria-selected={vistaModo === 'tabla'}
               onClick={() => setVistaModo('tabla')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.3rem',
-                padding: '0.25rem 0.55rem',
+                gap: '0.35rem',
+                padding: '0.25rem 0.6rem',
                 fontSize: '0.74rem',
-                fontWeight: '700',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: vistaModo === 'tabla' ? 'var(--btn-bg)' : 'transparent',
-                color: vistaModo === 'tabla' ? 'var(--btn-text)' : 'var(--muted-text)',
-                cursor: 'pointer'
+                fontWeight: vistaModo === 'tabla' ? '650' : '500',
+                border: vistaModo === 'tabla' ? '1px solid var(--accent-color)' : '1px solid transparent',
+                borderRadius: 'calc(var(--border-radius) - 2px)',
+                backgroundColor: vistaModo === 'tabla' ? 'var(--accent-soft)' : 'transparent',
+                color: vistaModo === 'tabla' ? 'var(--accent-color)' : 'var(--muted-text)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
               }}
             >
               <Table size={13} />
-              <span>Tabla</span>
+              <span>{t('history.table', 'Tabla')}</span>
             </button>
             <button
+              role="tab"
+              aria-selected={vistaModo === 'graficos'}
               onClick={() => setVistaModo('graficos')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.3rem',
-                padding: '0.25rem 0.55rem',
+                gap: '0.35rem',
+                padding: '0.25rem 0.6rem',
                 fontSize: '0.74rem',
-                fontWeight: '700',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: vistaModo === 'graficos' ? 'var(--btn-bg)' : 'transparent',
-                color: vistaModo === 'graficos' ? 'var(--btn-text)' : 'var(--muted-text)',
-                cursor: 'pointer'
+                fontWeight: vistaModo === 'graficos' ? '650' : '500',
+                border: vistaModo === 'graficos' ? '1px solid var(--accent-color)' : '1px solid transparent',
+                borderRadius: 'calc(var(--border-radius) - 2px)',
+                backgroundColor: vistaModo === 'graficos' ? 'var(--accent-soft)' : 'transparent',
+                color: vistaModo === 'graficos' ? 'var(--accent-color)' : 'var(--muted-text)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
               }}
             >
               <BarChart3 size={13} />
-              <span>Gráficos</span>
+              <span>{t('history.charts', 'Gráficos')}</span>
             </button>
           </div>
 
@@ -487,17 +487,19 @@ const HistoricoDelegaciones = () => {
               alignItems: 'center',
               gap: '0.35rem',
               padding: '0.3rem 0.65rem',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
-              color: '#f87171',
-              borderRadius: '6px',
+              backgroundColor: 'var(--input-bg)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-color)',
+              borderRadius: 'var(--border-radius)',
               fontSize: '0.74rem',
-              fontWeight: '700',
-              cursor: exportandoPdf ? 'not-allowed' : 'pointer'
+              fontWeight: '600',
+              cursor: exportandoPdf ? 'not-allowed' : 'pointer',
+              opacity: exportandoPdf ? 0.6 : 1,
+              transition: 'all 0.15s ease'
             }}
             title="Generar y descargar Acta Oficial de Sesión en PDF"
           >
-            {exportandoPdf ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+            {exportandoPdf ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} style={{ color: 'var(--accent-color)' }} />}
             <span>Acta (PDF)</span>
           </button>
 
@@ -505,18 +507,17 @@ const HistoricoDelegaciones = () => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: isLight ? '#ffffff' : 'rgba(5, 5, 8, 0.75)',
+            backgroundColor: 'var(--input-bg)',
             border: '1px solid var(--border-color)',
             borderRadius: 'var(--border-radius)',
             padding: '0.28rem 0.6rem',
             gap: '0.4rem',
-            maxWidth: '180px',
-            boxShadow: isLight ? 'inset 0 1px 2px rgba(0,0,0,0.04)' : 'none'
+            maxWidth: '180px'
           }}>
-            <Search size={13} style={{ opacity: 0.6, color: '#3b82f6' }} />
+            <Search size={13} style={{ color: 'var(--muted-text)', opacity: 0.8 }} />
             <input
               type="text"
-              placeholder={t('history.searchPlaceholder', 'BUSCAR PAÍS...')}
+              placeholder={t('history.searchPlaceholder', 'Buscar país...')}
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
               style={{
@@ -526,7 +527,7 @@ const HistoricoDelegaciones = () => {
                 outline: 'none',
                 fontSize: '0.74rem',
                 width: '100%',
-                fontFamily: 'var(--font-mono)'
+                fontFamily: 'inherit'
               }}
             />
           </div>
@@ -545,30 +546,29 @@ const HistoricoDelegaciones = () => {
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: '0.3rem', 
+          gap: '0.35rem', 
           fontSize: '0.72rem', 
           color: 'var(--muted-text)', 
-          fontWeight: '700',
+          fontWeight: '600',
           marginRight: '0.2rem',
           whiteSpace: 'nowrap'
         }}>
-          <Calendar size={13} style={{ color: '#ff007f' }} />
+          <Calendar size={13} style={{ color: 'var(--accent-color)' }} />
           <span>{t('history.filterByDay', 'FILTRAR POR DÍA:')}</span>
         </div>
 
         {/* Opción Global: Todos los Días */}
         <button
+          aria-pressed={diaSeleccionado === 'TODOS'}
           onClick={() => setDiaSeleccionado('TODOS')}
           style={{
             padding: '0.3rem 0.65rem',
-            borderRadius: '6px',
-            border: diaSeleccionado === 'TODOS' ? '1px solid #ff007f' : '1px solid var(--border-color)',
-            backgroundColor: diaSeleccionado === 'TODOS' 
-              ? (isLight ? '#fdf2f8' : 'rgba(255, 0, 127, 0.2)') 
-              : (isLight ? 'var(--card-header-bg)' : 'rgba(255, 255, 255, 0.03)'),
-            color: diaSeleccionado === 'TODOS' ? '#db2777' : 'var(--text-color)',
+            borderRadius: 'var(--border-radius)',
+            border: diaSeleccionado === 'TODOS' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+            backgroundColor: diaSeleccionado === 'TODOS' ? 'var(--accent-soft)' : 'var(--card-header-bg)',
+            color: diaSeleccionado === 'TODOS' ? 'var(--accent-color)' : 'var(--text-color)',
             fontSize: '0.72rem',
-            fontWeight: diaSeleccionado === 'TODOS' ? '800' : '500',
+            fontWeight: diaSeleccionado === 'TODOS' ? '650' : '500',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -587,17 +587,16 @@ const HistoricoDelegaciones = () => {
           return (
             <button
               key={dia.key}
+              aria-pressed={isSelected}
               onClick={() => setDiaSeleccionado(dia.key)}
               style={{
                 padding: '0.3rem 0.65rem',
-                borderRadius: '6px',
-                border: isSelected ? '1px solid #3b82f6' : '1px solid var(--border-color)',
-                backgroundColor: isSelected 
-                  ? (isLight ? '#eff6ff' : 'rgba(59, 130, 246, 0.22)') 
-                  : (isLight ? 'var(--card-header-bg)' : 'rgba(255, 255, 255, 0.03)'),
-                color: isSelected ? (isLight ? '#1d4ed8' : '#60a5fa') : 'var(--text-color)',
+                borderRadius: 'var(--border-radius)',
+                border: isSelected ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                backgroundColor: isSelected ? 'var(--accent-soft)' : 'var(--card-header-bg)',
+                color: isSelected ? 'var(--accent-color)' : 'var(--text-color)',
                 fontSize: '0.72rem',
-                fontWeight: isSelected ? '800' : '500',
+                fontWeight: isSelected ? '650' : '500',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -612,10 +611,10 @@ const HistoricoDelegaciones = () => {
                 <span style={{
                   fontSize: '0.58rem',
                   padding: '1px 4px',
-                  backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                  border: '1px solid rgba(34, 197, 94, 0.5)',
+                  backgroundColor: 'var(--success-soft)',
+                  border: '1px solid var(--success-color)',
                   borderRadius: '3px',
-                  color: '#22c55e',
+                  color: 'var(--success-color)',
                   fontWeight: '700'
                 }}>
                   {t('history.today', 'HOY')}
@@ -644,355 +643,386 @@ const HistoricoDelegaciones = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
             gap: '0.5rem'
           }}>
-        {/* KPI 1: Cómputo Total de Minutos Hablados */}
-        <div style={{
-          backgroundColor: 'rgba(255, 0, 127, 0.08)',
-          border: '1px solid rgba(255, 0, 127, 0.3)',
-          borderRadius: '8px',
-          padding: '0.5rem 0.7rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#ff007f', fontSize: '0.66rem', fontWeight: '700' }}>
-            <span>{t('history.totalTime', 'CÓMPUTO TOTAL TIEMPO')}</span>
-            <Clock size={13} />
-          </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: '900', color: '#ff007f', marginTop: '2px' }}>
-            {estadisticasGenerales.totalMinutos} <span style={{ fontSize: '0.72rem', fontWeight: '600' }}>min</span>
-          </div>
-          <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)' }}>
-            ≈ {formatTiempoLargo(estadisticasGenerales.totalSegundos)}
-          </div>
-        </div>
-
-        {/* KPI 2: Intervenciones Totales */}
-        <div style={{
-          backgroundColor: 'rgba(59, 130, 246, 0.08)',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
-          borderRadius: '8px',
-          padding: '0.5rem 0.7rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#60a5fa', fontSize: '0.66rem', fontWeight: '700' }}>
-            <span>{t('history.interventions', 'INTERVENCIONES')}</span>
-            <Mic size={13} />
-          </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: '900', color: '#60a5fa', marginTop: '2px' }}>
-            {estadisticasGenerales.totalIntervenciones}
-          </div>
-          <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)' }}>
-            {t('history.speechesRecorded', 'Oratorias registradas')}
-          </div>
-        </div>
-
-        {/* KPI 3: Mociones Aprobadas */}
-        <div style={{
-          backgroundColor: 'rgba(34, 197, 94, 0.08)',
-          border: '1px solid rgba(34, 197, 94, 0.25)',
-          borderRadius: '8px',
-          padding: '0.5rem 0.7rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#4ade80', fontSize: '0.66rem', fontWeight: '700' }}>
-            <span>{t('history.motionsPassed', 'MOCIONES APROBADAS')}</span>
-            <CheckCircle size={13} />
-          </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>
-            {estadisticasGenerales.totalMocionesAprobadas} <span style={{ fontSize: '0.72rem', fontWeight: '600', color: 'var(--muted-text)' }}>/ {estadisticasGenerales.totalMociones}</span>
-          </div>
-          <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)' }}>
-            {estadisticasGenerales.tasaAprobacion}% {t('history.approvalRate', 'de aprobación')}
-          </div>
-        </div>
-
-        {/* KPI 4: Enmiendas Aprobadas */}
-        <div style={{
-          backgroundColor: 'rgba(168, 85, 247, 0.08)',
-          border: '1px solid rgba(168, 85, 247, 0.25)',
-          borderRadius: '8px',
-          padding: '0.5rem 0.7rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#c084fc', fontSize: '0.66rem', fontWeight: '700' }}>
-            <span>{t('history.amendmentsPassed', 'ENMIENDAS APROBADAS')}</span>
-            <FileSignature size={13} />
-          </div>
-          <div style={{ fontSize: '1.05rem', fontWeight: '900', color: '#c084fc', marginTop: '2px' }}>
-            {estadisticasGenerales.totalEnmiendasAprobadas} <span style={{ fontSize: '0.72rem', fontWeight: '600', color: 'var(--muted-text)' }}>/ {estadisticasGenerales.totalEnmiendas}</span>
-          </div>
-          <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)' }}>
-            {estadisticasGenerales.tasaAprobacionEnmiendas}% {t('history.approvalRate', 'de aprobación')}
-          </div>
-        </div>
-
-        {/* KPI 5: Delegación Más Activa */}
-        <div style={{
-          backgroundColor: 'rgba(234, 179, 8, 0.08)',
-          border: '1px solid rgba(234, 179, 8, 0.25)',
-          borderRadius: '8px',
-          padding: '0.5rem 0.7rem',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#facc15', fontSize: '0.66rem', fontWeight: '700' }}>
-            <span>{t('history.leaderDelegation', 'DELEGACIÓN LÍDER')}</span>
-            <Flame size={13} />
-          </div>
-          {estadisticasGenerales.paisLider ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '3px' }}>
-              <CountryFlag bandera={estadisticasGenerales.paisLider.bandera} nombre={estadisticasGenerales.paisLider.nombre} size="xs" />
-              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.78rem', fontWeight: '800' }}>
-                {estadisticasGenerales.paisLider.nombre}
+            {/* KPI 1: Cómputo Total de Minutos Hablados */}
+            <div style={{
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: '0.55rem 0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--muted-text)', fontSize: '0.66rem', fontWeight: '650', letterSpacing: '0.04em' }}>
+                <span>{t('history.totalTime', 'CÓMPUTO TOTAL TIEMPO')}</span>
+                <Clock size={13} style={{ color: 'var(--accent-color)' }} />
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '650', color: 'var(--text-color)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
+                {estadisticasGenerales.totalMinutos} <span style={{ fontSize: '0.72rem', fontWeight: '500', color: 'var(--muted-text)' }}>min</span>
+              </div>
+              <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+                ≈ {formatTiempoLargo(estadisticasGenerales.totalSegundos)}
               </div>
             </div>
-          ) : (
-            <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-              {t('history.noInterventions', 'Sin intervenciones')}
+
+            {/* KPI 2: Intervenciones Totales */}
+            <div style={{
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: '0.55rem 0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--muted-text)', fontSize: '0.66rem', fontWeight: '650', letterSpacing: '0.04em' }}>
+                <span>{t('history.interventions', 'INTERVENCIONES')}</span>
+                <Mic size={13} style={{ color: 'var(--info-color)' }} />
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '650', color: 'var(--text-color)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
+                {estadisticasGenerales.totalIntervenciones}
+              </div>
+              <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)' }}>
+                {t('history.speechesRecorded', 'Oratorias registradas')}
+              </div>
             </div>
-          )}
-          <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', marginTop: '1px' }}>
-            {estadisticasGenerales.paisLider ? `${estadisticasGenerales.paisLider.minutosExactos} ${t('history.minSpoken', 'min hablados')}` : t('history.registerSpeakers', 'Registra oradores')}
+
+            {/* KPI 3: Mociones Aprobadas */}
+            <div style={{
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: '0.55rem 0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--muted-text)', fontSize: '0.66rem', fontWeight: '650', letterSpacing: '0.04em' }}>
+                <span>{t('history.motionsPassed', 'MOCIONES APROBADAS')}</span>
+                <CheckCircle size={13} style={{ color: 'var(--success-color)' }} />
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '650', color: 'var(--text-color)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
+                {estadisticasGenerales.totalMocionesAprobadas} <span style={{ fontSize: '0.72rem', fontWeight: '500', color: 'var(--muted-text)' }}>/ {estadisticasGenerales.totalMociones}</span>
+              </div>
+              <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+                {estadisticasGenerales.tasaAprobacion}% {t('history.approvalRate', 'de aprobación')}
+              </div>
+            </div>
+
+            {/* KPI 4: Enmiendas Aprobadas */}
+            <div style={{
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: '0.55rem 0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--muted-text)', fontSize: '0.66rem', fontWeight: '650', letterSpacing: '0.04em' }}>
+                <span>{t('history.amendmentsPassed', 'ENMIENDAS APROBADAS')}</span>
+                <FileSignature size={13} style={{ color: 'var(--info-color)' }} />
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: '650', color: 'var(--text-color)', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }}>
+                {estadisticasGenerales.totalEnmiendasAprobadas} <span style={{ fontSize: '0.72rem', fontWeight: '500', color: 'var(--muted-text)' }}>/ {estadisticasGenerales.totalEnmiendas}</span>
+              </div>
+              <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+                {estadisticasGenerales.tasaAprobacionEnmiendas}% {t('history.approvalRate', 'de aprobación')}
+              </div>
+            </div>
+
+            {/* KPI 5: Delegación Más Activa */}
+            <div style={{
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: '0.55rem 0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--muted-text)', fontSize: '0.66rem', fontWeight: '650', letterSpacing: '0.04em' }}>
+                <span>{t('history.leaderDelegation', 'DELEGACIÓN LÍDER')}</span>
+                <Flame size={13} style={{ color: 'var(--warning-color)' }} />
+              </div>
+              {estadisticasGenerales.paisLider ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '3px' }}>
+                  <CountryFlag bandera={estadisticasGenerales.paisLider.bandera} nombre={estadisticasGenerales.paisLider.nombre} size="xs" />
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.82rem', fontWeight: '650', color: 'var(--text-color)' }}>
+                    {estadisticasGenerales.paisLider.nombre}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
+                  {t('history.noInterventions', 'Sin intervenciones')}
+                </div>
+              )}
+              <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', marginTop: '1px', fontVariantNumeric: 'tabular-nums' }}>
+                {estadisticasGenerales.paisLider ? `${estadisticasGenerales.paisLider.minutosExactos} ${t('history.minSpoken', 'min hablados')}` : t('history.registerSpeakers', 'Registra oradores')}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* ─── TABLA DEL HISTÓRICO ─── */}
-      <div style={{ 
-        flex: 1, 
-        overflowY: 'auto', 
-        border: '1px solid var(--border-color)', 
-        borderRadius: 'var(--border-radius)',
-        backgroundColor: isLight ? 'var(--panel-color)' : 'rgba(0, 0, 0, 0.15)'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ backgroundColor: 'var(--card-header-bg)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 2 }}>
-              <th onClick={() => cambiarOrden('nombre')} style={{ padding: '0.45rem 0.65rem', cursor: 'pointer', userSelect: 'none' }}>
-                {t('history.country', 'PAÍS')} <ArrowUpDown size={11} style={{ display: 'inline', opacity: 0.7 }} />
-              </th>
-              <th onClick={() => cambiarOrden('mociones')} style={{ padding: '0.45rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
-                {t('history.motionsPresented', 'MOC. PRESENTADAS')} <ArrowUpDown size={11} style={{ display: 'inline', opacity: 0.7 }} />
-              </th>
-              <th onClick={() => cambiarOrden('aprobadas')} style={{ padding: '0.45rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
-                {t('history.motionsPassedCol', 'MOC. APROBADAS')} <ArrowUpDown size={11} style={{ display: 'inline', opacity: 0.7 }} />
-              </th>
-              <th onClick={() => cambiarOrden('enmiendas')} style={{ padding: '0.45rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
-                {t('history.amendmentsPresented', 'ENM. PROPUESTAS')} <ArrowUpDown size={11} style={{ display: 'inline', opacity: 0.7 }} />
-              </th>
-              <th onClick={() => cambiarOrden('enmiendasAprobadas')} style={{ padding: '0.45rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
-                {t('history.amendmentsPassedCol', 'ENM. APROBADAS')} <ArrowUpDown size={11} style={{ display: 'inline', opacity: 0.7 }} />
-              </th>
-              <th onClick={() => cambiarOrden('tiempoHablado')} style={{ padding: '0.45rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
-                {t('history.speakingTimeCol', 'TIEMPO HABLADO & MINUTOS')} <ArrowUpDown size={11} style={{ display: 'inline', opacity: 0.7 }} />
-              </th>
-              <th onClick={() => cambiarOrden('preguntas')} style={{ padding: '0.45rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>
-                {t('history.questionsCol', 'PREGUNTAS / POIs')} <ArrowUpDown size={11} style={{ display: 'inline', opacity: 0.7 }} />
-              </th>
-              <th style={{ padding: '0.45rem 0.6rem', textAlign: 'center', userSelect: 'none' }}>
-                {t('history.quotaCol', '% CUOTA')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {paisesOrdenados.length === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-text)' }}>
-                  {t('history.noMatchingDelegations', 'No hay delegaciones que coincidan con los filtros aplicados.')}
-                </td>
-              </tr>
-            ) : (
-              paisesOrdenados.map((p, idx) => {
-                const totalComiteSeg = estadisticasGenerales.totalSegundos;
-                const porcentajeCuota = totalComiteSeg > 0 ? Math.round((p.segHablados / totalComiteSeg) * 100) : 0;
-
-                return (
-                  <tr 
-                    key={p.id} 
-                    style={{
-                      borderBottom: '1px solid var(--subborder-color)',
-                      backgroundColor: idx % 2 === 0 ? 'transparent' : (isLight ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.015)'),
-                      transition: 'background-color 0.15s ease'
-                    }}
-                  >
-                    {/* País */}
-                    <td style={{ padding: '0.45rem 0.65rem', fontWeight: '600' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                        <CountryFlag bandera={p.bandera} nombre={p.nombre} size="sm" />
-                        <span style={{ fontSize: '0.8rem' }}>{p.nombre}</span>
-                      </div>
-                    </td>
-
-                    {/* Mociones Presentadas */}
-                    <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '700', color: p.mocPresentadas > 0 ? '#3b82f6' : 'inherit' }}>
-                      {p.mocPresentadas}
-                    </td>
-
-                    {/* Mociones Aprobadas */}
-                    <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '700', color: p.mocAprobadas > 0 ? '#22c55e' : 'inherit' }}>
-                      {p.mocAprobadas}
-                    </td>
-
-                    {/* Enmiendas Propuestas */}
-                    <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '700', color: p.enmPresentadas > 0 ? '#c084fc' : 'inherit' }}>
-                      {p.enmPresentadas}
-                    </td>
-
-                    {/* Enmiendas Aprobadas */}
-                    <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '700', color: p.enmAprobadas > 0 ? '#10b981' : 'inherit' }}>
-                      {p.enmAprobadas}
-                    </td>
-
-                    {/* Tiempo Hablado (Cómputo de minutos y ajuste manual) */}
-                    <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-                          <button
-                            onClick={() => handleAjustarTiempo(p.id, -60)}
-                            style={{
-                              background: 'transparent',
-                              border: '1px solid var(--border-color)',
-                              color: 'var(--text-color)',
-                              padding: '1px 3px',
-                              fontSize: '0.65rem',
-                              borderRadius: '3px',
-                              cursor: 'pointer'
-                            }}
-                            title="Restar 1 minuto"
-                          >
-                            -1m
-                          </button>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '65px' }}>
-                            <span style={{ 
-                              fontWeight: '800', 
-                              color: p.segHablados > 0 ? '#ff007f' : 'inherit', 
-                              fontSize: '0.82rem'
-                            }}>
-                              {formatTiempoCompacto(p.segHablados)}
-                            </span>
-                            <span style={{ fontSize: '0.64rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                              ({p.minutosExactos} min)
-                            </span>
-                          </div>
-
-                          <button
-                            onClick={() => handleAjustarTiempo(p.id, 60)}
-                            style={{
-                              background: 'rgba(255, 0, 127, 0.12)',
-                              border: '1px solid #ff007f',
-                              color: '#ff007f',
-                              padding: '1px 3px',
-                              fontSize: '0.65rem',
-                              borderRadius: '3px',
-                              cursor: 'pointer',
-                              fontWeight: '700'
-                            }}
-                            title="Sumar 1 minuto"
-                          >
-                            +1m
-                          </button>
-                        </div>
-
-                        {/* Si se filtra un día específico, mostrar el acumulado global de todos los días */}
-                        {diaSeleccionado !== 'TODOS' && (
-                          <span style={{ fontSize: '0.62rem', color: 'var(--muted-text)', marginTop: '1px' }}>
-                            {t('history.totalMUN', 'Total MUN')}: {formatTiempoCompacto(p.segGlobalHablados)}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Preguntas Realizadas / POIs */}
-                    <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-                        <button
-                          onClick={() => handleDecrementarPregunta(p.id)}
-                          style={{
-                            background: 'transparent',
-                            border: '1px solid var(--border-color)',
-                            color: 'var(--text-color)',
-                            width: '18px',
-                            height: '18px',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.75rem',
-                            lineHeight: 1
-                          }}
-                          title="Restar 1 pregunta"
-                        >
-                          -
-                        </button>
-                        <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>
-                          {p.totalPreguntas}
-                        </span>
-                        <button
-                          onClick={() => handleIncrementarPregunta(p.id)}
-                          style={{
-                            background: 'rgba(255, 0, 127, 0.15)',
-                            border: '1px solid #ff007f',
-                            color: '#ff007f',
-                            width: '18px',
-                            height: '18px',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.75rem',
-                            lineHeight: 1,
-                            fontWeight: '700'
-                          }}
-                          title="Sumar 1 pregunta realizada"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </td>
-
-                    {/* Cuota de participación (%) */}
-                    <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'center' }}>
-                        <div style={{
-                          width: '45px',
-                          height: '6px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                          borderRadius: '3px',
-                          overflow: 'hidden'
-                        }}>
-                          <div style={{
-                            width: `${Math.min(100, porcentajeCuota)}%`,
-                            height: '100%',
-                            backgroundColor: porcentajeCuota > 15 ? '#ff007f' : '#3b82f6',
-                            borderRadius: '3px',
-                            transition: 'width 0.3s ease'
-                          }} />
-                        </div>
-                        <span style={{ fontSize: '0.68rem', fontWeight: '700', minWidth: '25px', textAlign: 'right' }}>
-                          {porcentajeCuota}%
-                        </span>
-                      </div>
+          {/* ─── TABLA DEL HISTÓRICO ─── */}
+          <div style={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: 'var(--border-radius)',
+            backgroundColor: 'transparent'
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'var(--card-header-bg)', borderBottom: '1px solid var(--border-color)', position: 'sticky', top: 0, zIndex: 2 }}>
+                  <th onClick={() => cambiarOrden('nombre')} style={{ padding: '0.5rem 0.65rem', cursor: 'pointer', userSelect: 'none', color: columnaOrden === 'nombre' ? 'var(--accent-color)' : 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span>{t('history.country', 'PAÍS')}</span>
+                      <ArrowUpDown size={11} style={{ opacity: columnaOrden === 'nombre' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th onClick={() => cambiarOrden('mociones')} style={{ padding: '0.5rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: columnaOrden === 'mociones' ? 'var(--accent-color)' : 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                      <span>{t('history.motionsPresented', 'MOC. PRESENTADAS')}</span>
+                      <ArrowUpDown size={11} style={{ opacity: columnaOrden === 'mociones' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th onClick={() => cambiarOrden('aprobadas')} style={{ padding: '0.5rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: columnaOrden === 'aprobadas' ? 'var(--accent-color)' : 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                      <span>{t('history.motionsPassedCol', 'MOC. APROBADAS')}</span>
+                      <ArrowUpDown size={11} style={{ opacity: columnaOrden === 'aprobadas' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th onClick={() => cambiarOrden('enmiendas')} style={{ padding: '0.5rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: columnaOrden === 'enmiendas' ? 'var(--accent-color)' : 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                      <span>{t('history.amendmentsPresented', 'ENM. PROPUESTAS')}</span>
+                      <ArrowUpDown size={11} style={{ opacity: columnaOrden === 'enmiendas' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th onClick={() => cambiarOrden('enmiendasAprobadas')} style={{ padding: '0.5rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: columnaOrden === 'enmiendasAprobadas' ? 'var(--accent-color)' : 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                      <span>{t('history.amendmentsPassedCol', 'ENM. APROBADAS')}</span>
+                      <ArrowUpDown size={11} style={{ opacity: columnaOrden === 'enmiendasAprobadas' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th onClick={() => cambiarOrden('tiempoHablado')} style={{ padding: '0.5rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: columnaOrden === 'tiempoHablado' ? 'var(--accent-color)' : 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                      <span>{t('history.speakingTimeCol', 'TIEMPO HABLADO')}</span>
+                      <ArrowUpDown size={11} style={{ opacity: columnaOrden === 'tiempoHablado' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th onClick={() => cambiarOrden('preguntas')} style={{ padding: '0.5rem 0.6rem', textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: columnaOrden === 'preguntas' ? 'var(--accent-color)' : 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                      <span>{t('history.questionsCol', 'PREGUNTAS / POIs')}</span>
+                      <ArrowUpDown size={11} style={{ opacity: columnaOrden === 'preguntas' ? 1 : 0.4 }} />
+                    </div>
+                  </th>
+                  <th style={{ padding: '0.5rem 0.6rem', textAlign: 'center', userSelect: 'none', color: 'var(--muted-text)', fontWeight: '650', letterSpacing: '0.03em' }}>
+                    {t('history.quotaCol', '% CUOTA')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {paisesOrdenados.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--muted-text)' }}>
+                      {t('history.noMatchingDelegations', 'No hay delegaciones que coincidan con los filtros aplicados.')}
                     </td>
                   </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
-  )}
-</div>
+                ) : (
+                  paisesOrdenados.map((p) => {
+                    const totalComiteSeg = estadisticasGenerales.totalSegundos;
+                    const porcentajeCuota = totalComiteSeg > 0 ? Math.round((p.segHablados / totalComiteSeg) * 100) : 0;
+
+                    return (
+                      <tr 
+                        key={p.id} 
+                        style={{
+                          borderBottom: '1px solid var(--subborder-color)',
+                          transition: 'background-color 0.15s ease'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--card-hover)'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        {/* País */}
+                        <td style={{ padding: '0.45rem 0.65rem', fontWeight: '600' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                            <CountryFlag bandera={p.bandera} nombre={p.nombre} size="sm" />
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-color)' }}>{p.nombre}</span>
+                          </div>
+                        </td>
+
+                        {/* Mociones Presentadas */}
+                        <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '600', fontVariantNumeric: 'tabular-nums', color: p.mocPresentadas > 0 ? 'var(--text-color)' : 'var(--muted-text)' }}>
+                          {p.mocPresentadas}
+                        </td>
+
+                        {/* Mociones Aprobadas */}
+                        <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '600', fontVariantNumeric: 'tabular-nums', color: p.mocAprobadas > 0 ? 'var(--success-color)' : 'var(--muted-text)' }}>
+                          {p.mocAprobadas}
+                        </td>
+
+                        {/* Enmiendas Propuestas */}
+                        <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '600', fontVariantNumeric: 'tabular-nums', color: p.enmPresentadas > 0 ? 'var(--text-color)' : 'var(--muted-text)' }}>
+                          {p.enmPresentadas}
+                        </td>
+
+                        {/* Enmiendas Aprobadas */}
+                        <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: '600', fontVariantNumeric: 'tabular-nums', color: p.enmAprobadas > 0 ? 'var(--success-color)' : 'var(--muted-text)' }}>
+                          {p.enmAprobadas}
+                        </td>
+
+                        {/* Tiempo Hablado (Cómputo de minutos y ajuste manual) */}
+                        <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                              <button
+                                onClick={() => handleAjustarTiempo(p.id, -60)}
+                                style={{
+                                  background: 'var(--input-bg)',
+                                  border: '1px solid var(--border-color)',
+                                  color: 'var(--muted-text)',
+                                  padding: '1px 4px',
+                                  fontSize: '0.65rem',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title="Restar 1 minuto"
+                                aria-label="Restar 1 minuto"
+                              >
+                                -1m
+                              </button>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '65px' }}>
+                                <span style={{ 
+                                  fontWeight: '650', 
+                                  color: p.segHablados > 0 ? 'var(--text-color)' : 'var(--muted-text)', 
+                                  fontSize: '0.82rem',
+                                  fontVariantNumeric: 'tabular-nums'
+                                }}>
+                                  {formatTiempoCompacto(p.segHablados)}
+                                </span>
+                                <span style={{ fontSize: '0.64rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+                                  ({p.minutosExactos} min)
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => handleAjustarTiempo(p.id, 60)}
+                                style={{
+                                  background: 'var(--input-bg)',
+                                  border: '1px solid var(--border-color)',
+                                  color: 'var(--accent-color)',
+                                  padding: '1px 4px',
+                                  fontSize: '0.65rem',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer',
+                                  fontWeight: '600',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title="Sumar 1 minuto"
+                                aria-label="Sumar 1 minuto"
+                              >
+                                +1m
+                              </button>
+                            </div>
+
+                            {/* Si se filtra un día específico, mostrar el acumulado global de todos los días */}
+                            {diaSeleccionado !== 'TODOS' && (
+                              <span style={{ fontSize: '0.62rem', color: 'var(--muted-text)', marginTop: '1px', fontVariantNumeric: 'tabular-nums' }}>
+                                {t('history.totalMUN', 'Total MUN')}: {formatTiempoCompacto(p.segGlobalHablados)}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Preguntas Realizadas / POIs */}
+                        <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                            <button
+                              onClick={() => handleDecrementarPregunta(p.id)}
+                              style={{
+                                background: 'var(--input-bg)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--muted-text)',
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '3px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.75rem',
+                                lineHeight: 1,
+                                transition: 'all 0.15s ease'
+                              }}
+                              title="Restar 1 pregunta"
+                              aria-label="Restar 1 pregunta"
+                            >
+                              -
+                            </button>
+                            <span style={{ fontWeight: '600', minWidth: '20px', textAlign: 'center', fontVariantNumeric: 'tabular-nums', color: p.totalPreguntas > 0 ? 'var(--text-color)' : 'var(--muted-text)' }}>
+                              {p.totalPreguntas}
+                            </span>
+                            <button
+                              onClick={() => handleIncrementarPregunta(p.id)}
+                              style={{
+                                background: 'var(--input-bg)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--accent-color)',
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '3px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.75rem',
+                                lineHeight: 1,
+                                fontWeight: '700',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title="Sumar 1 pregunta realizada"
+                              aria-label="Sumar 1 pregunta realizada"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Cuota de participación (%) */}
+                        <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center' }}>
+                            <div style={{
+                              width: '45px',
+                              height: '5px',
+                              backgroundColor: 'var(--subborder-color)',
+                              borderRadius: '3px',
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                width: `${Math.min(100, porcentajeCuota)}%`,
+                                height: '100%',
+                                backgroundColor: 'var(--accent-color)',
+                                borderRadius: '3px',
+                                transition: 'width 0.3s ease'
+                              }} />
+                            </div>
+                            <span style={{ fontSize: '0.7rem', fontWeight: '600', minWidth: '25px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--muted-text)' }}>
+                              {porcentajeCuota}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 

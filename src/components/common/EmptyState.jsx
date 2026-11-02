@@ -17,7 +17,7 @@ const EmptyState = ({
 }) => {
   return (
     <div
-      className="anim-fade-scale"
+      className="anim-fade-scale empty-state"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -32,9 +32,9 @@ const EmptyState = ({
         ...style
       }}
     >
-      {/* Icono con halo brillante sutil */}
+      {/* Decorative icon outside dashboard widgets. */}
       {Icon && (
-        <div
+        <div className="empty-state-decoration"
           style={{
             width: compact ? '40px' : '56px',
             height: compact ? '40px' : '56px',

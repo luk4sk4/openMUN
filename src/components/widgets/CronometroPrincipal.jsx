@@ -192,24 +192,56 @@ const CronometroPrincipal = () => {
       color: 'var(--text-color)',
     }}>
       {/* Header Orador con Máxima Visibilidad y Vista Previa del Siguiente Orador */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.6rem', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <CountryFlag bandera={oradorActual.bandera} nombre={oradorActual.nombre} size="xl" />
-          <div>
-            <div style={{ fontSize: '0.68rem', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>
-              {t('timers.currentSpeaker', 'Orador Actual')}
-            </div>
-            <div style={{ fontWeight: '800', fontSize: '1.15rem', color: 'var(--text-color)', lineHeight: 1.2 }}>
-              {oradorActual.nombre}
-            </div>
-            {oradoresCola.length > 1 && (
-              <div style={{ fontSize: '0.72rem', opacity: 0.65, marginTop: '3px', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <span>{t('timers.nextLabel', 'Siguiente')}:</span>
-                <CountryFlag bandera={oradoresCola[1].bandera} nombre={oradoresCola[1].nombre} size="xs" />
-                <strong>{oradoresCola[1].nombre}</strong>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.6rem', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Orador Actual */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <CountryFlag bandera={oradorActual.bandera} nombre={oradorActual.nombre} size="xl" />
+            <div>
+              <div style={{ fontSize: '0.68rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700' }}>
+                {t('timers.currentSpeaker', 'Orador Actual')}
               </div>
-            )}
+              <div style={{ fontWeight: '800', fontSize: '1.25rem', color: 'var(--text-color)', lineHeight: 1.2 }}>
+                {oradorActual.nombre}
+              </div>
+            </div>
           </div>
+
+          {/* Siguiente Orador en Cabecera */}
+          {oradoresCola.length > 1 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.55rem',
+              padding: '0.35rem 0.75rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px'
+            }}>
+              <CountryFlag bandera={oradoresCola[1].bandera} nombre={oradoresCola[1].nombre} size="md" />
+              <div>
+                <div style={{
+                  fontSize: '0.62rem',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  color: 'var(--muted-text)',
+                  lineHeight: 1
+                }}>
+                  {t('timers.nextSpeaker', 'Siguiente Orador')}
+                </div>
+                <div style={{
+                  fontSize: '0.95rem',
+                  fontWeight: '750',
+                  color: 'var(--text-color)',
+                  lineHeight: 1.2,
+                  marginTop: '2px'
+                }}>
+                  {oradoresCola[1].nombre}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Presets, Tiempo Exacto & PiP */}
@@ -226,9 +258,9 @@ const CronometroPrincipal = () => {
                 padding: '0.2rem 0.5rem',
                 fontSize: '0.72rem',
                 borderRadius: '4px',
-                border: `1px solid ${isPipActive ? '#3b82f6' : 'var(--border-color)'}`,
-                backgroundColor: isPipActive ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                color: isPipActive ? '#60a5fa' : 'var(--text-color)',
+                border: `1px solid ${isPipActive ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                backgroundColor: isPipActive ? 'var(--accent-soft)' : 'transparent',
+                color: isPipActive ? 'var(--accent-color)' : 'var(--text-color)',
                 cursor: 'pointer',
                 fontWeight: '600',
                 transition: 'all 0.15s ease'
@@ -349,8 +381,14 @@ const CronometroPrincipal = () => {
       <div
         className={displayState.className}
         style={{
-          margin: '0.6rem 0',
-          padding: '1.2rem 1rem 1.4rem 1rem',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 0,
+          margin: '0.5rem 0',
+          padding: '1rem',
           borderRadius: '10px',
           textAlign: 'center',
           transition: displayState.className ? 'none' : 'all 0.3s ease',
@@ -360,23 +398,34 @@ const CronometroPrincipal = () => {
           ...displayState.style
         }}
       >
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           <div style={{
             fontWeight: '900',
-            fontSize: 'clamp(5.8rem, 11vw, 7.8rem)',
+            fontSize: 'clamp(6.8rem, min(14.5vw, 24vh), 12rem)',
             fontFamily: 'monospace',
+            fontVariantNumeric: 'tabular-nums',
             letterSpacing: '0.04em',
             lineHeight: 0.95,
-            marginTop: '6px',
-            marginBottom: '6px',
+            marginTop: '2px',
+            marginBottom: '4px',
             textShadow: 'var(--timer-digits-shadow, none)'
           }}>
             {formatTimeWithNegative(segundosRestantes)}
           </div>
-          <div style={{ fontSize: '0.82rem', opacity: 0.75, marginTop: '0.4rem', fontWeight: '700', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+          <div style={{
+            fontSize: '0.9rem',
+            opacity: 0.8,
+            marginTop: '0.4rem',
+            fontWeight: '700',
+            letterSpacing: '0.03em',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.4rem'
+          }}>
             {segundosRestantes < 0 ? (
               <>
-                <AlertTriangle size={14} color="#ef4444" />
+                <AlertTriangle size={15} color="var(--danger-color)" />
                 <span>{t('timers.overtime', 'TIEMPO EXCEDIDO (OVERTIME)')}</span>
               </>
             ) : (
@@ -398,12 +447,12 @@ const CronometroPrincipal = () => {
             height: '100%',
             width: `${progresoPorcentaje}%`,
             background: segundosRestantes <= 5
-              ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+              ? 'linear-gradient(90deg, var(--danger-color), var(--danger-color))'
               : segundosRestantes <= 10
                 ? 'linear-gradient(90deg, #f97316, #ea580c)'
-                : 'linear-gradient(90deg, #3b82f6, #6366f1)',
+                : 'linear-gradient(90deg, var(--accent-color), var(--accent-color))',
             boxShadow: segundosRestantes <= 10
-              ? '0 0 12px rgba(239, 68, 68, 0.8)'
+              ? '0 0 12px var(--danger-soft)'
               : 'none',
             transition: 'width 0.4s linear, background 0.3s ease',
             borderRadius: '0 2px 2px 0'
@@ -415,7 +464,7 @@ const CronometroPrincipal = () => {
             position: 'absolute',
             top: '8px',
             left: '8px',
-            backgroundColor: '#15803d',
+            backgroundColor: 'var(--success-solid)',
             color: '#ffffff',
             fontSize: '0.72rem',
             padding: '0.2rem 0.5rem',
@@ -436,8 +485,8 @@ const CronometroPrincipal = () => {
           style={{
             flex: '1 1 120px',
             padding: '0.6rem 0.8rem',
-            backgroundColor: corriendo ? '#334155' : '#22c55e',
-            color: corriendo ? '#ffffff' : '#000000',
+            backgroundColor: corriendo ? '#334155' : 'var(--success-solid)',
+            color: 'var(--btn-text)',
             fontWeight: '700',
             border: 'none',
             borderRadius: '6px',
@@ -480,9 +529,9 @@ const CronometroPrincipal = () => {
             onClick={handleSubtract5Sec}
             style={{
               padding: '0.6rem 0.45rem',
-              backgroundColor: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              color: '#f87171',
+              backgroundColor: 'var(--danger-soft)',
+              border: '1px solid var(--danger-color)',
+              color: 'var(--danger-color)',
               fontWeight: '700',
               borderRadius: '6px',
               cursor: 'pointer',
@@ -502,9 +551,9 @@ const CronometroPrincipal = () => {
             onClick={handleAdd5Sec}
             style={{
               padding: '0.6rem 0.45rem',
-              backgroundColor: 'rgba(34,197,94,0.15)',
-              border: '1px solid #22c55e',
-              color: '#22c55e',
+              backgroundColor: 'var(--success-soft)',
+              border: '1px solid var(--success-color)',
+              color: 'var(--success-color)',
               fontWeight: '700',
               borderRadius: '6px',
               cursor: 'pointer',
@@ -549,7 +598,7 @@ const CronometroPrincipal = () => {
           style={{
             flex: '1 1 110px',
             padding: '0.6rem 0.7rem',
-            backgroundColor: oradoresCola.length > 0 ? '#2563eb' : 'var(--card-header-bg)',
+            backgroundColor: oradoresCola.length > 0 ? 'var(--btn-bg)' : 'var(--card-header-bg)',
             color: oradoresCola.length > 0 ? '#ffffff' : 'var(--muted-text)',
             fontWeight: '700',
             border: 'none',
@@ -572,7 +621,7 @@ const CronometroPrincipal = () => {
           style={{
             flex: '1 1 135px',
             padding: '0.6rem 0.8rem',
-            backgroundColor: '#ef4444',
+            backgroundColor: 'var(--danger-solid)',
             color: '#ffffff',
             fontWeight: '700',
             border: 'none',
@@ -619,7 +668,7 @@ const CronometroPrincipal = () => {
             boxShadow: '0 12px 30px rgba(0,0,0,0.5)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <ArrowRightLeft size={18} color="#3b82f6" />
+              <ArrowRightLeft size={18} color="var(--accent-color)" />
               <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: '700' }}>
                 {t('timers.yield', 'Ceder el tiempo (Yield)')}
               </h4>
@@ -647,7 +696,7 @@ const CronometroPrincipal = () => {
                   textAlign: 'left'
                 }}
               >
-                <Shield size={16} color="#eab308" /> {t('timers.yieldChair', 'A la Mesa (Chair)')}
+                <Shield size={16} color="var(--warning-color)" /> {t('timers.yieldChair', 'A la Mesa (Chair)')}
               </button>
 
               <button
@@ -667,7 +716,7 @@ const CronometroPrincipal = () => {
                   textAlign: 'left'
                 }}
               >
-                <HelpCircle size={16} color="#3b82f6" /> {t('timers.yieldQuestions', 'A Preguntas del Pleno')}
+                <HelpCircle size={16} color="var(--accent-color)" /> {t('timers.yieldQuestions', 'A Preguntas del Pleno')}
               </button>
 
               <div style={{ borderTop: '1px solid var(--subborder-color)', paddingTop: '0.45rem' }}>
@@ -696,7 +745,7 @@ const CronometroPrincipal = () => {
                   }}
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', opacity: 0.85 }}>
-                    <Users size={15} color="#3b82f6" />
+                    <Users size={15} color="var(--accent-color)" />
                     <span>{t('timers.selectDelegation', 'Seleccionar delegación...')}</span>
                   </span>
                   {delegacionDropdownOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

@@ -40,9 +40,9 @@ export const AVISO_TIPOS_CONFIG = {
     label: 'Informativo General',
     shortLabel: 'Info',
     icon: Info,
-    color: '#3b82f6',
-    border: '#3b82f6',
-    bg: 'rgba(59, 130, 246, 0.14)',
+    color: 'var(--accent-color)',
+    border: 'var(--accent-color)',
+    bg: 'var(--accent-soft)',
     badgeText: 'ℹ️ INFORMATIVO'
   },
   alerta: {
@@ -50,9 +50,9 @@ export const AVISO_TIPOS_CONFIG = {
     label: 'Alerta / Atención',
     shortLabel: 'Alerta',
     icon: AlertTriangle,
-    color: '#f59e0b',
-    border: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.14)',
+    color: 'var(--warning-color)',
+    border: 'var(--warning-color)',
+    bg: 'rgba(245, 158, 11, 0.12)',
     badgeText: '⚠️ ALERTA'
   },
   urgente: {
@@ -60,9 +60,9 @@ export const AVISO_TIPOS_CONFIG = {
     label: 'Urgente / Crítico',
     shortLabel: 'Urgente',
     icon: AlertCircle,
-    color: '#ef4444',
-    border: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.14)',
+    color: 'var(--danger-color)',
+    border: 'var(--danger-color)',
+    bg: 'rgba(239, 68, 68, 0.12)',
     badgeText: '🚨 URGENTE'
   },
   logistica: {
@@ -70,9 +70,9 @@ export const AVISO_TIPOS_CONFIG = {
     label: 'Logística de Conferencia',
     shortLabel: 'Logística',
     icon: Users,
-    color: '#8b5cf6',
-    border: '#8b5cf6',
-    bg: 'rgba(139, 92, 246, 0.14)',
+    color: 'var(--info-color)',
+    border: 'var(--info-color)',
+    bg: 'rgba(56, 189, 248, 0.12)',
     badgeText: '🛠️ LOGÍSTICA'
   }
 };
@@ -439,13 +439,13 @@ const MensajeriaConferencia = ({
             <div style={{
               width: '36px',
               height: '36px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(59, 130, 246, 0.16)',
-              border: '1px solid rgba(59, 130, 246, 0.35)',
+              borderRadius: 'var(--border-radius, 6px)',
+              backgroundColor: 'var(--accent-soft)',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#3b82f6'
+              color: 'var(--accent-color)'
             }}>
               <Globe size={18} />
             </div>
@@ -460,9 +460,9 @@ const MensajeriaConferencia = ({
                     fontWeight: '800',
                     padding: '0.12rem 0.5rem',
                     borderRadius: '100px',
-                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                    color: '#3b82f6',
-                    border: '1px solid rgba(59, 130, 246, 0.35)'
+                    backgroundColor: 'var(--accent-soft)',
+                    color: 'var(--accent-color)',
+                    border: '1px solid var(--accent-color)'
                   }}>
                     {cleanConfId.toUpperCase()}
                   </span>
@@ -481,7 +481,7 @@ const MensajeriaConferencia = ({
               style={{
                 background: 'transparent',
                 border: '1px solid var(--subborder-color)',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius, 6px)',
                 color: 'var(--text-color)',
                 padding: '0.4rem 0.65rem',
                 fontSize: '0.75rem',
@@ -502,16 +502,18 @@ const MensajeriaConferencia = ({
 
       {/* Tabs para móviles o vistas compactas */}
       {puedeEmitir && layout === 'tabs' && (
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
+        <div role="tablist" style={{ display: 'flex', gap: '0.4rem' }}>
           <button
+            role="tab"
+            aria-selected={tabMovil === 'TABLON'}
             onClick={() => setTabMovil('TABLON')}
             style={{
               flex: 1,
               padding: '0.55rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabMovil === 'TABLON' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-              color: tabMovil === 'TABLON' ? 'var(--btn-text)' : 'var(--muted-text)',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabMovil === 'TABLON' ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+              backgroundColor: tabMovil === 'TABLON' ? 'var(--accent-soft)' : 'transparent',
+              color: tabMovil === 'TABLON' ? 'var(--accent-color)' : 'var(--muted-text)',
               fontWeight: '700',
               fontSize: '0.82rem',
               cursor: 'pointer',
@@ -524,14 +526,16 @@ const MensajeriaConferencia = ({
             <Bell size={15} /> Tablón ({avisosFiltrados.length})
           </button>
           <button
+            role="tab"
+            aria-selected={tabMovil === 'EMITIR'}
             onClick={() => setTabMovil('EMITIR')}
             style={{
               flex: 1,
               padding: '0.55rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabMovil === 'EMITIR' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-              color: tabMovil === 'EMITIR' ? 'var(--btn-text)' : 'var(--muted-text)',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabMovil === 'EMITIR' ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+              backgroundColor: tabMovil === 'EMITIR' ? 'var(--accent-soft)' : 'transparent',
+              color: tabMovil === 'EMITIR' ? 'var(--accent-color)' : 'var(--muted-text)',
               fontWeight: '700',
               fontSize: '0.82rem',
               cursor: 'pointer',
@@ -558,15 +562,14 @@ const MensajeriaConferencia = ({
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
-            borderRadius: '16px',
+            borderRadius: 'var(--border-radius, 6px)',
             padding: '1.25rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+            gap: '1rem'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Send size={17} color="#3b82f6" />
+              <Send size={17} color="var(--accent-color)" />
               <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800' }}>
                 Emitir Comunicado Oficial
               </h4>
@@ -586,9 +589,9 @@ const MensajeriaConferencia = ({
                   style={{
                     width: '100%',
                     marginTop: '0.35rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.55rem 0.75rem',
                     color: 'var(--text-color)',
                     fontSize: '0.85rem',
@@ -609,9 +612,9 @@ const MensajeriaConferencia = ({
                   style={{
                     width: '100%',
                     marginTop: '0.35rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.6rem 0.75rem',
                     color: 'var(--text-color)',
                     fontSize: '0.85rem',
@@ -662,11 +665,12 @@ const MensajeriaConferencia = ({
                       <button
                         key={tCfg.id}
                         type="button"
+                        aria-pressed={isSelected}
                         onClick={() => setTipo(tCfg.id)}
                         style={{
                           backgroundColor: isSelected ? tCfg.bg : 'var(--card-header-bg)',
                           border: `1.5px solid ${isSelected ? tCfg.color : 'var(--subborder-color)'}`,
-                          borderRadius: '8px',
+                          borderRadius: 'var(--border-radius, 6px)',
                           padding: '0.5rem 0.4rem',
                           color: isSelected ? tCfg.color : 'var(--muted-text)',
                           fontWeight: isSelected ? '800' : '600',
@@ -700,9 +704,9 @@ const MensajeriaConferencia = ({
                   style={{
                     width: '100%',
                     marginTop: '0.35rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.65rem 0.8rem',
                     color: 'var(--text-color)',
                     fontSize: '0.85rem',
@@ -722,7 +726,7 @@ const MensajeriaConferencia = ({
                   backgroundColor: 'var(--btn-bg)',
                   color: 'var(--btn-text)',
                   border: 'none',
-                  borderRadius: '9px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '0.75rem',
                   fontWeight: '800',
                   fontSize: '0.88rem',
@@ -732,7 +736,6 @@ const MensajeriaConferencia = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.5rem',
-                  boxShadow: '0 4px 14px rgba(59, 130, 246, 0.25)',
                   transition: 'all 0.15s ease'
                 }}
               >
@@ -740,7 +743,7 @@ const MensajeriaConferencia = ({
               </button>
 
               {!cleanConfId && (
-                <div style={{ fontSize: '0.72rem', color: '#f59e0b', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--warning-color)', textAlign: 'center' }}>
                   ⚠️ No hay conferencia activa vinculada. Inicia o accede a una conferencia para emitir comunicados globales.
                 </div>
               )}
@@ -749,7 +752,7 @@ const MensajeriaConferencia = ({
                 <div style={{
                   fontSize: '0.78rem',
                   fontWeight: '700',
-                  color: '#10b981',
+                  color: 'var(--success-color)',
                   textAlign: 'center',
                   display: 'flex',
                   alignItems: 'center',
@@ -768,12 +771,11 @@ const MensajeriaConferencia = ({
           <div style={{
             backgroundColor: 'var(--panel-color)',
             border: '1px solid var(--border-color)',
-            borderRadius: '16px',
+            borderRadius: 'var(--border-radius, 6px)',
             padding: '1.25rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.85rem',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+            gap: '0.85rem'
           }}>
             {/* Cabecera y Filtros */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -785,29 +787,34 @@ const MensajeriaConferencia = ({
                 </div>
 
                 {/* Filtro por Destino Rápido */}
-                <div style={{ display: 'flex', gap: '2px', backgroundColor: 'var(--card-header-bg)', padding: '2px', borderRadius: '7px' }}>
+                <div style={{ display: 'flex', gap: '3px', backgroundColor: 'var(--card-header-bg)', padding: '2px', borderRadius: 'var(--border-radius, 6px)' }}>
                   {[
                     { id: 'TODOS', label: 'Todos' },
                     { id: 'MI_SALA', label: 'Mi Sala' },
                     { id: 'SOLO_STAFF', label: 'Staff' }
-                  ].map(f => (
-                    <button
-                      key={f.id}
-                      onClick={() => setFiltroDestino(f.id)}
-                      style={{
-                        backgroundColor: filtroDestino === f.id ? 'var(--btn-bg)' : 'transparent',
-                        color: filtroDestino === f.id ? 'var(--btn-text)' : 'var(--muted-text)',
-                        border: 'none',
-                        borderRadius: '5px',
-                        padding: '0.28rem 0.55rem',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
+                  ].map(f => {
+                    const isSelected = filtroDestino === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => setFiltroDestino(f.id)}
+                        style={{
+                          backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--muted-text)',
+                          border: `1px solid ${isSelected ? 'var(--accent-color)' : 'transparent'}`,
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '0.28rem 0.55rem',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {f.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -818,9 +825,9 @@ const MensajeriaConferencia = ({
                   minWidth: '150px',
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: 'var(--card-header-bg)',
-                  border: '1px solid var(--subborder-color)',
-                  borderRadius: '7px',
+                  backgroundColor: 'var(--input-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '0 0.55rem'
                 }}>
                   <Search size={13} color="var(--muted-text)" />
@@ -856,34 +863,41 @@ const MensajeriaConferencia = ({
                     { id: 'alerta', label: '⚠️ Alertas' },
                     { id: 'info', label: 'ℹ️ Info' },
                     { id: 'logistica', label: '🛠️ Logística' }
-                  ].map(tFilter => (
-                    <button
-                      key={tFilter.id}
-                      onClick={() => setFiltroPrioridad(tFilter.id)}
-                      style={{
-                        backgroundColor: filtroPrioridad === tFilter.id ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
-                        color: filtroPrioridad === tFilter.id ? '#3b82f6' : 'var(--muted-text)',
-                        border: `1px solid ${filtroPrioridad === tFilter.id ? 'rgba(59, 130, 246, 0.35)' : 'var(--subborder-color)'}`,
-                        borderRadius: '6px',
-                        padding: '0.28rem 0.55rem',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {tFilter.label}
-                    </button>
-                  ))}
+                  ].map(tFilter => {
+                    const isSelected = filtroPrioridad === tFilter.id;
+                    return (
+                      <button
+                        key={tFilter.id}
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => setFiltroPrioridad(tFilter.id)}
+                        style={{
+                          backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--muted-text)',
+                          border: `1px solid ${isSelected ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '0.28rem 0.55rem',
+                          fontSize: '0.72rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {tFilter.label}
+                      </button>
+                    );
+                  })}
 
                   {descartadosLocales.length > 0 && (
                     <button
+                      type="button"
+                      aria-pressed={mostrarIgnorados}
                       onClick={() => setMostrarIgnorados(prev => !prev)}
                       style={{
-                        backgroundColor: mostrarIgnorados ? 'rgba(239, 68, 68, 0.18)' : 'transparent',
-                        color: mostrarIgnorados ? '#ef4444' : 'var(--muted-text)',
-                        border: `1px solid ${mostrarIgnorados ? 'rgba(239, 68, 68, 0.35)' : 'var(--subborder-color)'}`,
-                        borderRadius: '6px',
+                        backgroundColor: mostrarIgnorados ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
+                        color: mostrarIgnorados ? 'var(--danger-color)' : 'var(--muted-text)',
+                        border: `1px solid ${mostrarIgnorados ? 'rgba(239, 68, 68, 0.3)' : 'var(--subborder-color)'}`,
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '0.28rem 0.55rem',
                         fontSize: '0.72rem',
                         fontWeight: '700',
@@ -917,7 +931,7 @@ const MensajeriaConferencia = ({
                   padding: '3.5rem 1.5rem',
                   textAlign: 'center',
                   backgroundColor: 'var(--card-header-bg)',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: '1px dashed var(--subborder-color)',
                   color: 'var(--muted-text)'
                 }}>
@@ -948,8 +962,8 @@ const MensajeriaConferencia = ({
                       style={{
                         backgroundColor: 'var(--card-header-bg)',
                         border: '1px solid var(--subborder-color)',
-                        borderLeft: `4px solid ${tCfg.color}`,
-                        borderRadius: '11px',
+                        borderLeft: `3px solid ${tCfg.color}`,
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '0.9rem 1.1rem',
                         display: 'flex',
                         flexDirection: 'column',
@@ -997,7 +1011,7 @@ const MensajeriaConferencia = ({
 
                         {/* Acciones: Fecha, Borrar (emisor) e Ignorar (todos) */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
                             {aviso.creado_en || ''}
                           </span>
 
@@ -1005,9 +1019,9 @@ const MensajeriaConferencia = ({
                             <button
                               onClick={() => handleRestaurarAviso(aviso.id)}
                               style={{
-                                background: 'rgba(59, 130, 246, 0.12)',
-                                border: '1px solid rgba(59, 130, 246, 0.35)',
-                                color: '#3b82f6',
+                                background: 'var(--accent-soft)',
+                                border: '1px solid var(--subborder-color)',
+                                color: 'var(--accent-color)',
                                 fontSize: '0.72rem',
                                 fontWeight: '700',
                                 cursor: 'pointer',
@@ -1015,7 +1029,7 @@ const MensajeriaConferencia = ({
                                 alignItems: 'center',
                                 gap: '3px',
                                 padding: '0.2rem 0.5rem',
-                                borderRadius: '5px',
+                                borderRadius: 'var(--border-radius, 6px)',
                                 transition: 'all 0.15s ease'
                               }}
                               title={t('avisos.restoreNotice', 'Volver a mostrar en mi vista')}
@@ -1030,8 +1044,8 @@ const MensajeriaConferencia = ({
                                   onClick={() => handleBorrarAviso(aviso.id)}
                                   style={{
                                     background: 'rgba(239, 68, 68, 0.12)',
-                                    border: '1px solid rgba(239, 68, 68, 0.4)',
-                                    color: '#ef4444',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    color: 'var(--danger-color)',
                                     fontSize: '0.72rem',
                                     fontWeight: '800',
                                     cursor: 'pointer',
@@ -1039,7 +1053,7 @@ const MensajeriaConferencia = ({
                                     alignItems: 'center',
                                     gap: '3px',
                                     padding: '0.2rem 0.5rem',
-                                    borderRadius: '5px',
+                                    borderRadius: 'var(--border-radius, 6px)',
                                     transition: 'all 0.15s ease'
                                   }}
                                   title={t('avisos.deleteNoticeTooltip', 'Eliminar aviso para toda la conferencia')}
@@ -1062,7 +1076,7 @@ const MensajeriaConferencia = ({
                                   alignItems: 'center',
                                   gap: '3px',
                                   padding: '0.2rem 0.5rem',
-                                  borderRadius: '5px',
+                                  borderRadius: 'var(--border-radius, 6px)',
                                   transition: 'all 0.15s ease'
                                 }}
                                 title={t('avisos.dismissTooltip', 'Descartar este aviso (ocultarlo de tu vista)')}

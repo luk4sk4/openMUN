@@ -79,6 +79,8 @@
     "custom": "Libre"
   },
   "header": {
+    "tools": "Herramientas del comité",
+    "toggleTools": "Abrir o cerrar herramientas del comité",
     "widgets": "Widgets",
     "widgetsTooltip": "Abrir Gestor de Widgets",
     "loadSession": "Cargar Sesión",

@@ -4,25 +4,27 @@ import configMaster from '../config/config_master.json';
 const AccessibilityContext = createContext(null);
 
 export const defaultDark = {
-  backgroundColor: "#0c0e14",
-  panelColor: "#161922",
-  headerColor: "#10121a",
-  subnavColor: "#141720",
-  cardHeaderColor: "#1e222f",
-  textColor: "#f1f5f9",
-  primaryColor: "#3b82f6",
+  paletteVersion: 3,
+  backgroundColor: "#2c2c2c",
+  panelColor: "#363636",
+  headerColor: "#2c2c2c",
+  subnavColor: "#2c2c2c",
+  cardHeaderColor: "#303030",
+  textColor: "#f7f2eb",
+  primaryColor: "#b45432",
   fontFamily: "Inter, system-ui, -apple-system, sans-serif",
   borderRadius: "6px"
 };
 
 export const defaultLight = {
-  backgroundColor: "#f1f5f9",
-  panelColor: "#ffffff",
-  headerColor: "#ffffff",
-  subnavColor: "#e2e8f0",
-  cardHeaderColor: "#f8fafc",
-  textColor: "#0f172a",
-  primaryColor: "#3b82f6",
+  paletteVersion: 3,
+  backgroundColor: "#f7f2eb",
+  panelColor: "#fffefd",
+  headerColor: "#f7f2eb",
+  subnavColor: "#e9e3da",
+  cardHeaderColor: "#f3f3f1",
+  textColor: "#242424",
+  primaryColor: "#b45432",
   fontFamily: "Inter, system-ui, -apple-system, sans-serif",
   borderRadius: "6px"
 };
@@ -32,23 +34,37 @@ export const getThemeCssVars = (theme, accessibility) => {
   const t = theme || (isLight ? defaultLight : defaultDark);
 
   return {
-    '--bg-color': t.backgroundColor || (isLight ? '#f1f5f9' : '#0c0e14'),
-    '--panel-color': t.panelColor || (isLight ? '#ffffff' : '#161922'),
-    '--panel-bg': t.panelColor || (isLight ? '#ffffff' : '#161922'),
-    '--card-header-bg': t.cardHeaderColor || (isLight ? '#f8fafc' : '#1e222f'),
+    '--bg-color': t.backgroundColor || (isLight ? '#f7f2eb' : '#2c2c2c'),
+    '--panel-color': t.panelColor || (isLight ? '#ffffff' : '#363636'),
+    '--panel-bg': t.panelColor || (isLight ? '#ffffff' : '#363636'),
+    '--card-header-bg': t.cardHeaderColor || (isLight ? '#f3f3f1' : '#303030'),
     '--card-hover': isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.04)',
     '--input-bg': isLight ? '#ffffff' : 'rgba(255, 255, 255, 0.05)',
-    '--header-bg': t.headerColor || (isLight ? '#ffffff' : '#10121a'),
-    '--subnav-bg': t.subnavColor || (isLight ? '#e2e8f0' : '#141720'),
-    '--text-color': t.textColor || (isLight ? '#0f172a' : '#f1f5f9'),
-    '--muted-text': isLight ? '#64748b' : '#94a3b8',
-    '--border-color': isLight ? '#cbd5e1' : '#2b3042',
-    '--subborder-color': isLight ? '#e2e8f0' : '#222636',
-    '--btn-bg': t.primaryColor || '#3b82f6',
+    '--header-bg': t.headerColor || (isLight ? '#ffffff' : '#2c2c2c'),
+    '--subnav-bg': t.subnavColor || (isLight ? '#e9e3da' : '#2c2c2c'),
+    '--text-color': t.textColor || (isLight ? '#242424' : '#f7f2eb'),
+    '--muted-text': isLight ? '#626262' : '#b9b9b9',
+    '--border-color': isLight ? '#dedcd8' : '#4b4b4b',
+    '--subborder-color': isLight ? '#e9e7e3' : '#414141',
+    '--btn-bg': t.primaryColor || '#b45432',
     '--btn-text': '#ffffff',
-    '--grid-line': isLight ? '#cbd5e1' : '#1c202d',
-    '--timer-display-bg': isLight ? '#f8fafc' : '#08090d',
-    '--timer-display-border': isLight ? '#cbd5e1' : '#2b3042',
+    '--accent-color': isLight ? '#ac482a' : '#efa37f',
+    '--accent-soft': isLight ? 'rgba(180,84,50,0.06)' : 'rgba(239,163,127,0.08)',
+    '--success-color': isLight ? '#386447' : '#a4d4b3',
+    '--success-solid': '#4f795d',
+    '--success-soft': isLight ? 'rgba(77,121,93,0.12)' : 'rgba(116,183,138,0.20)',
+    '--danger-color': isLight ? '#974b43' : '#edaaa1',
+    '--danger-solid': '#a95449',
+    '--danger-soft': isLight ? 'rgba(169,84,73,0.12)' : 'rgba(220,130,117,0.18)',
+    '--info-color': isLight ? '#50677f' : '#a6b8c9',
+    '--info-solid': '#50677f',
+    '--info-soft': isLight ? 'rgba(80,103,127,0.08)' : 'rgba(166,184,201,0.10)',
+    '--warning-color': isLight ? '#80673b' : '#cbb58d',
+    '--warning-solid': '#80673b',
+    '--warning-soft': isLight ? 'rgba(128,103,59,0.08)' : 'rgba(203,181,141,0.10)',
+    '--grid-line': isLight ? '#d8d1c7' : '#414141',
+    '--timer-display-bg': isLight ? '#f3f3f1' : '#292929',
+    '--timer-display-border': isLight ? '#d8d1c7' : '#4b4b4b',
     '--timer-display-shadow': isLight ? '0 4px 16px rgba(0,0,0,0.06)' : '0 4px 20px rgba(0,0,0,0.5)',
     '--timer-digits-shadow': isLight ? 'none' : '0 4px 20px rgba(0,0,0,0.7)',
     '--timer-orange-bg': isLight ? '#fff7ed' : '#431407',
@@ -81,9 +97,16 @@ export const sanitizeConfig = (raw) => {
   }
 
 
+  const baseTheme = raw.accessibility?.themeMode === 'light' ? defaultLight : defaultDark;
+  const savedTheme = raw.theme?.paletteVersion === 3 ? raw.theme : {
+    ...baseTheme,
+    fontFamily: raw.theme?.fontFamily || baseTheme.fontFamily,
+    borderRadius: raw.theme?.borderRadius || baseTheme.borderRadius
+  };
+
   return {
-    theme: (raw.theme && typeof raw.theme === 'object' && !Array.isArray(raw.theme)) 
-      ? { ...configMaster.theme, ...raw.theme } 
+    theme: (savedTheme && typeof savedTheme === 'object' && !Array.isArray(savedTheme))
+      ? { ...baseTheme, ...savedTheme }
       : configMaster.theme,
     accessibility: (raw.accessibility && typeof raw.accessibility === 'object' && !Array.isArray(raw.accessibility)) 
       ? { ...configMaster.accessibility, ...raw.accessibility } 

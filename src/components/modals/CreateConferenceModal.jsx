@@ -10,7 +10,7 @@ import {
   Shield,
   Eye,
   EyeOff,
-  Sparkles,
+
   ExternalLink,
   Mail,
   Clock,
@@ -605,7 +605,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                   boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)'
                 }}
               >
-                <Sparkles size={18} />
+                <Building2 size={18} />
                 {isSubmitting ? 'Creando conferencia...' : t('conferences.createBtn', 'Crear Conferencia')}
               </button>
             </form>

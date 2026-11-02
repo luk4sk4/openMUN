@@ -809,9 +809,9 @@ export const SessionProvider = ({ children }) => {
     setAgendaSesionState({
       establecida: true,
       temaActual,
-      temasPropuestos: temasPropuestos.length > 0 ? temasPropuestos : [
+      temasPropuestos: temasPropuestos.length > 0 ? temasPropuestos : temaActual ? [
         { id: 't1', titulo: temaActual, estado: 'En Discusión' }
-      ]
+      ] : []
     });
     if (emitir) {
       emitirAccion('establecerAgenda', { temaActual, temasPropuestos });

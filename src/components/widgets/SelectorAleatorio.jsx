@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { 
   Dices, 
   RotateCw, 
-  Sparkles, 
+ 
   UserPlus, 
   Volume2, 
   VolumeX, 
@@ -682,7 +682,7 @@ const SelectorAleatorio = () => {
                 }}>
                   {girando ? (
                     <>
-                      <Sparkles size={13} style={{ animation: 'spin 1.5s linear infinite' }} />
+                      <RotateCw size={13} style={{ animation: 'spin 1.5s linear infinite' }} />
                       <span>{t('random.spinning', 'Sorteando Delegación...')}</span>
                     </>
                   ) : paisSeleccionado ? (
@@ -739,7 +739,7 @@ const SelectorAleatorio = () => {
                           {paisSeleccionado.nombre}
                         </span>
                         <span style={{ fontSize: '0.76rem', color: '#34d399', fontWeight: '700', marginTop: '3px' }}>
-                          ✨ {t('random.chosenDelegation', 'Delegación con el uso de la palabra')}
+                          {t('random.chosenDelegation', 'Delegación con el uso de la palabra')}
                         </span>
                       </div>
                     </div>

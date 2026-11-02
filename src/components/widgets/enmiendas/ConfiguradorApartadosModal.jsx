@@ -184,7 +184,7 @@ const ConfiguradorApartadosModal = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--subborder-color)', paddingBottom: '0.6rem' }}>
           <div>
             <div style={{ fontSize: '0.95rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Layers size={18} color="#a855f7" />
+              <Layers size={18} style={{ color: 'var(--accent-color)' }} />
               <span>Configurador y Reordenador de Apartados</span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '0.15rem' }}>

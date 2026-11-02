@@ -1,14 +1,15 @@
 {
   "theme": {
-    "backgroundColor": "#0c0e14",
-    "panelColor": "#161922",
-    "headerColor": "#10121a",
-    "subnavColor": "#141720",
-    "cardHeaderColor": "#1e222f",
-    "textColor": "#f1f5f9",
-    "primaryColor": "#3b82f6",
+    "backgroundColor": "#2c2c2c",
+    "panelColor": "#363636",
+    "headerColor": "#2c2c2c",
+    "subnavColor": "#2c2c2c",
+    "cardHeaderColor": "#303030",
+    "textColor": "#f7f2eb",
+    "primaryColor": "#b45432",
     "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
-    "borderRadius": "6px"
+    "borderRadius": "6px",
+    "paletteVersion": 3
   },
   "accessibility": {
     "dyslexiaMode": false,
@@ -112,18 +113,11 @@
         "rowSpan": 6
       },
       {
-        "i": "mini_votacion",
+        "i": "panel_enmiendas_votacion",
         "col": 7,
         "row": 0,
         "colSpan": 5,
-        "rowSpan": 3
-      },
-      {
-        "i": "cronometro_enmiendas",
-        "col": 7,
-        "row": 3,
-        "colSpan": 5,
-        "rowSpan": 3
+        "rowSpan": 6
       }
     ],
     "INFO": [

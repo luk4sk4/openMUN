@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 function isDynamicChunkError(error) {
   if (!error) return false;
@@ -80,7 +80,7 @@ export class WidgetErrorBoundary extends Component {
               color: isChunk ? '#3b82f6' : '#ef4444'
             }}
           >
-            {isChunk ? <Sparkles size={20} /> : <AlertCircle size={20} />}
+            {isChunk ? <RefreshCw size={20} /> : <AlertCircle size={20} />}
           </div>
 
           <div style={{ maxWidth: '280px' }}>

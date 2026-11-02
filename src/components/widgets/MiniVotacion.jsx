@@ -14,13 +14,15 @@ import {
   Check,
   X,
   Minus,
-  Sparkles,
+
   Users,
   Award,
   FileCheck2,
   FileX2,
   Trophy,
-  PartyPopper
+  PartyPopper,
+  Hand,
+  Plus
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
@@ -40,7 +42,7 @@ const MiniVotacion = () => {
     resolverEnmiendaResolucion
   } = useSession();
 
-  const [modoVista, setModoVista] = useState('rollcall'); // 'rollcall' | 'lista'
+  const [modoVista, setModoVista] = useState('manos'); // 'manos' | 'rollcall' | 'lista'
   const [showSettings, setShowSettings] = useState(false);
   const [showExpandedModal, setShowExpandedModal] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
@@ -193,6 +195,20 @@ const MiniVotacion = () => {
     setShowResultModal(false);
   };
 
+  const incrementarVoto = (tipo) => {
+    const candidato = paisesAsistentes.find(p => votos[p.id] !== tipo);
+    if (candidato) registrarVotoPais(candidato.id, tipo);
+  };
+
+  const decrementarVoto = (tipo) => {
+    const candidato = [...paisesAsistentes].reverse().find(p => votos[p.id] === tipo);
+    if (candidato) registrarVotoPais(candidato.id, null);
+  };
+
+  const votarTodos = (tipo) => {
+    paisesAsistentes.forEach(p => registrarVotoPais(p.id, tipo));
+  };
+
   const handleGuardarAjustes = (e) => {
     e.preventDefault();
     configurarVotacion({
@@ -233,23 +249,12 @@ const MiniVotacion = () => {
         gap: '0.45rem',
         flexShrink: 0
       }}>
-        <div style={{
-          backgroundColor: 'rgba(59, 130, 246, 0.15)',
-          padding: '0.25rem',
-          borderRadius: '5px',
-          color: '#3b82f6',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0
-        }}>
-          <Vote size={15} />
-        </div>
+
 
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
-            fontSize: '0.78rem',
-            fontWeight: '800',
+            fontSize: '0.85rem',
+            fontWeight: '650',
             color: 'var(--text-color)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -268,12 +273,13 @@ const MiniVotacion = () => {
             overflow: 'hidden'
           }}>
             <span style={{
-              backgroundColor: tipoVotacion === 'substantive' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-              color: tipoVotacion === 'substantive' ? '#a855f7' : '#3b82f6',
-              padding: '0.05rem 0.3rem',
-              borderRadius: '3px',
-              fontWeight: '800',
-              fontSize: '0.58rem'
+              backgroundColor: 'var(--panel-color)',
+              border: '1px solid var(--subborder-color)',
+              color: 'var(--muted-text)',
+              padding: '0.08rem 0.35rem',
+              borderRadius: 'var(--border-radius, 4px)',
+              fontWeight: '600',
+              fontSize: '0.62rem'
             }}>
               {tipoVotacion === 'substantive' ? 'Sustantiva' : 'Procedimental'}
             </span>
@@ -313,10 +319,31 @@ const MiniVotacion = () => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
           <button
-            onClick={() => setModoVista(m => m === 'rollcall' ? 'lista' : 'rollcall')}
-            title={modoVista === 'rollcall' ? 'Ver Tabla Rápida' : 'Ver Modo Roll Call'}
+            onClick={() => setModoVista('manos')}
+            title="Votación a Mano Alzada (Contadores Rápidos)"
             style={{
-              background: 'var(--card-hover, rgba(255,255,255,0.05))',
+              background: modoVista === 'manos' ? 'var(--accent-color)' : 'var(--card-hover, rgba(255,255,255,0.05))',
+              border: `1px solid ${modoVista === 'manos' ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+              borderRadius: '4px',
+              padding: '0.2rem 0.45rem',
+              color: modoVista === 'manos' ? '#1a1a1a' : 'var(--text-color)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.2rem',
+              fontSize: '0.68rem',
+              fontWeight: modoVista === 'manos' ? '800' : '600'
+            }}
+          >
+            <Hand size={11} />
+            <span>Mano Alzada</span>
+          </button>
+
+          <button
+            onClick={() => setModoVista(m => m === 'rollcall' ? 'lista' : 'rollcall')}
+            title={modoVista === 'rollcall' ? 'Ver Modo Lista' : 'Ver Modo Roll Call'}
+            style={{
+              background: modoVista !== 'manos' ? 'var(--card-hover, rgba(255,255,255,0.1))' : 'var(--card-hover, rgba(255,255,255,0.05))',
               border: '1px solid var(--subborder-color)',
               borderRadius: '4px',
               padding: '0.2rem 0.45rem',
@@ -330,7 +357,7 @@ const MiniVotacion = () => {
             }}
           >
             <ListFilter size={11} />
-            <span>{modoVista === 'rollcall' ? 'Modo Lista' : 'Modo Roll Call'}</span>
+            <span>{modoVista === 'lista' ? 'Lista' : 'Roll Call'}</span>
           </button>
 
           <button
@@ -430,6 +457,269 @@ const MiniVotacion = () => {
             <div style={{ fontSize: '0.74rem', fontWeight: '700' }}>Sin delegaciones en sala</div>
             <div style={{ fontSize: '0.64rem', opacity: 0.8 }}>
               Pasa lista en la pestaña de Comienzo o Info para registrar asistencia.
+            </div>
+          </div>
+        ) : modoVista === 'manos' ? (
+          /* ── MODO MANO ALZADA (Estilo Debate Agenda con Steppers) ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1, justifyContent: 'center' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: tipoVotacion === 'substantive' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+              gap: '0.4rem'
+            }}>
+              {/* Tarjeta A Favor */}
+              <div style={{
+                backgroundColor: 'var(--input-bg, rgba(255, 255, 255, 0.04))',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '0.6rem 0.35rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.35rem',
+                textAlign: 'center'
+              }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--success-color)' }}>
+                  A Favor
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <button
+                    onClick={() => decrementarVoto('favor')}
+                    disabled={favor <= 0}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--panel-color)',
+                      color: 'var(--text-color)',
+                      cursor: favor <= 0 ? 'not-allowed' : 'pointer',
+                      opacity: favor <= 0 ? 0.35 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span style={{
+                    fontFamily: 'var(--font-family)',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontSize: '1.9rem',
+                    fontWeight: '800',
+                    color: 'var(--success-color)',
+                    minWidth: '36px',
+                    textAlign: 'center',
+                    lineHeight: 1
+                  }}>
+                    {favor}
+                  </span>
+                  <button
+                    onClick={() => incrementarVoto('favor')}
+                    disabled={votosEmitidos >= totalAsistentes}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--panel-color)',
+                      color: 'var(--text-color)',
+                      cursor: votosEmitidos >= totalAsistentes ? 'not-allowed' : 'pointer',
+                      opacity: votosEmitidos >= totalAsistentes ? 0.35 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                <button
+                  onClick={() => votarTodos('favor')}
+                  style={{
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--muted-text)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    fontSize: '0.62rem',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Todos a favor
+                </button>
+              </div>
+
+              {/* Tarjeta En Contra */}
+              <div style={{
+                backgroundColor: 'var(--input-bg, rgba(255, 255, 255, 0.04))',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '0.6rem 0.35rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.35rem',
+                textAlign: 'center'
+              }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--danger-color)' }}>
+                  En Contra
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <button
+                    onClick={() => decrementarVoto('contra')}
+                    disabled={contra <= 0}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--panel-color)',
+                      color: 'var(--text-color)',
+                      cursor: contra <= 0 ? 'not-allowed' : 'pointer',
+                      opacity: contra <= 0 ? 0.35 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span style={{
+                    fontFamily: 'var(--font-family)',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontSize: '1.9rem',
+                    fontWeight: '800',
+                    color: 'var(--danger-color)',
+                    minWidth: '36px',
+                    textAlign: 'center',
+                    lineHeight: 1
+                  }}>
+                    {contra}
+                  </span>
+                  <button
+                    onClick={() => incrementarVoto('contra')}
+                    disabled={votosEmitidos >= totalAsistentes}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--panel-color)',
+                      color: 'var(--text-color)',
+                      cursor: votosEmitidos >= totalAsistentes ? 'not-allowed' : 'pointer',
+                      opacity: votosEmitidos >= totalAsistentes ? 0.35 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                <button
+                  onClick={() => votarTodos('contra')}
+                  style={{
+                    border: '1px solid var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--muted-text)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    fontSize: '0.62rem',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Todos en contra
+                </button>
+              </div>
+
+              {/* Tarjeta Abstención (solo si sustantiva) */}
+              {tipoVotacion === 'substantive' && (
+                <div style={{
+                  backgroundColor: 'var(--input-bg, rgba(255, 255, 255, 0.04))',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  padding: '0.6rem 0.35rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  textAlign: 'center'
+                }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--warning-color)' }}>
+                    Abstención
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <button
+                      onClick={() => decrementarVoto('abstencion')}
+                      disabled={abstencion <= 0}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--panel-color)',
+                        color: 'var(--text-color)',
+                        cursor: abstencion <= 0 ? 'not-allowed' : 'pointer',
+                        opacity: abstencion <= 0 ? 0.35 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span style={{
+                      fontFamily: 'var(--font-family)',
+                      fontVariantNumeric: 'tabular-nums',
+                      fontSize: '1.9rem',
+                      fontWeight: '800',
+                      color: 'var(--warning-color)',
+                      minWidth: '36px',
+                      textAlign: 'center',
+                      lineHeight: 1
+                    }}>
+                      {abstencion}
+                    </span>
+                    <button
+                      onClick={() => incrementarVoto('abstencion')}
+                      disabled={votosEmitidos >= totalAsistentes}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--panel-color)',
+                        color: 'var(--text-color)',
+                        cursor: votosEmitidos >= totalAsistentes ? 'not-allowed' : 'pointer',
+                        opacity: votosEmitidos >= totalAsistentes ? 0.35 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => votarTodos('abstencion')}
+                    style={{
+                      border: '1px solid var(--border-color)',
+                      background: 'transparent',
+                      color: 'var(--muted-text)',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      fontSize: '0.62rem',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Todos abs
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ) : modoVista === 'rollcall' ? (
@@ -750,9 +1040,9 @@ const MiniVotacion = () => {
         )}
       </div>
 
-      {/* ── FOOTER RESULTADOS EN VIVO (Ultra Compacto) ── */}
+      {/* ── FOOTER RESULTADOS EN VIVO (Estilo Debate Agenda) ── */}
       <div style={{
-        padding: '0.35rem 0.55rem',
+        padding: '0.4rem 0.6rem',
         borderTop: '1px solid var(--subborder-color)',
         backgroundColor: 'var(--card-header-bg)',
         display: 'flex',
@@ -761,33 +1051,42 @@ const MiniVotacion = () => {
         gap: '0.3rem',
         flexShrink: 0
       }}>
-        {/* Conteo y Estado */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.66rem', fontWeight: '700' }}>
-          <span style={{ color: '#22c55e' }}>F: {favor}</span>
-          <span style={{ color: '#ef4444' }}>C: {contra}</span>
-          <span style={{ color: '#eab308' }}>A: {abstencion}</span>
-          <span style={{ color: '#60a5fa' }}>Req: {requeridos}</span>
+        {/* Conteo y Estado con Tabular Nums */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontSize: '0.74rem',
+          fontWeight: '750',
+          fontFamily: 'var(--font-family)',
+          fontVariantNumeric: 'tabular-nums'
+        }}>
+          <span style={{ color: 'var(--success-color)' }}>F: {favor}</span>
+          <span style={{ color: 'var(--danger-color)' }}>C: {contra}</span>
+          {tipoVotacion === 'substantive' && <span style={{ color: 'var(--warning-color)' }}>A: {abstencion}</span>}
+          <span style={{ color: 'var(--accent-color)' }}>Req: {requeridos}</span>
         </div>
 
         {/* Estado / Dictamen Interactivo y Reset */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <div
             onClick={() => votosEmitidos > 0 && setShowResultModal(true)}
             style={{
-              fontSize: '0.64rem',
+              fontSize: '0.68rem',
               fontWeight: '800',
-              padding: '0.12rem 0.35rem',
-              borderRadius: '3px',
+              padding: '0.15rem 0.45rem',
+              borderRadius: '4px',
               backgroundColor: estadoVotacion === 'APROBADA'
-                ? 'rgba(34, 197, 94, 0.2)'
+                ? 'rgba(164, 212, 179, 0.2)'
                 : estadoVotacion === 'RECHAZADA' || estadoVotacion === 'VETO EJERCIDO'
-                  ? 'rgba(239, 68, 68, 0.2)'
-                  : 'rgba(59, 130, 246, 0.15)',
+                  ? 'rgba(237, 170, 161, 0.2)'
+                  : 'rgba(203, 181, 141, 0.2)',
               color: estadoVotacion === 'APROBADA'
-                ? '#22c55e'
+                ? 'var(--success-color)'
                 : estadoVotacion === 'RECHAZADA' || estadoVotacion === 'VETO EJERCIDO'
-                  ? '#ef4444'
-                  : '#3b82f6',
+                  ? 'var(--danger-color)'
+                  : 'var(--warning-color)',
+              border: `1px solid ${estadoVotacion === 'APROBADA' ? 'var(--success-color)' : estadoVotacion === 'RECHAZADA' || estadoVotacion === 'VETO EJERCIDO' ? 'var(--danger-color)' : 'var(--warning-color)'}`,
               display: 'flex',
               alignItems: 'center',
               gap: '0.2rem',
@@ -810,12 +1109,10 @@ const MiniVotacion = () => {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.1rem',
-              fontSize: '0.62rem',
-              fontWeight: '600'
+              padding: '2px'
             }}
           >
-            <RotateCcw size={10} />
+            <RotateCcw size={12} />
           </button>
         </div>
       </div>
@@ -941,7 +1238,7 @@ const MiniVotacion = () => {
                     gap: '0.3rem'
                   }}
                 >
-                  <Sparkles size={13} /> {estadoVotacion === 'APROBADA' ? 'Aplicar Aceptación a Resolución' : 'Registrar como Rechazada'}
+                  {estadoVotacion === 'APROBADA' ? <FileCheck2 size={13} /> : <FileX2 size={13} />} {estadoVotacion === 'APROBADA' ? 'Aplicar Aceptación a Resolución' : 'Registrar como Rechazada'}
                 </button>
               )}
 
@@ -1175,7 +1472,7 @@ const MiniVotacion = () => {
               justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Vote size={20} color="#3b82f6" />
+                <Vote size={18} style={{ color: 'var(--muted-text)' }} />
                 <div>
                   <div style={{ fontSize: '1rem', fontWeight: '800' }}>{asunto}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
@@ -1288,3 +1585,4 @@ const MiniVotacion = () => {
 };
 
 export default MiniVotacion;
+

@@ -1,0 +1,134 @@
+.agenda-widget { display: flex; flex-direction: column; gap: 14px; padding: 18px; min-height: 100%; box-sizing: border-box; background-color: var(--panel-color); color: var(--text-color); font-size: .8rem; }
+.agenda-widget input, .agenda-widget select, .agenda-widget button { font: inherit; color: var(--text-color); background: var(--input-bg, var(--panel-color)); border: 1px solid var(--border-color); border-radius: 5px; padding: 7px 8px; min-width: 0; box-sizing: border-box; }
+.agenda-widget input:not([type="number"]) { width: 100%; }
+.agenda-widget button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; flex-shrink: 0; }
+.agenda-widget button:hover:not(:disabled), .agenda-widget button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-color); }
+.agenda-widget button:disabled { opacity: .45; cursor: default; }
+.agenda-widget :is(input, select, button):focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+
+.agenda-heading { display: flex; flex-direction: column; gap: 8px; font-size: .7rem; font-weight: 750; text-transform: uppercase; letter-spacing: .07em; }
+div.agenda-heading { flex-direction: row; justify-content: space-between; }
+.agenda-heading input { text-transform: none; letter-spacing: normal; font-weight: 500; font-size: .85rem; }
+
+.agenda-inline { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.agenda-wrap { flex-wrap: wrap; }
+
+.agenda-topic { 
+  border: 1px solid transparent;
+  border-top: 1px solid var(--border-color); 
+  padding-top: 14px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+  transition: all 0.15s ease; 
+  box-sizing: border-box;
+}
+.agenda-topic-active { 
+  border: 1px solid var(--accent-color); 
+  background: var(--accent-soft); 
+  border-radius: var(--border-radius, 6px); 
+  padding: 10px 10px 12px 10px; 
+  margin-left: -10px; 
+  margin-right: -10px; 
+}
+
+.agenda-topic-title { flex: 1; font-weight: 650 !important; }
+.agenda-number { color: var(--muted-text); font-weight: 600; min-width: 16px; }
+
+/* Botones de acción compactos (Flechas y Eliminar) */
+.agenda-btn-icon {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-text);
+  background: var(--input-bg, var(--panel-color));
+  border: 1px solid var(--border-color);
+  transition: all 0.12s ease;
+}
+.agenda-btn-icon:hover:not(:disabled) {
+  color: var(--text-color);
+  border-color: var(--accent-color);
+  background: var(--accent-soft);
+}
+.agenda-btn-icon.agenda-btn-delete:hover:not(:disabled) {
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+  background: var(--danger-soft);
+}
+
+/* Botón Activar / Activo */
+.agenda-btn-active {
+  font-size: 0.76rem;
+  font-weight: 650;
+  padding: 6px 10px !important;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg, var(--panel-color));
+  color: var(--muted-text);
+}
+.agenda-btn-active:hover:not(:disabled) {
+  color: var(--text-color);
+  border-color: var(--accent-color);
+  background: var(--accent-soft);
+}
+.agenda-btn-active.is-active {
+  background: var(--accent-color) !important;
+  color: #1a1a1a !important;
+  border-color: var(--accent-color) !important;
+  font-weight: 750;
+}
+
+/* Botón de debate en la fila */
+.agenda-btn-debate {
+  font-size: 0.76rem;
+  font-weight: 650;
+  padding: 6px 10px !important;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+.agenda-btn-debate.in-debate {
+  border-color: var(--accent-color);
+  background: var(--accent-soft);
+  color: var(--accent-color);
+  font-weight: 700;
+  animation: debateBtnPulse 2s infinite ease-in-out;
+}
+@keyframes debateBtnPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 163, 127, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(239, 163, 127, 0); }
+}
+
+/* Badges de resultado */
+.agenda-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.agenda-badge.agenda-approved {
+  background: rgba(164, 212, 179, 0.15);
+  color: var(--success-color);
+  border: 1px solid rgba(164, 212, 179, 0.3);
+}
+.agenda-badge.agenda-rejected {
+  background: rgba(237, 170, 161, 0.15);
+  color: var(--danger-color);
+  border: 1px solid rgba(237, 170, 161, 0.3);
+}
+
+.agenda-muted { color: var(--muted-text); line-height: 1.5; margin: 0; }
+@media (max-width: 600px) { .agenda-widget { padding: 12px; } }

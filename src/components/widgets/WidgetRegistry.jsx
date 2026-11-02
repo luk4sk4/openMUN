@@ -23,6 +23,7 @@ const MapaVotacion = lazyWithRetry(() => import('./MapaVotacion'), 'MapaVotacion
 const MiniVotacion = lazyWithRetry(() => import('./MiniVotacion'), 'MiniVotacion');
 const ControladorEnmiendas = lazyWithRetry(() => import('./ControladorEnmiendas'), 'ControladorEnmiendas');
 const CronometroEnmiendas = lazyWithRetry(() => import('./CronometroEnmiendas'), 'CronometroEnmiendas');
+const PanelEnmiendasVotacion = lazyWithRetry(() => import('./PanelEnmiendasVotacion'), 'PanelEnmiendasVotacion');
 
 
 const WidgetRegistry = {
@@ -40,6 +41,7 @@ const WidgetRegistry = {
   "votacion_oficial": VotacionOficial,
   "mini_votacion": MiniVotacion,
   "controlador_enmiendas": ControladorEnmiendas,
+  "panel_enmiendas_votacion": PanelEnmiendasVotacion,
   "mapa_votacion": MapaVotacion,
   "matriz_paises": MatrizPaises,
   "historico_delegaciones": HistoricoDelegaciones,
@@ -56,6 +58,7 @@ const WidgetRegistry = {
   "amendments_controller": ControladorEnmiendas,
   "timer_enmiendas": CronometroEnmiendas,
   "cronometro_debate_enmiendas": CronometroEnmiendas,
+  "debate_votacion_enmiendas": PanelEnmiendasVotacion,
   "configurar_comite": EstablecerAgenda,
   "comite_agenda": EstablecerAgenda,
   "anadir_paises": AnadirPaises,

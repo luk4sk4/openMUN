@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Users, Timer, Check, Plus, X, Crown, Sparkles, UserPlus, Trash2, ArrowUpDown, GripVertical, Globe } from 'lucide-react';
+import { Search, Users, Timer, Check, Plus, X, Crown, Trash2, ArrowUpDown, GripVertical, Globe } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
@@ -146,19 +146,6 @@ const AnadirPaises = () => {
         borderBottom: '1px solid var(--border-color)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            backgroundColor: esGSL ? 'rgba(168, 85, 247, 0.18)' : 'rgba(249, 115, 22, 0.18)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: esGSL ? '#c084fc' : '#fb923c',
-            transition: 'all 0.25s ease'
-          }}>
-            <UserPlus size={16} />
-          </div>
           <div>
             <h3 style={{
               margin: 0,
@@ -311,7 +298,7 @@ const AnadirPaises = () => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          backgroundColor: 'var(--card-header-bg)',
+          backgroundColor: 'transparent',
           border: '1px solid var(--border-color)',
           borderRadius: '6px',
           padding: '0.35rem 0.65rem',
@@ -428,12 +415,11 @@ const AnadirPaises = () => {
             margin: 'auto',
             textAlign: 'center',
             padding: '1.5rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px dashed var(--border-color)',
+            backgroundColor: 'transparent',
+            border: 'none',
             borderRadius: '8px',
             maxWidth: '340px'
           }}>
-            <Sparkles size={24} color="#a855f7" style={{ marginBottom: '0.5rem' }} />
             <div style={{ fontSize: '0.86rem', fontWeight: '700', color: 'var(--text-color)', marginBottom: '0.3rem' }}>
               {t('countries.noDelegationsLoaded', 'No hay delegaciones cargadas')}
             </div>

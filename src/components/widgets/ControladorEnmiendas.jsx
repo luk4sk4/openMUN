@@ -8,7 +8,7 @@ import {
   Plus,
   Search,
   Filter,
-  Sparkles,
+
   Inbox,
   AlertCircle,
   Loader2,
@@ -482,7 +482,7 @@ const ControladorEnmiendas = () => {
           transform: 'translateX(-50%)',
           backgroundColor: 'rgba(15, 23, 42, 0.95)',
           color: '#ffffff',
-          border: '1px solid #3b82f6',
+          border: '1px solid var(--accent-color)',
           padding: '0.45rem 0.9rem',
           borderRadius: '8px',
           fontSize: '0.74rem',
@@ -495,7 +495,7 @@ const ControladorEnmiendas = () => {
           pointerEvents: 'none',
           animation: 'fadeIn 0.2s ease'
         }}>
-          <Sparkles size={14} color="#60a5fa" />
+          <Check size={14} color="var(--accent-color)" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -509,7 +509,7 @@ const ControladorEnmiendas = () => {
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(15, 23, 42, 0.92)',
-          border: '3px dashed #3b82f6',
+          border: '3px dashed var(--accent-color)',
           borderRadius: '8px',
           zIndex: 180,
           display: 'flex',
@@ -521,17 +521,17 @@ const ControladorEnmiendas = () => {
           pointerEvents: 'none'
         }}>
           <div style={{
-            backgroundColor: 'rgba(59, 130, 246, 0.25)',
+            backgroundColor: 'var(--accent-soft)',
             padding: '1.25rem',
             borderRadius: '50%',
-            color: '#60a5fa'
+            color: 'var(--accent-color)'
           }}>
             <Upload size={40} />
           </div>
           <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>
             Suelta aquí el archivo de la resolución
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#93c5fd' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--accent-color)' }}>
             Formatos soportados: Word (.docx), PDF (.pdf) y Texto (.txt, .md)
           </div>
         </div>
@@ -555,7 +555,7 @@ const ControladorEnmiendas = () => {
           backdropFilter: 'blur(5px)',
           gap: '0.75rem'
         }}>
-          <Loader2 size={36} color="#3b82f6" style={{ animation: 'spin 1s linear infinite' }} />
+          <Loader2 size={36} color="var(--accent-color)" style={{ animation: 'spin 1s linear infinite' }} />
           <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#ffffff' }}>
             Analizando y estructurando documento...
           </div>
@@ -576,22 +576,11 @@ const ControladorEnmiendas = () => {
         gap: '0.5rem',
         flexShrink: 0
       }}>
-        <div style={{
-          backgroundColor: 'rgba(16, 185, 129, 0.15)',
-          padding: '0.35rem',
-          borderRadius: '6px',
-          color: '#10b981',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0
-        }}>
-          <FileSignature size={18} />
-        </div>
+
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
-            fontSize: '0.85rem',
-            fontWeight: '800',
+            fontSize: '0.88rem',
+            fontWeight: '650',
             color: 'var(--text-color)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -612,13 +601,13 @@ const ControladorEnmiendas = () => {
               {tienePreambulo && ' • preámbulo'}
             </span>
             <span>•</span>
-            <span style={{ color: '#eab308', fontWeight: '700' }}>{enmiendasPendientes} pendientes</span>
+            <span style={{ color: 'var(--warning-color)', fontWeight: '700' }}>{enmiendasPendientes} pendientes</span>
             <span>•</span>
-            <span style={{ color: '#22c55e', fontWeight: '700' }}>{enmiendasAceptadas} aceptadas</span>
+            <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>{enmiendasAceptadas} aceptadas</span>
             {enmiendasRechazadas > 0 && (
               <>
                 <span>•</span>
-                <span style={{ color: '#ef4444', fontWeight: '700' }}>{enmiendasRechazadas} rechazadas</span>
+                <span style={{ color: 'var(--danger-color)', fontWeight: '700' }}>{enmiendasRechazadas} rechazadas</span>
               </>
             )}
           </div>
@@ -707,9 +696,9 @@ const ControladorEnmiendas = () => {
             <button
               onClick={() => setModalBuzonOpen(true)}
               style={{
-                backgroundColor: 'rgba(168, 85, 247, 0.2)',
-                border: '1px solid #a855f7',
-                color: '#c084fc',
+                backgroundColor: 'var(--accent-soft)',
+                border: '1px solid var(--accent-color)',
+                color: 'var(--accent-color)',
                 borderRadius: '5px',
                 padding: '0.3rem 0.55rem',
                 fontSize: '0.72rem',
@@ -729,9 +718,9 @@ const ControladorEnmiendas = () => {
           <button
             onClick={() => setCronometroVisible(v => !v)}
             style={{
-              background: cronometroVisible ? 'rgba(59, 130, 246, 0.2)' : 'var(--card-hover, rgba(255,255,255,0.05))',
-              border: `1px solid ${cronometroVisible ? '#3b82f6' : 'var(--subborder-color)'}`,
-              color: cronometroVisible ? '#60a5fa' : 'var(--muted-text)',
+              background: cronometroVisible ? 'var(--accent-soft)' : 'var(--card-hover, rgba(255,255,255,0.05))',
+              border: `1px solid ${cronometroVisible ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+              color: cronometroVisible ? 'var(--accent-color)' : 'var(--muted-text)',
               borderRadius: '5px',
               padding: '0.3rem 0.55rem',
               cursor: 'pointer',
@@ -792,10 +781,10 @@ const ControladorEnmiendas = () => {
               }}
             >
               <div style={{
-                backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                backgroundColor: 'var(--accent-soft)',
                 padding: '0.9rem',
                 borderRadius: '50%',
-                color: '#3b82f6'
+                color: 'var(--accent-color)'
               }}>
                 <Upload size={32} />
               </div>
@@ -809,13 +798,13 @@ const ControladorEnmiendas = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: '700', backgroundColor: 'rgba(37, 99, 235, 0.15)', color: '#60a5fa', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: '700', backgroundColor: 'var(--accent-soft)', color: 'var(--btn-bg)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
                   Word (.docx)
                 </span>
-                <span style={{ fontSize: '0.65rem', fontWeight: '700', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#f87171', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: '700', backgroundColor: 'var(--danger-soft)', color: 'var(--danger-color)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
                   PDF (.pdf)
                 </span>
-                <span style={{ fontSize: '0.65rem', fontWeight: '700', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: '600', backgroundColor: 'var(--panel-color)', border: '1px solid var(--subborder-color)', color: 'var(--muted-text)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
                   TXT / Markdown
                 </span>
               </div>
@@ -825,9 +814,9 @@ const ControladorEnmiendas = () => {
               <button
                 onClick={handleCargarEjemplo}
                 style={{
-                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.4)',
-                  color: '#10b981',
+                  backgroundColor: 'var(--panel-color)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-color)',
                   fontWeight: '700',
                   padding: '0.45rem 0.85rem',
                   borderRadius: '6px',
@@ -838,7 +827,7 @@ const ControladorEnmiendas = () => {
                   gap: '0.35rem'
                 }}
               >
-                <Sparkles size={14} /> Cargar Resolución de Ejemplo
+                <FileText size={14} /> Cargar Resolución de Ejemplo
               </button>
 
               <button
@@ -942,9 +931,9 @@ const ControladorEnmiendas = () => {
                   type="button"
                   onClick={() => setModalConfigApartadosOpen(true)}
                   style={{
-                    backgroundColor: 'rgba(168, 85, 247, 0.15)',
-                    border: '1px solid rgba(168, 85, 247, 0.3)',
-                    color: '#c084fc',
+                    backgroundColor: 'var(--accent-soft)',
+                    border: '1px solid var(--accent-soft)',
+                    color: 'var(--accent-color)',
                     padding: '0.3rem 0.6rem',
                     borderRadius: '5px',
                     fontSize: '0.72rem',
@@ -969,9 +958,9 @@ const ControladorEnmiendas = () => {
                     setModalNuevoArticuloOpen(true);
                   }}
                   style={{
-                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    color: '#10b981',
+                    backgroundColor: 'var(--panel-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
                     padding: '0.3rem 0.6rem',
                     borderRadius: '5px',
                     fontSize: '0.72rem',
@@ -989,9 +978,9 @@ const ControladorEnmiendas = () => {
                 <button
                   onClick={() => handleOpenProponer(null)}
                   style={{
-                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    color: '#3b82f6',
+                    backgroundColor: 'var(--accent-soft)',
+                    border: '1px solid var(--accent-soft)',
+                    color: 'var(--accent-color)',
                     padding: '0.3rem 0.65rem',
                     borderRadius: '5px',
                     fontSize: '0.72rem',
@@ -1032,15 +1021,15 @@ const ControladorEnmiendas = () => {
             {/* Enmiendas Generales / Adiciones al Final */}
             {enmiendasGeneralesOFinales.length > 0 && (
               <div style={{
-                backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                border: '1px dashed rgba(59, 130, 246, 0.4)',
+                backgroundColor: 'var(--accent-soft)',
+                border: '1px dashed var(--accent-soft)',
                 borderRadius: '8px',
                 padding: '0.75rem',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.6rem'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: '800', color: '#60a5fa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: '800', color: 'var(--accent-color)' }}>
                   <FilePlus size={14} />
                   <span>Nuevos Artículos y Enmiendas Generales al Final ({enmiendasGeneralesOFinales.length})</span>
                 </div>
@@ -1095,10 +1084,10 @@ const ControladorEnmiendas = () => {
               }}
             >
               <div style={{
-                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                backgroundColor: 'var(--accent-soft)',
                 padding: '0.6rem',
                 borderRadius: '50%',
-                color: '#3b82f6'
+                color: 'var(--accent-color)'
               }}>
                 <Upload size={22} />
               </div>
@@ -1172,9 +1161,9 @@ const ControladorEnmiendas = () => {
                   type="button"
                   onClick={handleCargarEjemplo}
                   style={{
-                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    color: '#10b981',
+                    backgroundColor: 'var(--panel-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
                     padding: '0.45rem 0.85rem',
                     borderRadius: '6px',
                     fontSize: '0.74rem',
@@ -1273,7 +1262,7 @@ const ControladorEnmiendas = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: '800' }}>
-                <Plus size={16} color="#10b981" />
+                <Plus size={16} style={{ color: 'var(--accent-color)' }} />
                 <span>Añadir Nueva Cláusula a la Resolución</span>
               </div>
               <button

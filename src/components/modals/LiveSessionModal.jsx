@@ -13,7 +13,7 @@ import {
   RefreshCw, 
   Eye, 
   EyeOff,
-  Sparkles,
+
   Layers,
   MessageSquare,
   Sliders,
@@ -170,20 +170,20 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
       <div style={{
         backgroundColor: 'var(--panel-color)',
         border: '1px solid var(--border-color)',
-        borderRadius: '18px',
+        borderRadius: '10px',
         width: '740px',
         maxWidth: '95vw',
         maxHeight: '92vh',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 30px 70px rgba(0,0,0,0.65)',
+        boxShadow: '0 16px 36px rgba(0, 0, 0, 0.4)',
         color: 'var(--text-color)',
-        fontFamily: 'Inter, system-ui, sans-serif',
+        fontFamily: 'var(--font-family)',
         overflow: 'hidden'
       }}>
         {/* Modal Header */}
         <div style={{
-          padding: '1.25rem 1.5rem',
+          padding: '1rem 1.25rem',
           borderBottom: '1px solid var(--subborder-color)',
           backgroundColor: 'var(--card-header-bg)',
           display: 'flex',
@@ -192,54 +192,54 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              backgroundColor: isHostActive ? 'rgba(34, 197, 94, 0.16)' : 'rgba(59, 130, 246, 0.16)',
-              border: `1px solid ${isHostActive ? '#22c55e44' : '#3b82f644'}`,
+              width: '40px',
+              height: '40px',
+              borderRadius: 'var(--border-radius, 6px)',
+              backgroundColor: isHostActive ? 'var(--success-soft)' : 'var(--accent-soft)',
+              border: `1px solid ${isHostActive ? 'var(--success-color)' : 'var(--accent-color)'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: isHostActive ? '#22c55e' : '#3b82f6'
+              color: isHostActive ? 'var(--success-color)' : 'var(--accent-color)'
             }}>
-              <Radio size={22} className={isHostActive ? 'animate-pulse' : ''} />
+              <Radio size={20} className={isHostActive ? 'animate-pulse' : ''} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', letterSpacing: '-0.01em' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', letterSpacing: '-0.01em' }}>
                   {t('liveSession.title', 'Sesión en Vivo P2P')} {t('liveSession.daisChair', '(Mesa / Chair)')}
                 </h3>
                 <span style={{
                   fontSize: '0.7rem',
-                  fontWeight: '800',
+                  fontWeight: '700',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
+                  letterSpacing: '0.04em',
                   padding: '0.15rem 0.5rem',
-                  borderRadius: '100px',
-                  backgroundColor: isHostActive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(113, 113, 122, 0.2)',
-                  color: isHostActive ? '#22c55e' : '#a1a1aa',
-                  border: `1px solid ${isHostActive ? '#22c55e44' : '#71717a44'}`
+                  borderRadius: 'var(--border-radius, 6px)',
+                  backgroundColor: isHostActive ? 'var(--success-soft)' : 'var(--panel-color)',
+                  color: isHostActive ? 'var(--success-color)' : 'var(--muted-text)',
+                  border: `1px solid ${isHostActive ? 'var(--success-color)' : 'var(--border-color)'}`
                 }}>
                   {isHostActive ? t('liveSession.onAir', 'En Directo') : t('liveSession.offline', 'Apagado')}
                 </span>
                 <span style={{
                   fontSize: '0.68rem',
-                  fontWeight: '800',
+                  fontWeight: '700',
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                   padding: '0.15rem 0.55rem',
-                  borderRadius: '100px',
-                  backgroundColor: 'rgba(234, 179, 8, 0.15)',
-                  color: '#eab308',
-                  border: '1px solid rgba(234, 179, 8, 0.35)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  backgroundColor: 'var(--warning-soft, rgba(203, 181, 141, 0.15))',
+                  color: 'var(--warning-color)',
+                  border: '1px solid var(--warning-color)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.3rem'
                 }}>
-                  <Sparkles size={11} /> {t('liveSession.wipTag', 'En desarrollo / Work in Progress')}
+                  {t('liveSession.wipTag', 'En desarrollo / Work in Progress')}
                 </span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted-text)', marginTop: '2px' }}>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                 {isHostActive
                   ? `${t('liveSession.broadcastingRoom', 'Transmitiendo sala')} • ${connectedPeers.length} ${t('liveSession.connectedDevices', 'delegaciones y mesas conectadas')}`
                   : t('liveSession.configureToStart', 'Configura las opciones de la sala e inicia la transmisión P2P')}
@@ -249,17 +249,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
 
           <button
             onClick={onClose}
+            aria-label="Cerrar modal"
             style={{
               background: 'transparent',
               border: 'none',
               color: 'var(--muted-text)',
               cursor: 'pointer',
               padding: '6px',
-              borderRadius: '8px',
+              borderRadius: 'var(--border-radius, 6px)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.15s ease'
+              justifyContent: 'center'
             }}
           >
             <X size={20} />
@@ -276,14 +276,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
           overflowX: 'auto'
         }}>
           <button
+            type="button"
+            role="tab"
+            aria-selected={tabActiva === 'SALA'}
             onClick={() => setTabActiva('SALA')}
             style={{
               padding: '0.5rem 0.9rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabActiva === 'SALA' ? 'var(--btn-bg)' : 'transparent',
-              color: tabActiva === 'SALA' ? 'var(--btn-text)' : 'var(--muted-text)',
-              fontWeight: '700',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabActiva === 'SALA' ? 'var(--accent-color)' : 'transparent'}`,
+              backgroundColor: tabActiva === 'SALA' ? 'var(--accent-soft)' : 'transparent',
+              color: tabActiva === 'SALA' ? 'var(--accent-color)' : 'var(--muted-text)',
+              fontWeight: tabActiva === 'SALA' ? '700' : '500',
               fontSize: '0.82rem',
               cursor: 'pointer',
               display: 'flex',
@@ -296,14 +299,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
           </button>
 
           <button
+            type="button"
+            role="tab"
+            aria-selected={tabActiva === 'AJUSTES'}
             onClick={() => setTabActiva('AJUSTES')}
             style={{
               padding: '0.5rem 0.9rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabActiva === 'AJUSTES' ? 'var(--btn-bg)' : 'transparent',
-              color: tabActiva === 'AJUSTES' ? 'var(--btn-text)' : 'var(--muted-text)',
-              fontWeight: '700',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabActiva === 'AJUSTES' ? 'var(--accent-color)' : 'transparent'}`,
+              backgroundColor: tabActiva === 'AJUSTES' ? 'var(--accent-soft)' : 'transparent',
+              color: tabActiva === 'AJUSTES' ? 'var(--accent-color)' : 'var(--muted-text)',
+              fontWeight: tabActiva === 'AJUSTES' ? '700' : '500',
               fontSize: '0.82rem',
               cursor: 'pointer',
               display: 'flex',
@@ -316,14 +322,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
           </button>
 
           <button
+            type="button"
+            role="tab"
+            aria-selected={tabActiva === 'CONEXIONES'}
             onClick={() => setTabActiva('CONEXIONES')}
             style={{
               padding: '0.5rem 0.9rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabActiva === 'CONEXIONES' ? 'var(--btn-bg)' : 'transparent',
-              color: tabActiva === 'CONEXIONES' ? 'var(--btn-text)' : 'var(--muted-text)',
-              fontWeight: '700',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabActiva === 'CONEXIONES' ? 'var(--accent-color)' : 'transparent'}`,
+              backgroundColor: tabActiva === 'CONEXIONES' ? 'var(--accent-soft)' : 'transparent',
+              color: tabActiva === 'CONEXIONES' ? 'var(--accent-color)' : 'var(--muted-text)',
+              fontWeight: tabActiva === 'CONEXIONES' ? '700' : '500',
               fontSize: '0.82rem',
               cursor: 'pointer',
               display: 'flex',
@@ -336,14 +345,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
           </button>
 
           <button
+            type="button"
+            role="tab"
+            aria-selected={tabActiva === 'SOLICITUDES'}
             onClick={() => setTabActiva('SOLICITUDES')}
             style={{
               padding: '0.5rem 0.9rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabActiva === 'SOLICITUDES' ? 'var(--btn-bg)' : 'transparent',
-              color: tabActiva === 'SOLICITUDES' ? 'var(--btn-text)' : 'var(--muted-text)',
-              fontWeight: '700',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabActiva === 'SOLICITUDES' ? 'var(--accent-color)' : 'transparent'}`,
+              backgroundColor: tabActiva === 'SOLICITUDES' ? 'var(--accent-soft)' : 'transparent',
+              color: tabActiva === 'SOLICITUDES' ? 'var(--accent-color)' : 'var(--muted-text)',
+              fontWeight: tabActiva === 'SOLICITUDES' ? '700' : '500',
               fontSize: '0.82rem',
               cursor: 'pointer',
               display: 'flex',
@@ -359,21 +371,23 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                backgroundColor: '#ef4444',
-                boxShadow: '0 0 8px #ef4444'
+                backgroundColor: 'var(--danger-color)'
               }} />
             )}
           </button>
 
           <button
+            type="button"
+            role="tab"
+            aria-selected={tabActiva === 'NOTAS'}
             onClick={() => setTabActiva('NOTAS')}
             style={{
               padding: '0.5rem 0.9rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: tabActiva === 'NOTAS' ? 'var(--btn-bg)' : 'transparent',
-              color: tabActiva === 'NOTAS' ? 'var(--btn-text)' : 'var(--muted-text)',
-              fontWeight: '700',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tabActiva === 'NOTAS' ? 'var(--accent-color)' : 'transparent'}`,
+              backgroundColor: tabActiva === 'NOTAS' ? 'var(--accent-soft)' : 'transparent',
+              color: tabActiva === 'NOTAS' ? 'var(--accent-color)' : 'var(--muted-text)',
+              fontWeight: tabActiva === 'NOTAS' ? '700' : '500',
               fontSize: '0.82rem',
               cursor: 'pointer',
               display: 'flex',
@@ -386,12 +400,13 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
             <Mail size={15} /> Notas & Pajes
             {unreadNotesCount > 0 && (
               <span style={{
-                backgroundColor: tabActiva === 'NOTAS' ? '#ffffff' : '#ef4444',
-                color: tabActiva === 'NOTAS' ? '#3b82f6' : '#ffffff',
+                backgroundColor: 'var(--danger-color)',
+                color: 'var(--btn-text)',
                 fontSize: '0.65rem',
-                fontWeight: '800',
-                padding: '0.1rem 0.45rem',
-                borderRadius: '100px'
+                fontWeight: '700',
+                padding: '1px 6px',
+                borderRadius: '100px',
+                fontVariantNumeric: 'tabular-nums'
               }}>
                 {unreadNotesCount}
               </span>
@@ -400,7 +415,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* ═══════════════════════════════════════════════════════ */}
           {/* PESTAÑA 1: CONTROL DE SALA                              */}
           {/* ═══════════════════════════════════════════════════════ */}
@@ -408,10 +423,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
             <>
               {/* Card de Estado y Botón de Inicio */}
               <div style={{
-                backgroundColor: isHostActive ? 'rgba(34, 197, 94, 0.08)' : 'var(--card-header-bg)',
-                border: `1px solid ${isHostActive ? '#22c55e44' : 'var(--subborder-color)'}`,
-                borderRadius: '14px',
-                padding: '1.25rem 1.5rem',
+                backgroundColor: isHostActive ? 'var(--success-soft)' : 'var(--card-header-bg)',
+                border: `1px solid ${isHostActive ? 'var(--success-color)' : 'var(--subborder-color)'}`,
+                borderRadius: 'var(--border-radius, 6px)',
+                padding: '1.15rem 1.35rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -421,33 +436,32 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{
-                      width: '12px',
-                      height: '12px',
+                      width: '10px',
+                      height: '10px',
                       borderRadius: '50%',
-                      backgroundColor: isHostActive ? '#22c55e' : '#71717a',
-                      boxShadow: isHostActive ? '0 0 12px #22c55e' : 'none'
+                      backgroundColor: isHostActive ? 'var(--success-color)' : 'var(--muted-text)'
                     }} />
-                    <span style={{ fontWeight: '800', fontSize: '1.05rem' }}>
+                    <span style={{ fontWeight: '800', fontSize: '1rem' }}>
                       {isHostActive ? t('liveSession.p2pServerActive', 'Servidor P2P Activo y Emitiendo') : t('liveSession.p2pServerOff', 'Servidor P2P Desconectado')}
                     </span>
                     <span style={{
                       fontSize: '0.68rem',
-                      fontWeight: '800',
+                      fontWeight: '700',
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
                       padding: '0.15rem 0.5rem',
-                      borderRadius: '100px',
-                      backgroundColor: 'rgba(234, 179, 8, 0.15)',
-                      color: '#eab308',
-                      border: '1px solid rgba(234, 179, 8, 0.35)',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      backgroundColor: 'var(--warning-soft, rgba(203, 181, 141, 0.15))',
+                      color: 'var(--warning-color)',
+                      border: '1px solid var(--warning-color)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.3rem'
                     }}>
-                      <Sparkles size={11} /> {t('liveSession.wipTag', 'En desarrollo / Work in Progress')}
+                      {t('liveSession.wipTag', 'En desarrollo / Work in Progress')}
                     </span>
                   </div>
-                  <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.82rem', color: 'var(--muted-text)', maxWidth: '440px' }}>
+                  <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.8rem', color: 'var(--muted-text)', maxWidth: '440px', lineHeight: '1.4' }}>
                     {isHostActive
                       ? t('liveSession.joinByQR', 'Los delegados pueden unirse escaneando el código QR o introduciendo el código de sala.')
                       : t('liveSession.startServer', 'Inicia el servidor para permitir conexiones en tiempo real de delegados, secretaría y backroom.')}
@@ -459,19 +473,18 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     <button
                       onClick={stopHosting}
                       style={{
-                        backgroundColor: '#ef4444',
-                        color: '#ffffff',
+                        backgroundColor: 'var(--danger-color)',
+                        color: 'var(--btn-text)',
                         border: 'none',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '0.65rem 1.4rem',
                         fontWeight: '700',
-                        fontSize: '0.88rem',
+                        fontSize: '0.85rem',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.45rem',
-                        boxShadow: '0 4px 14px rgba(239, 68, 68, 0.3)',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.15s ease'
                       }}
                     >
                       <Radio size={16} /> {t('liveSession.stopRoom', 'Detener Sala')}
@@ -484,16 +497,15 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                         backgroundColor: 'var(--btn-bg)',
                         color: 'var(--btn-text)',
                         border: 'none',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '0.65rem 1.4rem',
-                        fontWeight: '800',
-                        fontSize: '0.88rem',
+                        fontWeight: '700',
+                        fontSize: '0.85rem',
                         cursor: isConnecting ? 'wait' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.45rem',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.15s ease'
                       }}
                     >
                       <Radio size={16} /> {isConnecting ? t('liveSession.starting', 'Iniciando...') : t('liveSession.startRoom', 'Iniciar Sala P2P')}
@@ -504,10 +516,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
 
               {/* Bloque Informativo de Recursos de Servidor y Donaciones */}
               <div style={{
-                backgroundColor: 'rgba(245, 158, 11, 0.06)',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                borderRadius: '14px',
-                padding: '1.1rem 1.25rem',
+                backgroundColor: 'var(--warning-soft, rgba(203, 181, 141, 0.08))',
+                border: '1px solid var(--warning-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                padding: '1rem 1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.85rem'
@@ -516,10 +528,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div style={{
                     width: '36px',
                     height: '36px',
-                    borderRadius: '10px',
-                    backgroundColor: 'rgba(245, 158, 11, 0.16)',
-                    border: '1px solid rgba(245, 158, 11, 0.35)',
-                    color: '#f59e0b',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--warning-soft, rgba(203, 181, 141, 0.16))',
+                    border: '1px solid var(--warning-color)',
+                    color: 'var(--warning-color)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -769,9 +781,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   {/* Botones de Acceso Rápido a Pantallas Locales (Doble Monitor) */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                     <div style={{
-                      backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                      border: '1px dashed rgba(59, 130, 246, 0.35)',
-                      borderRadius: '12px',
+                      backgroundColor: 'var(--card-header-bg)',
+                      border: '1px solid var(--subborder-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem 1rem',
                       display: 'flex',
                       alignItems: 'center',
@@ -780,7 +792,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}>
                       <div>
                         <div style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <Layers size={15} color="#3b82f6" /> {t('liveSession.localSecretariat', 'Secretaría Local')}
+                          <Layers size={15} style={{ color: 'var(--accent-color)' }} /> {t('liveSession.localSecretariat', 'Secretaría Local')}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                           {t('liveSession.localSecretariatDesc', 'Pestaña secundaria para proyector o pajes')}
@@ -789,19 +801,18 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       <button
                         onClick={handleOpenLocalSecretariat}
                         style={{
-                          backgroundColor: '#3b82f6',
-                          color: '#ffffff',
+                          backgroundColor: 'var(--btn-bg)',
+                          color: 'var(--btn-text)',
                           border: 'none',
-                          borderRadius: '8px',
-                          padding: '0.45rem 0.8rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '0.45rem 0.85rem',
                           fontWeight: '700',
                           fontSize: '0.76rem',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.35rem',
-                          whiteSpace: 'nowrap',
-                          boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                          whiteSpace: 'nowrap'
                         }}
                       >
                         <ExternalLink size={13} /> {t('liveSession.openLocal', 'Abrir')}
@@ -809,9 +820,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     </div>
 
                     <div style={{
-                      backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                      border: '1px dashed rgba(16, 185, 129, 0.35)',
-                      borderRadius: '12px',
+                      backgroundColor: 'var(--card-header-bg)',
+                      border: '1px solid var(--subborder-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem 1rem',
                       display: 'flex',
                       alignItems: 'center',
@@ -820,7 +831,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}>
                       <div>
                         <div style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <Megaphone size={15} color="#10b981" /> {t('liveSession.localStaff', 'Staff Local')}
+                          <Megaphone size={15} style={{ color: 'var(--success-color)' }} /> {t('liveSession.localStaff', 'Staff Local')}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                           {t('liveSession.localStaffDesc', 'Consola de logística y avisos oficiales')}
@@ -829,19 +840,18 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       <button
                         onClick={handleOpenLocalStaff}
                         style={{
-                          backgroundColor: '#10b981',
-                          color: '#ffffff',
+                          backgroundColor: 'var(--btn-bg)',
+                          color: 'var(--btn-text)',
                           border: 'none',
-                          borderRadius: '8px',
-                          padding: '0.45rem 0.8rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '0.45rem 0.85rem',
                           fontWeight: '700',
                           fontSize: '0.76rem',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.35rem',
-                          whiteSpace: 'nowrap',
-                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                          whiteSpace: 'nowrap'
                         }}
                       >
                         <ExternalLink size={13} /> {t('liveSession.openLocal', 'Abrir')}
@@ -858,24 +868,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     style={{
                       backgroundColor: '#ffffff',
                       padding: '12px 14px 10px 14px',
-                      borderRadius: '14px',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      border: '1px solid var(--border-color)',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
                       alignSelf: 'center',
                       cursor: 'pointer',
-                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transition: 'all 0.15s ease',
                       userSelect: 'none'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-3px) scale(1.03)';
-                      e.currentTarget.style.boxShadow = '0 14px 35px rgba(59, 130, 246, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.4)';
                     }}
                   >
                     <QRCodeSVG
@@ -893,7 +896,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       color: '#18181b',
                       marginTop: '6px'
                     }}>
-                      <Maximize2 size={12} color="#2563eb" />
+                      <Maximize2 size={12} color="#18181b" />
                       <span>{t('liveSession.scanToJoin', 'Escanear para Unirse')}</span>
                     </div>
                     <span style={{ fontSize: '0.6rem', fontWeight: '600', color: '#64748b', marginTop: '1px' }}>
@@ -914,7 +917,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               <div style={{
                 backgroundColor: 'var(--card-header-bg)',
                 border: '1px solid var(--subborder-color)',
-                borderRadius: '14px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -922,7 +925,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                    <Shield size={18} color="#3b82f6" /> {t('liveSession.privacyMode', 'Modo de Privacidad y Visualización')}
+                    <Shield size={18} style={{ color: 'var(--accent-color)' }} /> {t('liveSession.privacyMode', 'Modo de Privacidad y Visualización')}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                     {t('liveSession.privacyModeDesc', 'Configura cómo se muestra el código y el QR de la sala en la interfaz.')}
@@ -934,9 +937,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ privacyMode: 'normal' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.privacyMode !== 'hidden' ? '#22c55e' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.privacyMode !== 'hidden' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.privacyMode !== 'hidden' ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.privacyMode !== 'hidden' ? 'var(--accent-soft)' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -946,10 +949,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.privacyMode !== 'hidden' ? '#22c55e' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.privacyMode !== 'hidden' ? 'var(--accent-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Eye size={15} /> {t('liveSession.modeNormal', 'Modo Normal')}
                       </span>
-                      {roomSettings.privacyMode !== 'hidden' && <CheckCircle2 size={16} color="#22c55e" />}
+                      {roomSettings.privacyMode !== 'hidden' && <CheckCircle2 size={16} style={{ color: 'var(--accent-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       {t('liveSession.modeNormalDesc', 'Muestra el código en la barra superior, código de sala visible y código QR disponible para escanear.')}
@@ -960,9 +963,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ privacyMode: 'hidden' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.privacyMode === 'hidden' ? '#eab308' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.privacyMode === 'hidden' ? 'rgba(234, 179, 8, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.privacyMode === 'hidden' ? 'var(--warning-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.privacyMode === 'hidden' ? 'var(--warning-soft, rgba(203, 181, 141, 0.12))' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -972,10 +975,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.privacyMode === 'hidden' ? '#eab308' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.privacyMode === 'hidden' ? 'var(--warning-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <EyeOff size={15} /> {t('liveSession.modeHidden', 'Modo Oculto')}
                       </span>
-                      {roomSettings.privacyMode === 'hidden' && <CheckCircle2 size={16} color="#eab308" />}
+                      {roomSettings.privacyMode === 'hidden' && <CheckCircle2 size={16} style={{ color: 'var(--warning-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       {t('liveSession.modeHiddenDesc', 'Muestra "En Vivo" en la barra superior, código censurado (clic para ver) y oculta el código QR.')}
@@ -988,7 +991,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               <div style={{
                 backgroundColor: 'var(--card-header-bg)',
                 border: '1px solid var(--subborder-color)',
-                borderRadius: '14px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -996,7 +999,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                    <Zap size={18} color="#3b82f6" /> {t('liveSession.gslRequestMode', 'Modo de Solicitudes a la Lista de Oradores (GSL)')}
+                    <Zap size={18} style={{ color: 'var(--accent-color)' }} /> {t('liveSession.gslRequestMode', 'Modo de Solicitudes a la Lista de Oradores (GSL)')}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                     {t('liveSession.gslRequestModeDesc', 'Define cómo se procesan las peticiones de los delegados para incorporarse a la Lista General de Oradores.')}
@@ -1009,9 +1012,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ speakerRequestMode: 'direct' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.speakerRequestMode === 'direct' ? '#22c55e' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.speakerRequestMode === 'direct' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.speakerRequestMode === 'direct' ? 'var(--success-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.speakerRequestMode === 'direct' ? 'var(--success-soft)' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1021,10 +1024,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'direct' ? '#22c55e' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'direct' ? 'var(--success-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Zap size={14} /> {t('liveSession.requestModeDirect', 'Directas')}
                       </span>
-                      {roomSettings.speakerRequestMode === 'direct' && <CheckCircle2 size={16} color="#22c55e" />}
+                      {roomSettings.speakerRequestMode === 'direct' && <CheckCircle2 size={16} style={{ color: 'var(--success-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       {t('liveSession.requestModeDirectGslDesc', 'El delegado entra a la lista automáticamente sin que la Mesa deba aceptar.')}
@@ -1035,9 +1038,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ speakerRequestMode: 'approval' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.speakerRequestMode === 'approval' ? '#eab308' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.speakerRequestMode === 'approval' ? 'rgba(234, 179, 8, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.speakerRequestMode === 'approval' ? 'var(--warning-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.speakerRequestMode === 'approval' ? 'var(--warning-soft, rgba(203, 181, 141, 0.12))' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1047,10 +1050,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'approval' ? '#eab308' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'approval' ? 'var(--warning-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Hand size={14} /> {t('liveSession.requestModeApproval', 'Con Aprobación')}
                       </span>
-                      {roomSettings.speakerRequestMode === 'approval' && <CheckCircle2 size={16} color="#eab308" />}
+                      {roomSettings.speakerRequestMode === 'approval' && <CheckCircle2 size={16} style={{ color: 'var(--warning-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       {t('liveSession.requestModeApprovalGslDesc', 'La solicitud va a la cola de pendientes y el Chair o Secretaría debe aprobarla.')}
@@ -1061,9 +1064,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ speakerRequestMode: 'disabled' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.speakerRequestMode === 'disabled' ? '#ef4444' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.speakerRequestMode === 'disabled' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.speakerRequestMode === 'disabled' ? 'var(--danger-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.speakerRequestMode === 'disabled' ? 'var(--danger-soft)' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1073,10 +1076,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'disabled' ? '#ef4444' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'disabled' ? 'var(--danger-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Lock size={14} /> {t('liveSession.requestModeDisabled', 'Deshabilitadas')}
                       </span>
-                      {roomSettings.speakerRequestMode === 'disabled' && <CheckCircle2 size={16} color="#ef4444" />}
+                      {roomSettings.speakerRequestMode === 'disabled' && <CheckCircle2 size={16} style={{ color: 'var(--danger-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       {t('liveSession.requestModeDisabledGslDesc', 'Los delegados no pueden solicitar añadirse a la lista desde su interfaz.')}
@@ -1089,7 +1092,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               <div style={{
                 backgroundColor: 'var(--card-header-bg)',
                 border: '1px solid var(--subborder-color)',
-                borderRadius: '14px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -1097,7 +1100,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                    <Clock size={18} color="#a855f7" /> {t('liveSession.caucusRequestMode', 'Modo de Solicitudes a Debate')}
+                    <Clock size={18} style={{ color: 'var(--accent-color)' }} /> {t('liveSession.caucusRequestMode', 'Modo de Solicitudes a Debate')}
                   </div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                     {t('liveSession.caucusRequestModeDesc', 'Control de incorporación de delegados a la lista de oradores durante un debate.')}
@@ -1109,9 +1112,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ caucusRequestMode: 'direct' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.caucusRequestMode === 'direct' ? '#22c55e' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.caucusRequestMode === 'direct' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.caucusRequestMode === 'direct' ? 'var(--success-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.caucusRequestMode === 'direct' ? 'var(--success-soft)' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1121,10 +1124,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'direct' ? '#22c55e' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'direct' ? 'var(--success-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Zap size={14} /> Directas
                       </span>
-                      {roomSettings.caucusRequestMode === 'direct' && <CheckCircle2 size={16} color="#22c55e" />}
+                      {roomSettings.caucusRequestMode === 'direct' && <CheckCircle2 size={16} style={{ color: 'var(--success-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       Ingreso instantáneo a la cola del Caucus.
@@ -1135,9 +1138,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ caucusRequestMode: 'approval' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.caucusRequestMode === 'approval' ? '#eab308' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.caucusRequestMode === 'approval' ? 'rgba(234, 179, 8, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.caucusRequestMode === 'approval' ? 'var(--warning-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.caucusRequestMode === 'approval' ? 'var(--warning-soft, rgba(203, 181, 141, 0.12))' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1147,10 +1150,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'approval' ? '#eab308' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'approval' ? 'var(--warning-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Hand size={14} /> Con Aprobación
                       </span>
-                      {roomSettings.caucusRequestMode === 'approval' && <CheckCircle2 size={16} color="#eab308" />}
+                      {roomSettings.caucusRequestMode === 'approval' && <CheckCircle2 size={16} style={{ color: 'var(--warning-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       La Mesa o Secretaría autoriza cada turno de Caucus.
@@ -1161,9 +1164,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div
                     onClick={() => updateRoomSettings({ caucusRequestMode: 'disabled' })}
                     style={{
-                      border: `1.5px solid ${roomSettings.caucusRequestMode === 'disabled' ? '#ef4444' : 'var(--subborder-color)'}`,
-                      backgroundColor: roomSettings.caucusRequestMode === 'disabled' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '10px',
+                      border: `1px solid ${roomSettings.caucusRequestMode === 'disabled' ? 'var(--danger-color)' : 'var(--subborder-color)'}`,
+                      backgroundColor: roomSettings.caucusRequestMode === 'disabled' ? 'var(--danger-soft)' : 'transparent',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1173,10 +1176,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'disabled' ? '#ef4444' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'disabled' ? 'var(--danger-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <Lock size={14} /> Deshabilitadas
                       </span>
-                      {roomSettings.caucusRequestMode === 'disabled' && <CheckCircle2 size={16} color="#ef4444" />}
+                      {roomSettings.caucusRequestMode === 'disabled' && <CheckCircle2 size={16} style={{ color: 'var(--danger-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
                       Peticiones de orador bloqueadas durante el Caucus.
@@ -1189,22 +1192,22 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               <div style={{
                 backgroundColor: 'var(--card-header-bg)',
                 border: '1px solid var(--subborder-color)',
-                borderRadius: '14px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                  <Shield size={18} color="#10b981" /> {t('liveSession.delegatePermissions', 'Permisos y Capacidades de Delegados')}
+                  <Shield size={18} style={{ color: 'var(--accent-color)' }} /> {t('liveSession.delegatePermissions', 'Permisos y Capacidades de Delegados')}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
                   {/* Toggle Notas entre Delegados */}
                   <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    backgroundColor: 'var(--panel-color)',
                     border: '1px solid var(--subborder-color)',
-                    borderRadius: '10px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.75rem 1rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -1220,15 +1223,15 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       type="checkbox"
                       checked={roomSettings.allowDelegateNotes}
                       onChange={e => updateRoomSettings({ allowDelegateNotes: e.target.checked })}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-color)' }}
                     />
                   </div>
 
                   {/* Toggle Notas a la Mesa */}
                   <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    backgroundColor: 'var(--panel-color)',
                     border: '1px solid var(--subborder-color)',
-                    borderRadius: '10px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.75rem 1rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -1244,15 +1247,15 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       type="checkbox"
                       checked={roomSettings.allowChairNotes}
                       onChange={e => updateRoomSettings({ allowChairNotes: e.target.checked })}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-color)' }}
                     />
                   </div>
 
                   {/* Toggle Proponer Mociones */}
                   <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    backgroundColor: 'var(--panel-color)',
                     border: '1px solid var(--subborder-color)',
-                    borderRadius: '10px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.75rem 1rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -1268,15 +1271,15 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       type="checkbox"
                       checked={roomSettings.allowMotions}
                       onChange={e => updateRoomSettings({ allowMotions: e.target.checked })}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-color)' }}
                     />
                   </div>
 
                   {/* Toggle Votación en Vivo */}
                   <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.03)',
+                    backgroundColor: 'var(--panel-color)',
                     border: '1px solid var(--subborder-color)',
-                    borderRadius: '10px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.75rem 1rem',
                     display: 'flex',
                     alignItems: 'center',
@@ -1292,7 +1295,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       type="checkbox"
                       checked={roomSettings.allowLiveVoting}
                       onChange={e => updateRoomSettings({ allowLiveVoting: e.target.checked })}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-color)' }}
                     />
                   </div>
                 </div>
@@ -1302,14 +1305,14 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               <div style={{
                 backgroundColor: 'var(--card-header-bg)',
                 border: '1px solid var(--subborder-color)',
-                borderRadius: '14px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '1.25rem',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                  <Key size={18} color="#f59e0b" /> {t('liveSession.accessPasswords', 'Contraseñas de Secretaría, Staff y Backroom')}
+                  <Key size={18} style={{ color: 'var(--accent-color)' }} /> {t('liveSession.accessPasswords', 'Contraseñas de Secretaría, Staff y Backroom')}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
@@ -1326,9 +1329,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                           onChange={e => setSecretPassword(e.target.value)}
                           style={{
                             width: '100%',
-                            backgroundColor: 'rgba(255,255,255,0.04)',
-                            border: '1px solid var(--subborder-color)',
-                            borderRadius: '8px',
+                            backgroundColor: 'var(--input-bg)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--border-radius, 6px)',
                             padding: '0.55rem 2rem 0.55rem 0.75rem',
                             color: 'var(--text-color)',
                             fontSize: '0.85rem'
@@ -1553,8 +1556,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                           width: '8px',
                           height: '8px',
                           borderRadius: '50%',
-                          backgroundColor: '#22c55e',
-                          boxShadow: '0 0 6px #22c55e'
+                          backgroundColor: 'var(--success-color)'
                         }} />
                         <div>
                           <div style={{ fontWeight: '800', fontSize: '0.9rem' }}>
@@ -1571,9 +1573,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                           fontSize: '0.7rem',
                           fontWeight: '700',
                           padding: '0.2rem 0.55rem',
-                          borderRadius: '6px',
-                          backgroundColor: peer.role === 'secretariat' ? 'rgba(59, 130, 246, 0.15)' : (peer.role === 'backroom' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(34, 197, 94, 0.15)'),
-                          color: peer.role === 'secretariat' ? '#60a5fa' : (peer.role === 'backroom' ? '#fb923c' : '#4ade80')
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: peer.role === 'secretariat' ? 'var(--info-soft, rgba(166, 184, 201, 0.15))' : (peer.role === 'backroom' ? 'var(--warning-soft, rgba(203, 181, 141, 0.15))' : 'var(--accent-soft)'),
+                          color: peer.role === 'secretariat' ? 'var(--info-color)' : (peer.role === 'backroom' ? 'var(--warning-color)' : 'var(--accent-color)'),
+                          border: `1px solid ${peer.role === 'secretariat' ? 'var(--info-color)' : (peer.role === 'backroom' ? 'var(--warning-color)' : 'var(--accent-color)')}`
                         }}>
                           {peer.role?.toUpperCase()}
                         </span>
@@ -1585,13 +1588,13 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                             }
                           }}
                           style={{
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            color: '#ef4444',
-                            borderRadius: '6px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--danger-color)',
+                            borderRadius: 'var(--border-radius, 6px)',
                             padding: '0.35rem 0.65rem',
                             fontSize: '0.72rem',
-                            fontWeight: '700',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
@@ -1618,17 +1621,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               {/* Sección de Propuestas de Enmienda */}
               {enmiendasPropuestas.length > 0 && (
                 <div style={{
-                  backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                  border: '1.5px solid rgba(59, 130, 246, 0.4)',
-                  borderRadius: '14px',
+                  backgroundColor: 'var(--card-header-bg)',
+                  border: '1px solid var(--subborder-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '1.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.85rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                    <FileText size={18} color="#60a5fa" />
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#60a5fa' }}>
+                    <FileText size={18} style={{ color: 'var(--accent-color)' }} />
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--accent-color)' }}>
                       Propuestas de Enmienda ({enmiendasPropuestas.length})
                     </h4>
                   </div>
@@ -1638,9 +1641,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       <div
                         key={prop.id}
                         style={{
-                          backgroundColor: 'var(--card-header-bg)',
-                          border: '1px solid var(--subborder-color)',
-                          borderRadius: '10px',
+                          backgroundColor: 'var(--panel-color)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 'var(--border-radius, 6px)',
                           padding: '0.85rem 1rem',
                           display: 'flex',
                           flexDirection: 'column',
@@ -1653,11 +1656,12 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                             <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>{prop.paisProponente}</span>
                             <span style={{
                               fontSize: '0.68rem',
-                              fontWeight: '800',
+                              fontWeight: '700',
                               padding: '0.15rem 0.45rem',
-                              borderRadius: '4px',
-                              backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                              color: '#60a5fa'
+                              borderRadius: 'var(--border-radius, 6px)',
+                              backgroundColor: 'var(--accent-soft)',
+                              color: 'var(--accent-color)',
+                              border: '1px solid var(--accent-color)'
                             }}>
                               {prop.tipoEnmienda?.toUpperCase() || 'ENMIENDA'}
                             </span>
@@ -1681,13 +1685,13 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                                 }
                               }}
                               style={{
-                                backgroundColor: '#22c55e',
-                                color: '#ffffff',
+                                backgroundColor: 'var(--btn-bg)',
+                                color: 'var(--btn-text)',
                                 border: 'none',
-                                borderRadius: '6px',
+                                borderRadius: 'var(--border-radius, 6px)',
                                 padding: '0.35rem 0.75rem',
                                 fontSize: '0.75rem',
-                                fontWeight: '800',
+                                fontWeight: '700',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1704,12 +1708,12 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                               }}
                               style={{
                                 backgroundColor: 'transparent',
-                                border: '1px solid var(--subborder-color)',
+                                border: '1px solid var(--border-color)',
                                 color: 'var(--muted-text)',
-                                borderRadius: '6px',
+                                borderRadius: 'var(--border-radius, 6px)',
                                 padding: '0.35rem 0.65rem',
                                 fontSize: '0.75rem',
-                                fontWeight: '700',
+                                fontWeight: '600',
                                 cursor: 'pointer'
                               }}
                             >
@@ -1719,7 +1723,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                         </div>
 
                         {prop.textoPropuesto && (
-                          <div style={{ fontSize: '0.8rem', color: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.08)', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--success-color)', backgroundColor: 'var(--success-soft)', padding: '0.4rem 0.6rem', borderRadius: 'var(--border-radius, 6px)', border: '1px solid var(--success-color)' }}>
                             <strong>Propuesto:</strong> {prop.textoPropuesto}
                           </div>
                         )}
@@ -1743,7 +1747,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   padding: '3rem 1.5rem',
                   textAlign: 'center',
                   backgroundColor: 'var(--card-header-bg)',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: '1px dashed var(--subborder-color)',
                   color: 'var(--muted-text)',
                   fontSize: '0.85rem'
@@ -1762,7 +1766,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       style={{
                         backgroundColor: 'var(--card-header-bg)',
                         border: '1px solid var(--subborder-color)',
-                        borderRadius: '12px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '1rem 1.2rem',
                         display: 'flex',
                         alignItems: 'center',
@@ -1775,11 +1779,12 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                           <CountryFlag nombre={req.country} size="sm" />
                           <span style={{
                             fontSize: '0.7rem',
-                            fontWeight: '800',
+                            fontWeight: '700',
                             padding: '0.15rem 0.5rem',
-                            borderRadius: '4px',
-                            backgroundColor: req.speechType === 'GSL' ? 'rgba(59, 130, 246, 0.2)' : (req.speechType === 'CAUCUS' ? 'rgba(168, 85, 247, 0.2)' : (req.speechType === 'POINT' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.2)')),
-                            color: req.speechType === 'GSL' ? '#60a5fa' : (req.speechType === 'CAUCUS' ? '#c084fc' : (req.speechType === 'POINT' ? '#facc15' : '#facc15'))
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: req.speechType === 'GSL' ? 'var(--info-soft, rgba(166, 184, 201, 0.15))' : (req.speechType === 'CAUCUS' ? 'var(--accent-soft)' : 'var(--warning-soft, rgba(203, 181, 141, 0.15))'),
+                            color: req.speechType === 'GSL' ? 'var(--info-color)' : (req.speechType === 'CAUCUS' ? 'var(--accent-color)' : 'var(--warning-color)'),
+                            border: `1px solid ${req.speechType === 'GSL' ? 'var(--info-color)' : (req.speechType === 'CAUCUS' ? 'var(--accent-color)' : 'var(--warning-color)')}`
                           }}>
                             {req.speechType === 'GSL' ? 'Lista GSL' : (req.speechType === 'CAUCUS' ? 'Debate' : (req.speechType === 'POINT' ? 'Punto Parlamentario (POI)' : (req.details?.tipo === 'Caucus Moderado' ? 'Debate' : (req.details?.tipo || 'Moción'))))}
                           </span>
@@ -1799,18 +1804,17 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                         <button
                           onClick={() => approveSpeakingRequest(req)}
                           style={{
-                            backgroundColor: '#22c55e',
-                            color: '#ffffff',
+                            backgroundColor: 'var(--btn-bg)',
+                            color: 'var(--btn-text)',
                             border: 'none',
-                            borderRadius: '8px',
+                            borderRadius: 'var(--border-radius, 6px)',
                             padding: '0.45rem 0.95rem',
                             fontSize: '0.8rem',
                             fontWeight: '700',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.35rem',
-                            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
+                            gap: '0.35rem'
                           }}
                         >
                           <Check size={14} /> Aceptar
@@ -1819,13 +1823,13 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                         <button
                           onClick={() => rejectSpeakingRequest(req.id)}
                           style={{
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            color: '#ef4444',
-                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--danger-color)',
+                            borderRadius: 'var(--border-radius, 6px)',
                             padding: '0.45rem 0.85rem',
                             fontSize: '0.8rem',
-                            fontWeight: '700',
+                            fontWeight: '600',
                             cursor: 'pointer'
                           }}
                         >
@@ -2018,7 +2022,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   fontWeight: '800',
                   letterSpacing: '0.12em',
                   fontFamily: 'monospace',
-                  color: '#38bdf8'
+                  color: 'var(--accent-color)'
                 }}>
                   {roomId}
                 </span>
@@ -2028,10 +2032,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 <button
                   onClick={handleCopyLink}
                   style={{
-                    backgroundColor: copiado ? '#10b981' : '#2563eb',
-                    color: '#ffffff',
+                    backgroundColor: copiado ? 'var(--success-color)' : 'var(--btn-bg)',
+                    color: 'var(--btn-text)',
                     border: 'none',
-                    borderRadius: '12px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.65rem 1.25rem',
                     fontWeight: '700',
                     fontSize: '0.88rem',
@@ -2039,8 +2043,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.45rem',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 16px rgba(37, 99, 235, 0.4)'
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   {copiado ? <Check size={16} /> : <Copy size={16} />}
@@ -2050,10 +2053,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 <button
                   onClick={() => setMostrarQRFullscreen(false)}
                   style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '12px',
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '0.65rem 1.25rem',
                     fontWeight: '600',
                     fontSize: '0.88rem',
@@ -2061,7 +2064,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.45rem',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <X size={16} /> Salir de Pantalla Completa

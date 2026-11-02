@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Trash2, Plus, ArrowUpDown, GripVertical, Users, Mic } from 'lucide-react';
+import { Search, Trash2, Plus, ArrowUpDown, GripVertical, Mic } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import EmptyState from '../common/EmptyState';
@@ -52,7 +52,6 @@ const ListaOradores = () => {
       {/* Header y Acción Principal */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', letterSpacing: '0.03em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Users size={16} />
           <span>{t('timers.gslSpeakersList', 'Lista de Oradores GSL')} ({oradoresCola.length})</span>
         </h3>
         
@@ -96,9 +95,9 @@ const ListaOradores = () => {
               fontSize: '0.72rem',
               fontWeight: '600',
               borderRadius: '5px',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              color: '#f87171',
+              border: '1px solid var(--danger-soft)',
+              backgroundColor: 'var(--danger-soft)',
+              color: 'var(--danger-color)',
               cursor: oradoresCola.length === 0 ? 'not-allowed' : 'pointer',
               opacity: oradoresCola.length === 0 ? 0.4 : 1,
               transition: 'all 0.15s ease'
@@ -249,11 +248,11 @@ const ListaOradores = () => {
                   justifyContent: 'space-between',
                   padding: '0.55rem 0.75rem',
                   backgroundColor: isDragging 
-                    ? 'rgba(168, 85, 247, 0.15)' 
-                    : (esActual ? 'rgba(34, 197, 94, 0.12)' : (esSiguiente ? 'rgba(59, 130, 246, 0.07)' : 'var(--card-header-bg)')),
+                    ? 'var(--accent-soft)'
+                    : (esActual ? 'var(--success-soft)' : (esSiguiente ? 'var(--accent-soft)' : 'var(--card-header-bg)')),
                   border: isDragOver
-                    ? '2px dashed #a855f7'
-                    : `1px solid ${isDragging ? '#a855f7' : (esActual ? '#166534' : (esSiguiente ? 'rgba(59, 130, 246, 0.3)' : 'var(--border-color)'))}`,
+                    ? '2px dashed var(--accent-color)'
+                    : `1px solid ${isDragging ? 'var(--accent-color)' : (esActual ? 'var(--success-color)' : (esSiguiente ? 'var(--accent-color)' : 'var(--border-color)'))}`,
                   borderRadius: '6px',
                   opacity: isDragging ? 0.5 : 1,
                   cursor: 'grab',
@@ -265,15 +264,15 @@ const ListaOradores = () => {
                   <span style={{
                     fontSize: '0.75rem',
                     fontWeight: '800',
-                    color: esActual ? '#4ade80' : (esSiguiente ? '#60a5fa' : 'var(--muted-text)'),
+                    color: esActual ? 'var(--success-color)' : (esSiguiente ? 'var(--accent-color)' : 'var(--muted-text)'),
                     width: '20px'
                   }}>
                     #{index + 1}
                   </span>
                   <CountryFlag bandera={orador.bandera} nombre={orador.nombre} size="md" />
                   <span style={{
-                    fontWeight: esActual ? '800' : '600',
-                    fontSize: esActual ? '0.95rem' : '0.85rem',
+                    fontWeight: esActual ? '800' : (esSiguiente ? '750' : '600'),
+                    fontSize: esActual ? '0.95rem' : '0.88rem',
                     color: 'var(--text-color)'
                   }}>
                     {orador.nombre}
@@ -281,7 +280,7 @@ const ListaOradores = () => {
                   {esActual && (
                     <span style={{
                       fontSize: '0.65rem',
-                      backgroundColor: '#15803d',
+                      backgroundColor: 'var(--success-solid)',
                       color: '#ffffff',
                       padding: '0.1rem 0.4rem',
                       borderRadius: '3px',
@@ -292,12 +291,14 @@ const ListaOradores = () => {
                   )}
                   {esSiguiente && (
                     <span style={{
-                      fontSize: '0.65rem',
-                      backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                      color: '#93c5fd',
-                      padding: '0.1rem 0.4rem',
+                      fontSize: '0.68rem',
+                      backgroundColor: 'var(--accent-soft)',
+                      color: 'var(--accent-color)',
+                      border: '1px solid var(--accent-color)',
+                      padding: '0.12rem 0.45rem',
                       borderRadius: '3px',
-                      fontWeight: '700'
+                      fontWeight: '800',
+                      letterSpacing: '0.03em'
                     }}>
                       {t('timers.next', 'SIGUIENTE')}
                     </span>
@@ -311,7 +312,7 @@ const ListaOradores = () => {
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: '#ef4444',
+                      color: 'var(--danger-color)',
                       opacity: 0.7,
                       cursor: 'pointer',
                       padding: '4px',

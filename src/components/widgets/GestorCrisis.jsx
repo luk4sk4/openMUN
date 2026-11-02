@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   AlertTriangle,
@@ -39,60 +40,62 @@ import {
   Edit3
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
+import { useToast } from '../../context/ToastContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { useTranslation } from 'react-i18next';
 import CountryFlag from '../common/CountryFlag';
+import EmptyState from '../common/EmptyState';
 import { playBreakingNewsAlert, playEmergencyPulse } from '../../utils/audioAlerts';
 
 // Fotos y Fondos Predefinidos de Crisis
 const FOTOS_PRESET = [
-  { label: '🛰️ Satélite Militar', url: 'https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=800&auto=format&fit=crop&q=80' },
-  { label: '⚔️ Despliegue Naval/Blindado', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80' },
-  { label: '💻 Ciberataque / Radar', url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80' },
-  { label: '🏛️ Sala de Situación / ONU', url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80' },
-  { label: '💵 Bolsa / Crisis Financiera', url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80' }
+  { get label() { return i18n.t('ui.militarySatellite'); }, url: 'https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=800&auto=format&fit=crop&q=80' },
+  { get label() { return i18n.t('ui.navalArmoredDeployment'); }, url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80' },
+  { get label() { return i18n.t('ui.cyberattackRadar'); }, url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80' },
+  { get label() { return i18n.t('ui.situationRoomUn'); }, url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80' },
+  { get label() { return i18n.t('ui.stockMarketFinancialCrisis'); }, url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80' }
 ];
 
 // Categorías de Crisis con paletas de color y estilo
 const CATEGORIAS_CRISIS = {
   CRITICA: {
-    nombre: 'Última Hora / Crítico',
-    badge: '🔴 ÚLTIMA HORA',
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.15)',
-    border: 'rgba(239, 68, 68, 0.4)',
+    get nombre() { return i18n.t('ui.breakingNewsCritical'); },
+    get badge() { return i18n.t('ui.breakingNews2'); },
+    color: 'var(--danger-color)',
+    bg: 'var(--danger-soft)',
+    border: 'var(--danger-color)',
     icon: Flame
   },
   MILITAR: {
-    nombre: 'Alerta Militar / Conflicto',
-    badge: '⚔️ ALERTA MILITAR',
-    color: '#f97316',
-    bg: 'rgba(249, 115, 22, 0.15)',
-    border: 'rgba(249, 115, 22, 0.4)',
+    get nombre() { return i18n.t('ui.militaryAlertConflict'); },
+    get badge() { return i18n.t('ui.militaryAlert2'); },
+    color: 'var(--warning-color)',
+    bg: 'var(--warning-soft)',
+    border: 'var(--warning-color)',
     icon: ShieldAlert
   },
   DIPLOMATICA: {
-    nombre: 'Comunicado Diplomático',
-    badge: '🌐 COMUNICADO',
-    color: '#3b82f6',
-    bg: 'rgba(59, 130, 246, 0.15)',
-    border: 'rgba(59, 130, 246, 0.4)',
+    get nombre() { return i18n.t('ui.diplomaticAnnouncement2'); },
+    get badge() { return i18n.t('ui.announcement3'); },
+    color: 'var(--info-color)',
+    bg: 'var(--info-soft)',
+    border: 'var(--info-color)',
     icon: Megaphone
   },
   ECONOMICA: {
-    nombre: 'Crisis Financiera / Sanciones',
-    badge: '💵 IMPACTO ECONÓMICO',
-    color: '#a855f7',
-    bg: 'rgba(168, 85, 247, 0.15)',
-    border: 'rgba(168, 85, 247, 0.4)',
+    get nombre() { return i18n.t('ui.financialCrisisSanctions'); },
+    get badge() { return i18n.t('ui.economicImpact'); },
+    color: 'var(--accent-color)',
+    bg: 'var(--accent-soft)',
+    border: 'var(--accent-color)',
     icon: TrendingUp
   },
   CIBERNETICA: {
-    nombre: 'Ciberseguridad / Inteligencia',
-    badge: '⚡ FILTRACIÓN / CIBER',
-    color: '#10b981',
-    bg: 'rgba(168, 85, 247, 0.15)',
-    border: 'rgba(16, 185, 129, 0.4)',
+    get nombre() { return i18n.t('ui.cybersecurityIntelligence'); },
+    get badge() { return i18n.t('ui.cybersecurity'); },
+    color: 'var(--success-color)',
+    bg: 'var(--success-soft)',
+    border: 'var(--success-color)',
     icon: Zap
   }
 };
@@ -100,34 +103,34 @@ const CATEGORIAS_CRISIS = {
 // Plantillas rápidas de sucesos de crisis
 const PLANTILLAS_CRISIS = [
   {
-    titulo: 'Incursión No Autorizada en Espacio Aéreo',
+    get titulo() { return i18n.t('ui.unauthorizedAirspaceIncursion'); },
     categoria: 'MILITAR',
-    fuente: 'Comando de Defensa Aeroespacial',
-    descripcion: 'Aeronaves de reconocimiento han sido detectadas sobrevolando territorio en disputa. Se requiere pronunciamiento urgente de las delegaciones involucradas.',
+    get fuente() { return i18n.t('ui.aerospaceDefenseCommand'); },
+    get descripcion() { return i18n.t('ui.reconnaissanceAircraftHaveBeenDetectedOverDisputedTerritoryAnUrgent'); },
     imagen: 'https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=800&auto=format&fit=crop&q=80',
     estado: 'Activo'
   },
   {
-    titulo: 'Filtración Masiva de Cables Diplomáticos',
+    get titulo() { return i18n.t('ui.massiveLeakOfDiplomaticCables'); },
     categoria: 'CIBERNETICA',
-    fuente: 'WikiLeaks / Consorcio de Inteligencia',
-    descripcion: 'Se han hecho públicos documentos clasificados sobre negociaciones secretas de armamento y tratados bilaterales.',
+    get fuente() { return i18n.t('ui.wikileaksIntelligenceConsortium'); },
+    get descripcion() { return i18n.t('ui.classifiedDocumentsOnSecretArmsNegotiationsAndBilateralTreatiesHave'); },
     imagen: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
     estado: 'Activo'
   },
   {
-    titulo: 'Ruptura Inmediata de Relaciones Bilaterales',
+    get titulo() { return i18n.t('ui.immediateBreakdownOfBilateralRelations'); },
     categoria: 'DIPLOMATICA',
-    fuente: 'Cancillería de Estado',
-    descripcion: 'Embajadores han sido llamados a consultas y se ha ordenado el cierre de sedes diplomáticas de manera indefinida.',
+    get fuente() { return i18n.t('ui.stateForeignMinistry'); },
+    get descripcion() { return i18n.t('ui.ambassadorsHaveBeenRecalledForConsultationsAndDiplomaticMissionsOrdered'); },
     imagen: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=800&auto=format&fit=crop&q=80',
     estado: 'Activo'
   },
   {
-    titulo: 'Congelación Inmediata de Activos Soberanos',
+    get titulo() { return i18n.t('ui.immediateFreezeOfSovereignAssets'); },
     categoria: 'ECONOMICA',
-    fuente: 'Banco Central Internacional',
-    descripcion: 'Se ha decretado el embargo total de cuentas y reservas de divisas extranjeras. Se exige respuesta diplomática inmediata antes del cierre bursátil.',
+    get fuente() { return i18n.t('ui.internationalCentralBank'); },
+    get descripcion() { return i18n.t('ui.aTotalFreezeOnAccountsAndForeignCurrencyReservesHas'); },
     imagen: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&auto=format&fit=crop&q=80',
     estado: 'Activo'
   }
@@ -136,6 +139,7 @@ const PLANTILLAS_CRISIS = [
 const GestorCrisis = () => {
   const { t } = useTranslation();
   const { isLight } = useAccessibility();
+  const { addToast } = useToast();
   const { paises } = useSession();
   const fileInputRef = useRef(null);
   const jsonFileInputRef = useRef(null);
@@ -200,7 +204,7 @@ const GestorCrisis = () => {
   // Formulario de Nuevo Evento
   const [formTitulo, setFormTitulo] = useState('');
   const [formCategoria, setFormCategoria] = useState('CRITICA');
-  const [formFuente, setFormFuente] = useState('Mesa de Crisis / Sala de Situación');
+  const [formFuente, setFormFuente] = useState(i18n.t('ui.crisisBoardSituationRoom'));
   const [formDescripcion, setFormDescripcion] = useState('');
   const [formImagen, setFormImagen] = useState('');
   const [formPaises, setFormPaises] = useState([]);
@@ -234,7 +238,7 @@ const GestorCrisis = () => {
 
     setRelojSimulacion(nuevoReloj);
     setModalAjusteReloj(false);
-    showToast(`Reloj ajustado: Día ${diaNum} · ${String(horasNum).padStart(2, '0')}:${String(minutosNum).padStart(2, '0')} hrs`);
+    showToast(t('ui.clockSetDayHrs', { v0: diaNum, v1: String(horasNum).padStart(2, '0'), v2: String(minutosNum).padStart(2, '0') }));
   };
 
   // Saltos rápidos en el formulario de ajuste
@@ -263,7 +267,7 @@ const GestorCrisis = () => {
     const ahora = new Date();
     setFormRelojHoras(ahora.getHours());
     setFormRelojMinutos(ahora.getMinutes());
-    showToast('Sincronizado con la hora de tu dispositivo');
+    showToast(t('ui.syncedWithYourDeviceSTime'));
   };
 
   // Escuchar actualizaciones externas de forma segura evitando bucles
@@ -369,9 +373,9 @@ const GestorCrisis = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('Alertas y mensajes de crisis exportados en JSON');
+      showToast(t('ui.crisisAlertsAndMessagesExportedAsJson'));
     } catch (err) {
-      showToast('Error al exportar alertas: ' + err.message, 'error');
+      showToast(t('ui.errorExportingAlerts') + err.message, 'error');
     }
   };
 
@@ -402,10 +406,10 @@ const GestorCrisis = () => {
             id: ev.id || `ev_imp_${Date.now()}_${idx}`,
             titulo: ev.titulo || ev.title || 'Alerta de Crisis',
             categoria: ev.categoria || ev.category || 'CRITICA',
-            fuente: ev.fuente || ev.source || 'Mesa de Crisis',
+            fuente: ev.fuente || ev.source || i18n.t('ui.crisisBoard'),
             descripcion: ev.descripcion || ev.description || '',
             imagen: ev.imagen || ev.image || null,
-            horaSimulada: ev.horaSimulada || ev.simulatedTime || 'Día 1 - 08:30 hrs',
+            horaSimulada: ev.horaSimulada || ev.simulatedTime || i18n.t('ui.day10830Hrs'),
             horaReal: ev.horaReal || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             paisesInvolucrados: Array.isArray(ev.paisesInvolucrados) ? ev.paisesInvolucrados : [],
             estado: ev.estado || 'Activo',
@@ -421,12 +425,12 @@ const GestorCrisis = () => {
             window.dispatchEvent(new Event('storage'));
             window.dispatchEvent(new CustomEvent('openmun_session_imported', { detail: { notes: importedNotes } }));
           }
-          showToast(`¡${sanitizedEventos.length} alertas de crisis importadas!`);
+          showToast(t('ui.crisisAlertsImported', { v0: sanitizedEventos.length }));
         } else {
-          showToast('No se encontraron alertas de crisis en el archivo JSON', 'error');
+          showToast(t('ui.noCrisisAlertsFoundInTheJsonFile'), 'error');
         }
       } catch (err) {
-        showToast('Error al parsear archivo JSON: ' + err.message, 'error');
+        showToast(t('ui.errorParsingJsonFile') + err.message, 'error');
       }
     };
     reader.readAsText(file);
@@ -465,13 +469,12 @@ const GestorCrisis = () => {
     return () => clearInterval(timer);
   }, [relojSimulacion.activo, relojSimulacion.velocidad]);
 
-  const showToast = (msg) => {
-    setFeedbackToast(msg);
-    setTimeout(() => setFeedbackToast(null), 2500);
+  const showToast = (msg, type = 'info') => {
+    addToast({ title: t('crisis.title'), message: msg, type: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info') });
   };
 
   // Formato legible del reloj de simulación
-  const formatoHoraSimulada = `Día ${relojSimulacion.dia} · ${String(relojSimulacion.horas).padStart(2, '0')}:${String(relojSimulacion.minutos).padStart(2, '0')} hrs`;
+  const formatoHoraSimulada = t('ui.dayHrs', { v0: relojSimulacion.dia, v1: String(relojSimulacion.horas).padStart(2, '0'), v2: String(relojSimulacion.minutos).padStart(2, '0') });
 
   // Evento activo fijado como "Última Hora"
   const eventoBannerActivo = useMemo(() => {
@@ -495,7 +498,7 @@ const GestorCrisis = () => {
     if (sonidoHabilitado && target) {
       playBreakingNewsAlert(0.4);
     }
-    showToast('Alerta de Última Hora actualizada');
+    showToast(t('ui.breakingNewsAlertUpdated'));
   };
 
   // Alternar estado Resuelto/Activo
@@ -518,7 +521,7 @@ const GestorCrisis = () => {
       }
       return filtered;
     });
-    showToast('Evento eliminado del feed');
+    showToast(t('ui.eventRemovedFromFeed'));
   };
 
   // Ajustes directos de tiempo de simulación
@@ -537,7 +540,7 @@ const GestorCrisis = () => {
         minutos: totalMin % 60
       };
     });
-    showToast(`Tiempo simulado avanzado +${minutos} min`);
+    showToast(t('ui.simulatedTimeAdvancedMin', { v0: minutos }));
   };
 
   // Manejador de carga de imagen local desde PC
@@ -545,13 +548,13 @@ const GestorCrisis = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      showToast('La imagen excede los 5MB', 'error');
+      showToast(t('ui.imageExceeds5mb'), 'error');
       return;
     }
     const reader = new FileReader();
     reader.onload = (event) => {
       setFormImagen(event.target.result);
-      showToast('Imagen cargada para la transmisión');
+      showToast(t('ui.imageLoadedForBroadcast'));
     };
     reader.readAsDataURL(file);
   };
@@ -565,7 +568,7 @@ const GestorCrisis = () => {
       id: 'ev_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       titulo: formTitulo.trim(),
       categoria: formCategoria,
-      fuente: formFuente.trim() || 'Mesa de Crisis',
+      fuente: formFuente.trim() || i18n.t('ui.crisisBoard'),
       descripcion: formDescripcion.trim(),
       imagen: formImagen || null,
       horaSimulada: formatoHoraSimulada,
@@ -594,7 +597,7 @@ const GestorCrisis = () => {
     setFormImagen('');
     setFormPaises([]);
     setModalNuevoEvento(false);
-    showToast('🚨 Alerta de crisis emitida y fijada en directo');
+    showToast(t('ui.crisisAlertIssuedAndPinnedLive'));
   };
 
   // Cargar plantilla predefinida
@@ -627,7 +630,7 @@ const GestorCrisis = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '6px 12px',
+        padding: '8px 12px',
         backgroundColor: 'var(--card-header-bg)',
         borderBottom: '1px solid var(--border-color)',
         gap: '8px',
@@ -635,112 +638,120 @@ const GestorCrisis = () => {
       }}>
         {/* Reloj Ficticio de Crisis */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div
+          <button
             onClick={abrirModalAjusteReloj}
-            title="Clic para abrir el panel de ajuste exacto del reloj de crisis"
+            title={t('ui.clickToOpenTheExactCrisisClockAdjustmentPanel')}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
-              borderRadius: '6px',
-              padding: '3px 8px',
-              color: '#f87171',
-              fontSize: '0.75rem',
-              fontWeight: '700',
+              backgroundColor: 'var(--input-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              padding: '4px 8px',
+              color: 'var(--text-color)',
+              fontSize: '0.78rem',
+              fontWeight: '650',
+              fontVariantNumeric: 'tabular-nums',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.22)'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)'}
           >
-            <Clock size={13} />
+            <Clock size={13} style={{ color: 'var(--accent-color)' }} />
             <span>{formatoHoraSimulada}</span>
             {relojSimulacion.velocidad > 1 && (
               <span style={{
                 fontSize: '0.62rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                backgroundColor: 'var(--accent-soft)',
+                border: '1px solid var(--accent-color)',
                 padding: '1px 4px',
                 borderRadius: '3px',
-                color: '#fca5a5'
+                color: 'var(--accent-color)',
+                fontWeight: '700'
               }}>
                 {relojSimulacion.velocidad}x
               </span>
             )}
-          </div>
+          </button>
 
           {/* Botón Ajustar Exactamente */}
           <button
             onClick={abrirModalAjusteReloj}
-            title="Ajustar exactamente día, hora, minutos y velocidad del reloj"
+            title={t('ui.setTheExactDayHourMinutesAndClockSpeed')}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '3px',
-              padding: '3px 7px',
-              borderRadius: '5px',
+              gap: '4px',
+              padding: '4px 8px',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--subnav-bg)',
+              backgroundColor: 'var(--input-bg)',
               color: 'var(--text-color)',
-              fontSize: '0.7rem',
+              fontSize: '0.74rem',
               fontWeight: '600',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            <Sliders size={11} color="#f87171" />
+            <Sliders size={12} color="var(--muted-text)" />
             <span>{t('common.edit', 'Ajustar')}</span>
           </button>
 
           {/* Play/Pause del reloj */}
           <button
             onClick={() => setRelojSimulacion(prev => ({ ...prev, activo: !prev.activo }))}
-            title={relojSimulacion.activo ? "Pausar Reloj de Simulación" : "Iniciar Reloj de Simulación"}
+            title={relojSimulacion.activo ? t('ui.pauseSimulationClock') : t('ui.startSimulationClock')}
+            aria-pressed={relojSimulacion.activo}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '24px',
-              height: '24px',
-              borderRadius: '5px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: relojSimulacion.activo ? 'rgba(16, 185, 129, 0.2)' : 'var(--subnav-bg)',
-              color: relojSimulacion.activo ? '#34d399' : 'var(--muted-text)',
-              cursor: 'pointer'
+              width: '28px',
+              height: '28px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${relojSimulacion.activo ? 'var(--success-color)' : 'var(--border-color)'}`,
+              backgroundColor: relojSimulacion.activo ? 'var(--success-soft)' : 'var(--input-bg)',
+              color: relojSimulacion.activo ? 'var(--success-color)' : 'var(--muted-text)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            {relojSimulacion.activo ? <Pause size={11} /> : <Play size={11} />}
+            {relojSimulacion.activo ? <Pause size={12} /> : <Play size={12} />}
           </button>
 
-          {/* Salto +15 min */}
+          {/* Salto +15 min y +1h */}
           <button
             onClick={() => avanzarTiempoSimulado(15)}
-            title="Avanzar 15 minutos simulados"
+            title={t('ui.advance15SimulatedMinutes')}
             style={{
-              padding: '2px 5px',
-              borderRadius: '4px',
+              padding: '4px 8px',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'transparent',
-              color: 'var(--muted-text)',
-              fontSize: '0.68rem',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-color)',
+              fontSize: '0.72rem',
               fontWeight: '600',
-              cursor: 'pointer'
+              fontVariantNumeric: 'tabular-nums',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
             +15m
           </button>
           <button
             onClick={() => avanzarTiempoSimulado(60)}
-            title="Avanzar 1 hora simulada"
+            title={t('ui.advance1SimulatedHour')}
             style={{
-              padding: '2px 5px',
-              borderRadius: '4px',
+              padding: '4px 8px',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'transparent',
-              color: 'var(--muted-text)',
-              fontSize: '0.68rem',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-color)',
+              fontSize: '0.72rem',
               fontWeight: '600',
-              cursor: 'pointer'
+              fontVariantNumeric: 'tabular-nums',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
             +1h
@@ -748,48 +759,50 @@ const GestorCrisis = () => {
         </div>
 
         {/* Acciones Rápidas (Nuevo Evento, Plantillas, Exportar, Importar, Sonido, Broadcast) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {/* Exportar JSON */}
           <button
             onClick={handleExportarCrisisJSON}
-            title="Exportar todas las alertas de crisis a un archivo JSON"
+            title={t('ui.exportAllCrisisAlertsToAJsonFile')}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              padding: '4px 7px',
-              borderRadius: '6px',
+              padding: '5px 8px',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--subnav-bg)',
+              backgroundColor: 'var(--input-bg)',
               color: 'var(--text-color)',
-              fontSize: '0.72rem',
+              fontSize: '0.74rem',
               fontWeight: '600',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            <Download size={12} color="#60a5fa" />
+            <Download size={13} color="var(--muted-text)" />
             {t('common.export', 'Exportar')}
           </button>
 
           {/* Importar JSON */}
           <button
             onClick={() => jsonFileInputRef.current?.click()}
-            title="Importar alertas de crisis desde un archivo JSON"
+            title={t('ui.importCrisisAlertsFromAJsonFile')}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              padding: '4px 7px',
-              borderRadius: '6px',
+              padding: '5px 8px',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--subnav-bg)',
+              backgroundColor: 'var(--input-bg)',
               color: 'var(--text-color)',
-              fontSize: '0.72rem',
+              fontSize: '0.74rem',
               fontWeight: '600',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            <Upload size={12} color="#10b981" />
+            <Upload size={13} color="var(--muted-text)" />
             {t('common.import', 'Importar')}
           </button>
           <input
@@ -802,60 +815,66 @@ const GestorCrisis = () => {
 
           <button
             onClick={() => setModalPlantillas(true)}
-            title="Plantillas rápidas de crisis"
+            title={t('ui.quickCrisisTemplates')}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              padding: '4px 7px',
-              borderRadius: '6px',
+              padding: '5px 8px',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--subnav-bg)',
+              backgroundColor: 'var(--input-bg)',
               color: 'var(--text-color)',
-              fontSize: '0.72rem',
+              fontSize: '0.74rem',
               fontWeight: '600',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            <FileText size={12} />
+            <FileText size={13} color="var(--muted-text)" />
             {t('crisis.templates', 'Plantillas')}
           </button>
 
+          {/* Acción Principal Dominante */}
           <button
             onClick={() => setModalNuevoEvento(true)}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
-              padding: '4px 8px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: '#ef4444',
-              color: '#ffffff',
-              fontSize: '0.72rem',
-              fontWeight: '700',
+              gap: '5px',
+              padding: '5px 12px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid transparent',
+              backgroundColor: 'var(--btn-bg)',
+              color: 'var(--btn-text)',
+              fontSize: '0.75rem',
+              fontWeight: '650',
               cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(239, 68, 68, 0.35)'
+              boxShadow: 'none',
+              transition: 'opacity 0.15s ease'
             }}
           >
-            <Plus size={12} strokeWidth={3} />
+            <Plus size={13} strokeWidth={2.5} />
             {t('crisis.emitAlertBtn', 'Emitir Alerta')}
           </button>
 
           {/* Sonido */}
           <button
             onClick={() => setSonidoHabilitado(!sonidoHabilitado)}
-            title={sonidoHabilitado ? "Alarma de Audio Activada" : "Alarma Silenciada"}
+            title={sonidoHabilitado ? t('ui.audioAlarmEnabled') : t('ui.alarmMuted')}
+            aria-pressed={sonidoHabilitado}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '4px',
-              borderRadius: '6px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'transparent',
-              color: sonidoHabilitado ? '#ef4444' : 'var(--muted-text)',
-              cursor: 'pointer'
+              width: '28px',
+              height: '28px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${sonidoHabilitado ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              backgroundColor: sonidoHabilitado ? 'var(--accent-soft)' : 'var(--input-bg)',
+              color: sonidoHabilitado ? 'var(--accent-color)' : 'var(--muted-text)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
             {sonidoHabilitado ? <Volume2 size={13} /> : <VolumeX size={13} />}
@@ -864,17 +883,20 @@ const GestorCrisis = () => {
           {/* Modo Transmisión TV / Proyección */}
           <button
             onClick={() => setModoTransmisionCompleta(!modoTransmisionCompleta)}
-            title={modoTransmisionCompleta ? "Modo Lista" : "Modo Transmisión TV / Proyector"}
+            title={modoTransmisionCompleta ? t('ui.listMode') : t('ui.tvBroadcastProjectorMode')}
+            aria-pressed={modoTransmisionCompleta}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '4px',
-              borderRadius: '6px',
-              border: `1px solid ${modoTransmisionCompleta ? '#3b82f6' : 'var(--border-color)'}`,
-              backgroundColor: modoTransmisionCompleta ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-              color: modoTransmisionCompleta ? '#60a5fa' : 'var(--muted-text)',
-              cursor: 'pointer'
+              width: '28px',
+              height: '28px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${modoTransmisionCompleta ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              backgroundColor: modoTransmisionCompleta ? 'var(--accent-soft)' : 'var(--input-bg)',
+              color: modoTransmisionCompleta ? 'var(--accent-color)' : 'var(--muted-text)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
             {modoTransmisionCompleta ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
@@ -882,30 +904,7 @@ const GestorCrisis = () => {
         </div>
       </div>
 
-      {/* Toast Feedback */}
-      {feedbackToast && (
-        <div style={{
-          position: 'absolute',
-          top: '46px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#3b82f6',
-          color: '#ffffff',
-          padding: '4px 12px',
-          borderRadius: '20px',
-          fontSize: '0.72rem',
-          fontWeight: '600',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          zIndex: 50,
-          pointerEvents: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
-        }}>
-          <CheckCircle size={12} />
-          {feedbackToast}
-        </div>
-      )}
+
 
       {/* ─── BANNER TELEVISIVO ESTILO NOTICIERO (BREAKING NEWS TICKER) ──── */}
       {eventoBannerActivo && (
@@ -943,7 +942,7 @@ const GestorCrisis = () => {
               <span>{catMeta.badge}</span>
             </div>
             <div style={{ fontSize: '0.68rem', opacity: 0.9, whiteSpace: 'nowrap' }}>
-              FUENTE: {eventoBannerActivo.fuente} · {eventoBannerActivo.horaSimulada}
+              {t('ui.source')} {eventoBannerActivo.fuente} · {eventoBannerActivo.horaSimulada}
             </div>
           </div>
 
@@ -1027,25 +1026,26 @@ const GestorCrisis = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '6px 12px',
-            backgroundColor: 'var(--subnav-bg)',
-            borderBottom: '1px solid var(--border-color)',
-            fontSize: '0.72rem'
+            padding: '8px 12px',
+            backgroundColor: 'var(--panel-color)',
+            borderBottom: '1px solid var(--subborder-color)',
+            fontSize: '0.74rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Filter size={11} color="var(--muted-text)" />
-              <span style={{ fontWeight: '600', color: 'var(--muted-text)' }}>{t('common.filter', 'Filtrar')}:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={12} color="var(--muted-text)" />
+              <span style={{ fontWeight: '600', color: 'var(--muted-text)', fontSize: '0.74rem' }}>{t('common.filter', 'Filtrar')}:</span>
               <select
                 value={filtroCategoria}
                 onChange={(e) => setFiltroCategoria(e.target.value)}
                 style={{
-                  backgroundColor: 'var(--card-header-bg)',
+                  backgroundColor: 'var(--input-bg)',
                   color: 'var(--text-color)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '4px',
-                  padding: '2px 6px',
-                  fontSize: '0.7rem',
-                  outline: 'none'
+                  borderRadius: 'var(--border-radius, 6px)',
+                  padding: '3px 8px',
+                  fontSize: '0.72rem',
+                  outline: 'none',
+                  cursor: 'pointer'
                 }}
               >
                 <option value="TODOS">{t('common.all', 'Todos')} ({eventosCrisis.length})</option>
@@ -1057,7 +1057,7 @@ const GestorCrisis = () => {
               </select>
             </div>
 
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
               {eventosFiltrados.length} {t('crisis.eventsRegistered', 'acontecimientos registrados')}
             </div>
           </div>
@@ -1066,15 +1066,29 @@ const GestorCrisis = () => {
           <div style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '8px 12px',
+            padding: '12px',
             display: 'flex',
             flexDirection: 'column',
             gap: '8px'
           }}>
             {eventosFiltrados.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--muted-text)', fontSize: '0.8rem' }}>
-                {t('crisis.noEventsCategory', 'No hay sucesos de crisis en esta categoría.')}
-              </div>
+              <EmptyState
+                icon={Radio}
+                title={filtroCategoria === 'TODOS'
+                  ? t('crisis.noEventsTitle', 'Sin sucesos de crisis')
+                  : t('crisis.noEventsFilteredTitle', 'Sin sucesos en esta categoría')}
+                description={filtroCategoria === 'TODOS'
+                  ? t('crisis.noEventsDesc', 'No hay alertas activas en el gabinete. Emite una alerta o carga una plantilla predefinida.')
+                  : t('crisis.noEventsFilteredDesc', 'No se encontraron acontecimientos para el filtro seleccionado.')}
+                actionLabel={t('crisis.emitAlertBtn', 'Emitir Alerta')}
+                onAction={() => setModalNuevoEvento(true)}
+                secondaryActionLabel={filtroCategoria === 'TODOS'
+                  ? t('crisis.templates', 'Plantillas')
+                  : t('common.showAll', 'Ver todos')}
+                onSecondaryAction={filtroCategoria === 'TODOS'
+                  ? () => setModalPlantillas(true)
+                  : () => setFiltroCategoria('TODOS')}
+              />
             ) : (
               eventosFiltrados.map(ev => {
                 const meta = CATEGORIAS_CRISIS[ev.categoria] || CATEGORIAS_CRISIS.CRITICA;
@@ -1087,9 +1101,9 @@ const GestorCrisis = () => {
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      backgroundColor: esBanner ? 'rgba(239, 68, 68, 0.08)' : 'var(--card-header-bg)',
-                      border: `1px solid ${esBanner ? 'rgba(239, 68, 68, 0.4)' : 'var(--border-color)'}`,
-                      borderRadius: '8px',
+                      backgroundColor: esBanner ? 'var(--accent-soft)' : 'var(--card-header-bg)',
+                      border: `1px solid ${esBanner ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '10px 12px',
                       gap: '6px',
                       transition: 'all 0.15s ease'
@@ -1112,15 +1126,16 @@ const GestorCrisis = () => {
                           <IconComponent size={10} />
                           {meta.badge}
                         </span>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
                           {ev.horaSimulada}
                         </span>
                         {ev.estado === 'Resuelto' && (
                           <span style={{
-                            padding: '1px 5px',
+                            padding: '1px 6px',
                             borderRadius: '3px',
-                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                            color: '#34d399',
+                            backgroundColor: 'var(--success-soft)',
+                            color: 'var(--success-color)',
+                            border: '1px solid var(--success-color)',
                             fontSize: '0.62rem',
                             fontWeight: '700'
                           }}>
@@ -1133,16 +1148,16 @@ const GestorCrisis = () => {
                         {/* Fijar Banner */}
                         <button
                           onClick={() => handleFijarBanner(ev.id)}
-                          title={esBanner ? "Alerta fijada en pantalla" : "Proyectar como Última Hora"}
+                          title={esBanner ? t('ui.alertPinnedOnScreen') : t('ui.projectAsBreakingNews')}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '2px',
                             padding: '3px 6px',
                             borderRadius: '4px',
-                            border: `1px solid ${esBanner ? '#ef4444' : 'var(--border-color)'}`,
-                            backgroundColor: esBanner ? '#ef4444' : 'transparent',
-                            color: esBanner ? '#ffffff' : 'var(--muted-text)',
+                            border: `1px solid ${esBanner ? 'transparent' : 'var(--border-color)'}`,
+                            backgroundColor: esBanner ? 'var(--btn-bg)' : 'transparent',
+                            color: esBanner ? 'var(--btn-text)' : 'var(--muted-text)',
                             fontSize: '0.65rem',
                             fontWeight: '600',
                             cursor: 'pointer'
@@ -1155,13 +1170,15 @@ const GestorCrisis = () => {
                         {/* Toggle Resuelto */}
                         <button
                           onClick={() => handleToggleEstado(ev.id)}
-                          title="Alternar estado de resolución"
+                          title={t('ui.toggleResolutionStatus')}
                           style={{
                             padding: '3px 5px',
                             borderRadius: '4px',
                             border: '1px solid var(--border-color)',
                             backgroundColor: 'transparent',
-                            color: ev.estado === 'Resuelto' ? '#34d399' : 'var(--muted-text)',
+                            color: ev.estado === 'Resuelto' ? 'var(--success-color)' : 'var(--muted-text)',
+                            backgroundColor: ev.estado === 'Resuelto' ? 'var(--success-soft)' : 'transparent',
+                            borderColor: ev.estado === 'Resuelto' ? 'var(--success-color)' : 'var(--border-color)',
                             fontSize: '0.65rem',
                             cursor: 'pointer'
                           }}
@@ -1172,13 +1189,13 @@ const GestorCrisis = () => {
                         {/* Eliminar */}
                         <button
                           onClick={() => handleEliminarEvento(ev.id)}
-                          title="Eliminar suceso"
+                          title={t('ui.deleteEvent')}
                           style={{
                             padding: '3px 5px',
                             borderRadius: '4px',
                             border: 'none',
                             backgroundColor: 'transparent',
-                            color: '#ef4444',
+                            color: 'var(--danger-color)',
                             cursor: 'pointer'
                           }}
                         >
@@ -1187,7 +1204,7 @@ const GestorCrisis = () => {
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: '650', color: 'var(--text-color)' }}>
                       {ev.titulo}
                     </div>
 
@@ -1252,8 +1269,8 @@ const GestorCrisis = () => {
             maxWidth: '460px',
             backgroundColor: 'var(--panel-color)',
             borderRadius: '10px',
-            border: '1px solid #ef4444',
-            boxShadow: '0 8px 32px rgba(239, 68, 68, 0.25)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.35)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
@@ -1263,8 +1280,9 @@ const GestorCrisis = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '10px 14px',
-              backgroundColor: '#ef4444',
-              color: '#ffffff',
+              backgroundColor: 'var(--card-header-bg)',
+              borderBottom: '1px solid var(--border-color)',
+              color: 'var(--text-color)',
               fontWeight: '800',
               fontSize: '0.88rem'
             }}>
@@ -1277,7 +1295,7 @@ const GestorCrisis = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#ffffff',
+                  color: 'var(--muted-text)',
                   fontSize: '1.1rem',
                   cursor: 'pointer',
                   fontWeight: '700'
@@ -1296,12 +1314,12 @@ const GestorCrisis = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Bombardeo aéreo en la frontera este"
+                  placeholder={t('ui.eGAirStrikeOnTheEasternBorder')}
                   value={formTitulo}
                   onChange={(e) => setFormTitulo(e.target.value)}
                   style={{
                     width: '100%',
-                    backgroundColor: isLight ? '#ffffff' : 'var(--card-header-bg)',
+                    backgroundColor: 'var(--input-bg)',
                     color: 'var(--text-color)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '6px',
@@ -1324,7 +1342,7 @@ const GestorCrisis = () => {
                     onChange={(e) => setFormCategoria(e.target.value)}
                     style={{
                       width: '100%',
-                      backgroundColor: isLight ? '#ffffff' : 'var(--card-header-bg)',
+                      backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-color)',
                       border: '1px solid var(--border-color)',
                       borderRadius: '6px',
@@ -1347,12 +1365,12 @@ const GestorCrisis = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: Reuters / Inteligencia"
+                    placeholder={t('ui.eGReutersIntelligence')}
                     value={formFuente}
                     onChange={(e) => setFormFuente(e.target.value)}
                     style={{
                       width: '100%',
-                      backgroundColor: isLight ? '#ffffff' : 'var(--card-header-bg)',
+                      backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-color)',
                       border: '1px solid var(--border-color)',
                       borderRadius: '6px',
@@ -1371,12 +1389,12 @@ const GestorCrisis = () => {
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Detalles sobre lo ocurrido, consecuencias y requerimientos para el comité..."
+                  placeholder={t('ui.detailsAboutTheEventConsequencesAndCommitteeRequirements')}
                   value={formDescripcion}
                   onChange={(e) => setFormDescripcion(e.target.value)}
                   style={{
                     width: '100%',
-                    backgroundColor: isLight ? '#ffffff' : 'var(--card-header-bg)',
+                    backgroundColor: 'var(--input-bg)',
                     color: 'var(--text-color)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '6px',
@@ -1398,7 +1416,7 @@ const GestorCrisis = () => {
                     <button
                       type="button"
                       onClick={() => setFormImagen('')}
-                      style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.68rem', fontWeight: '700', cursor: 'pointer' }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', fontSize: '0.68rem', fontWeight: '700', cursor: 'pointer' }}
                     >
                       {t('crisis.removeImage', 'Quitar imagen')}
                     </button>
@@ -1421,11 +1439,11 @@ const GestorCrisis = () => {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '5px',
-                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                      border: '1px solid rgba(59, 130, 246, 0.35)',
+                      backgroundColor: 'var(--input-bg)',
+                      border: '1px solid var(--border-color)',
                       borderRadius: '6px',
                       padding: '6px 10px',
-                      color: '#60a5fa',
+                      color: 'var(--text-color)',
                       fontSize: '0.74rem',
                       fontWeight: '700',
                       cursor: 'pointer',
@@ -1440,7 +1458,7 @@ const GestorCrisis = () => {
                     <LinkIcon size={12} color="var(--muted-text)" style={{ position: 'absolute', left: '8px' }} />
                     <input
                       type="text"
-                      placeholder="o pegar URL de imagen..."
+                      placeholder={t('ui.orPasteAnImageUrl')}
                       value={formImagen.startsWith('data:') ? 'Imagen local cargada (' + Math.round(formImagen.length / 1024) + ' KB)' : formImagen}
                       onChange={(e) => {
                         if (!formImagen.startsWith('data:')) setFormImagen(e.target.value);
@@ -1469,12 +1487,12 @@ const GestorCrisis = () => {
                       type="button"
                       onClick={() => setFormImagen(fp.url)}
                       style={{
-                        background: formImagen === fp.url ? 'rgba(59, 130, 246, 0.3)' : 'var(--card-header-bg)',
-                        border: `1px solid ${formImagen === fp.url ? '#3b82f6' : 'var(--border-color)'}`,
+                        background: formImagen === fp.url ? 'var(--accent-soft)' : 'var(--input-bg)',
+                        border: `1px solid ${formImagen === fp.url ? 'var(--accent-color)' : 'var(--border-color)'}`,
                         borderRadius: '4px',
                         padding: '2px 5px',
                         fontSize: '0.65rem',
-                        color: formImagen === fp.url ? '#ffffff' : 'var(--muted-text)',
+                        color: formImagen === fp.url ? 'var(--accent-color)' : 'var(--muted-text)',
                         cursor: 'pointer'
                       }}
                     >
@@ -1497,7 +1515,7 @@ const GestorCrisis = () => {
                   }}>
                     <img
                       src={formImagen}
-                      alt="Vista previa emisión"
+                      alt={t('ui.broadcastPreview')}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     <div style={{
@@ -1512,7 +1530,7 @@ const GestorCrisis = () => {
                       fontWeight: '800',
                       letterSpacing: '0.5px'
                     }}>
-                      📡 VISTA PREVIA RETRANSMISIÓN TV
+                      {t('ui.tvBroadcastPreview')}
                     </div>
                   </div>
                 )}
@@ -1550,9 +1568,9 @@ const GestorCrisis = () => {
                             gap: '3px',
                             padding: '2px 6px',
                             borderRadius: '4px',
-                            border: `1px solid ${sel ? '#ef4444' : 'var(--border-color)'}`,
-                            backgroundColor: sel ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
-                            color: sel ? '#ffffff' : 'var(--muted-text)',
+                            border: `1px solid ${sel ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                            backgroundColor: sel ? 'var(--accent-soft)' : 'transparent',
+                            color: sel ? 'var(--accent-color)' : 'var(--muted-text)',
                             fontSize: '0.68rem',
                             fontWeight: sel ? '700' : '500',
                             cursor: 'pointer'
@@ -1605,15 +1623,15 @@ const GestorCrisis = () => {
                     padding: '8px 16px',
                     borderRadius: '6px',
                     border: 'none',
-                    backgroundColor: '#ef4444',
-                    color: '#ffffff',
+                    backgroundColor: 'var(--btn-bg)',
+                    color: 'var(--btn-text)',
                     fontSize: '0.78rem',
-                    fontWeight: '800',
+                    fontWeight: '650',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)'
+                    boxShadow: 'none'
                   }}
                 >
                   <Send size={14} />
@@ -1707,7 +1725,7 @@ const GestorCrisis = () => {
                       gap: '4px',
                       transition: 'all 0.15s ease'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = '#ef4444'}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-color)'}
                     onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1721,7 +1739,7 @@ const GestorCrisis = () => {
                       }}>
                         {meta.badge}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: '#60a5fa', fontWeight: '600' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--accent-color)', fontWeight: '600' }}>
                         {t('crisis.useTemplate', 'Usar Plantilla →')}
                       </span>
                     </div>
@@ -1761,8 +1779,8 @@ const GestorCrisis = () => {
             maxWidth: '520px',
             backgroundColor: 'var(--panel-color)',
             borderRadius: '12px',
-            border: '1px solid rgba(239, 68, 68, 0.4)',
-            boxShadow: isLight ? '0 12px 40px rgba(0,0,0,0.2)' : '0 12px 40px rgba(0,0,0,0.6)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.35)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -1814,23 +1832,22 @@ const GestorCrisis = () => {
             }}>
               {/* Display Digital de Hora Simulada */}
               <div style={{
-                backgroundColor: isLight ? '#fef2f2' : '#0a0d14',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
+                backgroundColor: 'var(--timer-display-bg)',
+                border: '1px solid var(--timer-display-border)',
                 borderRadius: '8px',
                 padding: '12px',
-                textAlign: 'center',
-                boxShadow: isLight ? 'none' : 'inset 0 0 15px rgba(239, 68, 68, 0.08)'
+                textAlign: 'center'
               }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: '#dc2626', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--accent-color)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>
                   {t('crisis.resultClock', 'HORA SIMULADA RESULTANTE')}
                 </div>
                 <div style={{
                   fontSize: '1.6rem',
                   fontWeight: '900',
-                  color: isLight ? '#dc2626' : '#ffffff',
+                  color: 'var(--text-color)',
                   fontFamily: 'monospace',
                   letterSpacing: '1px',
-                  textShadow: isLight ? 'none' : '0 0 10px rgba(239, 68, 68, 0.5)'
+                  fontVariantNumeric: 'tabular-nums'
                 }}>
                   {t('timers.day', 'Día')} {formRelojDia} · {String(formRelojHoras).padStart(2, '0')}:{String(formRelojMinutos).padStart(2, '0')} hrs
                 </div>
@@ -2058,7 +2075,7 @@ const GestorCrisis = () => {
                     { label: '+30m', delta: 30 },
                     { label: '+1h', delta: 60 },
                     { label: '+6h', delta: 360 },
-                    { label: '+24h (Día Sig.)', delta: 1440 }
+                    { label: t('ui.24hNextDay'), delta: 1440 }
                   ].map(s => (
                     <button
                       key={s.label}
@@ -2143,12 +2160,12 @@ const GestorCrisis = () => {
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
                   {[
-                    { label: '🌅 Día 1 - 08:30 (Apertura)', dia: 1, h: 8, m: 30 },
-                    { label: '🥪 Día 1 - 13:00 (Receso)', dia: 1, h: 13, m: 0 },
-                    { label: '🌆 Día 1 - 18:00 (Cierre)', dia: 1, h: 18, m: 0 },
-                    { label: '🚨 Día 1 - 23:45 (Madrugada)', dia: 1, h: 23, m: 45 },
-                    { label: '☀️ Día 2 - 09:00 (Reanudación)', dia: 2, h: 9, m: 0 },
-                    { label: '🏁 Día 2 - 16:30 (Votación Final)', dia: 2, h: 16, m: 30 }
+                    { label: t('ui.day10830Opening'), dia: 1, h: 8, m: 30 },
+                    { label: t('ui.day11300Recess'), dia: 1, h: 13, m: 0 },
+                    { label: t('ui.day11800Closing'), dia: 1, h: 18, m: 0 },
+                    { label: t('ui.day12345LateNight'), dia: 1, h: 23, m: 45 },
+                    { label: t('ui.day20900Resuming'), dia: 2, h: 9, m: 0 },
+                    { label: t('ui.day21630FinalVote'), dia: 2, h: 16, m: 30 }
                   ].map(p => (
                     <button
                       key={p.label}
@@ -2225,12 +2242,12 @@ const GestorCrisis = () => {
                     padding: '8px 18px',
                     borderRadius: '6px',
                     border: 'none',
-                    backgroundColor: '#ef4444',
-                    color: '#ffffff',
+                    backgroundColor: 'var(--btn-bg)',
+                    color: 'var(--btn-text)',
                     fontSize: '0.8rem',
-                    fontWeight: '800',
+                    fontWeight: '650',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
+                    boxShadow: 'none'
                   }}
                 >
                   <Check size={14} strokeWidth={3} />

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
   Inbox,
@@ -22,6 +23,7 @@ const BuzonPropuestasModal = ({
   onAprobarPropuesta,
   onRechazarPropuesta
 }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   return (
@@ -57,7 +59,7 @@ const BuzonPropuestasModal = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--subborder-color)', paddingBottom: '0.6rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: '800' }}>
             <Inbox size={18} style={{ color: 'var(--accent-color)' }} />
-            <span>Buzón de Propuestas Telemáticas de Delegados ({propuestas.length})</span>
+            <span>{t('ui.delegateProposalInbox')}{propuestas.length})</span>
           </div>
           <button
             onClick={onClose}
@@ -71,7 +73,7 @@ const BuzonPropuestasModal = ({
         {propuestas.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
             <Inbox size={32} style={{ opacity: 0.4 }} />
-            <div>No hay propuestas pendientes de delegados en este momento.</div>
+            <div>{t('ui.noPendingDelegateProposalsAtThisTime')}</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -98,7 +100,7 @@ const BuzonPropuestasModal = ({
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <CountryFlag country={pObj} bandera={pObj?.bandera} nombre={prop.paisProponente} size="xs" />
-                      <span style={{ fontSize: '0.8rem', fontWeight: '800' }}>{prop.paisProponente || 'Delegación'}</span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '800' }}>{prop.paisProponente || t('history.delegation')}</span>
                       <span style={{
                         fontSize: '0.64rem',
                         fontWeight: '800',
@@ -178,7 +180,7 @@ const BuzonPropuestasModal = ({
                         cursor: 'pointer'
                       }}
                     >
-                      Descartar
+                      {t('avisos.ignore')}
                     </button>
 
                     <button
@@ -198,7 +200,7 @@ const BuzonPropuestasModal = ({
                       }}
                     >
                       <Check size={12} />
-                      <span>Aprobar e Incorporar</span>
+                      <span>{t('ui.approveAndIncorporate')}</span>
                     </button>
                   </div>
                 </div>

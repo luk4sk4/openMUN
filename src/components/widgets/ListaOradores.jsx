@@ -61,7 +61,7 @@ const ListaOradores = () => {
             type="button"
             onClick={ordenarOradoresGSLAlfabetico}
             disabled={oradoresCola.length <= 1}
-            title="Ordenar lista alfabéticamente (A-Z)"
+            title={t('ui.sortListAlphabeticallyAZ')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -86,7 +86,7 @@ const ListaOradores = () => {
             type="button"
             onClick={handleVaciarLista}
             disabled={oradoresCola.length === 0}
-            title="Eliminar todos los oradores de la lista GSL"
+            title={t('ui.removeAllSpeakersFromTheGslList')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -114,7 +114,7 @@ const ListaOradores = () => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          backgroundColor: 'var(--card-header-bg)',
+          backgroundColor: 'var(--input-bg)',
           border: '1px solid var(--border-color)',
           borderRadius: '6px',
           padding: '0.35rem 0.6rem',
@@ -249,10 +249,10 @@ const ListaOradores = () => {
                   padding: '0.55rem 0.75rem',
                   backgroundColor: isDragging 
                     ? 'var(--accent-soft)'
-                    : (esActual ? 'var(--success-soft)' : (esSiguiente ? 'var(--accent-soft)' : 'var(--card-header-bg)')),
+                    : (esActual ? 'var(--success-soft)' : (esSiguiente ? 'var(--accent-soft)' : 'var(--panel-color)')),
                   border: isDragOver
                     ? '2px dashed var(--accent-color)'
-                    : `1px solid ${isDragging ? 'var(--accent-color)' : (esActual ? 'var(--success-color)' : (esSiguiente ? 'var(--accent-color)' : 'var(--border-color)'))}`,
+                    : `1px solid ${isDragging ? 'var(--accent-color)' : (esActual ? 'var(--success-color)' : (esSiguiente ? 'var(--accent-color)' : 'var(--subborder-color)'))}`,
                   borderRadius: '6px',
                   opacity: isDragging ? 0.5 : 1,
                   cursor: 'grab',
@@ -260,7 +260,7 @@ const ListaOradores = () => {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-                  <GripVertical size={14} style={{ color: '#71717a', cursor: 'grab', flexShrink: 0 }} title="Arrastrar para reordenar" />
+                  <GripVertical size={14} style={{ color: '#71717a', cursor: 'grab', flexShrink: 0 }} title={t('motions.dragToReorder')} />
                   <span style={{
                     fontSize: '0.75rem',
                     fontWeight: '800',
@@ -320,7 +320,7 @@ const ListaOradores = () => {
                       alignItems: 'center',
                       borderRadius: '4px'
                     }}
-                    title="Quitar de la lista"
+                    title={t('ui.removeFromList3')}
                   >
                     <Trash2 size={15} />
                   </button>

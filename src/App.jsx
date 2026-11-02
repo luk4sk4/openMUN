@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, Suspense } from 'react';
 import { SessionProvider } from './context/SessionContext';
 import { P2PProvider, useP2P } from './context/P2PContext';
@@ -26,11 +27,13 @@ const StaffView = lazyWithRetry(() => import('./components/views/StaffView'), 'S
 const BackroomView = lazyWithRetry(() => import('./components/views/BackroomView'), 'BackroomView');
 const JoinSessionView = lazyWithRetry(() => import('./components/views/JoinSessionView'), 'JoinSessionView');
 const ConferenceView = lazyWithRetry(() => import('./components/views/ConferenceView'), 'ConferenceView');
+const CreateConferenceView = lazyWithRetry(() => import('./components/views/CreateConferenceView'), 'CreateConferenceView');
 const PrivacyPolicyPage = lazyWithRetry(() => import('./components/pages/PrivacyPolicyPage'), 'PrivacyPolicyPage');
 const TermsConditionsPage = lazyWithRetry(() => import('./components/pages/TermsConditionsPage'), 'TermsConditionsPage');
 
 
 function AppContent() {
+  const { t } = useTranslation();
   const { viewMode, setViewMode, joinRoom } = useP2P();
   const { isLight } = useAccessibility();
   const { route, navigateTo } = useRouter();
@@ -44,6 +47,8 @@ function AppContent() {
           mode: e.detail.mode || 'explore'
         });
         setViewMode('conference');
+      } else if (e.detail?.view === 'create-conference') {
+        setViewMode('create-conference');
       }
     };
     window.addEventListener('openmun_navigate_view', handleNavigateView);
@@ -53,10 +58,17 @@ function AppContent() {
   useEffect(() => {
     if (route === 'privacy') return;
     if (route === 'terms') return;
+    if (route === 'create-conference' || viewMode === 'create-conference') {
+      document.title = t('pageTitles.createConference');
+      return;
+    }
 
     switch (viewMode) {
+      case 'create-conference':
+        document.title = t('pageTitles.createConference');
+        break;
       case 'conference':
-        document.title = 'OpenMUN - Conferencia';
+        document.title = t('pageTitles.conference');
         break;
       case 'backroom':
         document.title = 'OpenMUN - Backroom';
@@ -65,20 +77,20 @@ function AppContent() {
         document.title = 'OpenMUN - Staff';
         break;
       case 'secretariat':
-        document.title = 'OpenMUN - Secretaría';
+        document.title = t('pageTitles.secretariat');
         break;
       case 'delegate':
-        document.title = 'OpenMUN - Delegación';
+        document.title = t('pageTitles.delegate');
         break;
       case 'join':
-        document.title = 'OpenMUN - Unirse a Sala';
+        document.title = t('pageTitles.join');
         break;
       case 'chair':
       default:
         document.title = 'OpenMUN';
         break;
     }
-  }, [viewMode, route]);
+  }, [viewMode, route, t]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -92,6 +104,8 @@ function AppContent() {
           mode: params.get('admin') === 'true' ? 'admin' : 'explore'
         });
         setViewMode('conference');
+      } else if (mode === 'create-conference' || mode === 'crear-conferencia') {
+        setViewMode('create-conference');
       } else if (isLocal && mode === 'secretariat') {
         // Conexión automática por BroadcastChannel para pantalla secreta local
         joinRoom({
@@ -145,6 +159,14 @@ function AppContent() {
     );
   }
 
+  if (route === 'create-conference') {
+    return (
+      <Suspense fallback={<PageSkeleton isLight={isLight} />}>
+        <CreateConferenceView isLight={isLight} onBack={() => navigateTo('/')} />
+      </Suspense>
+    );
+  }
+
   const handleExitStaffOrSecretariat = () => {
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -193,6 +215,9 @@ function AppContent() {
   } else if (viewMode === 'backroom') {
     currentView = <BackroomView isLight={isLight} onExit={() => setViewMode('chair')} />;
     viewFallback = <BackroomSkeleton isLight={isLight} />;
+  } else if (viewMode === 'create-conference') {
+    currentView = <CreateConferenceView isLight={isLight} onBack={() => setViewMode('chair')} />;
+    viewFallback = <PageSkeleton isLight={isLight} />;
   } else if (viewMode === 'join') {
     currentView = <JoinSessionView isLight={isLight} onBackToChair={() => setViewMode('chair')} />;
     viewFallback = <JoinSessionSkeleton isLight={isLight} />;

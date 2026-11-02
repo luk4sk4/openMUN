@@ -1,10 +1,10 @@
+import i18n from '../../languages/index.js';
 import React, { useState } from 'react';
 import { 
   ShieldAlert, 
   Send, 
   AlertTriangle, 
   MessageSquare, 
-  LogOut, 
   Radio, 
   FileText, 
   Users, 
@@ -25,13 +25,13 @@ import {
   Check,
   Eye,
   EyeOff,
-  Sun,
-  Moon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useP2P } from '../../context/P2PContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { useToast } from '../../context/ToastContext';
 import AccessibilityModal from '../modals/AccessibilityModal';
+import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import peerService from '../../services/peerService';
@@ -43,12 +43,14 @@ import { getFlagEmoji } from '../../utils/flags';
 
 const BackroomView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const { isLight: contextIsLight, toggleThemeMode } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
 
   const {
     roomId,
+    connectedPeers,
     notes,
     sendNote,
     remoteSessionState,
@@ -67,7 +69,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
   const [feedbackAjustes, setFeedbackAjustes] = useState(null);
 
   const state = remoteSessionState || {};
-  const nombreComite = state.comision || state.nombreComite || 'Comité de Crisis / Gabinete';
+  const nombreComite = state.comision || state.nombreComite || i18n.t('ui.crisisCommitteeCabinet');
   const paises = state.paises || [];
 
   // Filtrar notas relevantes para el Backroom
@@ -79,8 +81,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
   );
 
   const showToast = (msg) => {
-    setFeedbackAjustes(msg);
-    setTimeout(() => setFeedbackAjustes(null), 2500);
+    addToast({ title: t('views.backroom.badge'), message: msg, type: 'success' });
   };
 
 
@@ -92,11 +93,19 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
       setBackroomPassword(nuevaPassBackroom.trim());
     }
     localStorage.setItem('openmun_backroom_pass', nuevaPassBackroom.trim());
-    showToast('Contraseña de Backroom actualizada');
+    showToast(t('ui.backroomPasswordUpdated'));
   };
 
+  const backroomTabs = [
+    { id: 'CRISIS', label: t('views.backroom.tabCrisis', 'Gestor de Crisis'), icon: Flame },
+    { id: 'TV_PREVIEW', label: t('views.backroom.tabTvPreview', 'Monitor TV Noticiero'), icon: Tv },
+    { id: 'DELEGADOS', label: t('views.backroom.tabDelegates', 'Mensajería y Filtraciones'), icon: MessageSquare, badge: notasBackroom.length },
+    { id: 'CHAIR', label: t('views.backroom.tabChair', 'Canal Directo Mesa'), icon: Building2 },
+    { id: 'AJUSTES', label: t('views.backroom.tabSettings', 'Ajustes'), icon: Sliders }
+  ];
+
   return (
-    <div style={{
+    <div className="dashboard-shell" style={{
       minHeight: '100vh',
       backgroundColor: 'var(--bg-color)',
       color: 'var(--text-color)',
@@ -106,257 +115,27 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
     }}>
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
-      {/* ── Header de Backroom ── */}
-      <header className="openmun-topbar" style={{
-        padding: '0.85rem 1.5rem',
-        backgroundColor: 'var(--header-bg)',
-        borderBottom: '1px solid var(--subborder-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-          <OpenMunLogo height={32} isLight={isLight} />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <span style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '-0.01em', color: '#f97316' }}>
-                Consola de Backroom y Crisis
-              </span>
-              <span style={{
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                backgroundColor: 'rgba(249, 115, 22, 0.15)',
-                color: '#f97316',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f97316' }} />
-                Sala: {roomId}
-              </span>
-            </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
-              {nombreComite} · Comando de incidentes, directivas de emergencia e inteligencia
-            </div>
-          </div>
-        </div>
+      <ConsoleNavbar
+        title={t('views.backroom.title', 'Consola de Backroom y Crisis')}
+        roleBadge={t('views.backroom.badge', 'Backroom')}
+        roomId={roomId || 'Local'}
+        connectedPeersCount={connectedPeers?.length || 0}
+        nombreComite={nombreComite}
+        agendaSesion={t('views.backroom.subtitle', 'Comando de incidentes, directivas de emergencia e inteligencia')}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        tabs={backroomTabs}
+        isLight={isLight}
+        toggleThemeMode={toggleThemeMode}
+        setIsAccessOpen={setIsAccessModalOpen}
+        onExit={() => {
+          leaveRoom();
+          if (onExit) onExit();
+        }}
+        exitConfirmMessage={t('views.backroom.confirmExit', '¿Deseas desconectarte del Backroom?')}
+      />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {/* Botón Accesibilidad y Tema */}
-          <button
-            onClick={() => setIsAccessModalOpen(true)}
-            className="openmun-topbar-btn"
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '8px',
-              color: 'var(--text-color)',
-              padding: '0.45rem 0.75rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.15s ease'
-            }}
-            title={t('accessibility.title', "Accesibilidad y Tema")}
-          >
-            <Eye size={14} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
-          </button>
-
-          {/* Botón Rápido Modo Claro / Oscuro */}
-          <button
-            onClick={toggleThemeMode}
-            className="openmun-topbar-btn"
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '8px',
-              color: 'var(--text-color)',
-              padding: '0.45rem 0.65rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.15s ease'
-            }}
-            title={isLight ? t('header.darkMode', "Cambiar a Modo Oscuro") : t('header.lightMode', "Cambiar a Modo Claro")}
-          >
-            {isLight ? <Moon size={14} /> : <Sun size={14} />}
-          </button>
-
-          <LanguageSelector showIcon={false} />
-
-          <button
-            onClick={() => {
-              if (confirm('¿Deseas desconectarte del Backroom?')) {
-                leaveRoom();
-                if (onExit) onExit();
-              }
-            }}
-            className="openmun-topbar-btn"
-            style={{
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '8px',
-              color: '#ef4444',
-              padding: '0.45rem 0.75rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-          >
-            <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
-          </button>
-        </div>
-      </header>
-
-      {/* ── Sub-navegación ── */}
-      <div className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
-        backgroundColor: 'var(--subnav-bg)',
-        borderBottom: '1px solid var(--subborder-color)',
-        padding: '0.4rem 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        overflowX: 'auto'
-      }}>
-        <button
-          onClick={() => setActiveTab('CRISIS')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'CRISIS' ? 'rgba(249, 115, 22, 0.2)' : 'transparent',
-            color: activeTab === 'CRISIS' ? '#f97316' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem'
-          }}
-        >
-          <Flame size={15} color={activeTab === 'CRISIS' ? '#f97316' : 'var(--muted-text)'} /> Gestor de Crisis
-        </button>
-
-        <button
-          onClick={() => setActiveTab('TV_PREVIEW')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'TV_PREVIEW' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-            color: activeTab === 'TV_PREVIEW' ? '#60a5fa' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem'
-          }}
-        >
-          <Tv size={15} color={activeTab === 'TV_PREVIEW' ? '#60a5fa' : 'var(--muted-text)'} /> Monitor TV Noticiero
-        </button>
-
-        <button
-          onClick={() => setActiveTab('DELEGADOS')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'DELEGADOS' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'DELEGADOS' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem'
-          }}
-        >
-          <MessageSquare size={15} /> Mensajería y Filtraciones ({notasBackroom.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('CHAIR')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'CHAIR' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'CHAIR' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem'
-          }}
-        >
-          <Building2 size={15} /> Canal Directo con la Mesa
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AJUSTES')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'AJUSTES' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'AJUSTES' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem'
-          }}
-        >
-          <Sliders size={15} /> Ajustes de Backroom
-        </button>
-      </div>
-
-      {/* Toast Feedback */}
-      {feedbackAjustes && (
-        <div style={{
-          position: 'fixed',
-          top: '70px',
-          right: '20px',
-          backgroundColor: '#10b981',
-          color: '#ffffff',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontWeight: '700',
-          fontSize: '0.82rem',
-          zIndex: 9999,
-          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px'
-        }}>
-          <CheckCircle2 size={14} />
-          {feedbackAjustes}
-        </div>
-      )}
-
-      {/* ── Contenido Principal ── */}
+{/* ── Contenido Principal ── */}
       <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
         {/* PESTAÑA: GESTOR DE CRISIS COMPLETO */}
         {activeTab === 'CRISIS' && (
@@ -386,10 +165,10 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Tv size={16} /> Vista Previa del Noticiero en Directo (Pantalla Principal)
+                <Tv size={16} /> {t('ui.liveNewsPreviewMainScreen')}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--muted-text)' }}>
-                Lo que emitas desde el Gestor de Crisis se proyecta automáticamente aquí
+                {t('ui.eventsIssuedFromTheCrisisManagerAreAutomaticallyProjectedHere')}
               </div>
             </div>
             <div style={{ flex: 1, borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
@@ -413,17 +192,17 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
             }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#f97316', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sliders size={18} /> Ajustes de Seguridad y Control de Backroom
+                  <Sliders size={18} /> {t('ui.backroomSecurityAndControlSettings')}
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--muted-text)' }}>
-                  Configuración de claves de acceso y permisos de difusión para el equipo de crisis.
+                  {t('ui.configureAccessKeysAndBroadcastingPermissionsForTheCrisisTeam')}
                 </p>
               </div>
 
               {/* Contraseña de Backroom */}
               <form onSubmit={handleGuardarPassBackroom} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ fontSize: '0.76rem', fontWeight: '700', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                  Contraseña de Acceso al Backroom
+                  {t('ui.backroomAccessPassword')}
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <div style={{
@@ -472,7 +251,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
                       cursor: 'pointer'
                     }}
                   >
-                    Guardar Clave
+                    {t('ui.savePassword')}
                   </button>
                 </div>
               </form>
@@ -490,10 +269,10 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-color)' }}>
-                    Probar Alerta Auditiva de Crisis
+                    {t('ui.testCrisisAudioAlert')}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-                    Verifica el volumen de la sirena de emergencia antes de emitir a la sala
+                    {t('ui.checkTheEmergencySirenVolumeBeforeBroadcastingToTheRoom')}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -514,7 +293,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
                       gap: '4px'
                     }}
                   >
-                    <Volume2 size={13} /> Tono Noticiero
+                    <Volume2 size={13} /> {t('ui.newsTone')}
                   </button>
                   <button
                     type="button"
@@ -533,7 +312,7 @@ const BackroomView = ({ isLight: propIsLight, onExit }) => {
                       gap: '4px'
                     }}
                   >
-                    <Volume2 size={13} /> Sirena Táctica
+                    <Volume2 size={13} /> {t('ui.tacticalSiren')}
                   </button>
                 </div>
               </div>

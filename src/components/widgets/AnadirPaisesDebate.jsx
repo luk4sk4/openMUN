@@ -134,7 +134,7 @@ const AnadirPaisesDebate = () => {
               alignItems: 'center',
               gap: '0.4rem'
             }}>
-              Añadir Países Debate
+              {t('sidebar.widgets.anadir_paises_debate.title')}
             </h3>
           </div>
         </div>
@@ -144,7 +144,7 @@ const AnadirPaisesDebate = () => {
           <button
             type="button"
             onClick={ordenarPaisesAlfabetico}
-            title="Ordenar países alfabéticamente (A-Z)"
+            title={t('ui.sortCountriesAlphabeticallyAZ')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -171,7 +171,7 @@ const AnadirPaisesDebate = () => {
               }
             }}
             disabled={oradoresCaucus.length === 0}
-            title="Eliminar todos de Debate"
+            title={t('ui.removeAllFromDebate')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -349,10 +349,10 @@ const AnadirPaisesDebate = () => {
             maxWidth: '340px'
           }}>
             <div style={{ fontSize: '0.86rem', fontWeight: '700', color: 'var(--text-color)', marginBottom: '0.3rem' }}>
-              No hay delegaciones cargadas
+              {t('countries.noDelegationsLoaded')}
             </div>
             <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', marginBottom: '1rem', lineHeight: '1.35' }}>
-              Importa países desde el widget 'Importar Países' o carga una plantilla rápida:
+              {t('countries.noDelegationsLoadedDesc')}
             </div>
             <button
               type="button"
@@ -373,7 +373,7 @@ const AnadirPaisesDebate = () => {
               }}
             >
               <Globe size={14} />
-              <span>Cargar Consejo de Seguridad (15)</span>
+              <span>{t('countries.loadUNSC')}</span>
             </button>
           </div>
         ) : paisesFiltrados.length === 0 ? (
@@ -385,7 +385,7 @@ const AnadirPaisesDebate = () => {
             color: 'var(--muted-text)',
             fontSize: '0.8rem'
           }}>
-            No se encontraron países con "{busqueda}".
+            {t('ui.noCountriesFoundMatching')}{busqueda}".
           </div>
         ) : (
           <div style={{
@@ -444,7 +444,7 @@ const AnadirPaisesDebate = () => {
                     setDragOverIndex(null);
                   }}
                   onClick={() => handleTogglePais(pais)}
-                  title={estaEnLista ? `${pais.nombre} (En Debate #${posEnLista}) - Clic para retirar` : `${pais.nombre} - Clic para añadir a Debate (Arrastra para reordenar)`}
+                  title={estaEnLista ? t('ui.inDebateClickToRemove', { v0: pais.nombre, v1: posEnLista }) : t('ui.clickToAddToDebateDragToReorder', { v0: pais.nombre })}
                   style={{
                     position: 'relative',
                     padding: '0.5rem 0.6rem',
@@ -501,7 +501,7 @@ const AnadirPaisesDebate = () => {
                       {pais.nombre}
                     </span>
                     {pais.veto && (
-                      <Crown size={11} color="var(--warning-color)" style={{ flexShrink: 0 }} title="Miembro Permanente (P5)" />
+                      <Crown size={11} color="var(--warning-color)" style={{ flexShrink: 0 }} title={t('ui.permanentMemberP5')} />
                     )}
                   </div>
 
@@ -543,31 +543,6 @@ const AnadirPaisesDebate = () => {
         )}
       </div>
 
-      {/* ── FOOTER RESUMEN ──────────────────────────────────────────────────── */}
-      {paises.length > 0 && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: '0.4rem',
-          borderTop: '1px solid var(--border-color)',
-          fontSize: '0.72rem',
-          color: '#71717a'
-        }}>
-          <span>
-            Destino: <strong style={{ color: '#fb923c' }}>Debate y Caucus</strong>
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: cantEnLista > 0 ? '#f97316' : '#52525b'
-            }} />
-            {cantEnLista} en debate
-          </span>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useMemo, useRef } from 'react';
 import { 
   X, 
@@ -31,173 +32,174 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PRESET_TEMPLATES } from '../../plantillas/widgets';
+import { useToast } from '../../context/ToastContext';
 
 // Metadata rica para cada widget disponible
 export const WIDGET_METADATA = {
   cronometro_enmiendas: {
-    title: 'Cronómetro de Enmiendas',
-    category: 'Debate',
-    description: 'Temporizador compacto para oradores en debate de enmiendas, con selección de país y presets sincronizados.',
+    get title() { return i18n.t('sidebar.widgets.cronometro_enmiendas.title'); },
+    get category() { return i18n.t('sidebar.widgets.cronometro_enmiendas.category'); },
+    get description() { return i18n.t('sidebar.widgets.cronometro_enmiendas.description'); },
     icon: Clock,
     defaultColSpan: 4,
     defaultRowSpan: 3,
   },
   controlador_enmiendas: {
-    title: 'Controlador de Enmiendas & Resolución',
-    category: 'Debate',
-    description: 'Gestión de borradores de resolución (.txt, .md, Google Docs), desglose por artículos y formulación de mociones.',
+    get title() { return i18n.t('sidebar.widgets.controlador_enmiendas.title'); },
+    get category() { return i18n.t('sidebar.widgets.controlador_enmiendas.category'); },
+    get description() { return i18n.t('sidebar.widgets.controlador_enmiendas.description'); },
     icon: FileSignature,
     defaultColSpan: 7,
     defaultRowSpan: 6,
   },
   panel_enmiendas_votacion: {
-    title: 'Debate & Votación de Enmiendas',
-    category: 'Votaciones',
-    description: 'Panel unificado con orador activo, presets de cronómetro y votación rápida de enmiendas.',
+    get title() { return i18n.t('sidebar.widgets.panel_enmiendas_votacion.title'); },
+    get category() { return i18n.t('sidebar.widgets.panel_enmiendas_votacion.category'); },
+    get description() { return i18n.t('sidebar.widgets.panel_enmiendas_votacion.description'); },
     icon: Vote,
     defaultColSpan: 5,
     defaultRowSpan: 6,
   },
   mini_votacion: {
-    title: 'Mini Sistema de Votación (Roll Call)',
-    category: 'Votaciones',
-    description: 'Votación nominal sincronizada en tiempo real para enmiendas con flujo ágil de Roll Call en segunda ronda.',
+    get title() { return i18n.t('sidebar.widgets.mini_votacion.title'); },
+    get category() { return i18n.t('sidebar.widgets.mini_votacion.category'); },
+    get description() { return i18n.t('sidebar.widgets.mini_votacion.description'); },
     icon: Vote,
     defaultColSpan: 5,
     defaultRowSpan: 6,
   },
   mapa_votacion: {
-    title: 'Mapa Mundial de Votación',
-    category: 'Votaciones',
-    description: 'Mapa geopolítico interactivo que colorea en tiempo real cada país según su voto con zoom y tooltips.',
+    get title() { return i18n.t('sidebar.widgets.mapa_votacion.title'); },
+    get category() { return i18n.t('sidebar.widgets.mapa_votacion.category'); },
+    get description() { return i18n.t('sidebar.widgets.mapa_votacion.description'); },
     icon: Map,
     defaultColSpan: 7,
     defaultRowSpan: 5,
   },
   pizarra_interactiva: {
-    title: 'Pizarra Interactiva & Mapas',
-    category: 'Debate',
-    description: 'Lienzo táctico para dibujar, marcar posiciones geopolíticas y hacer anotaciones sobre mapas o imágenes.',
+    get title() { return i18n.t('sidebar.widgets.pizarra_interactiva.title'); },
+    get category() { return i18n.t('sidebar.widgets.pizarra_interactiva.category'); },
+    get description() { return i18n.t('sidebar.widgets.pizarra_interactiva.description'); },
     icon: Palette,
     defaultColSpan: 7,
     defaultRowSpan: 5,
   },
   tele_noticias: {
-    title: 'Televisión de Noticias (En Vivo)',
-    category: 'Debate',
-    description: 'Monitor con forma de TV que emite exclusivamente la alerta de crisis o noticia proyectada en directo.',
+    get title() { return i18n.t('sidebar.widgets.tele_noticias.title'); },
+    get category() { return i18n.t('sidebar.widgets.tele_noticias.category'); },
+    get description() { return i18n.t('sidebar.widgets.tele_noticias.description'); },
     icon: Tv,
     defaultColSpan: 6,
     defaultRowSpan: 5,
   },
   selector_aleatorio: {
-    title: 'Selector Aleatorio (Ruleta)',
-    category: 'Debate',
-    description: 'Ruleta animada y sorteo de delegaciones ("Cold Calling") para dinamizar el debate del comité.',
+    get title() { return i18n.t('sidebar.widgets.selector_aleatorio.title'); },
+    get category() { return i18n.t('sidebar.widgets.selector_aleatorio.category'); },
+    get description() { return i18n.t('sidebar.widgets.selector_aleatorio.description'); },
     icon: Dices,
     defaultColSpan: 5,
     defaultRowSpan: 5,
   },
   gestor_crisis: {
-    title: 'Gestor de Crisis & Noticiero',
-    category: 'Debate',
-    description: 'Titulares en vivo estilo noticiero TV ("Última Hora"), reloj de simulación y línea temporal de crisis.',
+    get title() { return i18n.t('sidebar.widgets.gestor_crisis.title'); },
+    get category() { return i18n.t('sidebar.widgets.gestor_crisis.category'); },
+    get description() { return i18n.t('sidebar.widgets.gestor_crisis.description'); },
     icon: Flame,
     defaultColSpan: 7,
     defaultRowSpan: 5,
   },
   anadir_paises_gsl: {
-    title: 'Añadir Países GSL',
-    category: 'Debate',
-    description: 'Búsqueda rápida y selección de países para la Lista General de Oradores (GSL).',
+    get title() { return i18n.t('sidebar.widgets.anadir_paises_gsl.title'); },
+    get category() { return i18n.t('sidebar.widgets.anadir_paises_gsl.category'); },
+    get description() { return i18n.t('sidebar.widgets.anadir_paises_gsl.description'); },
     icon: UserPlus,
     defaultColSpan: 4,
     defaultRowSpan: 5,
   },
   anadir_paises_debate: {
-    title: 'Añadir Países Debate',
-    category: 'Debate',
-    description: 'Búsqueda rápida y selección de países para Caucus Moderado y Debate.',
+    get title() { return i18n.t('sidebar.widgets.anadir_paises_debate.title'); },
+    get category() { return i18n.t('sidebar.widgets.anadir_paises_debate.category'); },
+    get description() { return i18n.t('sidebar.widgets.anadir_paises_debate.description'); },
     icon: Timer,
     defaultColSpan: 4,
     defaultRowSpan: 5,
   },
   establecer_agenda: {
-    title: 'Comité y Agenda',
-    category: 'Configuración',
-    description: 'Nombre del comité, puntos de agenda, turnos a favor y en contra y votación a mano alzada.',
+    get title() { return i18n.t('sidebar.widgets.establecer_agenda.title'); },
+    get category() { return i18n.t('sidebar.widgets.establecer_agenda.category'); },
+    get description() { return i18n.t('sidebar.widgets.establecer_agenda.description'); },
     icon: FileCheck2,
     defaultColSpan: 6,
     defaultRowSpan: 4,
   },
   votacion_oficial: {
-    title: 'Sistema de Votación Oficial',
-    category: 'Votaciones',
-    description: 'Votación Procedimental vs Sustantiva, tipos de mayoría, Veto P5, orden alfabético y Roll Call.',
+    get title() { return i18n.t('sidebar.widgets.votacion_oficial.title'); },
+    get category() { return i18n.t('sidebar.widgets.votacion_oficial.category'); },
+    get description() { return i18n.t('sidebar.widgets.votacion_oficial.description'); },
     icon: Vote,
     defaultColSpan: 7,
     defaultRowSpan: 5,
   },
   cronometro_principal: {
-    title: 'Cronómetro Principal',
-    category: 'Tiempo',
-    description: 'Temporizador para discursos de delegaciones con tiempos predefinidos y ceder palabra.',
+    get title() { return i18n.t('sidebar.widgets.cronometro_principal.title'); },
+    get category() { return i18n.t('sidebar.widgets.cronometro_principal.category'); },
+    get description() { return i18n.t('sidebar.widgets.cronometro_principal.description'); },
     icon: Clock,
     defaultColSpan: 6,
     defaultRowSpan: 3,
   },
   lista_oradores: {
-    title: 'Lista de Oradores',
-    category: 'Debate',
-    description: 'Gestión de la cola de oradores GSL y control de turnos en directo.',
+    get title() { return i18n.t('sidebar.widgets.lista_oradores.title'); },
+    get category() { return i18n.t('sidebar.widgets.lista_oradores.category'); },
+    get description() { return i18n.t('sidebar.widgets.lista_oradores.description'); },
     icon: Users,
     defaultColSpan: 6,
     defaultRowSpan: 4,
   },
   pizarra_mociones: {
-    title: 'Pizarra de Mociones',
-    category: 'Mociones',
-    description: 'Registro interactivo, ordenamiento y votación rápida de mociones de debate.',
+    get title() { return i18n.t('sidebar.widgets.pizarra_mociones.title'); },
+    get category() { return i18n.t('sidebar.widgets.pizarra_mociones.category'); },
+    get description() { return i18n.t('sidebar.widgets.pizarra_mociones.description'); },
     icon: FileText,
     defaultColSpan: 6,
     defaultRowSpan: 4,
   },
   cronometro_dual: {
-    title: 'Cronómetro Dual',
-    category: 'Tiempo',
-    description: 'Reloj doble para tiempo individual por orador y tiempo total acumulado del caucus.',
+    get title() { return i18n.t('sidebar.widgets.cronometro_dual.title'); },
+    get category() { return i18n.t('sidebar.widgets.cronometro_dual.category'); },
+    get description() { return i18n.t('sidebar.widgets.cronometro_dual.description'); },
     icon: Timer,
     defaultColSpan: 5,
     defaultRowSpan: 4,
   },
   cronometro_only_time: {
-    title: 'Cronómetro Solo Tiempo',
-    category: 'Tiempo',
-    description: 'Temporizador simplificado de tiempo total para libres negociaciones y pausas.',
+    get title() { return i18n.t('sidebar.widgets.cronometro_only_time.title'); },
+    get category() { return i18n.t('sidebar.widgets.cronometro_only_time.category'); },
+    get description() { return i18n.t('sidebar.widgets.cronometro_only_time.description'); },
     icon: Hourglass,
     defaultColSpan: 5,
     defaultRowSpan: 3,
   },
   matriz_paises: {
-    title: 'Matriz de Países',
-    category: 'Votaciones',
-    description: 'Control de asistencia, derecho a veto, quórum y votaciones nominales roll-call.',
+    get title() { return i18n.t('sidebar.widgets.matriz_paises.title'); },
+    get category() { return i18n.t('sidebar.widgets.matriz_paises.category'); },
+    get description() { return i18n.t('sidebar.widgets.matriz_paises.description'); },
     icon: Globe,
     defaultColSpan: 6,
     defaultRowSpan: 4,
   },
   historico_delegaciones: {
-    title: 'Histórico Delegaciones',
-    category: 'Estadísticas',
-    description: 'Estadísticas de participación, interrupciones e intervenciones del comité.',
+    get title() { return i18n.t('sidebar.widgets.historico_delegaciones.title'); },
+    get category() { return i18n.t('sidebar.widgets.historico_delegaciones.category'); },
+    get description() { return i18n.t('sidebar.widgets.historico_delegaciones.description'); },
     icon: BarChart3,
     defaultColSpan: 6,
     defaultRowSpan: 4,
   },
   importar_paises: {
-    title: 'Importar Países',
-    category: 'Configuración',
-    description: 'Carga delegaciones desde archivo xlsx, csv o json, o añádelas manualmente.',
+    get title() { return i18n.t('sidebar.widgets.importar_paises.title'); },
+    get category() { return i18n.t('sidebar.widgets.importar_paises.category'); },
+    get description() { return i18n.t('sidebar.widgets.importar_paises.description'); },
     icon: Upload,
     defaultColSpan: 6,
     defaultRowSpan: 4,
@@ -287,6 +289,7 @@ const WidgetSidebar = ({
   onApplyTemplate
 }) => {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('TODOS');
   const [currentView, setCurrentView] = useState('widgets'); // 'widgets' | 'templates'
@@ -295,10 +298,7 @@ const WidgetSidebar = ({
   const jsonFileInputRef = useRef(null);
 
   const showToast = (message, type = 'success') => {
-    setFeedbackToast({ message, type });
-    setTimeout(() => {
-      setFeedbackToast(null);
-    }, 2800);
+    addToast({ title: t('ui.widgetsTemplates'), message, type: type === 'error' ? 'error' : 'success' });
   };
 
   const allWidgetIds = useMemo(() => {
@@ -384,9 +384,9 @@ const WidgetSidebar = ({
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      showToast('Plantilla exportada como JSON');
+      showToast(t('ui.templateExportedAsJson'));
     } catch {
-      showToast('Error al exportar plantilla', 'error');
+      showToast(t('ui.errorExportingTemplate'), 'error');
     }
   };
 
@@ -405,10 +405,10 @@ const WidgetSidebar = ({
             setCurrentView('widgets');
           }
         } else {
-          showToast('Formato JSON inválido para plantilla', 'error');
+          showToast(t('ui.invalidJsonTemplateFormat'), 'error');
         }
       } catch (err) {
-        showToast('Error al leer el archivo JSON: ' + err.message, 'error');
+        showToast(t('ui.errorReadingJsonFile') + err.message, 'error');
       }
     };
     reader.readAsText(file);
@@ -483,7 +483,7 @@ const WidgetSidebar = ({
               type="button"
               className="widget-sidebar-btn-secondary"
               onClick={handleResetToDefault}
-              title={`Restablecer widgets al diseño por defecto de ${activeTab}`}
+              title={t('ui.resetWidgetsToTheDefaultLayout', { v0: activeTab })}
             >
               <RotateCcw size={14} />
               <span>{t('common.default', 'Default')} ({activeTab})</span>
@@ -494,7 +494,7 @@ const WidgetSidebar = ({
               className={`widget-sidebar-btn-secondary${currentView === 'templates' ? ' is-active' : ''}`}
               aria-pressed={currentView === 'templates'}
               onClick={() => setCurrentView(currentView === 'templates' ? 'widgets' : 'templates')}
-              title={currentView === 'templates' ? 'Volver al catálogo de widgets' : 'Explorar y cargar plantillas predefinidas'}
+              title={currentView === 'templates' ? t('sidebar.backToWidgets') : t('ui.browseAndLoadPredefinedTemplates')}
             >
               <LayoutTemplate size={14} />
               <span>{currentView === 'templates' ? t('sidebar.viewWidgets', 'Ver Widgets') : t('sidebar.templates', 'Plantillas')}</span>
@@ -502,13 +502,7 @@ const WidgetSidebar = ({
           </div>
         </div>
 
-        {/* Notificación Toast Flotante */}
-        {feedbackToast && (
-          <div className="widget-sidebar-toast" data-type={feedbackToast.type}>
-            {feedbackToast.type === 'error' ? <X size={15} /> : <Check size={15} />}
-            <span>{feedbackToast.message}</span>
-          </div>
-        )}
+
 
         {/* ─── VISTA 1: GESTOR DE WIDGETS ─── */}
         {currentView === 'widgets' && (
@@ -579,8 +573,8 @@ const WidgetSidebar = ({
                 sortedAndFilteredWidgets.map(widgetId => {
                   const meta = WIDGET_METADATA[widgetId] || {
                     title: widgetId,
-                    category: 'General',
-                    description: 'Widget personalizado',
+                    category: t('views.staff.priorityGeneral'),
+                    description: t('ui.customWidget'),
                     icon: Sliders
                   };
 
@@ -610,7 +604,7 @@ const WidgetSidebar = ({
                           {/* Badge Default del Aspecto Actual */}
                           {isDefaultWidget && (
                             <span className="widget-sidebar-badge-default">
-                              <Check size={10} /> Default {activeTab}
+                              <Check size={10} /> {t('ui.default')} {activeTab}
                             </span>
                           )}
 

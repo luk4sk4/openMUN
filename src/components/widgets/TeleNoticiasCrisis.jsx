@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Tv, 
@@ -30,40 +31,40 @@ import { playBreakingNewsAlert, playEmergencyPulse } from '../../utils/audioAler
 // Categorías de Crisis y sus colores
 const CATEGORIAS = {
   CRITICA: {
-    nombre: 'Última Hora',
-    badge: '🔴 ÚLTIMA HORA',
+    get nombre() { return i18n.t('ui.breakingNews'); },
+    get badge() { return i18n.t('ui.breakingNews2'); },
     color: '#ef4444',
     bg: '#dc2626',
     border: '#f87171',
     icon: Flame
   },
   MILITAR: {
-    nombre: 'Alerta Militar',
-    badge: '⚔️ ALERTA MILITAR',
+    get nombre() { return i18n.t('ui.militaryAlert'); },
+    get badge() { return i18n.t('ui.militaryAlert2'); },
     color: '#f97316',
     bg: '#ea580c',
     border: '#fb923c',
     icon: ShieldAlert
   },
   DIPLOMATICA: {
-    nombre: 'Comunicado',
-    badge: '🌐 COMUNICADO DIPLOMÁTICO',
+    get nombre() { return i18n.t('ui.announcement2'); },
+    get badge() { return i18n.t('ui.diplomaticAnnouncement'); },
     color: '#3b82f6',
     bg: '#2563eb',
     border: '#60a5fa',
     icon: Megaphone
   },
   ECONOMICA: {
-    nombre: 'Crisis Financiera',
-    badge: '💵 IMPACTO ECONÓMICO',
+    get nombre() { return i18n.t('ui.financialCrisis'); },
+    get badge() { return i18n.t('ui.economicImpact'); },
     color: '#a855f7',
     bg: '#9333ea',
     border: '#c084fc',
     icon: TrendingUp
   },
   CIBERNETICA: {
-    nombre: 'Ciberataque',
-    badge: '⚡ FILTRACIÓN / CIBER',
+    get nombre() { return i18n.t('ui.cyberattack'); },
+    get badge() { return i18n.t('ui.leakCyber'); },
     color: '#10b981',
     bg: '#059669',
     border: '#34d399',
@@ -72,10 +73,10 @@ const CATEGORIAS = {
 };
 
 const ESTILOS_MARCO = [
-  { id: 'modern_studio', label: 'Estudio de Noticias HD' },
-  { id: 'tactical_hud', label: 'Radar Táctico Militar' },
-  { id: 'retro_crt', label: 'Transmisión Analógica CRT' },
-  { id: 'minimal', label: 'Minimalista Cinema' }
+  { id: 'modern_studio', get label() { return i18n.t('ui.hdNewsStudio'); } },
+  { id: 'tactical_hud', get label() { return i18n.t('ui.militaryTacticalRadar'); } },
+  { id: 'retro_crt', get label() { return i18n.t('ui.analogCrtBroadcast'); } },
+  { id: 'minimal', get label() { return i18n.t('ui.minimalCinema'); } }
 ];
 
 const CANALES_PRESET = [
@@ -194,7 +195,7 @@ const TeleNoticiasCrisis = () => {
       return configTV.tickerPersonalizado;
     }
     if (!todosLosEventos || todosLosEventos.length === 0) {
-      return 'OPENMUN TRANSMISIÓN EN DIRECTO · SALA DE CRISIS ACTIVA · ESPERANDO NUEVAS DIRECTIVAS DE LA MESA';
+      return i18n.t('ui.openmunLiveBroadcastCrisisRoomActiveAwaitingNewChairDirectives');
     }
     return todosLosEventos
       .map(e => `[${e.categoria}] ${e.titulo.toUpperCase()} (${e.horaSimulada})`)
@@ -213,7 +214,7 @@ const TeleNoticiasCrisis = () => {
     : CATEGORIAS.CRITICA;
   const CategoryIcon = catMeta.icon || Flame;
 
-  const formatoHora = `Día ${relojSimulacion.dia || 1} · ${String(relojSimulacion.horas || 8).padStart(2, '0')}:${String(relojSimulacion.minutos || 0).padStart(2, '0')} hrs`;
+  const formatoHora = t('ui.dayHrs', { v0: relojSimulacion.dia || 1, v1: String(relojSimulacion.horas || 8).padStart(2, '0'), v2: String(relojSimulacion.minutos || 0).padStart(2, '0') });
 
   return (
     <div style={{
@@ -361,7 +362,7 @@ const TeleNoticiasCrisis = () => {
                   fontWeight: '700',
                   color: '#e2e8f0'
                 }}>
-                  <Clock size={11} color="#60a5fa" />
+                  <Clock size={11} color="var(--accent-color)" />
                   <span>{formatoHora}</span>
                 </div>
               )}
@@ -420,10 +421,10 @@ const TeleNoticiasCrisis = () => {
                   width: '56px',
                   height: '56px',
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)'
+                  backgroundColor: 'var(--accent-soft)',
+                  border: '1px solid var(--accent-color)'
                 }}>
-                  <Radio size={28} color="#60a5fa" style={{ animation: 'pulse 2s infinite' }} />
+                  <Radio size={28} color="var(--accent-color)" style={{ animation: 'pulse 2s infinite' }} />
                 </div>
                 <div style={{ fontSize: '1rem', fontWeight: '800', color: '#ffffff', letterSpacing: '0.5px' }}>
                   {t('crisis.standbyTitle', 'SEÑAL DE CRISIS EN ESPERA')}
@@ -552,7 +553,7 @@ const TeleNoticiasCrisis = () => {
                     }}>
                       <img
                         src={eventoProyectado.imagen}
-                        alt="Evidencia Crisis"
+                        alt={t('ui.crisisEvidence')}
                         style={{
                           width: '100%',
                           height: '100%',
@@ -735,10 +736,10 @@ const TeleNoticiasCrisis = () => {
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                   {[
-                    { id: 'modern_studio', label: 'Estudio 4K Moderno' },
-                    { id: 'retro_crt', label: 'Monitor CRT Retro' },
-                    { id: 'tactical_hud', label: 'Sala de Situación HUD' },
-                    { id: 'minimal', label: 'Sin Marco (Puro)' }
+                    { id: 'modern_studio', label: t('ui.modern4kStudio') },
+                    { id: 'retro_crt', label: t('ui.retroCrtMonitor') },
+                    { id: 'tactical_hud', label: t('ui.hudSituationRoom') },
+                    { id: 'minimal', label: t('ui.noFramePlain') }
                   ].map(est => (
                     <button
                       key={est.id}
@@ -746,11 +747,11 @@ const TeleNoticiasCrisis = () => {
                       style={{
                         padding: '6px 8px',
                         borderRadius: '6px',
-                        border: `1px solid ${configTV.estiloMarco === est.id ? '#3b82f6' : 'var(--border-color)'}`,
+                        border: `1px solid ${configTV.estiloMarco === est.id ? 'var(--accent-color)' : 'var(--border-color)'}`,
                         backgroundColor: configTV.estiloMarco === est.id 
-                          ? (isLight ? '#eff6ff' : 'rgba(59, 130, 246, 0.2)') 
-                          : (isLight ? 'var(--card-header-bg)' : '#181d2a'),
-                        color: configTV.estiloMarco === est.id ? (isLight ? '#1d4ed8' : '#60a5fa') : 'var(--text-color)',
+                          ? 'var(--accent-soft)' 
+                          : 'var(--input-bg)',
+                        color: configTV.estiloMarco === est.id ? 'var(--accent-color)' : 'var(--text-color)',
                         fontSize: '0.72rem',
                         fontWeight: '600',
                         cursor: 'pointer',
@@ -773,7 +774,7 @@ const TeleNoticiasCrisis = () => {
                   onChange={(e) => setConfigTV(prev => ({ ...prev, canal: e.target.value }))}
                   style={{
                     width: '100%',
-                    backgroundColor: isLight ? '#ffffff' : '#181d2a',
+                    backgroundColor: 'var(--input-bg)',
                     color: 'var(--text-color)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '6px',
@@ -802,11 +803,11 @@ const TeleNoticiasCrisis = () => {
                         flex: 1,
                         padding: '5px',
                         borderRadius: '5px',
-                        border: `1px solid ${configTV.velocidadTicker === vel ? '#3b82f6' : 'var(--border-color)'}`,
+                        border: `1px solid ${configTV.velocidadTicker === vel ? 'var(--accent-color)' : 'var(--border-color)'}`,
                         backgroundColor: configTV.velocidadTicker === vel 
-                          ? (isLight ? '#eff6ff' : 'rgba(59, 130, 246, 0.2)') 
-                          : (isLight ? 'var(--card-header-bg)' : '#181d2a'),
-                        color: configTV.velocidadTicker === vel ? (isLight ? '#1d4ed8' : '#60a5fa') : 'var(--text-color)',
+                          ? 'var(--accent-soft)' 
+                          : 'var(--input-bg)',
+                        color: configTV.velocidadTicker === vel ? 'var(--accent-color)' : 'var(--text-color)',
                         fontSize: '0.7rem',
                         fontWeight: '600',
                         textTransform: 'capitalize',
@@ -831,7 +832,7 @@ const TeleNoticiasCrisis = () => {
                   onChange={(e) => setConfigTV(prev => ({ ...prev, tickerPersonalizado: e.target.value }))}
                   style={{
                     width: '100%',
-                    backgroundColor: isLight ? '#ffffff' : '#181d2a',
+                    backgroundColor: 'var(--input-bg)',
                     color: 'var(--text-color)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '6px',
@@ -843,7 +844,7 @@ const TeleNoticiasCrisis = () => {
               </div>
 
               {/* Interruptores de Efectos Visuales y Sonido */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: isLight ? 'var(--card-header-bg)' : '#181d2a', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: 'var(--card-header-bg)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-color)', cursor: 'pointer' }}>
                   <span>{t('crisis.scanlinesEffect', 'Efecto Scanlines (Líneas CRT)')}</span>
                   <input
@@ -892,12 +893,12 @@ const TeleNoticiasCrisis = () => {
                 style={{
                   width: '100%',
                   padding: '8px',
-                  backgroundColor: '#3b82f6',
-                  color: '#ffffff',
+                  backgroundColor: 'var(--btn-bg)',
+                  color: 'var(--btn-text)',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   fontSize: '0.8rem',
-                  fontWeight: '700',
+                  fontWeight: '650',
                   cursor: 'pointer',
                   marginTop: '4px'
                 }}

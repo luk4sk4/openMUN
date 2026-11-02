@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useDebateRunning } from '../../../hooks/useDebateRunning';
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import {
@@ -26,6 +27,7 @@ const CronometroEnmiendasRapido = memo(({
   onGuardarIntervencion,
   isLight = false
 }) => {
+  const { t } = useTranslation();
   const [cronometroPais, setCronometroPais] = useState('');
   const [cronometroSegundos, setCronometroSegundos] = useState(60);
   const [cronometroInicial, setCronometroInicial] = useState(60);
@@ -119,7 +121,7 @@ const CronometroEnmiendasRapido = memo(({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <Clock size={12} color="#3b82f6" />
-          <span style={{ fontWeight: '700' }}>Cronómetro de Debate</span>
+          <span style={{ fontWeight: '700' }}>{t('ui.debateTimer')}</span>
           <span style={{
             fontFamily: 'monospace',
             fontWeight: '900',
@@ -148,11 +150,11 @@ const CronometroEnmiendasRapido = memo(({
               fontWeight: '700'
             }}
           >
-            {cronometroCorriendo ? 'Pausar' : 'Reanudar'}
+            {cronometroCorriendo ? t('agenda.pauseTimer') : t('agenda.startTimer')}
           </button>
           <button
             onClick={() => setColapsado(false)}
-            title="Expandir controles completos del cronómetro"
+            title={t('ui.expandFullTimerControls')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -233,7 +235,7 @@ const CronometroEnmiendasRapido = memo(({
               type="text"
               value={cronometroPais}
               onChange={e => setCronometroPais(e.target.value)}
-              placeholder="Delegación que defiende"
+              placeholder={t('ui.defendingDelegation')}
               style={{
                 backgroundColor: 'var(--panel-bg)',
                 border: '1px solid var(--subborder-color)',
@@ -279,7 +281,7 @@ const CronometroEnmiendasRapido = memo(({
             }}
           >
             {cronometroCorriendo ? <Pause size={12} /> : <Play size={12} />}
-            <span>{cronometroCorriendo ? 'Pausa' : 'Iniciar'}</span>
+            <span>{cronometroCorriendo ? t('ui.pause') : t('timers.start')}</span>
           </button>
 
           <button
@@ -287,7 +289,7 @@ const CronometroEnmiendasRapido = memo(({
               setCronometroCorriendo(false);
               setCronometroSegundos(cronometroInicial);
             }}
-            title="Reiniciar reloj"
+            title={t('ui.resetClock')}
             style={{
               backgroundColor: 'transparent',
               border: '1px solid var(--subborder-color)',
@@ -303,7 +305,7 @@ const CronometroEnmiendasRapido = memo(({
           {/* Ajuste fino */}
           <button
             onClick={() => handleAjustar(-10)}
-            title="Restar 10s"
+            title={t('ui.subtract10s')}
             style={{
               backgroundColor: 'transparent',
               border: '1px solid var(--subborder-color)',
@@ -319,7 +321,7 @@ const CronometroEnmiendasRapido = memo(({
           </button>
           <button
             onClick={() => handleAjustar(10)}
-            title="Sumar 10s"
+            title={t('ui.add10s')}
             style={{
               backgroundColor: 'transparent',
               border: '1px solid var(--subborder-color)',
@@ -363,7 +365,7 @@ const CronometroEnmiendasRapido = memo(({
           {/* Guardar en Histórico */}
           <button
             onClick={handleGuardar}
-            title="Guardar intervención en el Histórico de Delegaciones"
+            title={t('ui.saveContributionToDelegationHistory')}
             style={{
               backgroundColor: intervencionGuardadaFeedback ? '#16a34a' : 'var(--btn-bg)',
               border: 'none',
@@ -379,13 +381,13 @@ const CronometroEnmiendasRapido = memo(({
             }}
           >
             <Check size={12} />
-            <span>{intervencionGuardadaFeedback ? '¡Guardado!' : 'Histórico'}</span>
+            <span>{intervencionGuardadaFeedback ? t('ui.saved') : t('ui.history2')}</span>
           </button>
 
           {/* Audio toggle */}
           <button
             onClick={() => setSonidoHabilitado(s => !s)}
-            title={sonidoHabilitado ? 'Silenciar avisos' : 'Activar sonido'}
+            title={sonidoHabilitado ? t('ui.muteAlerts2') : t('ui.enableSound')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -402,7 +404,7 @@ const CronometroEnmiendasRapido = memo(({
           {/* Colapsar */}
           <button
             onClick={() => setColapsado(true)}
-            title="Minimizar barra de cronómetro"
+            title={t('ui.minimizeTimerBar')}
             style={{
               background: 'transparent',
               border: 'none',

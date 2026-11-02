@@ -1,3 +1,5 @@
+import i18n from '../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import peerService, { MSG_TYPES, generateRoomCode, DEFAULT_ROOM_SETTINGS } from '../services/peerService';
@@ -8,6 +10,7 @@ import { registrarAvisoPropio } from '../utils/announcementHelpers';
 const P2PContext = createContext();
 
 export const P2PProvider = ({ children }) => {
+  const { t } = useTranslation();
   const [viewMode, setViewMode] = useState(() => {
     // Detectar si la URL contiene parámetros de unión directa (?room=... o ?mode=...)
     if (typeof window !== 'undefined') {
@@ -180,11 +183,14 @@ export const P2PProvider = ({ children }) => {
       return;
     }
     lastNotificationRef.current = { text, timestamp: now };
-    const id = Date.now() + Math.random();
-    setNotifications(prev => [...prev, { id, text, type }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 4500);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('openmun_toast', {
+        detail: {
+          message: text,
+          type: type === 'error' ? 'error' : (type === 'warning' ? 'warning' : (type === 'success' ? 'success' : 'info'))
+        }
+      }));
+    }
   }, []);
 
   // ─────────────────────────────────────────────────────────────
@@ -199,7 +205,7 @@ export const P2PProvider = ({ children }) => {
         setRoomId(data.roomId);
         if (data.roomSettings) setRoomSettings(data.roomSettings);
         localStorage.setItem('openmun_last_room_id', data.roomId);
-        addNotification(`Sala en vivo iniciada con éxito (${data.roomId})`, 'success');
+        addNotification(t('ui.liveRoomStartedSuccessfully', { v0: data.roomId }), 'success');
       }
 
       if (event === 'connected') {
@@ -245,7 +251,7 @@ export const P2PProvider = ({ children }) => {
         if (data.message) {
           addNotification(data.message, 'warning');
         }
-        addNotification(data.country ? `Conectado a la sala como ${data.country}` : `Conectado a la sala (${data.role})`, 'success');
+        addNotification(data.country ? t('ui.connectedToTheRoomAs', { v0: data.country }) : t('ui.connectedToTheRoom', { v0: data.role }), 'success');
       }
 
       if (event === 'session_action') {
@@ -268,7 +274,7 @@ export const P2PProvider = ({ children }) => {
 
       if (event === 'disconnected') {
         setConnectionStatus('disconnected');
-        addNotification(data.reason || 'Desconectado de la sala', 'warning');
+        addNotification(data.reason || t('ui.disconnectedFromTheRoom'), 'warning');
       }
 
       if (event === 'error') {
@@ -292,7 +298,7 @@ export const P2PProvider = ({ children }) => {
       }
 
       if (event === 'peer_authenticated') {
-        addNotification(`${data.meta.country || data.meta.role} se ha unido a la sala`, 'info');
+        addNotification(t('ui.hasJoinedTheRoom', { v0: data.meta.country || data.meta.role }), 'info');
       }
 
       if (event === 'peer_disconnected') {
@@ -304,7 +310,7 @@ export const P2PProvider = ({ children }) => {
       if (event === 'room_settings_updated') {
         setRoomSettings(data);
         localStorage.setItem('openmun_room_settings', JSON.stringify(data));
-        addNotification('Ajustes de sala y permisos actualizados', 'info');
+        addNotification(t('ui.roomSettingsAndPermissionsUpdated'), 'info');
       }
 
       // Solicitud directa de orador (Host auto-adiciona a la sesión)
@@ -314,12 +320,12 @@ export const P2PProvider = ({ children }) => {
           if (sessionActionHandlersRef.current.onAddSpeakerGSL) {
             sessionActionHandlersRef.current.onAddSpeakerGSL({ nombre: country });
           }
-          addNotification(`${country} se ha añadido a la Lista de Oradores (Directo)`, 'success');
+          addNotification(t('ui.joinedTheSpeakersListDirect', { v0: country }), 'success');
         } else if (speechType === 'CAUCUS') {
           if (sessionActionHandlersRef.current.onAddSpeakerCaucus) {
             sessionActionHandlersRef.current.onAddSpeakerCaucus({ nombre: country });
           }
-          addNotification(`${country} se ha añadido al Caucus Moderado (Directo)`, 'success');
+          addNotification(t('ui.joinedTheModeratedCaucusDirect', { v0: country }), 'success');
         }
       }
 
@@ -347,9 +353,9 @@ export const P2PProvider = ({ children }) => {
               tiempoOrador: requestData.details?.tiempoOrador || 0
             });
           }
-          addNotification(`Solicitud de ${requestData.country} aprobada por Secretaría`, 'success');
+          addNotification(t('ui.requestFromApprovedByTheSecretariat', { v0: requestData.country }), 'success');
         } else if (action === 'reject') {
-          addNotification(`Solicitud rechazada por Secretaría`, 'info');
+          addNotification(t('ui.requestRejectedByTheSecretariat'), 'info');
         }
       }
 
@@ -381,7 +387,7 @@ export const P2PProvider = ({ children }) => {
           return [data, ...prev];
         });
         setUnreadNotesCount(prev => prev + 1);
-        addNotification(`Nota de ${data.from} para ${data.to}`, 'info');
+        addNotification(t('ui.noteFromTo', { v0: data.from, v1: data.to }), 'info');
       }
 
       // Recepción de Avisos Importantes en tiempo real
@@ -412,7 +418,7 @@ export const P2PProvider = ({ children }) => {
             return next;
           });
           const typeLabel = req.speechType === 'POINT' ? 'Punto Parlamentario (POI)' : (req.speechType === 'MOTION' ? 'Moción' : req.speechType);
-          addNotification(`${targetCountry} ha solicitado turno (${typeLabel})`, 'info');
+          addNotification(t('ui.requestedASpeakingTurn', { v0: targetCountry, v1: typeLabel }), 'info');
         }
       }
 
@@ -471,9 +477,9 @@ export const P2PProvider = ({ children }) => {
                 return Array.from(map.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
               });
             }
-            addNotification(`Delegación asignada: ${countryName}`, 'success');
+            addNotification(t('ui.assignedDelegation', { v0: countryName }), 'success');
           } else {
-            addNotification(message.payload?.message || 'Error al seleccionar país', 'error');
+            addNotification(message.payload?.message || t('ui.errorSelectingCountry'), 'error');
           }
         } else if (message.type === MSG_TYPES.SYNC_STATE) {
           setRemoteSessionState(message.payload);
@@ -514,10 +520,10 @@ export const P2PProvider = ({ children }) => {
           setEnmiendasPropuestas(message.payload || []);
         } else if (message.type === MSG_TYPES.ROOM_SETTINGS_UPDATED) {
           setRoomSettings(message.payload);
-          addNotification('Ajustes de sala y permisos actualizados por la Mesa', 'info');
+          addNotification(t('ui.roomSettingsAndPermissionsUpdatedByTheChair'), 'info');
         } else if (message.type === MSG_TYPES.SPEAKING_PROCESSED) {
           const { success, mode, message: msgText } = message.payload || {};
-          addNotification(msgText || (success ? 'Solicitud procesada' : 'No se pudo procesar'), success ? 'success' : 'warning');
+          addNotification(msgText || (success ? t('ui.requestProcessed') : t('ui.couldNotProcess')), success ? 'success' : 'warning');
         } else if (message.type === MSG_TYPES.NOTE_RECEIVED) {
           setNotes(prev => {
             if (prev.some(n => n.id === message.payload.id)) {
@@ -526,20 +532,20 @@ export const P2PProvider = ({ children }) => {
             return [message.payload, ...prev];
           });
           setUnreadNotesCount(prev => prev + 1);
-          addNotification(`Nueva nota de ${message.payload.from}`, 'info');
+          addNotification(t('ui.newNoteFrom', { v0: message.payload.from }), 'info');
         } else if (message.type === MSG_TYPES.BROADCAST_ANNOUNCEMENT) {
           setAnnouncements(prev => [message.payload, ...prev.filter(a => a.id !== message.payload.id)]);
           addNotification(`Aviso Oficial: ${message.payload.title}`, 'info');
         } else if (message.type === MSG_TYPES.DELETE_ANNOUNCEMENT) {
           setAnnouncements(prev => prev.filter(a => a.id !== message.payload?.id));
         } else if (message.type === MSG_TYPES.CRISIS_ALERT) {
-          addNotification(`AVISO DE CRISIS: ${message.payload.title || 'Comunicado oficial'}`, 'error');
+          addNotification(`AVISO DE CRISIS: ${message.payload.title || t('ui.officialAnnouncement2')}`, 'error');
         } else if (message.type === MSG_TYPES.KICK) {
           peerService.destroy();
           setConnectionStatus('disconnected');
           setRole('none');
           setViewMode('join');
-          addNotification('Has sido desconectado de la sala por la Mesa.', 'warning');
+          addNotification(t('ui.youHaveBeenDisconnectedFromTheRoomByTheChair'), 'warning');
         }
       }
     });
@@ -573,8 +579,8 @@ export const P2PProvider = ({ children }) => {
     } else if (connectionStatus === 'connected' && (role === 'secretariat' || role === 'chair')) {
       peerService.updateRoomSettingsAsClient(merged);
     }
-    addNotification('Ajustes de sala guardados', 'success');
-  }, [roomSettings, connectionStatus, role, addNotification]);
+    addNotification(t('ui.roomSettingsSaved'), 'success');
+  }, [roomSettings, connectionStatus, role, addNotification, t]);
 
   const startHosting = useCallback(async (customRoomId, secPass, bckPass, customSettings = null, stfPass = null) => {
     const finalRoomId = customRoomId || roomId || generateRoomCode();
@@ -605,8 +611,8 @@ export const P2PProvider = ({ children }) => {
     setConnectionStatus('disconnected');
     setConnectedPeers([]);
     setRole('none');
-    addNotification('Sala en vivo finalizada', 'info');
-  }, [addNotification]);
+    addNotification(t('ui.liveRoomEnded'), 'info');
+  }, [addNotification, t]);
 
   const joinRoom = useCallback(async ({ targetRoomId, targetRole, password, country, isLocalBroadcast = false }) => {
     setConnectionStatus('connecting');
@@ -698,7 +704,7 @@ export const P2PProvider = ({ children }) => {
 
   const selectCountry = useCallback((countryName) => {
     if (!countryName || !countryName.trim()) {
-      return Promise.resolve({ success: false, message: 'País no válido' });
+      return Promise.resolve({ success: false, message: t('ui.invalidCountry') });
     }
     const cleanName = countryName.trim();
     return new Promise((resolve) => {
@@ -726,7 +732,7 @@ export const P2PProvider = ({ children }) => {
       if (!sent) {
         resolved = true;
         unsubscribe();
-        resolve({ success: false, message: 'No se pudo comunicar con la Mesa Principal' });
+        resolve({ success: false, message: t('ui.couldNotCommunicateWithTheMainChair') });
         return;
       }
 
@@ -734,11 +740,11 @@ export const P2PProvider = ({ children }) => {
         if (!resolved) {
           resolved = true;
           unsubscribe();
-          resolve({ success: false, message: 'Tiempo de espera agotado al seleccionar país' });
+          resolve({ success: false, message: t('ui.countrySelectionTimedOut') });
         }
       }, 8000);
     });
-  }, [roomId]);
+  }, [roomId, t]);
 
   const resetCountrySelection = useCallback(() => {
     setClientCountry('');
@@ -830,8 +836,8 @@ export const P2PProvider = ({ children }) => {
     }
     registrarAvisoPropio(ann.id);
     setAnnouncements(prev => [ann, ...prev.filter(a => a.id !== ann.id)]);
-    addNotification('Aviso emitido con éxito', 'success');
-  }, [connectionStatus, role, addNotification]);
+    addNotification(t('ui.announcementIssuedSuccessfully'), 'success');
+  }, [connectionStatus, role, addNotification, t]);
 
   const deleteAnnouncement = useCallback((id) => {
     if (connectionStatus === 'host_active') {
@@ -840,8 +846,8 @@ export const P2PProvider = ({ children }) => {
       peerService.deleteAnnouncementAsClient(id);
     }
     setAnnouncements(prev => prev.filter(a => a.id !== id));
-    addNotification('Aviso retirado', 'info');
-  }, [connectionStatus, addNotification]);
+    addNotification(t('ui.announcementWithdrawn'), 'info');
+  }, [connectionStatus, addNotification, t]);
 
   const requestSpeaking = useCallback((speechType, details = {}) => {
     return peerService.requestSpeakingAsClient(speechType, details);
@@ -875,9 +881,9 @@ export const P2PProvider = ({ children }) => {
       // Si somos Secretaría (cliente remoto o local), enviamos el comando al host
       peerService.processSpeakingRequestAsClient(req.id, 'accept', req);
       setSpeakingRequests(prev => prev.filter(r => r.id !== req.id));
-      addNotification(`Aprobación enviada para ${req.country}`, 'info');
+      addNotification(t('ui.approvalSentFor', { v0: req.country }), 'info');
     }
-  }, [connectionStatus, addNotification]);
+  }, [connectionStatus, addNotification, t]);
 
   const respondToPointWithNote = useCallback((pointReq, noteText) => {
     if (!pointReq || !noteText) return;
@@ -892,15 +898,15 @@ export const P2PProvider = ({ children }) => {
       peerService.processSpeakingRequestAsClient(pointReq.id, 'reject');
       setSpeakingRequests(prev => prev.filter(r => r.id !== pointReq.id));
     }
-    addNotification(`Respuesta enviada a ${pointReq.country} por nota`, 'success');
-  }, [sendNote, connectionStatus, addNotification]);
+    addNotification(t('ui.replySentToByNote', { v0: pointReq.country }), 'success');
+  }, [sendNote, connectionStatus, addNotification, t]);
 
   const requestFullSync = useCallback(() => {
     if (connectionStatus === 'connected') {
       peerService.requestFullSyncAsClient();
-      addNotification('Sincronización solicitada a la Presidencia', 'info');
+      addNotification(t('ui.syncRequestedFromTheChair'), 'info');
     }
-  }, [connectionStatus, addNotification]);
+  }, [connectionStatus, addNotification, t]);
 
   const rejectSpeakingRequest = useCallback((reqId) => {
     if (connectionStatus === 'host_active') {
@@ -913,8 +919,8 @@ export const P2PProvider = ({ children }) => {
       peerService.processSpeakingRequestAsClient(reqId, 'reject');
       setSpeakingRequests(prev => prev.filter(r => r.id !== reqId));
     }
-    addNotification('Solicitud rechazada', 'info');
-  }, [connectionStatus, addNotification]);
+    addNotification(t('ui.requestRejected'), 'info');
+  }, [connectionStatus, addNotification, t]);
 
   const castVote = useCallback((voteOption) => {
     if (connectionStatus === 'connected' && role === 'delegate') {
@@ -961,13 +967,13 @@ export const P2PProvider = ({ children }) => {
     };
     if (connectionStatus === 'connected' && role === 'delegate') {
       peerService.submitAmendmentAsClient(formatted);
-      addNotification('Propuesta de enmienda enviada a la Presidencia', 'success');
+      addNotification(t('ui.amendmentProposalSentToTheChair'), 'success');
     } else {
       // Si somos Host / modo local
       setEnmiendasPropuestas(prev => [formatted, ...prev]);
-      addNotification('Enmienda registrada en bandeja de propuestas', 'info');
+      addNotification(t('ui.amendmentRegisteredInTheProposalInbox'), 'info');
     }
-  }, [connectionStatus, role, clientCountry, addNotification]);
+  }, [connectionStatus, role, clientCountry, addNotification, t]);
 
   const eliminarEnmiendaPropuesta = useCallback((propId) => {
     setEnmiendasPropuestas(prev => {
@@ -1104,56 +1110,14 @@ export const P2PProvider = ({ children }) => {
     <P2PContext.Provider value={contextValue}>
       {children}
 
-      {/* Renderizado de Notificaciones Toasts Globales */}
-      {notifications.length > 0 && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          zIndex: 100000,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-          pointerEvents: 'none'
-        }}>
-          {notifications.map(n => {
-            const IconComponent = n.type === 'error' ? AlertCircle : (n.type === 'success' ? CheckCircle2 : (n.type === 'warning' ? AlertTriangle : Info));
-            const iconColor = n.type === 'error' ? '#ef4444' : (n.type === 'success' ? '#22c55e' : (n.type === 'warning' ? '#f59e0b' : '#3b82f6'));
-
-            return (
-              <div
-                key={n.id}
-                style={{
-                  backgroundColor: n.type === 'error' ? '#450a0a' : (n.type === 'success' ? '#052e16' : '#18181b'),
-                  border: `1px solid ${n.type === 'error' ? '#ef4444' : (n.type === 'success' ? '#22c55e' : '#3f3f46')}`,
-                  color: '#ffffff',
-                  padding: '0.65rem 1rem',
-                  borderRadius: '8px',
-                  fontSize: '0.85rem',
-                  fontWeight: '600',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                  animation: 'slideInRight 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  maxWidth: '380px'
-                }}
-              >
-                <IconComponent size={16} color={iconColor} style={{ flexShrink: 0 }} />
-                <span>{n.text}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </P2PContext.Provider>
+      </P2PContext.Provider>
   );
 };
 
 export const useP2P = () => {
   const context = useContext(P2PContext);
   if (!context) {
-    throw new Error('useP2P debe ser usado dentro de un P2PProvider');
+    throw new Error(i18n.t('ui.usep2pMustBeUsedWithinAP2pprovider'));
   }
   return context;
 };

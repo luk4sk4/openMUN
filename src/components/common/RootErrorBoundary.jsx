@@ -1,3 +1,5 @@
+import { withTranslation } from 'react-i18next';
+import i18n from '../../languages/index.js';
 import React, { Component } from 'react';
 import { RefreshCw, AlertTriangle, Copy, Check, Home } from 'lucide-react';
 import OpenMunLogo from './OpenMunLogo';
@@ -58,7 +60,7 @@ export class RootErrorBoundary extends Component {
   handleReload = () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       const confirmReload = window.confirm(
-        'Actualmente no tienes conexión a internet. Si recargas ahora y no tienes los recursos en caché, la pantalla podría quedar inaccesible hasta que regrese la conexión. ¿Deseas recargar de todos modos?'
+        i18n.t('ui.youAreCurrentlyOfflineIfYouReloadWithoutCachedResources')
       );
       if (!confirmReload) return;
     }
@@ -122,19 +124,19 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
             {isChunk ? (
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 mb-4">
                 <RefreshCw className="w-4 h-4 text-blue-400" />
-                <span>Nueva versión de OpenMUN</span>
+                <span>{i18n.t('ui.newVersionOfOpenmun')}</span>
               </div>
             ) : (
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30 mb-4">
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
-                <span>Error de Ejecución</span>
+                <span>{i18n.t('ui.runtimeError')}</span>
               </div>
             )}
 
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3">
               {isChunk
-                ? 'Actualización lista para aplicar'
-                : 'Se ha producido un error inesperado'}
+                ? i18n.t('ui.updateReadyToApply')
+                : i18n.t('ui.anUnexpectedErrorOccurred')}
             </h1>
 
             <p
@@ -143,8 +145,8 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
               }`}
             >
               {isChunk
-                ? 'Se ha desplegado una nueva versión de la aplicación. Tus datos y comités están guardados de forma segura en tu navegador. Haz clic en el botón para recargar y sincronizar con la última versión.'
-                : 'Ha ocurrido un problema al procesar este elemento. Tu sesión, oradores y notas continúan almacenados de forma segura en la memoria local.'}
+                ? i18n.t('ui.aNewVersionOfTheApplicationHasBeenDeployedYour')
+                : i18n.t('ui.aProblemOccurredWhileProcessingThisItemYourSessionSpeakers')}
             </p>
 
             {/* Actions */}
@@ -154,7 +156,7 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>{isChunk ? 'Actualizar ahora' : 'Recargar aplicación'}</span>
+                <span>{isChunk ? i18n.t('ui.updateNow') : i18n.t('ui.reloadApplication')}</span>
               </button>
 
               <button
@@ -166,7 +168,7 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
                 }`}
               >
                 <Home className="w-4 h-4" />
-                <span>Ir al Inicio</span>
+                <span>{i18n.t('ui.goHome')}</span>
               </button>
             </div>
 
@@ -180,7 +182,7 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
                 }`}
               >
                 <summary className="font-semibold cursor-pointer select-none flex items-center justify-between">
-                  <span>Detalles técnicos del error</span>
+                  <span>{i18n.t('ui.technicalErrorDetails')}</span>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -190,11 +192,11 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
                     className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors ml-2"
                   >
                     {this.state.copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    <span>{this.state.copied ? 'Copiado' : 'Copiar'}</span>
+                    <span>{this.state.copied ? i18n.t('ui.copied2') : i18n.t('ui.copy')}</span>
                   </button>
                 </summary>
                 <div className="mt-3 overflow-x-auto max-h-48 whitespace-pre-wrap font-mono text-[11px] opacity-80 leading-relaxed">
-                  <strong>Mensaje:</strong> {this.state.error && this.state.error.toString()}
+                  <strong>{i18n.t('ui.message')}</strong> {this.state.error && this.state.error.toString()}
                   {this.state.errorInfo?.componentStack && (
                     <>
                       <br /><br />
@@ -212,7 +214,7 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
               isLight ? 'text-slate-500' : 'text-slate-500'
             }`}
           >
-            OpenMUN &copy; {new Date().getFullYear()} — Plataforma Web para Modelos de Naciones Unidas
+            OpenMUN &copy; {new Date().getFullYear()} {i18n.t('ui.webPlatformForModelUnitedNations')}
           </div>
         </div>
       );
@@ -222,4 +224,4 @@ ${this.state.errorInfo?.componentStack || 'No component stack available'}`;
   }
 }
 
-export default RootErrorBoundary;
+export default withTranslation()(RootErrorBoundary);

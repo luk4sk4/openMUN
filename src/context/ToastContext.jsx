@@ -6,8 +6,23 @@ const ToastContext = createContext(null);
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((toastData) => {
+  const addToast = useCallback((toastData, maybeType, maybeDuration) => {
     if (!toastData) return null;
+
+    let normalized = {};
+    if (typeof toastData === 'string') {
+      normalized = {
+        message: toastData,
+        type: typeof maybeType === 'string' ? maybeType : 'info',
+        duration: typeof maybeDuration === 'number' ? maybeDuration : 4000
+      };
+    } else {
+      normalized = { ...toastData };
+      if (maybeType && !normalized.type) {
+        normalized.type = maybeType;
+      }
+    }
+
     const {
       type = 'info',
       title,
@@ -18,10 +33,11 @@ export const ToastProvider = ({ children }) => {
       confirmText,
       cancelText,
       isLarge,
-      action
-    } = toastData;
+      action,
+      destructive
+    } = normalized;
 
-    const id = toastData.id || `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const id = normalized.id || `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     setToasts(prev => {
       // Si ya existe un toast con este ID específico, lo actualizamos en vez de duplicar
@@ -37,7 +53,8 @@ export const ToastProvider = ({ children }) => {
           confirmText,
           cancelText,
           isLarge,
-          action
+          action,
+          destructive
         } : t));
       }
       return [...prev, {
@@ -51,7 +68,8 @@ export const ToastProvider = ({ children }) => {
         confirmText,
         cancelText,
         isLarge,
-        action
+        action,
+        destructive
       }];
     });
 
@@ -101,8 +119,11 @@ export const useToast = () => {
   if (!context) {
     return {
       toasts: [],
-      addToast: (detail) => {
+      addToast: (toastData, maybeType, maybeDuration) => {
         if (typeof window !== 'undefined') {
+          const detail = typeof toastData === 'string'
+            ? { message: toastData, type: typeof maybeType === 'string' ? maybeType : 'info', duration: maybeDuration }
+            : toastData;
           window.dispatchEvent(new CustomEvent('openmun_toast', { detail }));
         }
       },

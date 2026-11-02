@@ -1,10 +1,10 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import {
   Building2,
   Users,
   Shield,
   Radio,
-  ArrowLeft,
   Search,
   Plus,
   Play,
@@ -38,10 +38,12 @@ import {
   Database,
   Mail,
   Key,
-  Unlock
+  Unlock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import OpenMunLogo from '../common/OpenMunLogo';
+import ConsoleNavbar from '../dashboard/ConsoleNavbar';
+import AccessibilityModal from '../modals/AccessibilityModal';
 import conferenceService from '../../services/conferenceService';
 import ConferenceBanner from '../common/ConferenceBanner';
 import { useP2P } from '../../context/P2PContext';
@@ -62,9 +64,8 @@ import MatrizPaises from '../widgets/MatrizPaises';
 
 const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, isLight: propIsLight }) => {
   const { t } = useTranslation();
-  const { isLight: contextIsLight } = useAccessibility();
+  const { isLight: contextIsLight, toggleThemeMode, isAccessOpen, setIsAccessOpen } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
-
   const { setViewMode } = useP2P();
   const {
     setNombreComite,
@@ -95,6 +96,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     }
     return '';
   });
+  const [mostrarPinAcceso, setMostrarPinAcceso] = useState(false);
   const [conferencia, setConferencia] = useState(null);
   const [comites, setComites] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -305,14 +307,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       }
     } catch (err) {
       if (err.status === 401) {
-        setErrorMsg('Esta conferencia requiere un PIN de acceso o el PIN introducido es incorrecto.');
+        setErrorMsg(t('ui.thisConferenceRequiresAnAccessPinOrThePinEntered'));
       } else {
-        setErrorMsg(err.message || 'No se pudo encontrar la conferencia.');
+        setErrorMsg(err.message || t('ui.couldNotFindTheConference'));
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     // Al estar en la vista de conferencia o secretaría, asegurar que no haya mesa activa interfiriendo en segundo plano
@@ -548,10 +550,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const handleEliminarTareasCompletadas = async () => {
     const comiteFiltro = filtroComiteChecklist !== 'TODOS' ? filtroComiteChecklist : null;
     const msg = comiteFiltro === 'GLOBAL'
-      ? '¿Deseas eliminar definitivamente todas las tareas completadas Globales (Sede)?'
+      ? i18n.t('ui.permanentlyDeleteAllCompletedGlobalVenueTasks')
       : comiteFiltro
-      ? '¿Deseas eliminar definitivamente todas las tareas completadas de este comité?'
-      : '¿Deseas eliminar definitivamente todas las tareas completadas de la conferencia?';
+      ? i18n.t('ui.permanentlyDeleteAllCompletedTasksForThisCommittee')
+      : i18n.t('ui.permanentlyDeleteAllCompletedTasksForTheConference');
     if (!window.confirm(msg)) return;
 
     setChecklistStaff(prev => (prev || []).filter(i => {
@@ -650,7 +652,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Error al exportar JSON completo de la conferencia: ' + err.message);
+      alert(t('ui.errorExportingFullConferenceJson') + err.message);
     }
   };
 
@@ -671,7 +673,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     if (file.name && !file.name.toLowerCase().endsWith('.json') && file.type && !file.type.includes('json')) {
       setConfSettingsFeedback({
         type: 'error',
-        text: 'Por favor, selecciona o arrastra un archivo en formato .JSON válido.'
+        text: t('ui.pleaseSelectOrDropAValidJsonFile')
       });
       return;
     }
@@ -683,7 +685,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     reader.onload = async (event) => {
       try {
         const raw = event.target?.result;
-        if (!raw) throw new Error('El archivo está vacío.');
+        if (!raw) throw new Error(t('ui.theFileIsEmpty'));
         const parsed = JSON.parse(raw);
 
         // Identificar si es un backup de un solo comité / sesión activa (tipo 'openmun_full_backup' o contiene paises/agendaSesion/datos_json)
@@ -699,11 +701,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
         if (isSingleComiteSession) {
           // ── MODO IMPORTAR UN COMITÉ INDIVIDUAL (DESDE sesion_activa.json O CONTROL DE COMITÉ) ──
-          const cleanNom = (parsed.comision || parsed.nombreComite || parsed.nombre || parsed.datos_json?.comision || parsed.datos_json?.nombreComite || file.name?.replace(/\.json$/i, '').replace(/^sesion_/i, '').replace(/_/g, ' ') || 'Comité Importado').trim();
+          const cleanNom = (parsed.comision || parsed.nombreComite || parsed.nombre || parsed.datos_json?.comision || parsed.datos_json?.nombreComite || file.name?.replace(/\.json$/i, '').replace(/^sesion_/i, '').replace(/_/g, ' ') || i18n.t('ui.importedCommittee')).trim();
           const customId = parsed.id ? String(parsed.id).toLowerCase().trim() : `${conferencia.id.toLowerCase()}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
 
           const comiteState = normalizarDatosComite(parsed, cleanNom);
-          if (!comiteState) throw new Error('No se pudieron extraer datos válidos del comité.');
+          if (!comiteState) throw new Error(t('ui.couldNotExtractValidCommitteeData'));
 
           let idFinal = customId;
           try {
@@ -756,7 +758,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
           setConfSettingsFeedback({
             type: 'success',
-            text: `¡Comité "${cleanNom}" añadido con éxito! (${comiteState.paises.length} delegaciones, agenda y módulos cargados)`
+            text: t('ui.committeeAddedSuccessfullyDelegationsAgendaAndModulesLoaded', { v0: cleanNom, v1: comiteState.paises.length })
           });
           return;
         }
@@ -775,7 +777,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         const avisosData = tablas.avisos || parsed.avisos;
 
         if (!confData && !rawComites && !avisosData) {
-          throw new Error('El archivo no contiene un formato de conferencia o comité válido de OpenMUN.');
+          throw new Error(t('ui.theFileDoesNotContainAValidOpenmunConferenceOr'));
         }
 
         // 1. Restaurar Comités (Se importan únicamente los comités en la conferencia actual, preservando los datos de la conferencia actual)
@@ -893,12 +895,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
         setConfSettingsFeedback({
           type: 'success',
-          text: `¡Importación completada! Se restauraron ${countComites} comités, ${countAvisos} avisos y ${countChecklist} tareas de checklist en la base de datos.`
+          text: t('ui.importCompletedRestoredCommitteesAnnouncementsAndChecklistTasksTo', { v0: countComites, v1: countAvisos, v2: countChecklist })
         });
       } catch (err) {
         setConfSettingsFeedback({
           type: 'error',
-          text: 'Error al procesar el archivo JSON: ' + err.message
+          text: t('ui.errorProcessingJsonFile') + err.message
         });
       } finally {
         setImportandoJSON(false);
@@ -910,7 +912,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     reader.onerror = () => {
       setConfSettingsFeedback({
         type: 'error',
-        text: 'Error al leer el archivo desde el dispositivo.'
+        text: t('ui.errorReadingFileFromDevice')
       });
       setImportandoJSON(false);
     };
@@ -992,7 +994,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       } catch (err) {}
       fetchResumen();
     } catch (err) {
-      setErrorMsg(err.message || 'PIN de Organización incorrecto.');
+      setErrorMsg(err.message || t('ui.incorrectOrganizerPin'));
     } finally {
       setLoading(false);
     }
@@ -1007,7 +1009,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     if (!pinActual) {
       setConfSettingsFeedback({
         type: 'error',
-        text: 'Debes introducir el PIN de Secretaría actual para autorizar los cambios.'
+        text: t('ui.enterTheCurrentSecretariatPinToAuthorizeChanges')
       });
       return;
     }
@@ -1062,17 +1064,17 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
       setConfSettingsFeedback({
         type: 'success',
-        text: res?.mensaje || '¡Conferencia actualizada correctamente en la base de datos!'
+        text: res?.mensaje || t('ui.conferenceUpdatedSuccessfullyInTheDatabase')
       });
 
       setTimeout(() => setConfSettingsFeedback(null), 5000);
       fetchResumen();
     } catch (err) {
-      let mensajeError = err.message || 'Error al actualizar la conferencia.';
+      let mensajeError = err.message || i18n.t('ui.errorUpdatingTheConference');
       if (err.status === 400) {
-        mensajeError = 'Falta el PIN de Secretaría actual para autorizar la operación (Error 400).';
+        mensajeError = i18n.t('ui.theCurrentSecretariatPinIsRequiredToAuthorizeTheOperation');
       } else if (err.status === 401) {
-        mensajeError = 'El PIN de Secretaría actual no coincide con el registrado (Error 401).';
+        mensajeError = i18n.t('ui.theCurrentSecretariatPinDoesNotMatchTheRegisteredPin');
       } else if (err.status === 404) {
         mensajeError = 'Conferencia no encontrada en el servidor (Error 404).';
       }
@@ -1138,7 +1140,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       setNuevoPinMesa('');
       fetchResumen();
     } catch (err) {
-      alert('Error al crear comité: ' + err.message);
+      alert(t('ui.errorCreatingCommittee') + err.message);
     } finally {
       setCreandoComite(false);
     }
@@ -1173,12 +1175,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       });
       if (res) {
         setAvisoMensaje('');
-        setAvisoFeedback('¡Aviso guardado en base de datos y emitido con éxito!');
+        setAvisoFeedback(t('ui.announcementSavedToTheDatabaseAndIssuedSuccessfully'));
         fetchResumen();
         setTimeout(() => setAvisoFeedback(null), 3000);
       }
     } catch (err) {
-      alert('Error al emitir aviso: ' + err.message);
+      alert(t('ui.errorIssuingAnnouncement') + err.message);
     } finally {
       setEnviandoAviso(false);
     }
@@ -1214,12 +1216,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
       if (res) {
         setStaffMensaje('');
-        setStaffFeedback('¡Mensaje enviado a la base de datos central exitosamente!');
+        setStaffFeedback(t('ui.messageSentSuccessfullyToTheCentralDatabase'));
         fetchResumen();
         setTimeout(() => setStaffFeedback(null), 3000);
       }
     } catch (err) {
-      alert('Error al enviar mensaje: ' + err.message);
+      alert(t('ui.errorSendingMessage') + err.message);
     } finally {
       setEnviandoMensajeStaff(false);
     }
@@ -1235,7 +1237,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       await conferenceService.desactivarAviso(avisoId, conferencia?.id);
       setAvisosActivos(prev => prev.filter(a => a.id !== avisoId));
     } catch (err) {
-      alert('Error al borrar aviso: ' + err.message);
+      alert(t('ui.errorDeletingAnnouncement') + err.message);
     }
   };
 
@@ -1248,7 +1250,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   // Eliminar comité
   const handleEliminarComite = async (comiteId) => {
     if (!comiteId) return;
-    if (!window.confirm('¿Seguro que deseas eliminar este comité de la conferencia? Esta acción no se puede deshacer.')) return;
+    if (!window.confirm(t('ui.deleteThisCommitteeFromTheConferenceThisActionCannotBe'))) return;
     try {
       await conferenceService.eliminarComite(comiteId, conferencia?.id);
       
@@ -1281,7 +1283,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       conferenceService.invalidarCache?.(conferencia?.id);
       await fetchResumen();
     } catch (err) {
-      alert('Error al eliminar comité: ' + err.message);
+      alert(t('ui.errorDeletingCommittee') + err.message);
     }
   };
 
@@ -1438,11 +1440,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
       conferenceService.invalidarCache?.(conferencia.id);
 
-      setGuardadoFeedback('¡Datos del comité guardados exitosamente en el servidor central!');
+      setGuardadoFeedback(t('ui.committeeDataSavedSuccessfullyToTheCentralServer'));
       setTimeout(() => setGuardadoFeedback(null), 3000);
       fetchResumen();
     } catch (err) {
-      alert('Error al guardar datos del comité: ' + err.message);
+      alert(t('ui.errorSavingCommitteeData') + err.message);
     } finally {
       setGuardandoComite(false);
     }
@@ -1481,7 +1483,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     try {
       if (comite.requierePinMesa) {
         if (!pin || !pin.trim()) {
-          throw new Error('Debes introducir el PIN de la mesa directiva para acceder a este comité.');
+          throw new Error(t('ui.enterTheChairPinToAccessThisCommittee'));
         }
         await conferenceService.verificarPinMesa(comite.id, pin, comite.pin_mesa);
         try {
@@ -1553,8 +1555,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       localStorage.setItem('openmun_pending_nav_tab', 'COMIENZO');
       localStorage.setItem('openmun_pending_toast', JSON.stringify({
         type: 'success',
-        title: '¡Sesión cargada correctamente!',
-        message: `Has ingresado a la Mesa de Presidencia de "${comite.nombre}".`,
+        title: t('ui.sessionLoadedSuccessfully'),
+        message: t('ui.youHaveJoinedTheChairOf', { v0: comite.nombre }),
         duration: 4000
       }));
 
@@ -1565,7 +1567,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         setViewMode('chair');
       }
     } catch (err) {
-      setPinMesaError(err.message || 'PIN de Mesa Directiva incorrecto.');
+      setPinMesaError(err.message || t('ui.incorrectChairPin2'));
     } finally {
       setLoading(false);
     }
@@ -1589,44 +1591,44 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     setViewMode('staff');
   };
 
-  // Helper con colores vivos y destacados para todos los estados
+  // Helper para estados de sesión según openmun-design (tokens y semántica)
   const getStatusBadge = (tipo) => {
     switch (tipo) {
       case 'informal':
         return {
-          label: 'Sesión Informal',
-          color: '#eab308',
-          bg: 'rgba(234, 179, 8, 0.18)',
-          border: 'rgba(234, 179, 8, 0.45)',
-          solidBg: '#eab308',
-          solidText: '#000000'
+          label: t('conferences.statusInformal'),
+          color: 'var(--warning-color)',
+          bg: 'var(--warning-soft)',
+          border: 'var(--subborder-color)',
+          solidBg: 'var(--warning-solid)',
+          solidText: '#ffffff'
         };
       case 'receso':
         return {
-          label: 'En Receso',
-          color: '#a855f7',
-          bg: 'rgba(168, 85, 247, 0.18)',
-          border: 'rgba(168, 85, 247, 0.45)',
-          solidBg: '#a855f7',
+          label: t('conferences.statusRecess'),
+          color: 'var(--muted-text)',
+          bg: 'var(--input-bg)',
+          border: 'var(--subborder-color)',
+          solidBg: 'var(--muted-text)',
           solidText: '#ffffff'
         };
       case 'votacion':
         return {
-          label: 'En Votación',
-          color: '#3b82f6',
-          bg: 'rgba(59, 130, 246, 0.18)',
-          border: 'rgba(59, 130, 246, 0.45)',
-          solidBg: '#3b82f6',
+          label: t('conferences.statusVoting'),
+          color: 'var(--info-color)',
+          bg: 'var(--info-soft)',
+          border: 'var(--subborder-color)',
+          solidBg: 'var(--info-solid)',
           solidText: '#ffffff'
         };
       case 'formal':
       default:
         return {
-          label: 'Sesión Formal',
-          color: '#22c55e',
-          bg: 'rgba(34, 197, 94, 0.18)',
-          border: 'rgba(34, 197, 94, 0.45)',
-          solidBg: '#22c55e',
+          label: t('conferences.statusFormal'),
+          color: 'var(--success-color)',
+          bg: 'var(--success-soft)',
+          border: 'var(--subborder-color)',
+          solidBg: 'var(--success-solid)',
           solidText: '#ffffff'
         };
     }
@@ -1688,160 +1690,310 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   );
 
   // Tokens de estilo
-  const bgMain = isLight ? '#f8fafc' : 'var(--bg-color)';
-  const bgCard = isLight ? '#ffffff' : 'var(--panel-color)';
+  const bgMain = 'var(--bg-color)';
+  const bgCard = 'var(--panel-color)';
   const borderCol = 'var(--border-color)';
   const textMuted = 'var(--muted-text)';
-  const headerBg = isLight ? '#f1f5f9' : 'var(--card-header-bg)';
+  const headerBg = 'var(--card-header-bg)';
 
   // ─────────────────────────────────────────────────────────────
-  // VISTA 1: BUSCADOR SI NO HAY CONFERENCIA CARGADA
+  // VISTA 1: BUSCADOR SI NO HAY CONFERENCIA CARGADA (UNIRSE A CONFERENCIA)
   // ─────────────────────────────────────────────────────────────
   if (!conferencia) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 1rem',
-        backgroundColor: bgMain,
-        color: 'var(--text-color)'
-      }}>
-        {onExit && (
-          <button
-            onClick={onExit}
-            style={{
-              position: 'absolute',
-              top: '24px',
-              left: '24px',
-              background: 'transparent',
-              border: `1px solid ${borderCol}`,
-              borderRadius: '10px',
-              color: textMuted,
-              padding: '0.55rem 0.95rem',
-              fontSize: '0.85rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem'
-            }}
-          >
-            <ArrowLeft size={16} /> {t('common.back', 'Volver')}
-          </button>
-        )}
-
-        <div style={{
+      <div
+        style={{
+          minHeight: '100vh',
           width: '100%',
-          maxWidth: '460px',
-          backgroundColor: bgCard,
-          border: `1px solid ${borderCol}`,
-          borderRadius: '16px',
-          padding: '2rem',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
-          textAlign: 'center'
-        }}>
-          <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
-            <OpenMunLogo height={60} isLight={isLight} />
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '8rem 1rem 1.5rem',
+          backgroundColor: 'var(--bg-color)',
+          color: 'var(--text-color)',
+          fontFamily: 'var(--font-family)',
+          position: 'relative',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+          <ConsoleNavbar
+            title={t('conferences.title', 'Conferencias')}
+            showContext={false}
+            isLight={isLight}
+            toggleThemeMode={toggleThemeMode}
+            setIsAccessOpen={setIsAccessOpen}
+            onBack={onExit}
+          />
+        </div>
+
+        {/* Tarjeta de Acceso alineada al sistema de diseño */}
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '440px',
+            backgroundColor: 'var(--panel-color)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--border-radius, 6px)',
+            padding: '2rem 1.75rem',
+            boxShadow: isLight ? '0 1px 3px rgba(0, 0, 0, 0.05)' : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            boxSizing: 'border-box'
+          }}
+        >
+          {/* Cabecera / Identidad */}
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+              <OpenMunLogo height={48} isLight={isLight} />
+            </div>
+
+            <h1
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: '650',
+                margin: '0 0 0.35rem 0',
+                color: 'var(--text-color)',
+                letterSpacing: '-0.01em'
+              }}
+            >
+              {t('conferences.joinTitle', 'Unirse a una Conferencia')}
+            </h1>
+
+            <p
+              style={{
+                fontSize: '0.82rem',
+                color: 'var(--muted-text)',
+                margin: 0,
+                lineHeight: 1.45,
+                maxWidth: '380px'
+              }}
+            >
+              {t('conferences.joinSubtitle', 'Introduce el código o ID de la conferencia para acceder a sus comités o al panel de secretaría.')}
+            </p>
           </div>
 
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '800', margin: '0 0 0.5rem 0' }}>
-            {t('conferences.joinTitle', 'Unirse a una Conferencia')}
-          </h2>
-          <p style={{ fontSize: '0.88rem', color: textMuted, margin: '0 0 1.5rem 0' }}>
-            {t('conferences.joinSubtitle', 'Introduce el código o ID de la conferencia.')}
-          </p>
-
+          {/* Banner semántico de error */}
           {errorMsg && (
-            <div style={{
-              padding: '0.75rem',
-              borderRadius: '8px',
-              backgroundColor: isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: isLight ? '#b91c1c' : '#fca5a5',
-              fontSize: '0.85rem',
-              marginBottom: '1rem',
-              fontWeight: '600'
-            }}>
-              {errorMsg}
+            <div
+              role="alert"
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.6rem',
+                padding: '0.65rem 0.85rem',
+                borderRadius: 'var(--border-radius, 6px)',
+                backgroundColor: 'var(--danger-soft)',
+                border: '1px solid var(--danger-color)',
+                color: 'var(--danger-color)',
+                fontSize: '0.82rem',
+                lineHeight: 1.4
+              }}
+            >
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+              <div style={{ flex: 1, fontWeight: '500' }}>{errorMsg}</div>
             </div>
           )}
 
-          <form onSubmit={(e) => { e.preventDefault(); cargarConferencia(confIdInput, pinAccesoInput); }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ textAlign: 'left' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                {t('conferences.confId', 'Código / ID de la Conferencia')}
-              </label>
-              <input
-                type="text"
-                required
-                value={confIdInput}
-                onChange={(e) => {
-                  const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-                  setConfIdInput(val);
-                  try {
-                    const savedPin = localStorage.getItem(`openmun_conf_pin_${val}`);
-                    if (savedPin) setPinAccesoInput(savedPin);
-                  } catch (err) {}
-                }}
-                placeholder="ej. hmun2026"
+          {/* Formulario */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              cargarConferencia(confIdInput, pinAccesoInput);
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+          >
+            {/* Campo Código / ID */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
+              <label
+                htmlFor="conference-join-id"
                 style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${borderCol}`,
-                  backgroundColor: headerBg,
-                  color: 'var(--text-color)',
-                  fontSize: '0.95rem',
-                  fontFamily: 'monospace'
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  color: 'var(--text-color)'
                 }}
-              />
+              >
+                {t('conferences.confId', 'Código / Identificador (ID)')}
+              </label>
+
+              <div>
+                <input
+                  id="conference-join-id"
+                  type="text"
+                  required
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck="false"
+                  value={confIdInput}
+                  onChange={(e) => {
+                    const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+                    setConfIdInput(val);
+                    try {
+                      const savedPin = localStorage.getItem(`openmun_conf_pin_${val}`);
+                      if (savedPin) setPinAccesoInput(savedPin);
+                    } catch (err) {}
+                  }}
+                  placeholder={t('conferences.confIdPlaceholder', 'ej. hmun2026')}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--input-bg)',
+                    color: 'var(--text-color)',
+                    fontSize: '0.88rem',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'var(--accent-color)';
+                    e.target.style.boxShadow = '0 0 0 2px var(--accent-soft)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'var(--border-color)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+              </div>
+
+              <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', lineHeight: 1.35 }}>
+                {t('conferences.confIdHelp', 'Identificador único y corto para que los delegados encuentren tu evento.')}
+              </span>
             </div>
 
-            <div style={{ textAlign: 'left' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                {t('conferences.accessPin', 'PIN de Acceso (si aplica)')}
-              </label>
-              <input
-                type="password"
-                value={pinAccesoInput}
-                onChange={(e) => setPinAccesoInput(e.target.value)}
-                placeholder="Opcional"
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${borderCol}`,
-                  backgroundColor: headerBg,
-                  color: 'var(--text-color)',
-                  fontSize: '0.95rem'
-                }}
-              />
+            {/* Campo PIN de Acceso */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label
+                  htmlFor="conference-join-pin"
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    color: 'var(--text-color)'
+                  }}
+                >
+                  {t('conferences.accessPin', 'PIN de Acceso General')}
+                </label>
+                <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
+                  {t('common.optional', '(Opcional)')}
+                </span>
+              </div>
+
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input
+                  id="conference-join-pin"
+                  type={mostrarPinAcceso ? 'text' : 'password'}
+                  value={pinAccesoInput}
+                  onChange={(e) => setPinAccesoInput(e.target.value)}
+                  placeholder="••••••"
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 2.4rem 0.65rem 0.85rem',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--input-bg)',
+                    color: 'var(--text-color)',
+                    fontSize: '0.88rem',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'var(--accent-color)';
+                    e.target.style.boxShadow = '0 0 0 2px var(--accent-soft)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'var(--border-color)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={mostrarPinAcceso ? t('ui.hidePin') : t('ui.showPin')}
+                  onClick={() => setMostrarPinAcceso(!mostrarPinAcceso)}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--muted-text)',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '4px',
+                    transition: 'color 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-color)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--muted-text)';
+                  }}
+                >
+                  {mostrarPinAcceso ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', lineHeight: 1.35 }}>
+                {t('conferences.accessPinHelp', 'Si se deja vacío, la lista de comités será pública para cualquier participante.')}
+              </span>
             </div>
 
+            {/* Botón Principal de Envío */}
             <button
               type="submit"
               disabled={loading}
               style={{
                 marginTop: '0.5rem',
-                padding: '0.85rem',
-                borderRadius: '8px',
-                backgroundColor: '#3b82f6',
-                color: '#ffffff',
-                border: 'none',
-                fontSize: '0.95rem',
-                fontWeight: '800',
+                padding: '0.72rem 1.15rem',
+                borderRadius: 'var(--border-radius, 6px)',
+                backgroundColor: 'var(--btn-bg)',
+                color: 'var(--btn-text, #ffffff)',
+                border: '1px solid transparent',
+                fontSize: '0.88rem',
+                fontWeight: '650',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
+                opacity: loading ? 0.6 : 1,
+                display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.5rem'
+                gap: '0.5rem',
+                transition: 'filter 0.15s ease, opacity 0.15s ease',
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) e.currentTarget.style.filter = 'brightness(1.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.filter = 'none';
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.outline = '2px solid var(--accent-color)';
+                e.currentTarget.style.outlineOffset = '2px';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.outline = 'none';
               }}
             >
-              {loading ? <RefreshCw className="animate-spin" size={18} /> : <Building2 size={18} />}
-              {loading ? 'Accediendo...' : t('conferences.enterConf', 'Entrar a la Conferencia')}
+              {loading ? (
+                <>
+                  <RefreshCw className="animate-spin" size={16} />
+                  <span>{t('common.loading', 'Accediendo...')}</span>
+                </>
+              ) : (
+                <>
+                  <Building2 size={16} />
+                  <span>{t('conferences.enterConf', 'Entrar a la Conferencia')}</span>
+                </>
+              )}
             </button>
           </form>
         </div>
@@ -1858,6 +2010,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      className={`dashboard-shell openmun-conference-layout ${isLight ? 'is-light' : 'is-dark'}`}
       style={{
         minHeight: '100vh',
         display: 'flex',
@@ -1883,213 +2036,71 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           padding: '2rem'
         }}>
           <div style={{
-            border: '3px dashed #8b5cf6',
-            borderRadius: '24px',
+            border: '2px dashed var(--accent-color)',
+            borderRadius: 'var(--border-radius, 6px)',
             padding: '3.5rem 2.5rem',
-            backgroundColor: isLight ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.18)',
+            backgroundColor: 'var(--accent-soft)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             textAlign: 'center',
             maxWidth: '560px',
-            width: '90%',
-            boxShadow: '0 20px 50px rgba(139, 92, 246, 0.25)',
-            animation: 'pulse 2s infinite'
+            width: '90%'
           }}>
             <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '20px',
-              backgroundColor: '#8b5cf6',
-              color: '#ffffff',
+              width: '64px',
+              height: '64px',
+              borderRadius: 'var(--border-radius, 6px)',
+              backgroundColor: 'var(--btn-bg)',
+              color: 'var(--btn-text, #ffffff)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: '1.5rem',
-              boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4)'
+              marginBottom: '1.5rem'
             }}>
               <Upload size={40} />
             </div>
             <h2 style={{ fontSize: '1.6rem', fontWeight: '900', margin: '0 0 0.5rem 0', color: 'var(--text-color)' }}>
-              Suelta tu archivo JSON aquí
+              {t('ui.dropYourJsonFileHere')}
             </h2>
             <p style={{ fontSize: '0.95rem', color: textMuted, margin: 0, maxWidth: '420px', lineHeight: 1.5 }}>
-              Se importarán automáticamente los comités, avisos y configuración de la conferencia <strong>{conferencia?.nombre || ''}</strong>.
+              {t('ui.conferenceCommitteesAnnouncementsAndSettingsWillBeImportedAutomatically')} <strong>{conferencia?.nombre || ''}</strong>.
             </p>
           </div>
         </div>
       )}
 
-      {/* Barra Superior Central */}
-      <header className="openmun-topbar" style={{
-        padding: '0.85rem 1.5rem',
-        backgroundColor: bgCard,
-        borderBottom: `1px solid ${borderCol}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button
-            onClick={() => {
-              if (onExit) onExit();
-              else setViewMode('chair');
-            }}
-            className="openmun-topbar-btn"
-            style={{
-              background: 'transparent',
-              border: `1px solid ${borderCol}`,
-              borderRadius: '8px',
-              padding: '0.45rem 0.75rem',
-              color: 'var(--text-color)',
-              fontSize: '0.85rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
-            }}
-            title="Volver al Dashboard"
-          >
-            <ArrowLeft size={16} /> <span className="btn-text">Volver</span>
+      <ConsoleNavbar
+        title={t('conferences.title', 'Conferencias')}
+        nombreComite={conferencia.nombre}
+        roleBadge={t('conferences.title', 'Conferencias')}
+        agendaSesion={`${listaComitesConsolidada.length} ${t('conferences.committees', 'Comités')}`}
+        roomId={conferencia.id}
+        activeTab={activeMainTab}
+        setActiveTab={setActiveMainTab}
+        tabs={[
+          { id: 'VER_COMITES', label: t('conferences.exploreCommittees', 'Ver Comités (Mesas)'), icon: Layers },
+          { id: 'STAFF', label: t('conferences.staffPanel', 'Panel Staff'), icon: Users },
+          { id: 'SECRETARIA', label: t('conferences.organizationPanel', 'Panel Organización'), icon: Shield }
+        ]}
+        isLight={isLight}
+        toggleThemeMode={toggleThemeMode}
+        setIsAccessOpen={setIsAccessOpen}
+        onBack={() => { if (onExit) onExit(); else setViewMode('chair'); }}
+        sidebarActions={<>
+          {conferencia.email_admin && <span className="dashboard-sidebar-detail"><Mail size={16} />{conferencia.email_admin}</span>}
+          <button type="button" onClick={() => cargarConferencia(conferencia.id)} title={t('conferences.sync', 'Sincronizar')}>
+            <RefreshCw size={16} /><span>{t('conferences.sync', 'Sincronizar')}</span>
           </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              backgroundColor: 'rgba(59, 130, 246, 0.15)',
-              color: '#3b82f6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Building2 size={20} />
-            </div>
-            <div>
-              <h1 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
-                {conferencia.nombre}
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: textMuted, flexWrap: 'wrap' }}>
-                <span>ID: <code>{conferencia.id}</code></span>
-                <span>•</span>
-                <span>{listaComitesConsolidada.length} Comités</span>
-                {conferencia.email_admin && (
-                  <>
-                    <span>•</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#8b5cf6', fontWeight: '600' }}>
-                      <Mail size={12} /> {conferencia.email_admin}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SELECTOR DE 3 PESTAÑAS */}
-        <div className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
-          display: 'flex',
-          backgroundColor: isLight ? '#e2e8f0' : 'rgba(255, 255, 255, 0.08)',
-          borderRadius: '10px',
-          padding: '3px',
-          gap: '3px'
-        }}>
-          <button
-            onClick={() => setActiveMainTab('VER_COMITES')}
-            className="openmun-nav-tab-btn"
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeMainTab === 'VER_COMITES' ? (isLight ? '#ffffff' : '#27272a') : 'transparent',
-              color: activeMainTab === 'VER_COMITES' ? '#3b82f6' : 'var(--muted-text)',
-              fontWeight: '800',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              boxShadow: activeMainTab === 'VER_COMITES' ? '0 2px 5px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Layers size={16} /> Ver Comités (Mesas)
+          <button type="button" onClick={handleExportarConferenciaJSON} title={t('conferences.exportDatabase', 'Exportar BD')}>
+            <Download size={16} /><span>{t('conferences.exportDatabase', 'Exportar BD')}</span>
           </button>
-
-          <button
-            onClick={() => setActiveMainTab('STAFF')}
-            className="openmun-nav-tab-btn"
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeMainTab === 'STAFF' ? (isLight ? '#ffffff' : '#27272a') : 'transparent',
-              color: activeMainTab === 'STAFF' ? '#f59e0b' : 'var(--muted-text)',
-              fontWeight: '800',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              boxShadow: activeMainTab === 'STAFF' ? '0 2px 5px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Users size={16} /> Panel Staff
+          <button type="button" onClick={() => { conferenceService.limpiarSesionActiva(); setConferencia(null); }} title={t('conferences.switchConference', 'Cambiar Conferencia')}>
+            <Building2 size={16} /><span>{t('conferences.switchConference', 'Cambiar Conferencia')}</span>
           </button>
-
-          <button
-            onClick={() => setActiveMainTab('SECRETARIA')}
-            className="openmun-nav-tab-btn"
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeMainTab === 'SECRETARIA' ? (isLight ? '#ffffff' : '#27272a') : 'transparent',
-              color: activeMainTab === 'SECRETARIA' ? '#8b5cf6' : 'var(--muted-text)',
-              fontWeight: '800',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              boxShadow: activeMainTab === 'SECRETARIA' ? '0 2px 5px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Shield size={16} /> Panel Organización
-          </button>
-        </div>
-
-        <button
-          onClick={() => {
-            conferenceService.limpiarSesionActiva();
-            setConferencia(null);
-          }}
-          className="openmun-topbar-btn"
-          style={{
-            background: 'transparent',
-            border: `1px solid ${borderCol}`,
-            borderRadius: '8px',
-            padding: '0.45rem 0.75rem',
-            color: textMuted,
-            fontSize: '0.8rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-        >
-          Cambiar Conferencia
-        </button>
-      </header>
+        </>}
+      />
 
       {/* Banner de Avisos Oficiales de la Conferencia y Salas */}
       <ConferenceBanner
@@ -2115,10 +2126,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             }}>
               <div>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: '800', margin: '0 0 0.25rem 0' }}>
-                  Comités de la Conferencia
+                  {t('conferences.committeeList')}
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                  Selecciona tu comité para unirte como Mesa Directiva a moderar (carga el JSON y configuración).
+                  {t('ui.selectYourCommitteeToJoinAsChairAndModerateLoads')}
                 </p>
               </div>
 
@@ -2129,11 +2140,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   type="text"
                   value={filtroComite}
                   onChange={(e) => setFiltroComite(e.target.value)}
-                  placeholder="Buscar comité..."
+                  placeholder={t('ui.searchCommittee')}
                   style={{
                     width: '100%',
                     padding: '0.55rem 0.75rem 0.55rem 2.25rem',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     border: `1px solid ${borderCol}`,
                     backgroundColor: bgCard,
                     color: 'var(--text-color)',
@@ -2148,13 +2159,13 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 textAlign: 'center',
                 padding: '3rem 1rem',
                 backgroundColor: bgCard,
-                borderRadius: '16px',
+                borderRadius: 'var(--border-radius, 6px)',
                 border: `1px solid ${borderCol}`
               }}>
                 <Layers size={40} style={{ color: textMuted, marginBottom: '0.75rem' }} />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0 0 0.4rem 0' }}>No se encontraron comités</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0 0 0.4rem 0' }}>{t('ui.noCommitteesFound')}</h3>
                 <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                  La secretaría puede añadir nuevos comités desde la pestaña "Panel Secretaría".
+                  {t('ui.theSecretariatCanAddCommitteesFromTheSecretariatPanelTab')}
                 </p>
               </div>
             ) : (
@@ -2170,15 +2181,15 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       key={comite.id}
                       style={{
                         backgroundColor: bgCard,
-                        border: `1.5px solid ${badge.border || borderCol}`,
-                        borderRadius: '14px',
+                        border: `1px solid ${borderCol}`,
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '1.25rem',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
                         gap: '1rem',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
-                        transition: 'transform 0.15s ease, border-color 0.15s ease'
+                        boxShadow: 'none',
+                        transition: 'border-color 0.15s ease'
                       }}
                     >
                       <div>
@@ -2218,7 +2229,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                               alignItems: 'center',
                               gap: '0.25rem'
                             }}>
-                              <Lock size={12} /> PIN Mesa
+                              <Lock size={12} /> {t('ui.chairPin')}
                             </span>
                           )}
                         </div>
@@ -2229,7 +2240,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
                         {comite.topico_actual && (
                           <p style={{ fontSize: '0.82rem', color: textMuted, margin: '0 0 0.5rem 0', lineHeight: '1.4' }}>
-                            <strong>Tópico Actual:</strong> {comite.topico_actual}
+                            <strong>{t('ui.currentTopic')}</strong> {comite.topico_actual}
                           </p>
                         )}
                       </div>
@@ -2239,33 +2250,32 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           onClick={() => handleEntrarComoMesa(comite)}
                           style={{
                             flex: 1,
-                            padding: '0.7rem',
-                            borderRadius: '8px',
-                            backgroundColor: '#3b82f6',
-                            color: '#ffffff',
+                            padding: '0.65rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'var(--btn-bg)',
+                            color: 'var(--btn-text, #ffffff)',
                             border: 'none',
-                            fontWeight: '800',
-                            fontSize: '0.88rem',
+                            fontWeight: '650',
+                            fontSize: '0.85rem',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '0.45rem',
-                            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)'
+                            gap: '0.45rem'
                           }}
                         >
-                          <Play size={16} /> Entrar como Mesa
+                          <Play size={15} /> {t('conferences.joinAsChair')}
                         </button>
                         <button
                           onClick={() => handleEntrarComoStaff(comite)}
-                          title="Entrar a la consola de Staff de este comité"
+                          title={t('ui.openThisCommitteeSStaffConsole')}
                           style={{
-                            padding: '0.7rem 0.95rem',
-                            borderRadius: '8px',
-                            backgroundColor: isLight ? '#ecfdf5' : 'rgba(16, 185, 129, 0.15)',
-                            color: '#10b981',
-                            border: '1.5px solid rgba(16, 185, 129, 0.35)',
-                            fontWeight: '800',
+                            padding: '0.65rem 0.95rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'transparent',
+                            color: 'var(--text-color)',
+                            border: `1px solid ${borderCol}`,
+                            fontWeight: '600',
                             fontSize: '0.82rem',
                             cursor: 'pointer',
                             display: 'flex',
@@ -2274,7 +2284,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             gap: '0.35rem'
                           }}
                         >
-                          <Users size={15} /> Staff
+                          <Users size={15} /> {t('conferences.issuerStaff')}
                         </button>
                       </div>
                     </div>
@@ -2295,7 +2305,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             <div style={{
               backgroundColor: bgCard,
               border: `1px solid ${borderCol}`,
-              borderRadius: '16px',
+              borderRadius: 'var(--border-radius, 6px)',
               padding: '1.25rem 1.5rem',
               display: 'flex',
               alignItems: 'center',
@@ -2304,14 +2314,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               gap: '1rem'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', color: '#f59e0b', marginBottom: '0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', color: 'var(--accent-color)', marginBottom: '0.25rem' }}>
                   <Users size={22} />
                   <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
-                    Panel Staff & Logística
+                    {t('ui.staffLogisticsPanel')}
                   </h2>
                 </div>
                 <p style={{ fontSize: '0.84rem', color: textMuted, margin: 0 }}>
-                  Envía solicitudes y avisos directos a Secretaría o Mesas, gestiona el checklist operativo y supervisa el estado de salas y comunicados.
+                  {t('ui.sendRequestsAndAnnouncementsDirectlyToTheSecretariatOrChairs')}
                 </p>
               </div>
             </div>
@@ -2323,26 +2333,26 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               <div style={{
                 backgroundColor: bgCard,
                 border: `1px solid ${borderCol}`,
-                borderRadius: '16px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                  <Send size={18} color="#f59e0b" />
+                  <Send size={18} color="var(--accent-color)" />
                   <h3 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0 }}>
-                    Enviar Mensaje / Solicitud a Secretaría o Mesas
+                    {t('ui.sendMessageRequestToSecretariatOrChairs')}
                   </h3>
                 </div>
                 <p style={{ fontSize: '0.8rem', color: textMuted, margin: 0 }}>
-                  Envía una solicitud o reporte para proyectarlo en el centro de avisos y paneles de la conferencia.
+                  {t('ui.sendARequestOrReportToDisplayInTheConference')}
                 </p>
 
                 {staffFeedback && (
                   <div style={{
                     padding: '0.65rem 0.85rem',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     backgroundColor: isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)',
                     color: isLight ? '#15803d' : '#4ade80',
                     fontSize: '0.82rem',
@@ -2355,7 +2365,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <form onSubmit={handleEnviarMensajeStaff} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.3rem' }}>
-                      Destinatario
+                      {t('messaging.recipient')}
                     </label>
                     <select
                       value={staffDestino}
@@ -2363,32 +2373,32 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       style={{
                         width: '100%',
                         padding: '0.6rem',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         border: `1px solid ${borderCol}`,
                         backgroundColor: headerBg,
                         color: 'var(--text-color)',
                         fontSize: '0.85rem'
                       }}
                     >
-                      <optgroup label="🌐 Canales Generales">
-                        <option value="SECRETARIA">🛡️ Organización / Secretaría General</option>
-                        <option value="STAFF_ALL">👥 Todo el Staff de la Conferencia</option>
-                        <option value="GLOBAL">📢 Toda la Conferencia (Global)</option>
-                        <option value="CHAIRS_ALL">🏛️ Todas las Mesas Directivas</option>
+                      <optgroup label={t('avisos.generalChannels')}>
+                        <option value="SECRETARIA">{t('ui.organizersSecretariat')}</option>
+                        <option value="STAFF_ALL">{t('ui.allConferenceStaff')}</option>
+                        <option value="GLOBAL">{t('conferences.targetGlobal')}</option>
+                        <option value="CHAIRS_ALL">{t('ui.allChairs')}</option>
                       </optgroup>
-                      <optgroup label="🏛️ Mesas Directivas (Chairs)">
+                      <optgroup label={t('avisos.chairsDais')}>
                         {listaComitesConsolidada.map(c => (
-                          <option key={`CHAIR_${c.id}`} value={`CHAIR_${c.id}`}>🏛️ Mesa de {c.nombre || c.id}</option>
+                          <option key={`CHAIR_${c.id}`} value={`CHAIR_${c.id}`}>{t('ui.chairOf')} {c.nombre || c.id}</option>
                         ))}
                       </optgroup>
-                      <optgroup label="👥 Staff de Sala Asignado">
+                      <optgroup label={t('ui.assignedRoomStaff')}>
                         {listaComitesConsolidada.map(c => (
-                          <option key={`STAFF_${c.id}`} value={`STAFF_COMITE_${c.id}`}>👥 Staff de {c.nombre || c.id}</option>
+                          <option key={`STAFF_${c.id}`} value={`STAFF_COMITE_${c.id}`}>{t('ui.staffOf')} {c.nombre || c.id}</option>
                         ))}
                       </optgroup>
-                      <optgroup label="🌐 Sala Completa (Mesa + Delegados)">
+                      <optgroup label={t('ui.entireRoomChairDelegates')}>
                         {listaComitesConsolidada.map(c => (
-                          <option key={`ALL_${c.id}`} value={c.id}>🌐 Sala de {c.nombre || c.id}</option>
+                          <option key={`ALL_${c.id}`} value={c.id}>{t('ui.roomOf')} {c.nombre || c.id}</option>
                         ))}
                       </optgroup>
                     </select>
@@ -2396,7 +2406,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.3rem' }}>
-                      Prioridad / Tipo
+                      {t('conferences.priority')}
                     </label>
                     <select
                       value={staffPrioridad}
@@ -2404,33 +2414,33 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       style={{
                         width: '100%',
                         padding: '0.6rem',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         border: `1px solid ${borderCol}`,
                         backgroundColor: headerBg,
                         color: 'var(--text-color)',
                         fontSize: '0.85rem'
                       }}
                     >
-                      <option value="info">ℹ️ Información / Petición Estándar</option>
-                      <option value="alerta">⚠️ Alerta / Logística de Sala</option>
-                      <option value="urgente">🚨 Urgente / Incidencia Crítica</option>
+                      <option value="info">{t('ui.informationStandardRequest')}</option>
+                      <option value="alerta">{t('ui.alertRoomLogistics')}</option>
+                      <option value="urgente">{t('ui.urgentCriticalIncident')}</option>
                     </select>
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.3rem' }}>
-                      Mensaje / Requerimiento
+                      {t('ui.messageRequest')}
                     </label>
                     <textarea
                       required
                       rows={3}
                       value={staffMensaje}
                       onChange={(e) => setStaffMensaje(e.target.value)}
-                      placeholder="Ej: Faltan botellas de agua en CS / Impresiones de resolución listas..."
+                      placeholder={t('ui.eGWaterNeededInScResolutionPrintoutsReady')}
                       style={{
                         width: '100%',
                         padding: '0.65rem 0.85rem',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         border: `1px solid ${borderCol}`,
                         backgroundColor: headerBg,
                         color: 'var(--text-color)',
@@ -2444,22 +2454,21 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     type="submit"
                     disabled={enviandoMensajeStaff}
                     style={{
-                      padding: '0.7rem',
-                      borderRadius: '8px',
-                      backgroundColor: '#f59e0b',
-                      color: '#000000',
+                      padding: '0.65rem 1rem',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      backgroundColor: 'var(--btn-bg)',
+                      color: 'var(--btn-text, #ffffff)',
                       border: 'none',
-                      fontWeight: '800',
-                      fontSize: '0.88rem',
+                      fontWeight: '650',
+                      fontSize: '0.85rem',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.45rem',
-                      boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)'
+                      gap: '0.45rem'
                     }}
                   >
-                    <Send size={16} /> {enviandoMensajeStaff ? 'Enviando...' : 'Enviar Mensaje'}
+                    <Send size={16} /> {enviandoMensajeStaff ? t('ui.sending') : t('views.delegate.sendNote')}
                   </button>
                 </form>
               </div>
@@ -2468,7 +2477,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               <div style={{
                 backgroundColor: bgCard,
                 border: `1px solid ${borderCol}`,
-                borderRadius: '16px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '1.5rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -2478,38 +2487,38 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <ClipboardList size={18} color="#3b82f6" />
+                      <ClipboardList size={18} color="var(--accent-color)" />
                       <h3 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0 }}>
-                        Checklist Operativo de Staff
+                        {t('views.staff.checklistTitle')}
                       </h3>
                       <span style={{
                         fontSize: '0.66rem',
-                        fontWeight: '800',
-                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                        color: '#3b82f6',
-                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                        fontWeight: '700',
+                        backgroundColor: 'var(--info-soft)',
+                        color: 'var(--info-color)',
+                        border: '1px solid var(--subborder-color)',
                         padding: '0.12rem 0.45rem',
-                        borderRadius: '6px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         letterSpacing: '0.03em',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.25rem'
                       }}>
-                        <Database size={11} /> BASE DE DATOS
+                        <Database size={11} /> {t('ui.database')}
                       </span>
                     </div>
                     <span style={{ fontSize: '0.78rem', color: textMuted, fontWeight: '600' }}>
-                      {checklistFiltrada.filter(i => i.completado).length} de {checklistFiltrada.length} listas
+                      {checklistFiltrada.filter(i => i.completado).length} {t('ui.of')} {checklistFiltrada.length} {t('ui.lists')}
                     </span>
                   </div>
                   <p style={{ fontSize: '0.8rem', color: textMuted, margin: '0 0 0.85rem 0' }}>
-                    Tareas operativas indexadas por conferencia y comité, asignables y sincronizadas en tiempo real.
+                    {t('ui.operationalTasksOrganizedByConferenceAndCommitteeAssignableAndSynced')}
                   </p>
 
                   {/* Filtro por Comité */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
                     <span style={{ fontSize: '0.75rem', fontWeight: '700', color: textMuted, whiteSpace: 'nowrap' }}>
-                      Filtrar por:
+                      {t('ui.filterBy')}
                     </span>
                     <select
                       value={filtroComiteChecklist}
@@ -2517,7 +2526,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       style={{
                         flex: 1,
                         padding: '0.4rem 0.65rem',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         border: `1px solid ${borderCol}`,
                         backgroundColor: headerBg,
                         color: 'var(--text-color)',
@@ -2525,9 +2534,9 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         fontWeight: '600'
                       }}
                     >
-                      <option value="TODOS">🌐 Todas las tareas (Global + Todos los comités)</option>
-                      <option value="GLOBAL">🌐 Solo tareas Globales (Sede)</option>
-                      <optgroup label="Por Comité">
+                      <option value="TODOS">{t('ui.allTasksGlobalAllCommittees')}</option>
+                      <option value="GLOBAL">{t('ui.globalTasksOnlyVenue')}</option>
+                      <optgroup label={t('ui.byCommittee')}>
                         {listaComitesConsolidada.map(c => (
                           <option key={`FILTRO_${c.id}`} value={c.id}>🏛️ {c.nombre}</option>
                         ))}
@@ -2545,7 +2554,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       marginBottom: '1rem',
                       backgroundColor: headerBg,
                       padding: '0.75rem',
-                      borderRadius: '10px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       border: `1px solid ${borderCol}`
                     }}
                   >
@@ -2554,7 +2563,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       required
                       value={nuevaTareaStaff}
                       onChange={(e) => setNuevaTareaStaff(e.target.value)}
-                      placeholder="Nueva tarea operativa (ej: Llevar copias al CS)..."
+                      placeholder={t('ui.newOperationalTaskEGTakeCopiesToSc')}
                       style={{
                         width: '100%',
                         padding: '0.55rem 0.75rem',
@@ -2571,7 +2580,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         type="text"
                         value={nuevaTareaAsignado}
                         onChange={(e) => setNuevaTareaAsignado(e.target.value)}
-                        placeholder="Asignar a... (ej: Logística)"
+                        placeholder={t('ui.assignToEGLogistics')}
                         style={{
                           padding: '0.45rem 0.65rem',
                           borderRadius: '6px',
@@ -2594,7 +2603,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           fontSize: '0.78rem'
                         }}
                       >
-                        <option value="GLOBAL">🌐 Global (Sede)</option>
+                        <option value="GLOBAL">{t('ui.globalVenue')}</option>
                         {listaComitesConsolidada.map(c => (
                           <option key={`ADD_${c.id}`} value={c.id}>🏛️ {c.nombre}</option>
                         ))}
@@ -2606,10 +2615,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         style={{
                           padding: '0.45rem 0.85rem',
                           borderRadius: '6px',
-                          backgroundColor: nuevaTareaStaff.trim() ? '#3b82f6' : 'var(--card-header-bg)',
-                          color: nuevaTareaStaff.trim() ? '#ffffff' : textMuted,
-                          border: 'none',
-                          fontWeight: '700',
+                          backgroundColor: nuevaTareaStaff.trim() ? 'var(--btn-bg)' : 'transparent',
+                          color: nuevaTareaStaff.trim() ? 'var(--btn-text, #ffffff)' : textMuted,
+                          border: nuevaTareaStaff.trim() ? 'none' : `1px solid ${borderCol}`,
+                          fontWeight: '650',
                           fontSize: '0.78rem',
                           cursor: nuevaTareaStaff.trim() ? 'pointer' : 'not-allowed',
                           display: 'flex',
@@ -2618,7 +2627,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           gap: '0.3rem'
                         }}
                       >
-                        <Plus size={14} /> Añadir
+                        <Plus size={14} /> {t('sidebar.add')}
                       </button>
                     </div>
                   </form>
@@ -2631,10 +2640,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         textAlign: 'center',
                         color: textMuted,
                         fontSize: '0.8rem',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         border: `1px dashed ${borderCol}`
                       }}>
-                        No hay tareas en el checklist para este filtro. ¡Crea una para comenzar!
+                        {t('ui.noChecklistTasksMatchThisFilterCreateOneToGet')}
                       </div>
                     ) : (
                       checklistFiltrada.map((task) => {
@@ -2647,7 +2656,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             onClick={() => handleToggleTareaChecklist(task)}
                             style={{
                               padding: '0.6rem 0.8rem',
-                              borderRadius: '8px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               backgroundColor: task.completado ? 'rgba(34, 197, 94, 0.05)' : headerBg,
                               border: `1px solid ${task.completado ? 'rgba(34, 197, 94, 0.35)' : borderCol}`,
                               display: 'flex',
@@ -2695,7 +2704,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                                       borderRadius: '4px',
                                       fontWeight: '600'
                                     }}>
-                                      🌐 Global
+                                      {t('ui.global')}
                                     </span>
                                   )}
                                   {task.asignado_a && (
@@ -2720,7 +2729,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                                 e.stopPropagation();
                                 handleEliminarTareaChecklist(task.id);
                               }}
-                              title="Eliminar tarea"
+                              title={t('ui.deleteTask')}
                               style={{
                                 background: 'transparent',
                                 border: 'none',
@@ -2745,7 +2754,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 {/* Acciones del pie: Borrado masivo de completadas */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.6rem', borderTop: `1px solid ${borderCol}`, flexWrap: 'wrap', gap: '0.5rem' }}>
                   <span style={{ fontSize: '0.74rem', color: textMuted }}>
-                    {checklistFiltrada.filter(i => !i.completado).length} pendientes
+                    {checklistFiltrada.filter(i => !i.completado).length} {t('ui.pending')}
                   </span>
 
                   {checklistFiltrada.some(i => i.completado) && (
@@ -2766,7 +2775,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         borderRadius: '4px'
                       }}
                     >
-                      <Trash2 size={13} /> Limpiar completadas ({checklistFiltrada.filter(i => i.completado).length})
+                      <Trash2 size={13} /> {t('ui.clearCompleted')}{checklistFiltrada.filter(i => i.completado).length})
                     </button>
                   )}
                 </div>
@@ -2778,7 +2787,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             <div style={{
               backgroundColor: bgCard,
               border: `1px solid ${borderCol}`,
-              borderRadius: '16px',
+              borderRadius: 'var(--border-radius, 6px)',
               padding: '1.5rem',
               display: 'flex',
               flexDirection: 'column',
@@ -2787,10 +2796,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Megaphone size={18} color="#f59e0b" /> Buzón de Avisos y Comunicados Recibidos ({avisosActivos.filter(a => correspondeAviso(a, { role: 'staff_global', currentComiteId: (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist, comites: listaComitesConsolidada })).length})
+                    <Megaphone size={18} color="var(--accent-color)" /> {t('ui.receivedAnnouncementsAndMessages')}{avisosActivos.filter(a => correspondeAviso(a, { role: 'staff_global', currentComiteId: (filtroComiteChecklist === 'TODOS' || filtroComiteChecklist === 'GLOBAL') ? null : filtroComiteChecklist, comites: listaComitesConsolidada })).length})
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>
-                    Visualiza los avisos oficiales dirigidos al personal de Staff {filtroComiteChecklist !== 'TODOS' && filtroComiteChecklist !== 'GLOBAL' ? `de la sala seleccionada (${filtroComiteChecklist})` : 'de toda la conferencia'}.
+                    {t('ui.viewOfficialAnnouncementsAddressedToStaff')} {filtroComiteChecklist !== 'TODOS' && filtroComiteChecklist !== 'GLOBAL' ? t('ui.fromTheSelectedRoom', { v0: filtroComiteChecklist }) : t('ui.fromTheEntireConference')}.
                   </p>
                 </div>
 
@@ -2798,7 +2807,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   onClick={fetchAvisos}
                   style={{
                     padding: '0.45rem 0.85rem',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     backgroundColor: isLight ? '#f1f5f9' : 'rgba(255,255,255,0.08)',
                     border: `1px solid ${borderCol}`,
                     color: 'var(--text-color)',
@@ -2810,7 +2819,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     gap: '0.35rem'
                   }}
                 >
-                  <RefreshCw size={13} /> Actualizar Avisos
+                  <RefreshCw size={13} /> {t('ui.refreshAnnouncements')}
                 </button>
               </div>
 
@@ -2824,14 +2833,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       textAlign: 'center',
                       padding: '2.5rem 1rem',
                       backgroundColor: headerBg,
-                      borderRadius: '12px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       border: `1px dashed ${borderCol}`,
                       color: textMuted
                     }}>
                       <Megaphone size={32} style={{ opacity: 0.35, marginBottom: '0.5rem' }} />
-                      <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>No hay avisos ni comunicados para Staff</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>{t('ui.noAnnouncementsOrMessagesForStaff')}</div>
                       <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-                        Los avisos oficiales dirigidos al staff o globales aparecerán aquí.
+                        {t('ui.officialAnnouncementsAddressedToStaffOrEveryoneWillAppearHere')}
                       </div>
                     </div>
                   );
@@ -2846,7 +2855,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         backgroundColor: headerBg,
                         border: `1px solid ${borderCol}`,
                         borderLeft: `4px solid ${av.tipo === 'urgente' ? '#ef4444' : av.tipo === 'alerta' ? '#f59e0b' : '#3b82f6'}`,
-                        borderRadius: '10px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '0.9rem 1.15rem',
                         display: 'flex',
                         flexDirection: 'column',
@@ -2868,7 +2877,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           </span>
 
                           <span style={{ fontSize: '0.78rem', color: textMuted, fontWeight: '600' }}>
-                            Destino: <strong style={{ color: 'var(--text-color)' }}>
+                            {t('ui.destination')} <strong style={{ color: 'var(--text-color)' }}>
                               {getNombreDestino(av.comite_id)}
                             </strong>
                           </span>
@@ -2933,16 +2942,16 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             <div style={{
               backgroundColor: bgCard,
               border: `1px solid ${borderCol}`,
-              borderRadius: '16px',
+              borderRadius: 'var(--border-radius, 6px)',
               padding: '1.5rem'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Layers size={18} color="#3b82f6" /> Estado de Salas y Comités (Base de Datos Central)
+                    <Layers size={18} color="var(--accent-color)" /> {t('ui.roomAndCommitteeStatusCentralDatabase')}
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>
-                    Monitoreo en vivo de los estados de debate y temas activos en toda la conferencia.
+                    {t('ui.monitorDebateStatusAndActiveTopicsAcrossTheConferenceIn')}
                   </p>
                 </div>
 
@@ -2950,7 +2959,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   onClick={fetchResumen}
                   style={{
                     padding: '0.45rem 0.85rem',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     backgroundColor: isLight ? '#f1f5f9' : 'rgba(255,255,255,0.08)',
                     border: `1px solid ${borderCol}`,
                     color: 'var(--text-color)',
@@ -2962,7 +2971,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     gap: '0.35rem'
                   }}
                 >
-                  <RefreshCw size={13} /> Refrescar Estados
+                  <RefreshCw size={13} /> {t('ui.refreshStatus')}
                 </button>
               </div>
 
@@ -2979,7 +2988,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       style={{
                         backgroundColor: headerBg,
                         border: `1px solid ${badge.border || borderCol}`,
-                        borderRadius: '12px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         padding: '1rem 1.15rem',
                         display: 'flex',
                         flexDirection: 'column',
@@ -3007,14 +3016,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
                         {comite.topico_actual && (
                           <p style={{ fontSize: '0.8rem', color: textMuted, margin: '0 0 0.35rem 0', lineHeight: '1.3' }}>
-                            <strong>Tópico:</strong> {comite.topico_actual}
+                            <strong>{t('ui.topic')}</strong> {comite.topico_actual}
                           </p>
                         )}
                       </div>
 
                       {comite.actualizado_en && (
                         <span style={{ fontSize: '0.72rem', color: textMuted, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <Clock size={12} /> Actividad: {comite.actualizado_en}
+                          <Clock size={12} /> {t('ui.activity')} {comite.actualizado_en}
                         </span>
                       )}
                     </div>
@@ -3037,7 +3046,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 margin: '3rem auto',
                 backgroundColor: bgCard,
                 border: `1px solid ${borderCol}`,
-                borderRadius: '16px',
+                borderRadius: 'var(--border-radius, 6px)',
                 padding: '2rem',
                 textAlign: 'center',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
@@ -3045,9 +3054,9 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <div style={{
                   width: '54px',
                   height: '54px',
-                  borderRadius: '14px',
-                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                  color: '#8b5cf6',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  backgroundColor: 'var(--accent-soft)',
+                  color: 'var(--accent-color)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -3057,16 +3066,16 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 </div>
 
                 <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: '0 0 0.4rem 0' }}>
-                  Acceso a Organización
+                  {t('ui.organizerAccess')}
                 </h2>
                 <p style={{ fontSize: '0.85rem', color: textMuted, margin: '0 0 1.25rem 0' }}>
-                  Introduce el PIN de Organización configurado al crear la conferencia.
+                  {t('ui.enterTheOrganizerPinSetWhenCreatingTheConference')}
                 </p>
 
                 {errorMsg && (
                   <div style={{
                     padding: '0.65rem',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     backgroundColor: isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)',
                     color: isLight ? '#b91c1c' : '#fca5a5',
                     fontSize: '0.82rem',
@@ -3084,11 +3093,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       required
                       value={adminPinInput}
                       onChange={(e) => setAdminPinInput(e.target.value)}
-                      placeholder="PIN de Organización"
+                      placeholder={t('ui.organizerPin')}
                       style={{
                         width: '100%',
                         padding: '0.75rem 2.5rem 0.75rem 0.85rem',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         border: `1px solid ${borderCol}`,
                         backgroundColor: headerBg,
                         color: 'var(--text-color)',
@@ -3118,7 +3127,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     disabled={loading}
                     style={{
                       padding: '0.75rem',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       backgroundColor: '#8b5cf6',
                       color: '#ffffff',
                       border: 'none',
@@ -3131,7 +3140,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       gap: '0.45rem'
                     }}
                   >
-                    <Shield size={16} /> Entrar a Organización
+                    <Shield size={16} /> {t('ui.enterOrganizersPanel')}
                   </button>
                 </form>
               </div>
@@ -3143,26 +3152,26 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
                   style={{
-                    backgroundColor: isLight ? '#f8fafc' : 'var(--card-header-bg)',
-                    border: `1.5px dashed ${isDraggingFile ? '#8b5cf6' : borderCol}`,
-                    borderRadius: '16px',
+                    backgroundColor: bgCard,
+                    border: `1px dashed ${isDraggingFile ? 'var(--accent-color)' : borderCol}`,
+                    borderRadius: 'var(--border-radius, 6px)',
                     padding: '1.25rem 1.5rem',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: '1rem',
-                    boxShadow: isDraggingFile ? '0 0 20px rgba(139, 92, 246, 0.25)' : '0 2px 8px rgba(0,0,0,0.04)',
+                    boxShadow: 'none',
                     transition: 'all 0.2s ease'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '10px',
-                      backgroundColor: isLight ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.25)',
-                      color: '#8b5cf6',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      backgroundColor: 'var(--accent-soft)',
+                      color: 'var(--accent-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
@@ -3171,10 +3180,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     </div>
                     <div>
                       <h3 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
-                        Copia de Seguridad de la Conferencia (3 Tablas Base de Datos)
+                        {t('ui.conferenceBackup3DatabaseTables')}
                       </h3>
                       <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>
-                        Exporta o importa (arrastrando o seleccionando) el archivo JSON con Conferencias, Comités y Avisos.
+                        {t('ui.exportOrImportByDroppingOrSelectingTheJsonFile')}
                       </p>
                     </div>
                   </div>
@@ -3188,18 +3197,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         alignItems: 'center',
                         gap: '0.5rem',
                         padding: '0.65rem 1.15rem',
-                        borderRadius: '10px',
-                        backgroundColor: isLight ? '#10b981' : '#059669',
-                        color: '#ffffff',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: 'var(--btn-bg)',
+                        color: 'var(--btn-text, #ffffff)',
                         border: 'none',
-                        fontSize: '0.88rem',
-                        fontWeight: '800',
+                        fontSize: '0.85rem',
+                        fontWeight: '650',
                         cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                        boxShadow: 'none',
                         transition: 'transform 0.15s ease'
                       }}
                     >
-                      <Download size={16} /> Exportar Archivo JSON (3 Tablas)
+                      <Download size={16} /> {t('ui.exportJsonFile3Tables')}
                     </button>
 
                     <input
@@ -3219,7 +3228,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         alignItems: 'center',
                         gap: '0.5rem',
                         padding: '0.65rem 1.15rem',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         backgroundColor: isLight ? '#ffffff' : bgCard,
                         border: `1px solid ${borderCol}`,
                         color: 'var(--text-color)',
@@ -3230,14 +3239,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         opacity: importandoJSON ? 0.6 : 1
                       }}
                     >
-                      <Upload size={16} color="#8b5cf6" />
-                      {importandoJSON ? 'Importando JSON...' : 'Importar Archivo JSON'}
+                      <Upload size={16} color="var(--accent-color)" />
+                      {importandoJSON ? t('ui.importingJson') : t('ui.importJsonFile')}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => {
-                        if (window.confirm('¿Deseas bloquear el panel de organización? Se solicitará el PIN en el próximo acceso.')) {
+                        if (window.confirm(t('ui.lockTheOrganizersPanelThePinWillBeRequiredNext'))) {
                           setIsAdminAuthenticated(false);
                           setAdminPinInput('');
                           setConfPinAdminActual('');
@@ -3253,18 +3262,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         alignItems: 'center',
                         gap: '0.45rem',
                         padding: '0.65rem 1rem',
-                        borderRadius: '10px',
-                        backgroundColor: isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)',
-                        border: '1px solid rgba(239, 68, 68, 0.35)',
-                        color: '#ef4444',
-                        fontSize: '0.88rem',
-                        fontWeight: '800',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: 'var(--danger-soft)',
+                        border: '1px solid var(--danger-color)',
+                        color: 'var(--danger-color)',
+                        fontSize: '0.82rem',
+                        fontWeight: '650',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease'
                       }}
-                      title="Bloquear acceso al panel de organización y requerir PIN de nuevo"
+                      title={t('ui.lockTheOrganizersPanelAndRequireThePinAgain')}
                     >
-                      <Lock size={15} /> Bloquear
+                      <Lock size={15} /> {t('ui.lock')}
                     </button>
                   </div>
                 </div>
@@ -3273,16 +3282,16 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <div style={{
                   backgroundColor: bgCard,
                   border: `1px solid ${borderCol}`,
-                  borderRadius: '16px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '1.5rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div>
                       <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Settings size={20} color="#8b5cf6" /> Configuración General de la Conferencia (Base de Datos)
+                        <Settings size={20} color="var(--accent-color)" /> {t('ui.generalConferenceSettingsDatabase')}
                       </h3>
                       <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                        Gestiona los datos centrales, correo de contacto, PIN de delegados y credenciales de Secretaría.
+                        {t('ui.manageCentralDataContactEmailDelegatePinAndSecretariatCredentials')}
                       </p>
                     </div>
 
@@ -3291,64 +3300,64 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       {conferencia.email_admin ? (
                         <span style={{
                           padding: '0.35rem 0.75rem',
-                          borderRadius: '8px',
-                          backgroundColor: isLight ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.2)',
-                          border: '1px solid rgba(139, 92, 246, 0.3)',
-                          color: '#8b5cf6',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--accent-soft)',
+                          border: '1px solid var(--subborder-color)',
+                          color: 'var(--accent-color)',
                           fontSize: '0.8rem',
                           fontWeight: '700',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '0.4rem'
                         }}>
-                          <Mail size={14} /> Correo: <strong>{conferencia.email_admin}</strong>
+                          <Mail size={14} /> {t('ui.email')} <strong>{conferencia.email_admin}</strong>
                         </span>
                       ) : (
                         <span style={{
                           padding: '0.35rem 0.75rem',
-                          borderRadius: '8px',
-                          backgroundColor: isLight ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.2)',
-                          border: '1px solid rgba(245, 158, 11, 0.3)',
-                          color: '#f59e0b',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--warning-soft)',
+                          border: '1px solid var(--subborder-color)',
+                          color: 'var(--warning-color)',
                           fontSize: '0.8rem',
                           fontWeight: '700',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '0.4rem'
                         }}>
-                          <AlertTriangle size={14} /> Sin correo registrado
+                          <AlertTriangle size={14} /> {t('ui.noEmailRegistered')}
                         </span>
                       )}
 
                       {conferencia.requierePin ? (
                         <span style={{
                           padding: '0.35rem 0.75rem',
-                          borderRadius: '8px',
-                          backgroundColor: isLight ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.2)',
-                          border: '1px solid rgba(59, 130, 246, 0.3)',
-                          color: '#3b82f6',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--info-soft)',
+                          border: '1px solid var(--subborder-color)',
+                          color: 'var(--info-color)',
                           fontSize: '0.8rem',
                           fontWeight: '700',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '0.4rem'
                         }}>
-                          <Lock size={14} /> Delegados con PIN
+                          <Lock size={14} /> {t('ui.delegatesWithPin')}
                         </span>
                       ) : (
                         <span style={{
                           padding: '0.35rem 0.75rem',
-                          borderRadius: '8px',
-                          backgroundColor: isLight ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.2)',
-                          border: '1px solid rgba(34, 197, 94, 0.3)',
-                          color: isLight ? '#15803d' : '#4ade80',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--success-soft)',
+                          border: '1px solid var(--subborder-color)',
+                          color: 'var(--success-color)',
                           fontSize: '0.8rem',
                           fontWeight: '700',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '0.4rem'
                         }}>
-                          <Globe size={14} /> Acceso Público
+                          <Globe size={14} /> {t('ui.publicAccess')}
                         </span>
                       )}
                     </div>
@@ -3357,7 +3366,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   {confSettingsFeedback && (
                     <div style={{
                       padding: '0.75rem 1rem',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       backgroundColor: confSettingsFeedback.type === 'success'
                         ? (isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)')
                         : (isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.2)'),
@@ -3388,18 +3397,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       {/* 1. Nombre de la Conferencia */}
                       <div>
                         <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                          Nombre de la Conferencia
+                          {t('conferences.confName')}
                         </label>
                         <div style={{ position: 'relative' }}>
                           <input
                             type="text"
                             value={confNombreInput}
                             onChange={(e) => setConfNombreInput(e.target.value)}
-                            placeholder="ej. Harvard National MUN 2026"
+                            placeholder={t('conferences.confNamePlaceholder')}
                             style={{
                               width: '100%',
                               padding: '0.65rem 0.85rem 0.65rem 2.4rem',
-                              borderRadius: '8px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               border: `1px solid ${borderCol}`,
                               backgroundColor: headerBg,
                               color: 'var(--text-color)',
@@ -3422,18 +3431,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       {/* 2. Correo de Secretaría */}
                       <div>
                         <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                          Correo Electrónico de Secretaría (Admin)
+                          {t('ui.secretariatEmailAddressAdmin')}
                         </label>
                         <div style={{ position: 'relative' }}>
                           <input
                             type="email"
                             value={confEmailAdminInput}
                             onChange={(e) => setConfEmailAdminInput(e.target.value)}
-                            placeholder="ej. secretaria.general@hmun.org"
+                            placeholder={t('ui.eGSecretaryGeneralHmunOrg')}
                             style={{
                               width: '100%',
                               padding: '0.65rem 0.85rem 0.65rem 2.4rem',
-                              borderRadius: '8px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               border: `1px solid ${borderCol}`,
                               backgroundColor: headerBg,
                               color: 'var(--text-color)',
@@ -3454,14 +3463,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
                           {conferencia.email_admin
                             ? `Correo actual en BD: ${conferencia.email_admin}`
-                            : 'Introduce un correo para registrarlo en la base de datos.'}
+                            : t('ui.enterAnEmailToRegisterItInTheDatabase')}
                         </span>
                       </div>
 
                       {/* 3. PIN de Acceso General / Delegados */}
                       <div style={{
                         padding: '0.85rem',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         backgroundColor: headerBg,
                         border: `1px solid ${borderCol}`,
                         display: 'flex',
@@ -3475,7 +3484,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             checked={cambiarPinAcceso}
                             onChange={(e) => setCambiarPinAcceso(e.target.checked)}
                           />
-                          Proteger acceso a delegados con PIN
+                          {t('ui.protectDelegateAccessWithAPin')}
                         </label>
 
                         {cambiarPinAcceso && (
@@ -3484,7 +3493,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                               type={mostrarConfPinAcceso ? 'text' : 'password'}
                               value={confPinAccesoInput}
                               onChange={(e) => setConfPinAccesoInput(e.target.value)}
-                              placeholder="Nuevo PIN de acceso para delegados"
+                              placeholder={t('ui.newDelegateAccessPin')}
                               style={{
                                 width: '100%',
                                 padding: '0.55rem 2.5rem 0.55rem 0.75rem',
@@ -3518,18 +3527,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       {/* 4. Cambiar Contraseña / PIN de Secretaría (Admin) */}
                       <div>
                         <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                          Cambiar PIN / Contraseña de Secretaría
+                          {t('ui.changeSecretariatPinPassword')}
                         </label>
                         <div style={{ position: 'relative' }}>
                           <input
                             type={mostrarConfNuevoPin ? 'text' : 'password'}
                             value={confNuevoPinAdmin}
                             onChange={(e) => setConfNuevoPinAdmin(e.target.value)}
-                            placeholder="Dejar vacío para no cambiar"
+                            placeholder={t('ui.leaveBlankToKeepUnchanged')}
                             style={{
                               width: '100%',
                               padding: '0.65rem 2.5rem 0.65rem 2.4rem',
-                              borderRadius: '8px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               border: `1px solid ${borderCol}`,
                               backgroundColor: headerBg,
                               color: 'var(--text-color)',
@@ -3564,7 +3573,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           </button>
                         </div>
                         <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
-                          Solo introduce un valor si deseas asignar una nueva clave de acceso de secretaría.
+                          {t('ui.onlyEnterAValueToAssignANewSecretariatAccess')}
                         </span>
                       </div>
                     </div>
@@ -3572,7 +3581,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     {/* Bloque de Autorización con PIN Actual y Botón Guardar */}
                     <div style={{
                       padding: '1rem',
-                      borderRadius: '12px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       backgroundColor: isLight ? 'rgba(139, 92, 246, 0.05)' : 'rgba(139, 92, 246, 0.1)',
                       border: '1px solid rgba(139, 92, 246, 0.25)',
                       display: 'flex',
@@ -3583,8 +3592,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       marginTop: '0.5rem'
                     }}>
                       <div style={{ flex: 1, minWidth: '240px' }}>
-                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem', color: '#8b5cf6' }}>
-                          PIN de Secretaría Actual (Autorización Obligatoria) *
+                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem', color: 'var(--text-color)' }}>
+                          {t('ui.currentSecretariatPinRequiredAuthorization')}
                         </label>
                         <div style={{ position: 'relative' }}>
                           <input
@@ -3592,11 +3601,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             required
                             value={confPinAdminActual}
                             onChange={(e) => setConfPinAdminActual(e.target.value)}
-                            placeholder="PIN de Secretaría Actual"
+                            placeholder={t('ui.currentSecretariatPin')}
                             style={{
                               width: '100%',
                               padding: '0.6rem 2.5rem 0.6rem 2.2rem',
-                              borderRadius: '8px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               border: `1px solid ${borderCol}`,
                               backgroundColor: bgCard,
                               color: 'var(--text-color)',
@@ -3610,7 +3619,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                               left: '10px',
                               top: '50%',
                               transform: 'translateY(-50%)',
-                              color: '#8b5cf6'
+                              color: 'var(--accent-color)'
                             }}
                           />
                           <button
@@ -3637,24 +3646,24 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         disabled={guardandoConfSettings}
                         style={{
                           padding: '0.75rem 1.5rem',
-                          borderRadius: '10px',
-                          backgroundColor: '#8b5cf6',
-                          color: '#ffffff',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--btn-bg)',
+                          color: 'var(--btn-text, #ffffff)',
                           border: 'none',
-                          fontWeight: '800',
-                          fontSize: '0.92rem',
+                          fontWeight: '650',
+                          fontSize: '0.85rem',
                           cursor: guardandoConfSettings ? 'not-allowed' : 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '0.5rem',
-                          boxShadow: '0 4px 14px rgba(139, 92, 246, 0.3)',
+                          boxShadow: 'none',
                           opacity: guardandoConfSettings ? 0.7 : 1,
                           alignSelf: 'flex-end'
                         }}
                       >
                         <Check size={18} />
-                        {guardandoConfSettings ? 'Guardando en BD...' : 'Guardar Configuración en BD'}
+                        {guardandoConfSettings ? t('ui.savingToDatabase') : t('ui.saveSettingsToDatabase')}
                       </button>
                     </div>
                   </form>
@@ -3664,16 +3673,16 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <div style={{
                   backgroundColor: bgCard,
                   border: `1px solid ${borderCol}`,
-                  borderRadius: '16px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '1.5rem'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
                       <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Layers size={20} color="#8b5cf6" /> Gestión de Comités & Configuración de Widgets
+                        <Layers size={20} color="var(--accent-color)" /> {t('ui.committeeManagementWidgetSettings')}
                       </h3>
                       <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                        Añade o elimina comités y configura para cada uno su Matriz de Países, Importador y Agenda.
+                        {t('ui.addOrDeleteCommitteesAndConfigureEachCommitteeSCountry')}
                       </p>
                     </div>
 
@@ -3685,7 +3694,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         alignItems: 'center',
                         gap: '0.45rem',
                         padding: '0.5rem 0.95rem',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         backgroundColor: isLight ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.2)',
                         border: '1px solid rgba(34, 197, 94, 0.4)',
                         color: isLight ? '#15803d' : '#4ade80',
@@ -3694,7 +3703,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         cursor: 'pointer'
                       }}
                     >
-                      <Download size={14} /> Exportar JSON Completo
+                      <Download size={14} /> {t('ui.exportCompleteJson')}
                     </button>
                   </div>
 
@@ -3724,7 +3733,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       marginBottom: '1.5rem',
                       padding: '1.1rem',
                       backgroundColor: headerBg,
-                      borderRadius: '14px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       border: `1.5px dashed ${borderCol}`,
                       display: 'flex',
                       flexDirection: 'column',
@@ -3734,10 +3743,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-color)' }}>
-                        ➕ Añadir nuevo comité manual o importar desde archivo .JSON:
+                        {t('ui.addANewCommitteeManuallyOrImportFromAJson')}
                       </span>
                       <span style={{ fontSize: '0.74rem', color: textMuted }}>
-                        (Puedes importar el <code>sesion_activa.json</code> exportado desde un comité)
+                        {t('ui.youCanImportThe')} <code>{t('ui.activeSessionJson')}</code> {t('ui.exportedFromACommittee')}
                       </span>
                     </div>
 
@@ -3752,12 +3761,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         required
                         value={nuevoNombreComite}
                         onChange={(e) => setNuevoNombreComite(e.target.value)}
-                        placeholder="Nombre del nuevo comité (ej. ACNUR)"
+                        placeholder={t('ui.newCommitteeNameEGUnhcr')}
                         style={{
                           flex: 2,
                           minWidth: '200px',
                           padding: '0.65rem 0.85rem',
-                          borderRadius: '8px',
+                          borderRadius: 'var(--border-radius, 6px)',
                           border: `1px solid ${borderCol}`,
                           backgroundColor: bgCard,
                           color: 'var(--text-color)',
@@ -3768,12 +3777,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         type="text"
                         value={nuevoPinMesa}
                         onChange={(e) => setNuevoPinMesa(e.target.value)}
-                        placeholder="PIN Mesa Directiva (opcional)"
+                        placeholder={t('ui.chairPinOptional')}
                         style={{
                           flex: 1,
                           minWidth: '160px',
                           padding: '0.65rem 0.85rem',
-                          borderRadius: '8px',
+                          borderRadius: 'var(--border-radius, 6px)',
                           border: `1px solid ${borderCol}`,
                           backgroundColor: bgCard,
                           color: 'var(--text-color)',
@@ -3785,20 +3794,20 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         disabled={creandoComite}
                         style={{
                           padding: '0.65rem 1.15rem',
-                          borderRadius: '8px',
-                          backgroundColor: '#8b5cf6',
-                          color: '#ffffff',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--btn-bg)',
+                          color: 'var(--btn-text, #ffffff)',
                           border: 'none',
-                          fontWeight: '800',
-                          fontSize: '0.88rem',
+                          fontWeight: '650',
+                          fontSize: '0.85rem',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.4rem',
-                          boxShadow: '0 2px 6px rgba(139, 92, 246, 0.25)'
+                          boxShadow: 'none'
                         }}
                       >
-                        <Plus size={16} /> {creandoComite ? 'Creando...' : 'Crear Comité'}
+                        <Plus size={16} /> {creandoComite ? t('ui.creating') : t('ui.createCommittee')}
                       </button>
 
                       <button
@@ -3807,22 +3816,22 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         onClick={() => singleComiteFileInputRef.current?.click()}
                         style={{
                           padding: '0.65rem 1.15rem',
-                          borderRadius: '8px',
-                          backgroundColor: isLight ? '#ffffff' : bgCard,
-                          border: '1.5px dashed #8b5cf6',
-                          color: '#8b5cf6',
-                          fontWeight: '800',
-                          fontSize: '0.88rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'transparent',
+                          border: `1px dashed ${borderCol}`,
+                          color: 'var(--text-color)',
+                          fontWeight: '650',
+                          fontSize: '0.85rem',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.45rem',
-                          boxShadow: '0 2px 6px rgba(139, 92, 246, 0.12)',
+                          boxShadow: 'none',
                           transition: 'all 0.15s ease'
                         }}
-                        title="Importar un comité individual desde un archivo .JSON (sesion_activa.json o backup de comité)"
+                        title={t('ui.importAnIndividualCommitteeFromAJsonFileActiveSession')}
                       >
-                        <Upload size={16} /> Importar Comité (.JSON)
+                        <Upload size={16} /> {t('ui.importCommitteeJson')}
                       </button>
                     </form>
                   </div>
@@ -3836,7 +3845,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           key={comite.id}
                           style={{
                             padding: '1rem 1.25rem',
-                            borderRadius: '12px',
+                            borderRadius: 'var(--border-radius, 6px)',
                             border: `1px solid ${borderCol}`,
                             backgroundColor: headerBg,
                             display: 'flex',
@@ -3863,7 +3872,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             </div>
                             {comite.topico_actual && (
                               <span style={{ fontSize: '0.8rem', color: textMuted }}>
-                                Tema: {comite.topico_actual}
+                                {t('ui.topic2')} {comite.topico_actual}
                               </span>
                             )}
                           </div>
@@ -3873,27 +3882,27 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                               onClick={() => handleAbrirEditorComite(comite)}
                               style={{
                                 padding: '0.5rem 0.95rem',
-                                borderRadius: '8px',
-                                backgroundColor: '#8b5cf6',
-                                color: '#ffffff',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                backgroundColor: 'var(--btn-bg)',
+                                color: 'var(--btn-text, #ffffff)',
                                 border: 'none',
                                 fontSize: '0.82rem',
-                                fontWeight: '800',
+                                fontWeight: '650',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '0.4rem',
-                                boxShadow: '0 2px 6px rgba(139, 92, 246, 0.25)'
+                                boxShadow: 'none'
                               }}
                             >
-                              <Settings size={14} /> Gestionar Comité (Agenda, Países, Matriz)
+                              <Settings size={14} /> {t('ui.manageCommitteeAgendaCountriesMatrix')}
                             </button>
 
                             <button
                               onClick={() => handleEliminarComite(comite.id)}
                               style={{
                                 padding: '0.5rem',
-                                borderRadius: '8px',
+                                borderRadius: 'var(--border-radius, 6px)',
                                 backgroundColor: isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)',
                                 border: '1px solid rgba(239, 68, 68, 0.3)',
                                 color: '#ef4444',
@@ -3902,7 +3911,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                                 alignItems: 'center',
                                 justifyContent: 'center'
                               }}
-                              title="Eliminar comité"
+                              title={t('ui.deleteCommittee')}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -3917,22 +3926,22 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <div style={{
                   backgroundColor: bgCard,
                   border: `1px solid ${borderCol}`,
-                  borderRadius: '16px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   padding: '1.5rem'
                 }}>
                   <div style={{ marginBottom: '1.25rem' }}>
                     <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Megaphone size={20} color="#3b82f6" /> Centro de Avisos & Comunicados Oficiales
+                      <Megaphone size={20} color="var(--accent-color)" /> {t('avisos.navTitle')}
                     </h3>
                     <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                      Emite notificaciones a toda la conferencia, al staff o a salas específicas persistidas en base de datos.
+                      {t('ui.sendAnnouncementsToTheEntireConferenceStaffOrSpecificRooms')}
                     </p>
                   </div>
 
                   {avisoFeedback && (
                     <div style={{
                       padding: '0.75rem 1rem',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       backgroundColor: isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)',
                       border: '1px solid rgba(34, 197, 94, 0.4)',
                       color: isLight ? '#15803d' : '#4ade80',
@@ -3947,99 +3956,99 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   <form onSubmit={handleEmitirAviso} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>Destinatario</label>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('messaging.recipient')}</label>
                         <select
                           value={avisoDestino}
                           onChange={(e) => setAvisoDestino(e.target.value)}
                           style={{
                             width: '100%',
                             padding: '0.55rem',
-                            borderRadius: '8px',
+                            borderRadius: 'var(--border-radius, 6px)',
                             border: `1px solid ${borderCol}`,
                             backgroundColor: headerBg,
                             color: 'var(--text-color)',
                             fontSize: '0.85rem'
                           }}
                         >
-                          <optgroup label="🌐 Canales Generales">
-                            <option value="">📢 Toda la Conferencia (Global)</option>
-                            <option value="STAFF_ALL">👥 Todo el Staff de la Conferencia</option>
-                            <option value="CHAIRS_ALL">🏛️ Todas las Mesas Directivas</option>
+                          <optgroup label={t('avisos.generalChannels')}>
+                            <option value="">{t('conferences.targetGlobal')}</option>
+                            <option value="STAFF_ALL">{t('ui.allConferenceStaff')}</option>
+                            <option value="CHAIRS_ALL">{t('ui.allChairs')}</option>
                           </optgroup>
-                          <optgroup label="🏛️ Mesas Directivas de Comités">
+                          <optgroup label={t('ui.committeeChairs')}>
                             {listaComitesConsolidada.map(c => (
-                              <option key={`SEC_CHAIR_${c.id}`} value={`CHAIR_${c.id}`}>🏛️ Mesa de {c.nombre || c.id}</option>
+                              <option key={`SEC_CHAIR_${c.id}`} value={`CHAIR_${c.id}`}>{t('ui.chairOf')} {c.nombre || c.id}</option>
                             ))}
                           </optgroup>
-                          <optgroup label="👥 Staff de Salas Asignado">
+                          <optgroup label={t('ui.assignedRoomStaff2')}>
                             {listaComitesConsolidada.map(c => (
-                              <option key={`SEC_STAFF_${c.id}`} value={`STAFF_COMITE_${c.id}`}>👥 Staff de {c.nombre || c.id}</option>
+                              <option key={`SEC_STAFF_${c.id}`} value={`STAFF_COMITE_${c.id}`}>{t('ui.staffOf')} {c.nombre || c.id}</option>
                             ))}
                           </optgroup>
-                          <optgroup label="🌐 Sala Completa (Mesa + Delegados)">
+                          <optgroup label={t('ui.entireRoomChairDelegates')}>
                             {listaComitesConsolidada.map(c => (
-                              <option key={`SEC_ALL_${c.id}`} value={c.id}>🌐 Sala de {c.nombre || c.id}</option>
+                              <option key={`SEC_ALL_${c.id}`} value={c.id}>{t('ui.roomOf')} {c.nombre || c.id}</option>
                             ))}
                           </optgroup>
                         </select>
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>Emisor</label>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('conferences.issuer')}</label>
                         <select
                           value={avisoEmisor}
                           onChange={(e) => setAvisoEmisor(e.target.value)}
                           style={{
                             width: '100%',
                             padding: '0.55rem',
-                            borderRadius: '8px',
+                            borderRadius: 'var(--border-radius, 6px)',
                             border: `1px solid ${borderCol}`,
                             backgroundColor: headerBg,
                             color: 'var(--text-color)',
                             fontSize: '0.85rem'
                           }}
                         >
-                          <option value="organizacion">Secretaría / Organización</option>
-                          <option value="staff">Staff de Sala</option>
-                          <option value="logistica">Logística</option>
-                          <option value="mesa">Mesa Directiva</option>
+                          <option value="organizacion">{t('ui.secretariatOrganizers')}</option>
+                          <option value="staff">{t('ui.roomStaff')}</option>
+                          <option value="logistica">{t('conferences.issuerLogistics')}</option>
+                          <option value="mesa">{t('conferences.issuerChair')}</option>
                         </select>
                       </div>
 
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>Prioridad</label>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('ui.priority')}</label>
                         <select
                           value={avisoTipo}
                           onChange={(e) => setAvisoTipo(e.target.value)}
                           style={{
                             width: '100%',
                             padding: '0.55rem',
-                            borderRadius: '8px',
+                            borderRadius: 'var(--border-radius, 6px)',
                             border: `1px solid ${borderCol}`,
                             backgroundColor: headerBg,
                             color: 'var(--text-color)',
                             fontSize: '0.85rem'
                           }}
                         >
-                          <option value="info">ℹ️ Información</option>
-                          <option value="urgente">🚨 Urgente</option>
-                          <option value="alerta">⚠️ Alerta / Logística</option>
+                          <option value="info">{t('ui.information')}</option>
+                          <option value="urgente">{t('ui.urgent')}</option>
+                          <option value="alerta">{t('ui.alertLogistics')}</option>
                         </select>
                       </div>
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>Mensaje del Comunicado</label>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('avisos.noticeMessage')}</label>
                       <textarea
                         required
                         rows={2}
                         value={avisoMensaje}
                         onChange={(e) => setAvisoMensaje(e.target.value)}
-                        placeholder="Escribe el aviso que se mostrará en los proyectores y pantallas..."
+                        placeholder={t('ui.writeTheAnnouncementToDisplayOnProjectorsAndScreens')}
                         style={{
                           width: '100%',
                           padding: '0.65rem 0.85rem',
-                          borderRadius: '8px',
+                          borderRadius: 'var(--border-radius, 6px)',
                           border: `1px solid ${borderCol}`,
                           backgroundColor: headerBg,
                           color: 'var(--text-color)',
@@ -4055,30 +4064,30 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       style={{
                         alignSelf: 'flex-start',
                         padding: '0.65rem 1.25rem',
-                        borderRadius: '8px',
-                        backgroundColor: '#3b82f6',
-                        color: '#ffffff',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: 'var(--btn-bg)',
+                        color: 'var(--btn-text, #ffffff)',
                         border: 'none',
-                        fontWeight: '800',
-                        fontSize: '0.88rem',
+                        fontWeight: '650',
+                        fontSize: '0.85rem',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.4rem'
                       }}
                     >
-                      <Send size={15} /> {enviandoAviso ? 'Emitiendo...' : 'Emitir Comunicado'}
+                      <Send size={15} /> {enviandoAviso ? t('ui.issuing') : t('ui.issueAnnouncement')}
                     </button>
                   </form>
 
                   {/* Avisos Activos */}
                   <div>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: '800', marginBottom: '0.65rem' }}>
-                      Avisos Activos en el Sistema ({avisosActivos.length})
+                      {t('ui.activeAnnouncementsInTheSystem')}{avisosActivos.length})
                     </h4>
 
                     {avisosActivos.length === 0 ? (
-                      <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>No hay avisos activos en este momento.</p>
+                      <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>{t('ui.noActiveAnnouncementsAtThisTime')}</p>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {avisosActivos.map((av) => (
@@ -4086,7 +4095,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             key={av.id}
                             style={{
                               padding: '0.85rem 1.1rem',
-                              borderRadius: '10px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               backgroundColor: headerBg,
                               border: `1px solid ${borderCol}`,
                               display: 'flex',
@@ -4108,7 +4117,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                                   {av.emisor}
                                 </span>
                                 <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '600' }}>
-                                  Destino: <strong style={{ color: 'var(--text-color)' }}>{getNombreDestino(av.comite_id)}</strong>
+                                  {t('ui.destination')} <strong style={{ color: 'var(--text-color)' }}>{getNombreDestino(av.comite_id)}</strong>
                                 </span>
                                 {av.creado_en && (
                                   <span style={{ fontSize: '0.7rem', color: textMuted }}>
@@ -4235,7 +4244,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <div style={{
                   width: '46px',
                   height: '46px',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   backgroundColor: 'rgba(139, 92, 246, 0.15)',
                   color: '#8b5cf6',
                   display: 'flex',
@@ -4256,10 +4265,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         setNombreComite(val);
                         setComiteEnEdicion(prev => prev ? { ...prev, nombre: val } : null);
                       }}
-                      placeholder="Nombre del comité..."
+                      placeholder={t('ui.committeeName')}
                       style={{
                         padding: '0.45rem 0.85rem',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--border-radius, 6px)',
                         border: `1px solid ${borderCol}`,
                         backgroundColor: bgCard,
                         color: 'var(--text-color)',
@@ -4285,13 +4294,13 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       fontWeight: '700',
                       padding: '0.2rem 0.6rem',
                       borderRadius: '6px',
-                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                      color: '#3b82f6',
+                      backgroundColor: 'var(--info-soft)',
+                      color: 'var(--info-color)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.3rem'
                     }}>
-                      <Users size={12} /> {paises.length} Delegaciones
+                      <Users size={12} /> {paises.length} {t('ui.delegations')}
                     </span>
 
                     <span style={{
@@ -4299,13 +4308,13 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       fontWeight: '700',
                       padding: '0.2rem 0.6rem',
                       borderRadius: '6px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                      color: '#10b981',
+                      backgroundColor: 'var(--success-soft)',
+                      color: 'var(--success-color)',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.3rem'
                     }}>
-                      <Globe size={12} /> {(agendaSesion?.temas || []).length} Temas
+                      <Globe size={12} /> {(agendaSesion?.temas || []).length} {t('ui.topics')}
                     </span>
 
                     <span style={{
@@ -4313,14 +4322,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       fontWeight: '700',
                       padding: '0.2rem 0.6rem',
                       borderRadius: '6px',
-                      backgroundColor: comiteEditorPinMesa ? 'rgba(245, 158, 11, 0.15)' : 'rgba(107, 114, 128, 0.15)',
-                      color: comiteEditorPinMesa ? '#f59e0b' : textMuted,
+                      backgroundColor: comiteEditorPinMesa ? 'var(--warning-soft)' : 'var(--input-bg)',
+                      color: comiteEditorPinMesa ? 'var(--warning-color)' : textMuted,
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.3rem'
                     }}>
                       {comiteEditorPinMesa ? <Lock size={12} /> : <Unlock size={12} />}
-                      {comiteEditorPinMesa ? 'PIN Mesa Activado' : 'Sin PIN de Mesa'}
+                      {comiteEditorPinMesa ? t('ui.chairPinEnabled') : t('ui.noChairPin')}
                     </span>
                   </div>
                 </div>
@@ -4333,21 +4342,20 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   onClick={() => ejecutarEntradaMesa(comiteEnEdicion, comiteEditorPinMesa)}
                   style={{
                     padding: '0.55rem 1rem',
-                    borderRadius: '10px',
-                    backgroundColor: '#3b82f6',
-                    color: '#ffffff',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--btn-bg)',
+                    color: 'var(--btn-text, #ffffff)',
                     border: 'none',
-                    fontWeight: '800',
+                    fontWeight: '650',
                     fontSize: '0.85rem',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.45rem',
-                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                    gap: '0.45rem'
                   }}
-                  title="Abrir vista de presidencia/moderación directamente para este comité"
+                  title={t('ui.openTheChairModerationViewDirectlyForThisCommittee')}
                 >
-                  <Play size={15} /> Entrar como Mesa
+                  <Play size={15} /> {t('conferences.joinAsChair')}
                 </button>
 
                 <button
@@ -4355,7 +4363,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   onClick={() => handleEliminarComite(comiteEnEdicion.id)}
                   style={{
                     padding: '0.55rem 0.95rem',
-                    borderRadius: '10px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     backgroundColor: isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)',
                     color: '#ef4444',
                     border: '1px solid rgba(239, 68, 68, 0.35)',
@@ -4366,9 +4374,9 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     alignItems: 'center',
                     gap: '0.35rem'
                   }}
-                  title="Eliminar este comité de la conferencia"
+                  title={t('ui.deleteThisCommitteeFromTheConference')}
                 >
-                  <Trash2 size={15} /> Eliminar
+                  <Trash2 size={15} /> {t('avisos.deleteNotice')}
                 </button>
 
                 <button
@@ -4377,20 +4385,19 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   disabled={guardandoComite}
                   style={{
                     padding: '0.55rem 1.25rem',
-                    borderRadius: '10px',
-                    backgroundColor: '#22c55e',
-                    color: '#ffffff',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--btn-bg)',
+                    color: 'var(--btn-text, #ffffff)',
                     border: 'none',
-                    fontWeight: '800',
+                    fontWeight: '650',
                     fontSize: '0.88rem',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.45rem',
-                    boxShadow: '0 3px 10px rgba(34, 197, 94, 0.35)'
+                    gap: '0.45rem'
                   }}
                 >
-                  <Check size={16} /> {guardandoComite ? 'Guardando en Servidor...' : 'Guardar Cambios'}
+                  <Check size={16} /> {guardandoComite ? t('ui.savingToServer') : t('ui.saveChanges')}
                 </button>
 
                 <button
@@ -4399,7 +4406,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   style={{
                     background: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)',
                     border: 'none',
-                    borderRadius: '10px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     color: 'var(--text-color)',
                     cursor: 'pointer',
                     padding: '0.5rem',
@@ -4407,7 +4414,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     alignItems: 'center',
                     justifyContent: 'center'
                   }}
-                  title="Guardar y cerrar ventana"
+                  title={t('ui.saveAndCloseWindow')}
                 >
                   <X size={20} />
                 </button>
@@ -4442,10 +4449,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 onClick={() => setSecretariaWidgetTab('AGENDA')}
                 style={{
                   padding: '0.6rem 1.15rem',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: 'none',
-                  backgroundColor: secretariaWidgetTab === 'AGENDA' ? (isLight ? '#ede9fe' : 'rgba(139, 92, 246, 0.25)') : 'transparent',
-                  color: secretariaWidgetTab === 'AGENDA' ? '#8b5cf6' : textMuted,
+                  backgroundColor: secretariaWidgetTab === 'AGENDA' ? 'var(--accent-soft)' : 'transparent',
+                  color: secretariaWidgetTab === 'AGENDA' ? 'var(--accent-color)' : textMuted,
+                  border: secretariaWidgetTab === 'AGENDA' ? '1px solid var(--accent-color)' : '1px solid transparent',
                   fontWeight: '800',
                   fontSize: '0.88rem',
                   cursor: 'pointer',
@@ -4455,17 +4463,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Globe size={16} /> Comité & Agenda
+                <Globe size={16} /> {t('ui.committeeAgenda')}
               </button>
 
               <button
                 onClick={() => setSecretariaWidgetTab('IMPORTAR')}
                 style={{
                   padding: '0.6rem 1.15rem',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: 'none',
-                  backgroundColor: secretariaWidgetTab === 'IMPORTAR' ? (isLight ? '#ede9fe' : 'rgba(139, 92, 246, 0.25)') : 'transparent',
-                  color: secretariaWidgetTab === 'IMPORTAR' ? '#8b5cf6' : textMuted,
+                  backgroundColor: secretariaWidgetTab === 'IMPORTAR' ? 'var(--accent-soft)' : 'transparent',
+                  color: secretariaWidgetTab === 'IMPORTAR' ? 'var(--accent-color)' : textMuted,
+                  border: secretariaWidgetTab === 'IMPORTAR' ? '1px solid var(--accent-color)' : '1px solid transparent',
                   fontWeight: '800',
                   fontSize: '0.88rem',
                   cursor: 'pointer',
@@ -4475,10 +4484,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   transition: 'all 0.15s ease'
                 }}
               >
-                <FileSpreadsheet size={16} /> Importar Países & Delegaciones
+                <FileSpreadsheet size={16} /> {t('ui.importCountriesDelegations')}
                 <span style={{
                   padding: '0.1rem 0.45rem',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   backgroundColor: secretariaWidgetTab === 'IMPORTAR' ? '#8b5cf6' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
                   color: secretariaWidgetTab === 'IMPORTAR' ? '#ffffff' : textMuted,
                   fontSize: '0.72rem',
@@ -4492,10 +4501,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 onClick={() => setSecretariaWidgetTab('MATRIZ')}
                 style={{
                   padding: '0.6rem 1.15rem',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: 'none',
-                  backgroundColor: secretariaWidgetTab === 'MATRIZ' ? (isLight ? '#ede9fe' : 'rgba(139, 92, 246, 0.25)') : 'transparent',
-                  color: secretariaWidgetTab === 'MATRIZ' ? '#8b5cf6' : textMuted,
+                  backgroundColor: secretariaWidgetTab === 'MATRIZ' ? 'var(--accent-soft)' : 'transparent',
+                  color: secretariaWidgetTab === 'MATRIZ' ? 'var(--accent-color)' : textMuted,
+                  border: secretariaWidgetTab === 'MATRIZ' ? '1px solid var(--accent-color)' : '1px solid transparent',
                   fontWeight: '800',
                   fontSize: '0.88rem',
                   cursor: 'pointer',
@@ -4505,10 +4515,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   transition: 'all 0.15s ease'
                 }}
               >
-                <UserCheck size={16} /> Matriz de Países & Asistencia
+                <UserCheck size={16} /> {t('ui.countryMatrixAttendance')}
                 <span style={{
                   padding: '0.1rem 0.45rem',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   backgroundColor: secretariaWidgetTab === 'MATRIZ' ? '#8b5cf6' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
                   color: secretariaWidgetTab === 'MATRIZ' ? '#ffffff' : textMuted,
                   fontSize: '0.72rem',
@@ -4522,10 +4532,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 onClick={() => setSecretariaWidgetTab('AJUSTES')}
                 style={{
                   padding: '0.6rem 1.15rem',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: 'none',
-                  backgroundColor: secretariaWidgetTab === 'AJUSTES' ? (isLight ? '#ede9fe' : 'rgba(139, 92, 246, 0.25)') : 'transparent',
-                  color: secretariaWidgetTab === 'AJUSTES' ? '#8b5cf6' : textMuted,
+                  backgroundColor: secretariaWidgetTab === 'AJUSTES' ? 'var(--accent-soft)' : 'transparent',
+                  color: secretariaWidgetTab === 'AJUSTES' ? 'var(--accent-color)' : textMuted,
+                  border: secretariaWidgetTab === 'AJUSTES' ? '1px solid var(--accent-color)' : '1px solid transparent',
                   fontWeight: '800',
                   fontSize: '0.88rem',
                   cursor: 'pointer',
@@ -4535,7 +4546,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Sliders size={16} /> PIN & Ajustes de Mesa
+                <Sliders size={16} /> {t('ui.chairPinSettings')}
               </button>
             </div>
 
@@ -4546,7 +4557,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               padding: '1.75rem',
               backgroundColor: isLight ? '#f8fafc' : 'rgba(0, 0, 0, 0.2)'
             }}>
-              <Suspense fallback={<div style={{ textAlign: 'center', padding: '3rem', fontSize: '1rem', fontWeight: '700' }}>Cargando módulo de configuración...</div>}>
+              <Suspense fallback={<div style={{ textAlign: 'center', padding: '3rem', fontSize: '1rem', fontWeight: '700' }}>{t('ui.loadingSettingsModule')}</div>}>
                 {secretariaWidgetTab === 'AGENDA' && <EstablecerAgenda />}
                 {secretariaWidgetTab === 'IMPORTAR' && <ImportarPaises />}
                 {secretariaWidgetTab === 'MATRIZ' && <MatrizPaises />}
@@ -4557,18 +4568,18 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     <div style={{
                       backgroundColor: bgCard,
                       border: `1px solid ${borderCol}`,
-                      borderRadius: '16px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '1.5rem',
                       boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-                        <Lock size={20} color="#f59e0b" />
+                        <Lock size={20} color="var(--accent-color)" />
                         <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0 }}>
-                          PIN de Acceso a Mesa Directiva (Presidencia)
+                          {t('ui.chairAccessPinPresidency')}
                         </h3>
                       </div>
                       <p style={{ fontSize: '0.85rem', color: textMuted, margin: '0 0 1.25rem 0' }}>
-                        Protege el rol de presidencia/moderador de este comité con un PIN de acceso opcional. Los delegados no podrán moderar sin esta clave.
+                        {t('ui.protectThisCommitteeSChairModeratorRoleWithAnOptional')}
                       </p>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -4577,11 +4588,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             type={mostrarComiteEditorPinMesa ? 'text' : 'password'}
                             value={comiteEditorPinMesa}
                             onChange={(e) => setComiteEditorPinMesa(e.target.value)}
-                            placeholder="Dejar vacío para acceso libre sin PIN"
+                            placeholder={t('ui.leaveBlankForAccessWithoutAPin')}
                             style={{
                               width: '100%',
                               padding: '0.75rem 2.5rem 0.75rem 2.4rem',
-                              borderRadius: '10px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               border: `1px solid ${borderCol}`,
                               backgroundColor: headerBg,
                               color: 'var(--text-color)',
@@ -4619,7 +4630,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         {comiteEditorPinMesa ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                              <CheckCircle2 size={14} /> PIN configurado para este comité
+                              <CheckCircle2 size={14} /> {t('ui.pinConfiguredForThisCommittee')}
                             </span>
                             <button
                               type="button"
@@ -4633,12 +4644,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                                 cursor: 'pointer'
                               }}
                             >
-                              (Quitar PIN)
+                              {t('ui.removePin')}
                             </button>
                           </div>
                         ) : (
                           <span style={{ fontSize: '0.8rem', color: textMuted }}>
-                            Sin PIN: Cualquier usuario con acceso a la conferencia podrá entrar como Mesa a este comité.
+                            {t('ui.noPinAnyoneWithConferenceAccessCanJoinThisCommittee')}
                           </span>
                         )}
                       </div>
@@ -4648,26 +4659,26 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     <div style={{
                       backgroundColor: bgCard,
                       border: `1px solid ${borderCol}`,
-                      borderRadius: '16px',
+                      borderRadius: 'var(--border-radius, 6px)',
                       padding: '1.5rem',
                       boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-                        <Sliders size={20} color="#8b5cf6" />
+                        <Sliders size={20} color="var(--accent-color)" />
                         <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0 }}>
-                          Tipo de Sesión por Defecto
+                          {t('ui.defaultSessionType')}
                         </h3>
                       </div>
                       <p style={{ fontSize: '0.85rem', color: textMuted, margin: '0 0 1.25rem 0' }}>
-                        Selecciona el modo de debate en el que iniciará o se encuentra este comité.
+                        {t('ui.selectThisCommitteeSInitialOrCurrentDebateMode')}
                       </p>
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.75rem' }}>
                         {[
-                          { id: 'formal', label: 'Formal', desc: 'Lista de oradores estándar', color: '#22c55e' },
-                          { id: 'informal', label: 'Informal / Caucus', desc: 'Debate moderado / no moderado', color: '#eab308' },
-                          { id: 'receso', label: 'En Receso', desc: 'Pausa o receso de debate', color: '#a855f7' },
-                          { id: 'votacion', label: 'En Votación', desc: 'Votación de anteproyectos', color: '#3b82f6' }
+                          { id: 'formal', label: t('header.stateFormal'), desc: t('ui.standardSpeakersList'), color: 'var(--success-color)' },
+                          { id: 'informal', label: t('ui.informalCaucus'), desc: t('ui.moderatedUnmoderatedDebate'), color: 'var(--warning-color)' },
+                          { id: 'receso', label: t('conferences.statusRecess'), desc: t('ui.debateBreakOrRecess'), color: 'var(--muted-text)' },
+                          { id: 'votacion', label: t('conferences.statusVoting'), desc: t('ui.draftResolutionVoting'), color: 'var(--info-color)' }
                         ].map((modo) => (
                           <button
                             key={modo.id}
@@ -4675,7 +4686,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             onClick={() => setComiteEditorTipoSesion(modo.id)}
                             style={{
                               padding: '1rem',
-                              borderRadius: '12px',
+                              borderRadius: 'var(--border-radius, 6px)',
                               border: `2px solid ${comiteEditorTipoSesion === modo.id ? modo.color : borderCol}`,
                               backgroundColor: comiteEditorTipoSesion === modo.id ? (isLight ? `${modo.color}15` : `${modo.color}25`) : headerBg,
                               textAlign: 'left',
@@ -4705,7 +4716,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         disabled={guardandoComite}
                         style={{
                           padding: '0.85rem 1.75rem',
-                          borderRadius: '12px',
+                          borderRadius: 'var(--border-radius, 6px)',
                           backgroundColor: '#22c55e',
                           color: '#ffffff',
                           border: 'none',
@@ -4718,7 +4729,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)'
                         }}
                       >
-                        <Check size={18} /> {guardandoComite ? 'Guardando...' : 'Guardar Ajustes del Comité'}
+                        <Check size={18} /> {guardandoComite ? t('ui.saving') : t('ui.saveCommitteeSettings')}
                       </button>
                     </div>
 
@@ -4749,7 +4760,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           <div style={{
             backgroundColor: bgCard,
             border: `1px solid ${borderCol}`,
-            borderRadius: '16px',
+            borderRadius: 'var(--border-radius, 6px)',
             padding: '1.75rem',
             width: '100%',
             maxWidth: '400px',
@@ -4759,9 +4770,9 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             <div style={{
               width: '48px',
               height: '48px',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(59, 130, 246, 0.15)',
-              color: '#3b82f6',
+              borderRadius: 'var(--border-radius, 6px)',
+              backgroundColor: 'var(--accent-soft)',
+              color: 'var(--accent-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -4771,10 +4782,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             </div>
 
             <h3 style={{ fontSize: '1.2rem', fontWeight: '800', margin: '0 0 0.35rem 0' }}>
-              PIN de Mesa Directiva
+              {t('ui.chairPin2')}
             </h3>
             <p style={{ fontSize: '0.85rem', color: textMuted, margin: '0 0 1.25rem 0' }}>
-              Introduce el PIN para moderar {comiteSeleccionado.nombre}
+              {t('ui.enterThePinToModerate')} {comiteSeleccionado.nombre}
             </p>
 
             {pinMesaError && (
@@ -4801,11 +4812,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 autoFocus
                 value={pinMesaInput}
                 onChange={(e) => setPinMesaInput(e.target.value)}
-                placeholder="PIN de la Mesa"
+                placeholder={t('ui.chairPin3')}
                 style={{
                   width: '100%',
                   padding: '0.7rem 0.85rem',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: `1px solid ${borderCol}`,
                   backgroundColor: headerBg,
                   color: 'var(--text-color)',
@@ -4821,7 +4832,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   style={{
                     flex: 1,
                     padding: '0.65rem',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     backgroundColor: 'transparent',
                     border: `1px solid ${borderCol}`,
                     color: 'var(--text-color)',
@@ -4830,7 +4841,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     cursor: 'pointer'
                   }}
                 >
-                  Cancelar
+                  {t('toast.cancelBtn')}
                 </button>
                 <button
                   type="submit"
@@ -4838,22 +4849,29 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   style={{
                     flex: 1,
                     padding: '0.65rem',
-                    borderRadius: '8px',
-                    backgroundColor: '#3b82f6',
-                    color: '#ffffff',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--btn-bg)',
+                    color: 'var(--btn-text, #ffffff)',
                     border: 'none',
-                    fontWeight: '800',
+                    fontWeight: '650',
                     fontSize: '0.85rem',
                     cursor: 'pointer'
                   }}
                 >
-                  {loading ? 'Verificando...' : 'Entrar'}
+                  {loading ? t('ui.verifying') : t('ui.enter')}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Modal de Accesibilidad Global */}
+      <AccessibilityModal
+        isOpen={isAccessOpen}
+        onClose={() => setIsAccessOpen(false)}
+        isLight={isLight}
+      />
     </div>
   );
 };

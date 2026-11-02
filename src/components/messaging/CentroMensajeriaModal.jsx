@@ -115,7 +115,7 @@ const CentroMensajeriaModal = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', letterSpacing: '-0.01em' }}>
-                  Centro Unificado de Mensajería & Avisos
+                  {t('ui.messagingAnnouncementsCenter')}
                 </h3>
                 <span style={{
                   fontSize: '0.68rem',
@@ -128,18 +128,18 @@ const CentroMensajeriaModal = ({
                   color: isLiveActive ? 'var(--success-color)' : 'var(--muted-text)',
                   border: `1px solid ${isLiveActive ? 'var(--success-color)' : 'var(--border-color)'}`
                 }}>
-                  {isLiveActive ? `Sala ${p2p.roomId}` : 'Local / Offline'}
+                  {isLiveActive ? t('ui.room2', { v0: p2p.roomId }) : t('ui.localOffline')}
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                Comunicaciones internas de sala (P2P / WebSockets) y tablón oficial de la conferencia
+                {t('ui.internalRoomCommunicationsP2pWebsocketsAndOfficialConferenceNoticeboard')}
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            aria-label="Cerrar modal"
+            aria-label={t('ui.closeModal')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -152,7 +152,7 @@ const CentroMensajeriaModal = ({
               justifyContent: 'center',
               transition: 'background 0.15s ease'
             }}
-            title="Cerrar (Esc)"
+            title={t('ui.closeEsc')}
           >
             <X size={20} />
           </button>
@@ -187,7 +187,7 @@ const CentroMensajeriaModal = ({
             }}
           >
             <MessageSquare size={16} />
-            <span>Mensajería de Comité (Notas & Pajes)</span>
+            <span>{t('ui.committeeMessagingNotesPages')}</span>
             {p2p.unreadNotesCount > 0 && (
               <span style={{
                 backgroundColor: 'var(--danger-color)',
@@ -225,7 +225,7 @@ const CentroMensajeriaModal = ({
             }}
           >
             <Globe size={16} />
-            <span>Avisos de Conferencia (Red Global)</span>
+            <span>{t('ui.conferenceAnnouncementsGlobalNetwork')}</span>
           </button>
         </div>
 

@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import { createClient } from '@supabase/supabase-js';
 
 const DEFAULT_SUPABASE_URL = 'https://przhpubwzwgulaoprnda.supabase.co';
@@ -74,7 +75,7 @@ export const supabase = new Proxy({}, {
     const client = getSupabaseClient();
     if (!client) {
       throw new Error(
-        'Supabase no está configurado. Por favor ingresa tu Supabase Anon Key en el menú o define VITE_SUPABASE_ANON_KEY.'
+        i18n.t('ui.supabaseIsNotConfiguredEnterYourSupabaseAnonKeyIn')
       );
     }
     return client[prop];

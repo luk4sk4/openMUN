@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Play, Pause, SkipForward, RotateCcw, Volume2, Mic } from 'lucide-react';
@@ -18,6 +19,7 @@ const FloatingPipTimer = ({
   onResetTimer,
   onClosePip
 }) => {
+  const { t } = useTranslation();
   if (!targetContainer) return null;
 
   const isNegative = segundosRestantes < 0;
@@ -76,7 +78,7 @@ const FloatingPipTimer = ({
               color: '#ffffff'
             }}
           >
-            {oradorActual?.nombre || 'Delegación en turno'}
+            {oradorActual?.nombre || t('ui.currentDelegation')}
           </span>
         </div>
         <span
@@ -146,7 +148,7 @@ const FloatingPipTimer = ({
           }}
         >
           {corriendo ? <Pause size={14} fill="#ffffff" /> : <Play size={14} fill="#ffffff" />}
-          <span>{corriendo ? 'Pausa' : 'Iniciar'}</span>
+          <span>{corriendo ? t('ui.pause') : t('timers.start')}</span>
         </button>
 
         <button
@@ -166,10 +168,10 @@ const FloatingPipTimer = ({
             fontWeight: '700',
             cursor: 'pointer'
           }}
-          title="Siguiente Orador"
+          title={t('palette.nextSpeaker')}
         >
           <SkipForward size={14} />
-          <span>Siguiente</span>
+          <span>{t('timers.nextLabel')}</span>
         </button>
 
         <button
@@ -185,7 +187,7 @@ const FloatingPipTimer = ({
             padding: '0.45rem 0.6rem',
             cursor: 'pointer'
           }}
-          title="Reiniciar tiempo"
+          title={t('ui.resetTime')}
         >
           <RotateCcw size={14} />
         </button>

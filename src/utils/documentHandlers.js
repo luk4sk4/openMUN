@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 // Funciones de utilidad para importación y exportación de resoluciones y documentos
 // Las librerías pesadas (docx, jspdf, mammoth, pdfjs-dist) se importan dinámicamente on-demand para optimizar el tiempo de carga inicial.
 
@@ -8,7 +9,7 @@
  * @returns {Promise<{ texto: string, nombre: string }>}
  */
 export async function extraerTextoDeArchivo(file) {
-  if (!file) throw new Error('No se proporcionó ningún archivo');
+  if (!file) throw new Error(i18n.t('ui.noFileProvided'));
 
   const extension = file.name.split('.').pop()?.toLowerCase() || '';
   const nombreLimpio = file.name.replace(/\.[^/.]+$/, '');
@@ -93,7 +94,7 @@ export function descargarResolucionTxt({ titulo = 'resolucion', articulos = [], 
 /**
  * Genera y descarga un archivo Word (.docx) formal con formato MUN
  */
-export async function descargarResolucionDocx({ titulo = 'Proyecto de Resolución', articulos = [], textoRaw = '' }) {
+export async function descargarResolucionDocx({ titulo = i18n.t('ui.draftResolution'), articulos = [], textoRaw = '' }) {
   const {
     Document,
     Packer,
@@ -156,7 +157,7 @@ export async function descargarResolucionDocx({ titulo = 'Proyecto de Resolució
           new Paragraph({
             children: [
               new TextRun({
-                text: `${art.prefijo || `Artículo ${art.numero}.`} `,
+                text: `${art.prefijo || i18n.t('ui.article2', { v0: art.numero })} `,
                 bold: true,
                 size: 22
               }),
@@ -201,7 +202,7 @@ export async function descargarResolucionDocx({ titulo = 'Proyecto de Resolució
 /**
  * Genera y descarga un archivo PDF formal con formato MUN
  */
-export async function descargarResolucionPdf({ titulo = 'Proyecto de Resolución', articulos = [], textoRaw = '' }) {
+export async function descargarResolucionPdf({ titulo = i18n.t('ui.draftResolution'), articulos = [], textoRaw = '' }) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     unit: 'pt',
@@ -246,7 +247,7 @@ export async function descargarResolucionPdf({ titulo = 'Proyecto de Resolución
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10.5);
         doc.setTextColor(60, 60, 60);
-        doc.text('CLÁUSULAS PREAMBULATORIAS', margin, cursorY);
+        doc.text(i18n.t('ui.preambulatoryClauses3'), margin, cursorY);
         cursorY += 14;
 
         doc.setFont('helvetica', 'italic');
@@ -271,7 +272,7 @@ export async function descargarResolucionPdf({ titulo = 'Proyecto de Resolución
         doc.setFontSize(10);
         doc.setTextColor(20, 20, 20);
 
-        const prefijo = art.prefijo || `Artículo ${art.numero}.`;
+        const prefijo = art.prefijo || i18n.t('ui.article2', { v0: art.numero });
         const textoCompleto = `${prefijo} ${art.texto}`;
         const splitLines = doc.splitTextToSize(textoCompleto, maxLineWidth);
 
@@ -310,7 +311,7 @@ export async function descargarResolucionPdf({ titulo = 'Proyecto de Resolución
     doc.setFontSize(8);
     doc.setTextColor(130, 130, 130);
     doc.text(
-      `Página ${i} de ${totalPages} • Generado por OpenMUN`,
+      i18n.t('ui.pageOfGeneratedByOpenmun', { v0: i, v1: totalPages }),
       pageWidth / 2,
       pageHeight - 25,
       { align: 'center' }

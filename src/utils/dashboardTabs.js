@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import {
   Home,
   Settings,
@@ -26,15 +27,15 @@ export const TAB_CONFIG = {
 export const DASHBOARD_TABS = ['COMIENZO', 'GSL', 'DEBATE', 'VOTING', 'ENMIENDAS', 'INFO', 'LIBRE'];
 
 export const TAB_TITLES = {
-  HOME: 'OpenMUN - Plataforma Libre de Gestión para Modelos de Naciones Unidas (MUN)',
-  COMIENZO: 'OpenMUN - Configuración y Agenda de Comité',
-  GSL: 'OpenMUN - Lista General de Oradores (GSL)',
-  DEBATE: 'OpenMUN - Cronómetros y Moderación de Debate',
-  VOTING: 'OpenMUN - Sistema de Votación Oficial y Mapa de Votos',
-  ENMIENDAS: 'OpenMUN - Controlador de Enmiendas y Proyecto de Resolución',
-  INFO: 'OpenMUN - Matriz de Quórum e Información de Delegaciones',
-  CRISIS: 'OpenMUN - Centro de Crisis',
-  LIBRE: 'OpenMUN - Panel de Widgets Personalizable',
+  get HOME() { return i18n.t('ui.openmunFreeManagementPlatformForModelUnitedNationsMun'); },
+  get COMIENZO() { return i18n.t('ui.openmunCommitteeSettingsAndAgenda'); },
+  get GSL() { return i18n.t('ui.openmunGeneralSpeakersListGsl'); },
+  get DEBATE() { return i18n.t('ui.openmunTimersAndDebateModeration'); },
+  get VOTING() { return i18n.t('ui.openmunOfficialVotingSystemAndVotingMap'); },
+  get ENMIENDAS() { return i18n.t('ui.openmunAmendmentsAndDraftResolution'); },
+  get INFO() { return i18n.t('ui.openmunQuorumMatrixAndDelegationInformation'); },
+  get CRISIS() { return i18n.t('ui.openmunCrisisCenter'); },
+  get LIBRE() { return i18n.t('ui.openmunCustomizableWidgetPanel'); },
 };
 
 /**

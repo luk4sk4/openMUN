@@ -223,12 +223,12 @@ export default function TermsConditionsPage({ isLight = false, onBack }) {
 
         {/* Footer */}
         <div style={{ marginTop: '3.5rem', textAlign: 'center', fontSize: '0.85rem', color: textMuted }}>
-          <p style={{ margin: '0 0 0.75rem 0' }}>Última actualización: Agosto {new Date().getFullYear()} — OpenMUN</p>
+          <p style={{ margin: '0 0 0.75rem 0' }}>{t('ui.lastUpdatedAugust')} {new Date().getFullYear()} — OpenMUN</p>
           <button
             onClick={onBack}
             style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: '700', fontSize: '0.9rem', textDecoration: 'underline' }}
           >
-            ← Volver al panel principal de OpenMUN
+            {t('common.backToMainPanel')}
           </button>
         </div>
       </main>

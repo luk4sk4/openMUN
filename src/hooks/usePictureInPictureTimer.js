@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
@@ -21,7 +22,7 @@ export function usePictureInPictureTimer() {
       });
 
       // 2. Establecer variables CSS básicas y fondo
-      const rootStyle = getComputedStyle(document.documentElement);
+      const rootStyle = typeof window !== 'undefined' && window.getComputedStyle ? window.getComputedStyle(document.documentElement) : null;
       targetDoc.documentElement.style.backgroundColor = rootStyle.getPropertyValue('--panel-color') || '#161922';
       targetDoc.documentElement.style.color = rootStyle.getPropertyValue('--text-color') || '#f1f5f9';
       targetDoc.documentElement.style.fontFamily = rootStyle.getPropertyValue('--font-family') || 'Inter, system-ui, sans-serif';
@@ -89,7 +90,7 @@ export function usePictureInPictureTimer() {
 
         if (fallbackWin) {
           pipWindowRef.current = fallbackWin;
-          fallbackWin.document.title = 'OpenMUN - Cronómetro';
+          fallbackWin.document.title = i18n.t('pageTitles.timer');
           copyStyles(fallbackWin.document);
 
           const container = fallbackWin.document.createElement('div');

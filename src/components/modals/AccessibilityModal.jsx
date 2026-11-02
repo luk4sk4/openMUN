@@ -353,9 +353,9 @@ const AccessibilityModal = ({
               </div>
               <div style={{ display: 'flex', gap: '0.45rem' }}>
                 {[
-                  { id: 'compact', label: t('accessibility.densityCompact', 'Compacta'), icon: Minimize2, title: 'Menor espaciado para portátiles o pantallas pequeñas' },
-                  { id: 'standard', label: t('accessibility.densityStandard', 'Estándar'), icon: LayoutGrid, title: 'Espaciado estándar equilibrado' },
-                  { id: 'projector', label: t('accessibility.densityProjector', 'Proyector'), icon: Monitor, title: 'Textos y elementos destacados para proyector o pantalla grande' }
+                  { id: 'compact', label: t('accessibility.densityCompact', 'Compacta'), icon: Minimize2, title: t('ui.lessSpacingForLaptopsOrSmallScreens') },
+                  { id: 'standard', label: t('accessibility.densityStandard', 'Estándar'), icon: LayoutGrid, title: t('ui.balancedStandardSpacing') },
+                  { id: 'projector', label: t('accessibility.densityProjector', 'Proyector'), icon: Monitor, title: t('ui.largerTextAndElementsForProjectorsOrLargeScreens') }
                 ].map(({ id, label, icon: IconComponent, title }) => {
                   const isSelected = densityMode === id;
                   return (

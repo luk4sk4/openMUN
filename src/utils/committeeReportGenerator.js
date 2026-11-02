@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 /**
  * Generador de Reportes y Actas Oficiales de Conferencia para OpenMUN.
  * Utiliza importaciones dinámicas on-demand (jspdf / xlsx) para optimizar el bundle.
@@ -25,7 +26,7 @@ function formatSegundosLargo(totalSeg = 0) {
  * Genera y descarga el Acta Oficial Ejecutiva en PDF
  */
 export async function exportCommitteeReportPdf({
-  nombreComite = 'Comité General',
+  nombreComite = i18n.t('ui.generalCommittee'),
   agendaSesion = {},
   paises = [],
   estadisticasDelegaciones = [],
@@ -56,7 +57,7 @@ export async function exportCommitteeReportPdf({
     return false;
   };
 
-  const fechaActualStr = new Date().toLocaleDateString('es-ES', {
+  const fechaActualStr = new Date().toLocaleDateString(i18n.resolvedLanguage, {
     day: 'numeric',
     month: 'long',
     year: 'numeric'
@@ -69,13 +70,13 @@ export async function exportCommitteeReportPdf({
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('OPENMUN — ACTA OFICIAL DE SESIÓN Y EVALUACIÓN', margin, 32);
+  doc.text(i18n.t('ui.openmunOfficialSessionMinutesAndEvaluation'), margin, 32);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(203, 213, 225);
-  doc.text(`Comité: ${nombreComite.toUpperCase()} | Fecha: ${fechaActualStr}`, margin, 50);
-  doc.text(`Tópico: ${agendaSesion?.temaActual || 'Agenda General de Sesión'}`, margin, 64);
+  doc.text(i18n.t('ui.committeeDate', { v0: nombreComite.toUpperCase(), v1: fechaActualStr }), margin, 50);
+  doc.text(i18n.t('ui.topic3', { v0: agendaSesion?.temaActual || 'Agenda General de Sesión' }), margin, 64);
 
   cursorY = 95;
 
@@ -83,7 +84,7 @@ export async function exportCommitteeReportPdf({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
-  doc.text('1. QUÓRUM Y CONFIGURACIÓN PARLAMENTARIA', margin, cursorY);
+  doc.text(i18n.t('ui.1QuorumAndParliamentarySettings'), margin, cursorY);
   cursorY += 16;
 
   const totalP = paises.length;
@@ -102,17 +103,17 @@ export async function exportCommitteeReportPdf({
   doc.setFillColor(241, 245, 249);
   doc.roundedRect(margin, cursorY, contentWidth, 38, 4, 4, 'F');
 
-  doc.text(`Total Delegaciones: ${totalP}`, margin + 10, cursorY + 15);
-  doc.text(`Asistentes (Quórum): ${totalAsistentes}`, margin + 10, cursorY + 28);
+  doc.text(i18n.t('ui.totalDelegations', { v0: totalP }), margin + 10, cursorY + 15);
+  doc.text(i18n.t('ui.attendingQuorum', { v0: totalAsistentes }), margin + 10, cursorY + 28);
 
-  doc.text(`Presentes: ${presentes}`, margin + colW + 10, cursorY + 15);
-  doc.text(`Presentes y Votando: ${presYVot}`, margin + colW + 10, cursorY + 28);
+  doc.text(i18n.t('report.present', { count: presentes }), margin + colW + 10, cursorY + 15);
+  doc.text(i18n.t('report.presentAndVoting', { count: presYVot }), margin + colW + 10, cursorY + 28);
 
-  doc.text(`Ausentes: ${ausentes}`, margin + colW * 2 + 10, cursorY + 15);
-  doc.text(`Mayoría Simple: ${mayoriaSimple} votos`, margin + colW * 2 + 10, cursorY + 28);
+  doc.text(i18n.t('report.absent', { count: ausentes }), margin + colW * 2 + 10, cursorY + 15);
+  doc.text(i18n.t('ui.simpleMajorityVotes', { v0: mayoriaSimple }), margin + colW * 2 + 10, cursorY + 28);
 
-  doc.text(`Mayoría 2/3: ${mayoriaDosTercios} votos`, margin + colW * 3 + 10, cursorY + 15);
-  doc.text(`P5 / Derecho a Veto: ${paises.filter(p => p.veto).length}`, margin + colW * 3 + 10, cursorY + 28);
+  doc.text(i18n.t('ui.23MajorityVotes', { v0: mayoriaDosTercios }), margin + colW * 3 + 10, cursorY + 15);
+  doc.text(i18n.t('report.veto', { count: paises.filter(p => p.veto).length }), margin + colW * 3 + 10, cursorY + 28);
 
   cursorY += 52;
 
@@ -121,7 +122,7 @@ export async function exportCommitteeReportPdf({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
-  doc.text('2. BALANCE DE DEBATE Y PARTICIPACIÓN GLOBAL', margin, cursorY);
+  doc.text(i18n.t('ui.2DebateBalanceAndOverallParticipation'), margin, cursorY);
   cursorY += 16;
 
   const totalSegHablados = estadisticasDelegaciones.reduce((acc, d) => acc + (d.tiempoHabladoTotal || 0), 0);
@@ -136,11 +137,11 @@ export async function exportCommitteeReportPdf({
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Tiempo Total en Sala: ${formatSegundosLargo(totalSegHablados)}`, margin + 10, cursorY + 14);
-  doc.text(`Total Intervenciones: ${totalDiscursos}`, margin + 10, cursorY + 26);
+  doc.text(i18n.t('ui.totalTimeInSession', { v0: formatSegundosLargo(totalSegHablados) }), margin + 10, cursorY + 14);
+  doc.text(i18n.t('ui.totalContributions', { v0: totalDiscursos }), margin + 10, cursorY + 26);
 
-  doc.text(`Mociones Propuestas: ${totalMociones}`, margin + colW * 2, cursorY + 14);
-  doc.text(`Mociones Aprobadas: ${mocionesAprobadas} (${tasaMociones}% éxito)`, margin + colW * 2, cursorY + 26);
+  doc.text(i18n.t('report.motions', { count: totalMociones }), margin + colW * 2, cursorY + 14);
+  doc.text(i18n.t('ui.approvedMotionsSuccess', { v0: mocionesAprobadas, v1: tasaMociones }), margin + colW * 2, cursorY + 26);
 
   cursorY += 46;
 
@@ -149,11 +150,11 @@ export async function exportCommitteeReportPdf({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42);
-  doc.text('3. DESGLOSE INDIVIDUAL POR DELEGACIÓN (EVALUACIÓN)', margin, cursorY);
+  doc.text(i18n.t('ui.3IndividualDelegationBreakdownEvaluation'), margin, cursorY);
   cursorY += 16;
 
   // Cabecera de la tabla
-  const headers = ['#', 'Delegación', 'Estatus', 'Tiempo Hablado', 'Interv.', 'Preg.', 'Moc. (Apr.)'];
+  const headers = ['#', i18n.t('ui.delegation2'), i18n.t('ui.status'), i18n.t('ui.speakingTime'), i18n.t('ui.speeches3'), i18n.t('ui.questions2'), i18n.t('ui.motPassed')];
   const colWidths = [24, 150, 95, 95, 45, 45, 78];
 
   doc.setFillColor(30, 41, 59);
@@ -197,7 +198,7 @@ export async function exportCommitteeReportPdf({
     cellX += colWidths[1];
 
     // Estatus
-    doc.text(del.estatus || 'Presente', cellX + 4, cursorY + 12);
+    doc.text(i18n.t(`sessionValues.${del.estatus || 'Presente'}`, del.estatus || i18n.t('countries.present')), cellX + 4, cursorY + 12);
     cellX += colWidths[2];
 
     // Tiempo hablado
@@ -231,8 +232,8 @@ export async function exportCommitteeReportPdf({
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
-  doc.text('Presidente / Chair del Comité', margin + 65, cursorY + 44);
-  doc.text('Moderador / Co-Chair / Secretaría', pageWidth - margin - 190, cursorY + 44);
+  doc.text(i18n.t('ui.committeePresidentChair'), margin + 65, cursorY + 44);
+  doc.text(i18n.t('ui.moderatorCoChairSecretariat'), pageWidth - margin - 190, cursorY + 44);
 
   // Descargar PDF
   const nombreLimpio = sanitizarNombre(nombreComite);

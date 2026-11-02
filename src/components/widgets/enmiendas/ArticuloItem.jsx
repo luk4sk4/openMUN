@@ -1,3 +1,5 @@
+import i18n from '../../../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useRef, memo } from 'react';
 import {
   Edit3,
@@ -29,6 +31,7 @@ const ArticuloItem = memo(({
   onEliminarEnmienda,
   isLight = false
 }) => {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editPrefijo, setEditPrefijo] = useState(art.prefijo || '');
   const [editTexto, setEditTexto] = useState(art.texto || '');
@@ -52,7 +55,7 @@ const ArticuloItem = memo(({
   };
 
   const handleStartEdit = () => {
-    setEditPrefijo(art.prefijo || (art.esPreambulo ? 'Preámbulo' : `Artículo ${art.numero}.`));
+    setEditPrefijo(art.prefijo || (art.esPreambulo ? i18n.t('ui.preamble2') : t('ui.article2', { v0: art.numero })));
     setEditTexto(art.texto || '');
     setIsEditing(true);
   };
@@ -107,7 +110,7 @@ const ArticuloItem = memo(({
             borderRadius: '4px',
             border: `1px solid ${art.esPreambulo ? 'rgba(168, 85, 247, 0.35)' : 'rgba(59, 130, 246, 0.35)'}`
           }}>
-            {art.prefijo || (art.esPreambulo ? 'Preámbulo' : `Artículo ${art.numero}`)}
+            {art.prefijo || (art.esPreambulo ? t('ui.preamble2') : t('ui.article3', { v0: art.numero }))}
           </span>
 
           {art.modificado && (
@@ -120,7 +123,7 @@ const ArticuloItem = memo(({
               padding: '0.1rem 0.4rem',
               borderRadius: '3px'
             }}>
-              Modificado
+              {t('ui.modified2')}
             </span>
           )}
 
@@ -134,7 +137,7 @@ const ArticuloItem = memo(({
               padding: '0.1rem 0.4rem',
               borderRadius: '3px'
             }}>
-              Suprimido
+              {t('ui.deleted')}
             </span>
           )}
 
@@ -148,7 +151,7 @@ const ArticuloItem = memo(({
               padding: '0.1rem 0.4rem',
               borderRadius: '3px'
             }}>
-              {enmiendasPendientes} pendiente{enmiendasPendientes > 1 ? 's' : ''}
+              {enmiendasPendientes} {t('ui.pending3')}{enmiendasPendientes > 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -160,7 +163,7 @@ const ArticuloItem = memo(({
               <button
                 type="button"
                 onClick={handleStartEdit}
-                title="Editar directamente la redacción de este apartado"
+                title={t('ui.editThisSectionSWordingDirectly')}
                 style={{
                   background: 'transparent',
                   border: '1px solid var(--subborder-color)',
@@ -176,17 +179,17 @@ const ArticuloItem = memo(({
                 }}
               >
                 <Edit3 size={11} />
-                <span>Editar</span>
+                <span>{t('ui.edit')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm('¿Seguro que deseas eliminar esta cláusula de la resolución?')) {
+                  if (window.confirm(t('ui.deleteThisClauseFromTheResolution'))) {
                     onEliminarArticulo && onEliminarArticulo(art.id);
                   }
                 }}
-                title="Eliminar este apartado"
+                title={t('ui.deleteThisSection')}
                 style={{
                   background: 'transparent',
                   border: '1px solid var(--subborder-color)',
@@ -222,7 +225,7 @@ const ArticuloItem = memo(({
             }}
           >
             <Plus size={12} />
-            <span>{textoSeleccionadoLocal ? 'Enmendar Selección' : 'Proponer Enmienda'}</span>
+            <span>{textoSeleccionadoLocal ? t('ui.amendSelection') : t('ui.proposeAmendment')}</span>
           </button>
         </div>
       </div>
@@ -240,7 +243,7 @@ const ArticuloItem = memo(({
         }}>
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
             <label style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--muted-text)', minWidth: '85px' }}>
-              Prefijo / Título:
+              {t('ui.prefixTitle')}
             </label>
             <input
               type="text"
@@ -255,7 +258,7 @@ const ArticuloItem = memo(({
                 color: 'var(--text-color)',
                 fontSize: '0.74rem'
               }}
-              placeholder="Ej. Artículo 1. o Preámbulo"
+              placeholder={t('ui.eGArticle1OrPreamble')}
             />
           </div>
           <textarea
@@ -289,7 +292,7 @@ const ArticuloItem = memo(({
                 cursor: 'pointer'
               }}
             >
-              Cancelar
+              {t('toast.cancelBtn')}
             </button>
             <button
               type="button"
@@ -308,7 +311,7 @@ const ArticuloItem = memo(({
                 gap: '0.2rem'
               }}
             >
-              <Check size={12} /> Guardar Cambios
+              <Check size={12} /> {t('ui.saveChanges')}
             </button>
           </div>
         </div>
@@ -355,7 +358,7 @@ const ArticuloItem = memo(({
             onClick={() => onProponerEnmienda && onProponerEnmienda(art.id, textoSeleccionadoLocal)}
             >
               <Scissors size={11} />
-              <span>Enmendar "{textoSeleccionadoLocal.length > 25 ? textoSeleccionadoLocal.substring(0, 22) + '...' : textoSeleccionadoLocal}"</span>
+              <span>{t('ui.amend2')}{textoSeleccionadoLocal.length > 25 ? textoSeleccionadoLocal.substring(0, 22) + '...' : textoSeleccionadoLocal}"</span>
             </div>
           )}
         </div>
@@ -380,7 +383,7 @@ const ArticuloItem = memo(({
             }}
           >
             {expandidoEnmiendas ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            <span>Mociones de Enmienda ({enmiendas.length})</span>
+            <span>{t('ui.amendmentMotions')}{enmiendas.length})</span>
           </div>
 
           {expandidoEnmiendas && (

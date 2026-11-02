@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import { io } from 'socket.io-client';
 import { compressData, decompressData } from '../utils/compression.js';
 import { createStateDelta } from '../utils/deltaSync.js';
@@ -320,7 +321,7 @@ class NetworkService {
     return new Promise((resolve, reject) => {
       const registrationTimeout = setTimeout(() => {
         this.destroy();
-        reject(new Error('La Mesa no recibió confirmación. Actualiza también el servidor para usar la aprobación de notas.'));
+        reject(new Error(i18n.t('ui.theChairReceivedNoConfirmationUpdateTheServerAsWell')));
       }, 15000);
       try {
         this.socket = io(SOCKET_SERVER_URL, {
@@ -338,7 +339,7 @@ class NetworkService {
           this.socket.emit('unirse-comite', { sala: this.roomId, isHost: true }, (result) => {
             clearTimeout(registrationTimeout);
             if (!result?.ok) {
-              const error = new Error(result?.error || 'No se pudo registrar la Mesa');
+              const error = new Error(result?.error || i18n.t('ui.couldNotRegisterTheChair'));
               this.emit('error', { error: error.message });
               this.destroy();
               reject(error);
@@ -477,7 +478,7 @@ class NetworkService {
         });
         return true;
       }
-      throw new Error('BroadcastChannel no soportado en este navegador');
+      throw new Error(i18n.t('ui.broadcastchannelIsNotSupportedByThisBrowser'));
     }
 
     // Cliente Socket.io remoto
@@ -487,7 +488,7 @@ class NetworkService {
       const connectTimeout = setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
-          reject(new Error(`Tiempo de espera agotado al conectar con el comité "${cleanRoomId}". Verifica tu conexión o el código de sala.`));
+          reject(new Error(i18n.t('ui.connectionToCommitteeTimedOutCheckYourConnectionOr', { v0: cleanRoomId })));
         }
       }, 15000);
 
@@ -560,7 +561,7 @@ class NetworkService {
                 isResolved = true;
                 clearTimeout(connectTimeout);
                 this.destroy();
-                reject(new Error(data.payload?.message || 'Acceso denegado a la sala'));
+                reject(new Error(data.payload?.message || i18n.t('ui.roomAccessDenied')));
               }
             }
             return;
@@ -720,7 +721,7 @@ class NetworkService {
               // En vez de rechazar al delegado, se le permite entrar a la sala para seleccionar otra delegación
               authorized = true;
               assignedCountry = null;
-              conflictNotice = `La delegación de ${cleanCountry} ya está ocupada por otro delegado en esta sala. Por favor selecciona otro país.`;
+              conflictNotice = i18n.t('ui.theDelegationOfIsAlreadyOccupiedByAnotherDelegate', { v0: cleanCountry });
             }
           } else {
             authorized = true;
@@ -867,7 +868,7 @@ class NetworkService {
         this.emitSocketMessage({
           type: MSG_TYPES.SELECT_COUNTRY_RESULT,
           targetSocketId: senderSocketId,
-          payload: { success: false, message: 'Por favor selecciona un país válido' }
+          payload: { success: false, message: i18n.t('ui.pleaseSelectAValidCountry') }
         });
         return;
       }
@@ -888,7 +889,7 @@ class NetworkService {
           this.emitSocketMessage({
             type: MSG_TYPES.SELECT_COUNTRY_RESULT,
             targetSocketId: senderSocketId,
-            payload: { success: false, message: `La delegación de ${selectedCountry} ya ha sido seleccionada por otro participante.` }
+            payload: { success: false, message: i18n.t('ui.theDelegationOfHasAlreadyBeenSelectedByAnother', { v0: selectedCountry }) }
           });
           return;
         }
@@ -1020,7 +1021,7 @@ class NetworkService {
       this.emitSocketMessage({
         type: MSG_TYPES.SPEAKING_PROCESSED,
         targetSocketId: senderSocketId,
-        payload: { success: true, mode: 'amendment', message: '¡Enmienda enviada a la Mesa para su revisión!' }
+        payload: { success: true, mode: 'amendment', message: i18n.t('ui.amendmentSentToTheChairForReview') }
       });
       return;
     }
@@ -1036,7 +1037,7 @@ class NetworkService {
           this.emitSocketMessage({
             type: MSG_TYPES.SPEAKING_PROCESSED,
             targetSocketId: senderSocketId,
-            payload: { success: false, mode: 'disabled', message: 'Las solicitudes a la Lista de Oradores están cerradas por la Mesa.' }
+            payload: { success: false, mode: 'disabled', message: i18n.t('ui.theChairHasClosedSpeakersListRequests') }
           });
           return;
         } else if (mode === 'direct') {
@@ -1044,7 +1045,7 @@ class NetworkService {
           this.emitSocketMessage({
             type: MSG_TYPES.SPEAKING_PROCESSED,
             targetSocketId: senderSocketId,
-            payload: { success: true, mode: 'direct', message: '¡Te has añadido a la Lista de Oradores!' }
+            payload: { success: true, mode: 'direct', message: i18n.t('ui.youHaveJoinedTheSpeakersList') }
           });
           return;
         }
@@ -1054,7 +1055,7 @@ class NetworkService {
           this.emitSocketMessage({
             type: MSG_TYPES.SPEAKING_PROCESSED,
             targetSocketId: senderSocketId,
-            payload: { success: false, mode: 'disabled', message: 'Las solicitudes para Caucus Moderado están cerradas por la Mesa.' }
+            payload: { success: false, mode: 'disabled', message: i18n.t('ui.theChairHasClosedModeratedCaucusRequests') }
           });
           return;
         } else if (mode === 'direct') {
@@ -1062,7 +1063,7 @@ class NetworkService {
           this.emitSocketMessage({
             type: MSG_TYPES.SPEAKING_PROCESSED,
             targetSocketId: senderSocketId,
-            payload: { success: true, mode: 'direct', message: '¡Te has añadido a la lista del Caucus!' }
+            payload: { success: true, mode: 'direct', message: i18n.t('ui.youHaveJoinedTheCaucusList') }
           });
           return;
         }
@@ -1071,7 +1072,7 @@ class NetworkService {
           this.emitSocketMessage({
             type: MSG_TYPES.SPEAKING_PROCESSED,
             targetSocketId: senderSocketId,
-            payload: { success: false, mode: 'disabled', message: 'La presentación de mociones está deshabilitada por la Mesa.' }
+            payload: { success: false, mode: 'disabled', message: i18n.t('ui.theChairHasDisabledMotionSubmissions') }
           });
           return;
         }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { Suspense } from 'react';
 import { GripVertical, X } from 'lucide-react';
 import WidgetRegistry from '../widgets/WidgetRegistry';
@@ -22,6 +23,7 @@ const WidgetCard = ({
   onStartResize,
   onRemove
 }) => {
+  const { t } = useTranslation();
   const { i: id, col, row, colSpan, rowSpan } = widget;
   const x = gap + col * (cellW + gap);
   const y = gap + row * (cellH + gap);
@@ -77,7 +79,7 @@ const WidgetCard = ({
           borderTopLeftRadius: 'var(--border-radius)',
           borderTopRightRadius: 'var(--border-radius)'
         }}
-        title={`Arrastrar widget: ${meta.title}`}
+        title={t('ui.dragWidget', { v0: meta.title })}
       />}
 
       {/* Botones Flotantes Compactos de Control (Visibles al pasar el ratón) */}
@@ -115,7 +117,7 @@ const WidgetCard = ({
             color: 'var(--text-color)',
             opacity: 0.8
           }}
-          title={`Arrastrar widget: ${meta.title}`}
+          title={t('ui.dragWidget', { v0: meta.title })}
         >
           <GripVertical size={14} />
         </div>
@@ -153,7 +155,7 @@ const WidgetCard = ({
             borderRadius: '4px',
             transition: 'opacity 0.15s ease'
           }}
-          title={`Quitar widget (${meta.title})`}
+          title={t('ui.removeWidget', { v0: meta.title })}
         >
           <X size={14} />
         </button>
@@ -199,7 +201,7 @@ const WidgetCard = ({
           borderBottomRightRadius: 'var(--border-radius)',
           zIndex: 10
         }}
-        title="Arrastrar para cambiar tamaño"
+        title={t('ui.dragToResize')}
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M10 2L2 10M10 6L6 10M10 10L10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

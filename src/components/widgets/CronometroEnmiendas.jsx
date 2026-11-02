@@ -155,13 +155,13 @@ const CronometroEnmiendas = () => {
             <Clock size={14} />
           </div>
           <span style={{ fontSize: '0.78rem', fontWeight: '800', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Cronómetro de Enmiendas
+            {t('ui.amendmentTimer')}
           </span>
         </div>
 
         <button
           onClick={() => setSonidoHabilitado(s => !s)}
-          title={sonidoHabilitado ? 'Silenciar avisos' : 'Activar sonido de aviso'}
+          title={sonidoHabilitado ? t('ui.muteAlerts2') : t('ui.enableAlertSounds')}
           style={{
             background: 'transparent',
             border: 'none',
@@ -221,7 +221,7 @@ const CronometroEnmiendas = () => {
             >
               {paisesAsistentes.map(p => (
                 <option key={p.id} value={p.nombre} style={{ backgroundColor: 'var(--panel-bg)', color: 'var(--text-color)' }}>
-                  {p.nombre} {p.estatus === 'Presente y Votando' ? '(PyV)' : ''}
+                  {p.nombre} {p.estatus === 'Presente y Votando' ? t('ui.pV2') : ''}
                 </option>
               ))}
             </select>
@@ -230,7 +230,7 @@ const CronometroEnmiendas = () => {
               type="text"
               value={paisSeleccionado}
               onChange={e => setPaisSeleccionado(e.target.value)}
-              placeholder="Nombre del país"
+              placeholder={t('ui.countryName')}
               style={{
                 flex: 1,
                 backgroundColor: 'transparent',
@@ -323,7 +323,7 @@ const CronometroEnmiendas = () => {
         }}>
           <button
             onClick={() => handleAjustarTiempo(-10)}
-            title="Restar 10 segundos"
+            title={t('ui.subtract10Seconds')}
             style={{
               backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
               border: '1px solid var(--border-color)',
@@ -357,12 +357,12 @@ const CronometroEnmiendas = () => {
             }}
           >
             {corriendo ? <Pause size={14} /> : <Play size={14} />}
-            <span>{corriendo ? 'Pausar' : 'Iniciar'}</span>
+            <span>{corriendo ? t('agenda.pauseTimer') : t('timers.start')}</span>
           </button>
 
           <button
             onClick={() => handleAjustarTiempo(10)}
-            title="Sumar 10 segundos"
+            title={t('ui.add10Seconds')}
             style={{
               backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
               border: '1px solid var(--border-color)',
@@ -379,7 +379,7 @@ const CronometroEnmiendas = () => {
 
           <button
             onClick={handleReset}
-            title="Reiniciar a tiempo inicial"
+            title={t('ui.resetToInitialTime')}
             style={{
               backgroundColor: 'transparent',
               border: '1px solid var(--border-color)',
@@ -417,7 +417,7 @@ const CronometroEnmiendas = () => {
           }}
         >
           <Check size={14} />
-          <span>{intervencionGuardadaFeedback ? '¡Guardado en Histórico!' : 'Concluir y Guardar en Histórico'}</span>
+          <span>{intervencionGuardadaFeedback ? t('ui.savedToHistory') : t('ui.concludeAndSaveToHistory')}</span>
         </button>
       </div>
     </div>

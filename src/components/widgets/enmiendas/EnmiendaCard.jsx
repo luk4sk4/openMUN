@@ -1,3 +1,5 @@
+import i18n from '../../../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import React, { useState, memo } from 'react';
 import {
   FilePlus,
@@ -27,6 +29,7 @@ const EnmiendaCard = memo(({
   onResolver,
   onEliminar
 }) => {
+  const { t } = useTranslation();
   const [mostrarPreviewContexto, setMostrarPreviewContexto] = useState(false);
 
   const paisObj = (paises || []).find(
@@ -42,19 +45,19 @@ const EnmiendaCard = memo(({
       bg: 'rgba(34, 197, 94, 0.15)',
       border: 'rgba(34, 197, 94, 0.35)',
       color: '#22c55e',
-      label: 'Aceptada'
+      label: t('ui.accepted3')
     },
     rechazada: {
       bg: 'rgba(239, 68, 68, 0.15)',
       border: 'rgba(239, 68, 68, 0.35)',
       color: '#ef4444',
-      label: 'Rechazada'
+      label: t('ui.rejected3')
     },
     pendiente: {
       bg: 'rgba(234, 179, 8, 0.15)',
       border: 'rgba(234, 179, 8, 0.35)',
       color: '#eab308',
-      label: 'Pendiente'
+      label: t('agenda.pending')
     }
   }[enm.estado || 'pendiente'] || {
     bg: 'rgba(148, 163, 184, 0.15)',
@@ -73,7 +76,7 @@ const EnmiendaCard = memo(({
       if (enm.textoOriginal && articuloTexto.includes(enm.textoOriginal.trim())) {
         return articuloTexto.replace(enm.textoOriginal.trim(), '').replace(/\s+/g, ' ').trim();
       }
-      return '[Cláusula suprimida completamente]';
+      return i18n.t('ui.clauseDeletedEntirely');
     }
     if (esModificacion) {
       if (enm.textoOriginal && articuloTexto.includes(enm.textoOriginal.trim())) {
@@ -132,7 +135,7 @@ const EnmiendaCard = memo(({
             {esAdicion && <FilePlus size={12} />}
             {esSupresion && <FileMinus size={12} />}
             {esModificacion && <Edit3 size={12} />}
-            <span>{esAdicion ? 'Adición' : esSupresion ? 'Supresión' : 'Modificación'}</span>
+            <span>{esAdicion ? t('ui.addition2') : esSupresion ? t('ui.deletion2') : t('ui.modification2')}</span>
           </span>
 
           {/* Proponente con Bandera */}
@@ -147,7 +150,7 @@ const EnmiendaCard = memo(({
           }}>
             <CountryFlag country={paisObj} bandera={paisObj?.bandera} nombre={enm.paisProponente} size="xs" />
             <span style={{ fontSize: '0.74rem', fontWeight: '800', color: 'var(--text-color)' }}>
-              {enm.paisProponente || 'Delegación'}
+              {enm.paisProponente || t('history.delegation')}
             </span>
           </div>
 
@@ -205,7 +208,7 @@ const EnmiendaCard = memo(({
             wordBreak: 'break-word'
           }}>
             <span style={{ fontWeight: '800', marginRight: '0.3rem', textDecoration: 'none' }}>-</span>
-            {enm.textoOriginal || 'Supresión total del apartado'}
+            {enm.textoOriginal || t('ui.deleteEntireSection')}
           </div>
         )}
 
@@ -238,7 +241,7 @@ const EnmiendaCard = memo(({
               lineHeight: 1.4,
               wordBreak: 'break-word'
             }}>
-              <span style={{ fontWeight: '800', marginRight: '0.3rem' }}>➔ Propuesto:</span>
+              <span style={{ fontWeight: '800', marginRight: '0.3rem' }}>{t('ui.proposed2')}</span>
               {enm.textoPropuesto}
             </div>
           </div>
@@ -275,7 +278,7 @@ const EnmiendaCard = memo(({
           gap: '0.3rem'
         }}>
           <div style={{ fontWeight: '800', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <Eye size={12} /> Previsualización del artículo si se aprueba:
+            <Eye size={12} /> {t('ui.articlePreviewIfApproved')}
           </div>
           <div style={{
             backgroundColor: 'rgba(59, 130, 246, 0.08)',
@@ -304,7 +307,7 @@ const EnmiendaCard = memo(({
           {/* Botón de Votación Oficial */}
           <button
             onClick={() => onVotar && onVotar(enm)}
-            title="Llevar esta enmienda al widget de Votación de la Sesión"
+            title={t('ui.sendThisAmendmentToTheSessionVotingWidget')}
             style={{
               backgroundColor: 'rgba(59, 130, 246, 0.15)',
               border: '1px solid rgba(59, 130, 246, 0.3)',
@@ -321,14 +324,14 @@ const EnmiendaCard = memo(({
             }}
           >
             <Vote size={12} />
-            <span>Votar Moción</span>
+            <span>{t('motions.voteMotion')}</span>
           </button>
 
           {/* Toggle Previsualizar */}
           {articuloTexto && (
             <button
               onClick={() => setMostrarPreviewContexto(p => !p)}
-              title={mostrarPreviewContexto ? 'Ocultar previsualización' : 'Previsualizar en el artículo'}
+              title={mostrarPreviewContexto ? t('ui.hidePreview') : t('ui.previewInArticle')}
               style={{
                 backgroundColor: mostrarPreviewContexto ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
                 border: '1px solid var(--subborder-color)',
@@ -343,7 +346,7 @@ const EnmiendaCard = memo(({
               }}
             >
               {mostrarPreviewContexto ? <EyeOff size={11} /> : <Eye size={11} />}
-              <span>{mostrarPreviewContexto ? 'Ocultar' : 'Prever'}</span>
+              <span>{mostrarPreviewContexto ? t('ui.hide') : t('ui.preview')}</span>
             </button>
           )}
         </div>
@@ -354,7 +357,7 @@ const EnmiendaCard = memo(({
             <>
               <button
                 onClick={() => onResolver && onResolver(enm.id, 'aceptada')}
-                title="Aceptar enmienda y actualizar automáticamente el texto de la resolución"
+                title={t('ui.acceptAmendmentAndAutomaticallyUpdateTheResolutionText')}
                 style={{
                   backgroundColor: '#16a34a',
                   border: 'none',
@@ -371,12 +374,12 @@ const EnmiendaCard = memo(({
                 }}
               >
                 <Check size={12} />
-                <span>Aceptar</span>
+                <span>{t('ui.accept')}</span>
               </button>
 
               <button
                 onClick={() => onResolver && onResolver(enm.id, 'rechazada')}
-                title="Rechazar enmienda"
+                title={t('ui.rejectAmendment')}
                 style={{
                   backgroundColor: 'rgba(239, 68, 68, 0.15)',
                   border: '1px solid rgba(239, 68, 68, 0.4)',
@@ -392,13 +395,13 @@ const EnmiendaCard = memo(({
                 }}
               >
                 <X size={12} />
-                <span>Rechazar</span>
+                <span>{t('ui.reject')}</span>
               </button>
             </>
           ) : (
             <button
               onClick={() => onResolver && onResolver(enm.id, 'pendiente')}
-              title="Revertir decisión y volver a poner en pendiente"
+              title={t('ui.revertDecisionAndMarkAsPendingAgain')}
               style={{
                 backgroundColor: 'transparent',
                 border: '1px solid var(--subborder-color)',
@@ -413,17 +416,17 @@ const EnmiendaCard = memo(({
               }}
             >
               <RotateCcw size={11} />
-              <span>Deshacer</span>
+              <span>{t('ui.undo2')}</span>
             </button>
           )}
 
           <button
             onClick={() => {
-              if (window.confirm('¿Eliminar esta enmienda de la sesión?')) {
+              if (window.confirm(t('ui.deleteThisAmendmentFromTheSession'))) {
                 onEliminar && onEliminar(enm.id);
               }
             }}
-            title="Eliminar enmienda"
+            title={t('ui.deleteAmendment')}
             style={{
               backgroundColor: 'transparent',
               border: 'none',

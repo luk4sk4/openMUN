@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 /**
  * Servicio de Cliente HTTP para la API de Conferencias y Sincronización OpenMUN
  * Conectado al backend Node.js + Express + SQLite + Socket.io
@@ -32,7 +33,7 @@ async function safeFetch(url, options) {
 async function handleResponse(response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const errorMsg = data.error || `Error ${response.status}: ${response.statusText}`;
+    const errorMsg = data.error || i18n.t('ui.error2', { v0: response.status, v1: response.statusText });
     const err = new Error(errorMsg);
     err.status = response.status;
     err.data = data;
@@ -250,7 +251,7 @@ export const conferenceService = {
   },
 
   async actualizarComite(comiteId, { nombre, pin_mesa, tipo_sesion, topico_actual, datos_json } = {}) {
-    if (!comiteId) throw new Error('ID de comité requerido');
+    if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
     const cleanComiteId = String(comiteId).trim();
     const payload = {};
     if (nombre !== undefined) payload.nombre = nombre !== null ? String(nombre).trim() : null;
@@ -451,7 +452,7 @@ export const conferenceService = {
     const cleanId = String(conferenciaId).trim().toLowerCase();
     const cleanPin = String(pin || '').trim();
     if (!cleanPin) {
-      const err = new Error('PIN de Secretaría requerido.');
+      const err = new Error(i18n.t('ui.secretariatPinRequired'));
       err.status = 400;
       throw err;
     }
@@ -461,7 +462,7 @@ export const conferenceService = {
     // Si la sesión activa tiene un pin_admin guardado localmente, compararlo primero
     if (active && active.id === cleanId && active.pin_admin) {
       if (String(active.pin_admin).trim() !== cleanPin) {
-        const err = new Error('PIN de Secretaría incorrecto.');
+        const err = new Error(i18n.t('ui.incorrectSecretariatPin'));
         err.status = 401;
         throw err;
       }
@@ -491,18 +492,18 @@ export const conferenceService = {
   },
 
   async verificarPinMesa(comiteId, pin, pinEsperado = null) {
-    if (!comiteId) throw new Error('ID de comité requerido');
+    if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
     const cleanComiteId = String(comiteId).trim();
     const cleanPin = String(pin || '').trim();
     if (!cleanPin) {
-      const err = new Error('PIN de mesa directiva requerido.');
+      const err = new Error(i18n.t('ui.chairPinRequired'));
       err.status = 400;
       throw err;
     }
 
     // 1. Si se conoce el pin_mesa esperado del comité, verificar coincidencia estricta
     if (pinEsperado && String(pinEsperado).trim() !== cleanPin) {
-      const err = new Error('PIN de mesa directiva incorrecto.');
+      const err = new Error(i18n.t('ui.incorrectChairPin'));
       err.status = 401;
       throw err;
     }
@@ -538,7 +539,7 @@ export const conferenceService = {
   },
 
   async obtenerComite(comiteId) {
-    if (!comiteId) throw new Error('ID de comité requerido');
+    if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
     const cleanId = String(comiteId).trim();
     const res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanId)}`);
     if (res.ok) {
@@ -563,7 +564,7 @@ export const conferenceService = {
   },
 
   async eliminarComite(comiteId, conferenciaId = null) {
-    if (!comiteId) throw new Error('ID de comité requerido');
+    if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
     const cleanComiteId = String(comiteId).trim();
 
     let res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}`, {

@@ -199,17 +199,19 @@ export const DebateAgendaModal = ({
           <div className="debate-guide-banner">
             <div className="debate-guide-step">
               <span className="debate-guide-number">1</span>
-              <span>Añade delegaciones A favor y En contra</span>
+              <span>{t('agenda.guideStep1', 'Añade delegaciones A favor y En contra')}</span>
             </div>
             <ArrowRight size={13} style={{ opacity: 0.5 }} />
             <div className="debate-guide-step">
               <span className="debate-guide-number">2</span>
-              <span>Haz clic en <strong>"Dar la palabra"</strong> para iniciar el cronómetro</span>
+              <span>
+                {t('agenda.guideStep2', 'Haz clic en "Dar la palabra" para iniciar el cronómetro')}
+              </span>
             </div>
             <ArrowRight size={13} style={{ opacity: 0.5 }} />
             <div className="debate-guide-step">
               <span className="debate-guide-number">3</span>
-              <span>Concluye las intervenciones y pasa a votación</span>
+              <span>{t('agenda.guideStep3', 'Concluye las intervenciones y pasa a votación')}</span>
             </div>
           </div>
         )}
@@ -260,7 +262,7 @@ export const DebateAgendaModal = ({
                         type="button"
                         className="debate-btn"
                         onClick={() => ajustarTiempo(-15)}
-                        title="-15 segundos"
+                        title={t('agenda.adjustTimeLess', '-15 segundos')}
                         disabled={restante <= 0}
                       >
                         -15s
@@ -290,7 +292,7 @@ export const DebateAgendaModal = ({
                         type="button"
                         className="debate-btn"
                         onClick={() => ajustarTiempo(15)}
-                        title="+15 segundos"
+                        title={t('agenda.adjustTimeMore', '+15 segundos')}
                       >
                         +15s
                       </button>
@@ -361,9 +363,9 @@ export const DebateAgendaModal = ({
                         }
                       }}
                       disabled={!presentes.length}
-                      aria-label={t('agenda.addSpeaker', { side: t('agenda.favor') })}
+                      aria-label={t('agenda.addSpeakerSide', { side: t('agenda.favor', 'A favor'), defaultValue: 'Añadir orador a favor' })}
                     >
-                      <option value="">+ {t('agenda.addSpeaker', { side: t('agenda.favor') })}</option>
+                      <option value="">+ {t('agenda.addSpeaker', 'Añadir orador')}</option>
                       {presentes
                         .filter(p => !turnosFavor.some(t => t.paisId === p.id && !t.realizado))
                         .map(p => (
@@ -378,7 +380,7 @@ export const DebateAgendaModal = ({
                   <div className="debate-speakers-list">
                     {!turnosFavor.length ? (
                       <p className="debate-empty-col-message">
-                        Ninguna delegación añadida a favor
+                        {t('agenda.emptyFavor', 'Ninguna delegación añadida a favor')}
                       </p>
                     ) : (
                       turnosFavor.map(turno => {
@@ -402,14 +404,14 @@ export const DebateAgendaModal = ({
                                 </span>
                               ) : esActivo ? (
                                 <span style={{ fontSize: '0.74rem', color: 'var(--accent-color)', fontWeight: '700' }}>
-                                  Hablando...
+                                  {t('ui.speaking')}
                                 </span>
                               ) : (
                                 <button
                                   type="button"
                                   className="debate-btn-floor"
                                   onClick={() => concederPalabra(turno)}
-                                  title="Conceder la palabra e iniciar cronómetro"
+                                  title={t('ui.giveTheFloorAndStartTheTimer')}
                                 >
                                   <Play size={11} /> {t('agenda.giveFloor', 'Dar la palabra')}
                                 </button>
@@ -456,9 +458,9 @@ export const DebateAgendaModal = ({
                         }
                       }}
                       disabled={!presentes.length}
-                      aria-label={t('agenda.addSpeaker', { side: t('agenda.contra') })}
+                      aria-label={t('agenda.addSpeakerSide', { side: t('agenda.contra', 'En contra'), defaultValue: 'Añadir orador en contra' })}
                     >
-                      <option value="">+ {t('agenda.addSpeaker', { side: t('agenda.contra') })}</option>
+                      <option value="">+ {t('agenda.addSpeaker', 'Añadir orador')}</option>
                       {presentes
                         .filter(p => !turnosContra.some(t => t.paisId === p.id && !t.realizado))
                         .map(p => (
@@ -473,7 +475,7 @@ export const DebateAgendaModal = ({
                   <div className="debate-speakers-list">
                     {!turnosContra.length ? (
                       <p className="debate-empty-col-message">
-                        Ninguna delegación añadida en contra
+                        {t('agenda.emptyContra', 'Ninguna delegación añadida en contra')}
                       </p>
                     ) : (
                       turnosContra.map(turno => {
@@ -497,14 +499,14 @@ export const DebateAgendaModal = ({
                                 </span>
                               ) : esActivo ? (
                                 <span style={{ fontSize: '0.74rem', color: 'var(--accent-color)', fontWeight: '700' }}>
-                                  Hablando...
+                                  {t('ui.speaking')}
                                 </span>
                               ) : (
                                 <button
                                   type="button"
                                   className="debate-btn-floor"
                                   onClick={() => concederPalabra(turno)}
-                                  title="Conceder la palabra e iniciar cronómetro"
+                                  title={t('ui.giveTheFloorAndStartTheTimer')}
                                 >
                                   <Play size={11} /> {t('agenda.giveFloor', 'Dar la palabra')}
                                 </button>
@@ -540,8 +542,8 @@ export const DebateAgendaModal = ({
                     {t('agenda.handVote', 'Votación a mano alzada')}
                   </strong>
                   <span>
-                    Se requiere mayoría simple de los presentes para incluir este punto en la agenda:{' '}
-                    <strong>{mayoriaRequerida} votos a favor</strong> de {totalPresentes} delegaciones. No se permiten abstenciones; el empate rechaza el punto.
+                    {t('ui.aSimpleMajorityOfThosePresentIsRequiredToAdd')}{' '}
+                    <strong>{mayoriaRequerida} {t('ui.votesInFavor')}</strong> {t('ui.of')} {totalPresentes} {t('ui.delegationsAbstentionsAreNotAllowedATieRejectsTheItem')}
                   </span>
                 </div>
               </div>
@@ -557,7 +559,7 @@ export const DebateAgendaModal = ({
                       className="debate-stepper-btn"
                       disabled={debate.favor <= 0}
                       onClick={() => aplicarVotos('favor', debate.favor - 1)}
-                      aria-label="Restar voto a favor"
+                      aria-label={t('ui.subtractAVoteInFavor')}
                     >
                       <Minus size={20} />
                     </button>
@@ -569,7 +571,7 @@ export const DebateAgendaModal = ({
                       className="debate-stepper-btn"
                       disabled={debate.favor >= totalPresentes || votosRegistrados >= totalPresentes}
                       onClick={() => aplicarVotos('favor', debate.favor + 1)}
-                      aria-label="Sumar voto a favor"
+                      aria-label={t('ui.addAVoteInFavor')}
                     >
                       <Plus size={20} />
                     </button>
@@ -592,7 +594,7 @@ export const DebateAgendaModal = ({
                       className="debate-stepper-btn"
                       disabled={debate.contra <= 0}
                       onClick={() => aplicarVotos('contra', debate.contra - 1)}
-                      aria-label="Restar voto en contra"
+                      aria-label={t('ui.subtractAVoteAgainst')}
                     >
                       <Minus size={20} />
                     </button>
@@ -604,7 +606,7 @@ export const DebateAgendaModal = ({
                       className="debate-stepper-btn"
                       disabled={debate.contra >= totalPresentes || votosRegistrados >= totalPresentes}
                       onClick={() => aplicarVotos('contra', debate.contra + 1)}
-                      aria-label="Sumar voto en contra"
+                      aria-label={t('ui.addAVoteAgainst')}
                     >
                       <Plus size={20} />
                     </button>
@@ -624,12 +626,12 @@ export const DebateAgendaModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
                   <Users size={18} style={{ color: 'var(--muted-text)' }} />
                   <span>
-                    Manos registradas:{' '}
+                    {t('agenda.recordedHands', 'Manos registradas:')}{' '}
                     <strong>{votosRegistrados} / {totalPresentes}</strong>
                   </span>
                   {votosRegistrados < totalPresentes && (
                     <span style={{ color: 'var(--warning-color)', fontSize: '0.78rem' }}>
-                      (Faltan {totalPresentes - votosRegistrados} manos)
+                      {t('agenda.missingHands', { count: totalPresentes - votosRegistrados, defaultValue: `(Faltan ${totalPresentes - votosRegistrados} manos)` })}
                     </span>
                   )}
                 </div>
@@ -638,16 +640,16 @@ export const DebateAgendaModal = ({
                   {votosRegistrados === totalPresentes ? (
                     debate.favor >= mayoriaRequerida ? (
                       <span className="debate-status-pill approved">
-                        <CheckCircle size={14} /> Proyección: APROBADO
+                        <CheckCircle size={14} /> {t('agenda.projectionApproved', 'Proyección: APROBADO')}
                       </span>
                     ) : (
                       <span className="debate-status-pill rejected">
-                        <X size={14} /> Proyección: RECHAZADO
+                        <X size={14} /> {t('agenda.projectionRejected', 'Proyección: RECHAZADO')}
                       </span>
                     )
                   ) : (
                     <span className="debate-status-pill pending">
-                      Registrando votos...
+                      {t('agenda.recordingVotes', 'Registrando votos...')}
                     </span>
                   )}
                 </div>
@@ -662,19 +664,30 @@ export const DebateAgendaModal = ({
                 {debate.resultado === 'aprobado' ? <CheckCircle size={36} /> : <X size={36} />}
               </div>
               <h3 style={{ margin: 0, fontSize: '1.4rem' }}>
-                {debate.resultado === 'aprobado' ? '¡Punto de Agenda Aprobado!' : 'Punto de Agenda Rechazado'}
+                {debate.resultado === 'aprobado'
+                  ? t('agenda.topicApproved', '¡Punto de Agenda Aprobado!')
+                  : t('agenda.topicRejected', 'Punto de Agenda Rechazado')}
               </h3>
               <p style={{ color: 'var(--muted-text)', margin: 0, maxWidth: '460px', lineHeight: 1.5 }}>
                 {debate.resultado === 'aprobado'
-                  ? `El tema se ha fijado en discusión activa con ${debate.favor} votos a favor frente a ${debate.contra} en contra.`
-                  : `El tema no ha alcanzado la mayoría necesaria (${debate.favor} a favor, ${debate.contra} en contra de ${debate.presentes} presentes).`}
+                  ? t('agenda.topicApprovedDesc', {
+                      favor: debate.favor,
+                      contra: debate.contra,
+                      defaultValue: `El tema se ha fijado en discusión activa con ${debate.favor} votos a favor frente a ${debate.contra} en contra.`
+                    })
+                  : t('agenda.topicRejectedDesc', {
+                      favor: debate.favor,
+                      contra: debate.contra,
+                      presentes: debate.presentes,
+                      defaultValue: `El tema no ha alcanzado la mayoría necesaria (${debate.favor} a favor, ${debate.contra} en contra de ${debate.presentes} presentes).`
+                    })}
               </p>
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="button" className="debate-btn debate-btn-primary" onClick={onClose}>
                   {t('common.done', 'Finalizar y volver a la agenda')}
                 </button>
                 <button type="button" className="debate-btn" onClick={onReiniciarDebate}>
-                  <RotateCw size={14} /> Reabrir debate
+                  <RotateCw size={14} /> {t('agenda.reopenDebate', 'Reabrir debate')}
                 </button>
               </div>
             </div>
@@ -697,7 +710,7 @@ export const DebateAgendaModal = ({
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button type="button" className="debate-btn" onClick={onClose}>
-                  {t('common.close', 'Minimizar')}
+                  {t('common.close', 'Cerrar')}
                 </button>
                 <button
                   type="button"
@@ -722,7 +735,7 @@ export const DebateAgendaModal = ({
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button type="button" className="debate-btn" onClick={onClose}>
-                  {t('common.close', 'Minimizar')}
+                  {t('common.close', 'Cerrar')}
                 </button>
                 <button
                   type="button"

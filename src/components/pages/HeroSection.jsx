@@ -1,4 +1,5 @@
 import React from 'react';
+import { Play, Radio } from 'lucide-react';
 
 const HeroSection = ({ isLight, t, onNavigateToComienzo, onNavigateToJoin, headerBg, surfaceBg, borderColor, subBorderColor, textPrimary, textMuted, accentColor }) => (
   <section

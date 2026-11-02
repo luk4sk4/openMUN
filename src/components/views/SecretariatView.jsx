@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import i18n from '../../languages/index.js';
+import React, { useState, useEffect } from 'react';
 import { 
   Radio, 
   Layers, 
@@ -6,11 +7,9 @@ import {
   Filter, 
   Download, 
   Trash2, 
-  LogOut, 
   Users, 
   Clock, 
   MessageSquare, 
-  Eye, 
   EyeOff,
   RefreshCw,
   Send,
@@ -39,13 +38,10 @@ import {
   Globe,
   Dices,
 
-  Sun,
-  Moon,
   SkipForward,
   Megaphone,
   AlertTriangle,
   HelpCircle,
-  ArrowLeft,
   ChevronDown,
   LayoutDashboard
 } from 'lucide-react';
@@ -76,6 +72,7 @@ import PizarraMociones from '../widgets/PizarraMociones';
 import SelectorAleatorio from '../widgets/SelectorAleatorio';
 import MensajeriaComite from '../messaging/MensajeriaComite';
 import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
+import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 
 const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
@@ -129,22 +126,6 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
   // Estados y gestión de retorno / volver atrás
   const [volverMenuOpen, setVolverMenuOpen] = useState(false);
-  const volverMenuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (volverMenuRef.current && !volverMenuRef.current.contains(e.target)) {
-        setVolverMenuOpen(false);
-      }
-    };
-    if (volverMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [volverMenuOpen]);
-
   const confIdActiva = typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null;
   const isLocalTab = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('local') === 'true' || Boolean(window.opener));
   const hasMultipleDestinations = Boolean(confIdActiva) || isLocalTab;
@@ -330,7 +311,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   }, [confActiva?.id, currentComiteId]);
 
   const state = remoteSessionState || {};
-  const nombreComite = sessionNombreComite || state.comision || state.nombreComite || 'Comité en Vivo';
+  const nombreComite = sessionNombreComite || state.comision || state.nombreComite || i18n.t('ui.liveCommittee');
   const temaActual = sessionAgendaSesion?.temaActual || sessionCaucusActivo?.tema || state.agendaSesion?.temaActual || state.caucusActivo?.tema || 'En Discusión';
   const oradoresGSL = sessionOradoresCola ?? state.oradoresCola ?? [];
   const oradoresCaucus = sessionOradoresCaucus ?? state.oradoresCaucus ?? [];
@@ -354,8 +335,53 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     URL.revokeObjectURL(url);
   };
 
+  const backOptions = [
+    ...(confIdActiva ? [{
+      label: t('views.secretariat.backToConference', 'Volver a Conferencia'),
+      icon: Building2,
+      color: 'var(--accent-color)',
+      onClick: () => handleNavigateBack('conference')
+    }] : []),
+    {
+      label: t('views.secretariat.backToDashboard', 'Volver a Modo Mesa (Chair)'),
+      icon: LayoutDashboard,
+      color: 'var(--accent-color)',
+      onClick: () => handleNavigateBack('chair')
+    },
+    ...(isLocalTab ? [{
+      label: t('views.secretariat.closeTab', 'Cerrar esta pestaña'),
+      icon: X,
+      color: 'var(--danger-color)',
+      danger: true,
+      onClick: () => handleNavigateBack('close')
+    }] : [])
+  ];
+
+  const secretariatTabs = [
+    { id: 'NOTAS', label: t('views.delegate.inbox', 'Bandeja de Notas'), icon: MessageSquare, badge: notes.length },
+    { id: 'AVISOS', label: t('views.secretariat.officialAnnouncements', 'Avisos Oficiales'), icon: Megaphone, badge: visibleAnnouncements.length },
+    { id: 'SOLICITUDES', label: t('views.secretariat.speakingRequestsTab', 'Solicitudes'), icon: Zap, badge: speakingRequests.length + enmiendasPropuestas.length },
+    { id: 'DEBATE', label: t('views.secretariat.debateMonitor', 'Monitor de Debate & Oradores'), icon: Clock },
+    { id: 'VOTACION', label: t('views.secretariat.votingMap', 'Votaciones & Mapa'), icon: Vote },
+    { id: 'INFO', label: t('views.secretariat.committeeManagement', 'Gestión de Comité & Widgets'), icon: BarChart3 },
+    { id: 'CRISIS', label: t('views.secretariat.crisisCabinet', 'Gabinete de Crisis & Noticiero'), icon: Flame },
+    { id: 'AJUSTES', label: t('views.secretariat.settingsPermissions', 'Ajustes y Permisos'), icon: Sliders },
+    { id: 'CONEXIONES', label: t('views.secretariat.connections', 'Conexiones'), icon: Users, badge: connectedPeers.length }
+  ];
+
+  const secretariatSidebarActions = (
+    <button
+      type="button"
+      onClick={handleExportarNotasCSV}
+      title={t('views.secretariat.exportCsv', 'Exportar notas en CSV')}
+    >
+      <Download size={16} />
+      <span>{t('views.secretariat.exportCsv', 'Exportar CSV')}</span>
+    </button>
+  );
+
   return (
-    <div style={{
+    <div className="dashboard-shell" style={{
       minHeight: '100vh',
       backgroundColor: 'var(--bg-color)',
       color: 'var(--text-color)',
@@ -365,537 +391,33 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     }}>
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
-      {/* ── Topbar de Secretaría ── */}
-      <header
-        ref={headerRef}
-        className="openmun-topbar"
-        style={{
-          padding: isExtraCompact ? '0.5rem 1rem' : '0.85rem 1.5rem',
-          backgroundColor: 'var(--header-bg)',
-          borderBottom: '1px solid var(--border-color)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          maxWidth: '100vw',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: isLogoCompact ? '0.5rem' : '0.9rem', minWidth: 0, flexShrink: 1 }}>
-          {/* Botón Volver Atrás con soporte de destinos múltiples */}
-          <div style={{ position: 'relative', flexShrink: 0 }} ref={volverMenuRef}>
-            <button
-              onClick={handleClickVolver}
-              className="openmun-topbar-btn"
-              style={{
-                backgroundColor: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '8px',
-                color: 'var(--text-color)',
-                padding: isExtraCompact ? '0.35rem 0.6rem' : '0.45rem 0.75rem',
-                fontSize: '0.82rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.15s ease'
-              }}
-              title={t('views.secretariat.back', 'Volver atrás')}
-            >
-              <ArrowLeft size={16} />
-              {!isExtraCompact && <span className="btn-text">{t('common.back', 'Volver')}</span>}
-              {hasMultipleDestinations && <ChevronDown size={13} style={{ opacity: 0.7 }} />}
-            </button>
-
-            {volverMenuOpen && (
-              <div style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                width: '230px',
-                backgroundColor: isLight ? 'rgba(255, 255, 255, 0.98)' : 'rgba(22, 27, 39, 0.96)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '10px',
-                boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 16px 36px rgba(0,0,0,0.5)',
-                padding: '0.4rem',
-                zIndex: 1000,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem'
-              }}>
-                {confIdActiva && (
-                  <button
-                    onClick={() => handleNavigateBack('conference')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.55rem',
-                      padding: '0.5rem 0.65rem',
-                      borderRadius: '7px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      color: 'var(--text-color)',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      textAlign: 'left',
-                      transition: 'background-color 0.15s ease'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.15)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                  >
-                    <Building2 size={15} color="#8b5cf6" />
-                    <span>{t('views.secretariat.backToConference', 'Volver a Conferencia')}</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => handleNavigateBack('chair')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.55rem',
-                    padding: '0.5rem 0.65rem',
-                    borderRadius: '7px',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-color)',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    textAlign: 'left',
-                    transition: 'background-color 0.15s ease'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                >
-                  <LayoutDashboard size={15} color="#3b82f6" />
-                  <span>{t('views.secretariat.backToDashboard', 'Volver a Modo Mesa (Chair)')}</span>
-                </button>
-                {isLocalTab && (
-                  <button
-                    onClick={() => handleNavigateBack('close')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.55rem',
-                      padding: '0.5rem 0.65rem',
-                      borderRadius: '7px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      color: '#ef4444',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      textAlign: 'left',
-                      transition: 'background-color 0.15s ease'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                  >
-                    <X size={15} color="#ef4444" />
-                    <span>{t('views.secretariat.closeTab', 'Cerrar esta pestaña')}</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <OpenMunLogo height={32} isLight={isLight} showText={!isLogoCompact} />
-          <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'nowrap' }}>
-              <span style={{ fontWeight: '800', fontSize: isExtraCompact ? '0.9rem' : '1.05rem', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {t('views.secretariat.consoleTitle', 'Consola de Secretaría y Pajes')}
-              </span>
-              <span style={{
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                color: '#60a5fa',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                flexShrink: 0
-              }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#60a5fa' }} />
-                {t('liveSession.roomCode', 'Sala')}: {roomId || 'Local'}
-              </span>
-            </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{nombreComite}</span>
-              <span>•</span>
-              <span style={{ color: 'var(--text-color)', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('header.agenda', 'Tema')}: {temaActual}</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          {/* Selector de Estado de Sesión en Vivo */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)',
-            borderRadius: '8px',
-            padding: '2px',
-            gap: '2px'
-          }}>
-            {[
-              { id: 'formal', label: 'Formal', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.18)' },
-              { id: 'informal', label: 'Informal', color: '#eab308', bg: 'rgba(234, 179, 8, 0.18)' },
-              { id: 'receso', label: 'Receso', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.18)' },
-              { id: 'votacion', label: 'Votando', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.18)' }
-            ].map(s => {
-              const isActivo = (tipoSesion || state.tipoSesion || 'formal') === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => cambiarTipoSesion(s.id)}
-                  style={{
-                    padding: '0.35rem 0.65rem',
-                    borderRadius: '6px',
-                    border: isActivo ? `1px solid ${s.color}` : '1px solid transparent',
-                    backgroundColor: isActivo ? (isLight ? '#ffffff' : s.bg) : 'transparent',
-                    color: isActivo ? s.color : 'var(--muted-text)',
-                    fontWeight: isActivo ? '800' : '600',
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    boxShadow: isActivo ? `0 0 8px ${s.color}33` : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={`Cambiar estado del comité a ${s.label}`}
-                >
-                  <span style={{
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    backgroundColor: s.color,
-                    boxShadow: isActivo ? `0 0 6px ${s.color}` : 'none'
-                  }} />
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Botón Accesibilidad y Tema */}
-          <button
-            onClick={() => setIsAccessModalOpen(true)}
-            className="openmun-topbar-btn"
-            style={{
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              color: 'var(--text-color)',
-              padding: '0.45rem 0.8rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.15s ease'
-            }}
-            title="Accesibilidad y Tema (Dislexia, Tamaño de Letra, Daltonismo)"
-          >
-            <Eye size={14} /> <span className="btn-text">{t('header.accessibility', 'Accesibilidad')}</span>
-          </button>
-
-          {/* Botón Rápido Modo Claro / Oscuro */}
-          <button
-            onClick={toggleThemeMode}
-            className="openmun-topbar-btn"
-            style={{
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              color: 'var(--text-color)',
-              padding: '0.45rem 0.65rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.15s ease'
-            }}
-            title={isLight ? "Cambiar a Modo Oscuro" : "Cambiar a Modo Claro"}
-          >
-            {isLight ? <Moon size={14} /> : <Sun size={14} />}
-          </button>
-
-          <LanguageSelector showIcon={false} />
-
-          <button
-            onClick={handleExportarNotasCSV}
-            className="openmun-topbar-btn"
-            style={{
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              color: 'var(--text-color)',
-              padding: '0.45rem 0.8rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.15s ease'
-            }}
-            title="Exportar archivo de notas en CSV para Excel"
-          >
-            <Download size={14} /> <span className="btn-text">{t('views.secretariat.exportCsv', 'Exportar CSV')}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              if (confirm(t('views.secretariat.confirmExit', '¿Deseas salir del panel de Secretaría?'))) {
-                handleNavigateBack(confIdActiva ? 'conference' : 'chair');
-              }
-            }}
-            className="openmun-topbar-btn"
-            style={{
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
-              borderRadius: '8px',
-              color: '#ef4444',
-              padding: '0.45rem 0.8rem',
-              fontSize: '0.75rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-            title={t('common.exit', 'Salir')}
-          >
-            <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
-          </button>
-        </div>
-      </header>
+      <ConsoleNavbar
+        title={t('views.secretariat.consoleTitle', 'Consola de Secretaría y Pajes')}
+        roleBadge={t('views.secretariat.badge', 'Secretaría')}
+        roomId={roomId || 'Local'}
+        connectedPeersCount={connectedPeers?.length || 0}
+        nombreComite={nombreComite}
+        agendaSesion={temaActual}
+        tipoSesion={tipoSesion || state.tipoSesion || 'formal'}
+        cambiarTipoSesion={cambiarTipoSesion}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        tabs={secretariatTabs}
+        isLight={isLight}
+        toggleThemeMode={toggleThemeMode}
+        setIsAccessOpen={setIsAccessModalOpen}
+        onBack={handleClickVolver}
+        hasBackDropdown={hasMultipleDestinations}
+        backDropdownOpen={volverMenuOpen}
+        setBackDropdownOpen={setVolverMenuOpen}
+        backOptions={backOptions}
+        sidebarActions={secretariatSidebarActions}
+        onExit={() => handleNavigateBack(confIdActiva ? 'conference' : 'chair')}
+        exitConfirmMessage={t('views.secretariat.confirmExit', '¿Deseas salir del panel de Secretaría?')}
+      />
 
       {/* Banner de Avisos Oficiales */}
       <ConferenceBanner isLight={isLight} role="secretariat" comiteId={currentComiteId} comiteNombre={nombreComite} comites={comitesConf} />
-
-      {/* ── Sub-navegación por Pestañas ── */}
-      <div className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
-        backgroundColor: 'var(--subnav-bg)',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '0.45rem 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        overflowX: 'auto'
-      }}>
-        <button
-          onClick={() => setActiveTab('NOTAS')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'NOTAS' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'NOTAS' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <MessageSquare size={15} /> {t('views.delegate.inbox', 'Bandeja de Notas')} ({notes.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AVISOS')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'AVISOS' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'AVISOS' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Megaphone size={15} /> Avisos Oficiales ({visibleAnnouncements.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('SOLICITUDES')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'SOLICITUDES' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'SOLICITUDES' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            position: 'relative',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Zap size={15} /> {t('liveSession.requests', 'Solicitudes')} ({speakingRequests.length + enmiendasPropuestas.length})
-          {(speakingRequests.length + enmiendasPropuestas.length) > 0 && (
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: '#ef4444',
-              boxShadow: '0 0 8px #ef4444'
-            }} />
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('DEBATE')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'DEBATE' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'DEBATE' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Clock size={15} /> Monitor de Debate & Oradores
-        </button>
-
-        <button
-          onClick={() => setActiveTab('VOTACION')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'VOTACION' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'VOTACION' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Vote size={15} /> Votaciones & Mapa
-        </button>
-
-        <button
-          onClick={() => setActiveTab('INFO')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'INFO' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'INFO' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <BarChart3 size={15} /> Gestión de Comité & Widgets
-        </button>
-
-        <button
-          onClick={() => setActiveTab('CRISIS')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'CRISIS' ? '#ef4444' : 'transparent',
-            color: activeTab === 'CRISIS' ? '#ffffff' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Flame size={15} color={activeTab === 'CRISIS' ? '#ffffff' : '#ef4444'} /> Gabinete de Crisis & Noticiero
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AJUSTES')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'AJUSTES' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'AJUSTES' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Sliders size={15} /> Ajustes y Permisos
-        </button>
-
-        <button
-          onClick={() => setActiveTab('CONEXIONES')}
-          className="openmun-nav-tab-btn"
-          style={{
-            padding: '0.5rem 0.95rem',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: activeTab === 'CONEXIONES' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'CONEXIONES' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Users size={15} /> Conexiones ({connectedPeers.length})
-        </button>
-      </div>
 
       {/* ── Contenido Principal de Secretaría ── */}
       <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
@@ -941,14 +463,14 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 </h3>
               </div>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: '1.4' }}>
-                Los comunicados emitidos desde Secretaría se proyectan inmediatamente en la cabecera y buzón de avisos de todos los delegados.
+                {t('ui.secretariatAnnouncementsAreImmediatelyDisplayedInTheHeaderAndNotice')}
               </p>
 
               <form onSubmit={(e) => {
                 e.preventDefault();
                 if (!tituloAvisoSec.trim() && !textoAvisoSec.trim()) return;
                 broadcastAnnouncement({
-                  title: tituloAvisoSec.trim() || 'Aviso de Secretaría',
+                  title: tituloAvisoSec.trim() || i18n.t('ui.secretariatAnnouncement'),
                   text: textoAvisoSec.trim(),
                   priority: prioridadAvisoSec,
                   senderRole: 'secretariat',
@@ -956,7 +478,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 });
                 setTituloAvisoSec('');
                 setTextoAvisoSec('');
-                setFeedbackAvisoSec('Aviso emitido con éxito a toda la sala');
+                setFeedbackAvisoSec(t('ui.announcementIssuedSuccessfullyToTheEntireRoom'));
                 setTimeout(() => setFeedbackAvisoSec(null), 3500);
               }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
@@ -965,7 +487,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: Inicio de Votación / Entrega de Cláusulas"
+                    placeholder={t('ui.eGStartOfVotingClauseSubmission')}
                     value={tituloAvisoSec}
                     onChange={e => setTituloAvisoSec(e.target.value)}
                     style={{
@@ -1023,7 +545,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   </label>
                   <textarea
                     rows={4}
-                    placeholder="Instrucción oficial de la Secretaría para los delegados..."
+                    placeholder={t('ui.officialSecretariatInstructionForDelegates')}
                     value={textoAvisoSec}
                     onChange={e => setTextoAvisoSec(e.target.value)}
                     style={{
@@ -1120,7 +642,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                     {t('views.staff.noAnnouncements', 'No hay avisos emitidos en este momento.')}
                   </div>
                   <div style={{ fontSize: '0.78rem' }}>
-                    Usa el formulario lateral para emitir un aviso prioritario a todas las delegaciones.
+                    {t('ui.useTheSideFormToSendAPriorityAnnouncementTo')}
                   </div>
                 </div>
               ) : (
@@ -1156,7 +678,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                               {(ann.priority || 'general').toUpperCase()}
                             </span>
                             <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                              De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Secretaría / Staff'}</strong>
+                              {t('ui.from')} <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || t('ui.secretariatStaff')}</strong>
                             </span>
                             <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
                               • {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1269,7 +791,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   }}
                 >
                   <MessageSquare size={15} />
-                  <span>Notas del Comité</span>
+                  <span>{t('ui.committeeNotes')}</span>
                   <span style={{
                     fontSize: '0.72rem',
                     padding: '0.1rem 0.45rem',
@@ -1301,7 +823,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   }}
                 >
                   <Globe size={15} />
-                  <span>Avisos de Conferencia</span>
+                  <span>{t('ui.conferenceAnnouncements')}</span>
                   {avisosDB.length > 0 && (
                     <span style={{
                       fontSize: '0.72rem',
@@ -1377,10 +899,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                       </div>
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#facc15' }}>
-                          Avisos Especiales: Puntos Parlamentarios ({puntosParlamentarios.length})
+                          {t('ui.specialNoticesParliamentaryPoints')}{puntosParlamentarios.length})
                         </h3>
                         <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--muted-text)' }}>
-                          Puntos de Privilegio, Orden, Duda o Información. Puedes responder inmediatamente al delegado por nota oficial con un clic.
+                          {t('ui.pointsOfPrivilegeOrderInquiryOrInformationReplyToThe')}
                         </p>
                       </div>
                     </div>
@@ -1419,7 +941,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                                 color: '#facc15',
                                 border: '1px solid rgba(234, 179, 8, 0.35)'
                               }}>
-                                {point.details?.tipo || 'Punto Parlamentario'}
+                                {point.details?.tipo || t('ui.parliamentaryPoint')}
                               </span>
                             </div>
 
@@ -1438,9 +960,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                                 alignItems: 'center',
                                 gap: '0.3rem'
                               }}
-                              title="Descartar este punto parlamentario"
+                              title={t('ui.dismissThisParliamentaryPoint')}
                             >
-                              <X size={13} /> Descartar
+                              <X size={13} /> {t('avisos.ignore')}
                             </button>
                           </div>
 
@@ -1454,20 +976,20 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                             color: 'var(--text-color)',
                             lineHeight: '1.45'
                           }}>
-                            <strong>Motivo:</strong> {point.details?.tema || point.details?.motivo || 'Sin detalles especificados'}
+                            <strong>{t('ui.reason')}</strong> {point.details?.tema || point.details?.motivo || t('ui.noDetailsSpecified')}
                           </div>
 
                           {/* Respuestas Rápidas por Nota (Chips) */}
                           <div>
                             <div style={{ fontSize: '0.72rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
-                              Respuesta Rápida por Nota Oficial (1 Clic):
+                              {t('ui.quickReplyByOfficialNote1Click')}
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                               {[
-                                { label: 'Mesa toma nota', text: 'La Mesa Directiva toma nota de su observación.' },
-                                { label: 'Ha lugar', text: 'Ha lugar a su punto parlamentario.' },
-                                { label: 'No ha lugar', text: 'No ha lugar a su punto en este momento.' },
-                                { label: 'Se procede a solucionar', text: 'Se procede a solucionar la situación expuesta a la brevedad.' }
+                                { label: t('ui.chairTakesNote'), text: t('ui.theChairTakesNoteOfYourObservation') },
+                                { label: t('ui.inOrder'), text: t('ui.yourParliamentaryPointIsInOrder') },
+                                { label: t('ui.outOfOrder'), text: t('ui.yourPointIsOutOfOrderAtThisTime') },
+                                { label: t('ui.actionUnderway'), text: t('ui.theSituationRaisedWillBeAddressedAsSoonAsPossible') }
                               ].map(chip => (
                                 <button
                                   key={chip.label}
@@ -1497,7 +1019,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
                             <input
                               type="text"
-                              placeholder="O escribe una respuesta personalizada por nota..."
+                              placeholder={t('ui.orWriteACustomReplyByNote')}
                               value={inputVal}
                               onChange={e => setRespuestasPuntos(prev => ({ ...prev, [point.id]: e.target.value }))}
                               style={{
@@ -1538,7 +1060,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                                 gap: '0.35rem'
                               }}
                             >
-                              <Send size={13} /> Responder
+                              <Send size={13} /> {t('ui.reply')}
                             </button>
                           </div>
                         </div>
@@ -1575,10 +1097,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                       </div>
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#c084fc' }}>
-                          Solicitudes de Enmiendas de Delegaciones ({enmiendasPropuestas.length})
+                          {t('ui.delegationAmendmentRequests')}{enmiendasPropuestas.length})
                         </h3>
                         <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--muted-text)' }}>
-                          Propuestas de enmienda enviadas en tiempo real. Puedes incorporarlas a la resolución o descartarlas.
+                          {t('ui.amendmentProposalsSentInRealTimeIncorporateThemIntoThe')}
                         </p>
                       </div>
                     </div>
@@ -1603,7 +1125,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                             <CountryFlag nombre={prop.paisProponente} size="sm" />
                             <span style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-color)' }}>
-                              {prop.paisProponente || 'Delegación'}
+                              {prop.paisProponente || t('history.delegation')}
                             </span>
                             <span style={{
                               fontSize: '0.72rem',
@@ -1614,7 +1136,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                               color: prop.tipo === 'supresion' ? '#ef4444' : (prop.tipo === 'adicion' ? '#22c55e' : '#60a5fa'),
                               border: '1px solid currentColor'
                             }}>
-                              {prop.tipo?.toUpperCase()} · {prop.articuloNumero || 'Cláusula'}
+                              {prop.tipo?.toUpperCase()} · {prop.articuloNumero || t('ui.clause')}
                             </span>
                           </div>
 
@@ -1625,7 +1147,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                                   agregarEnmiendaResolucion({
                                     tipo: prop.tipo || 'modificacion',
                                     articuloId: prop.articuloId || null,
-                                    articuloNumero: prop.articuloNumero || 'Artículo',
+                                    articuloNumero: prop.articuloNumero || i18n.t('ui.article4'),
                                     paisProponente: prop.paisProponente || 'Delegación',
                                     textoOriginal: prop.textoOriginal || '',
                                     textoPropuesto: prop.textoPropuesto || '',
@@ -1651,7 +1173,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                                 boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
                               }}
                             >
-                              <Check size={14} /> Incorporar a Resolución
+                              <Check size={14} /> {t('ui.incorporateIntoResolution')}
                             </button>
 
                             <button
@@ -1673,9 +1195,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                                 alignItems: 'center',
                                 gap: '0.3rem'
                               }}
-                              title="Descartar esta propuesta de enmienda"
+                              title={t('ui.dismissThisAmendmentProposal')}
                             >
-                              <X size={13} /> Descartar
+                              <X size={13} /> {t('avisos.ignore')}
                             </button>
                           </div>
                         </div>
@@ -1694,17 +1216,17 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                         }}>
                           {prop.textoOriginal && (
                             <div style={{ color: '#ef4444', textDecoration: 'line-through', opacity: 0.9 }}>
-                              <strong>Texto original:</strong> {prop.textoOriginal}
+                              <strong>{t('ui.originalText')}</strong> {prop.textoOriginal}
                             </div>
                           )}
                           {prop.textoPropuesto && (
                             <div style={{ color: '#22c55e', fontWeight: '600' }}>
-                              <strong>Texto propuesto:</strong> {prop.textoPropuesto}
+                              <strong>{t('ui.proposedText')}</strong> {prop.textoPropuesto}
                             </div>
                           )}
                           {prop.justificacion && (
                             <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '0.2rem', fontStyle: 'italic' }}>
-                              Motivación: {prop.justificacion}
+                              {t('ui.motivation')} {prop.justificacion}
                             </div>
                           )}
                         </div>
@@ -1726,10 +1248,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
-                    Cola de Solicitudes de Oradores y Mociones
+                    {t('ui.speakerAndMotionRequestQueue')}
                   </h3>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--muted-text)' }}>
-                    Como Secretaría, puedes aprobar o denegar en vivo los turnos y mociones solicitados por las delegaciones.
+                    {t('ui.asSecretariatYouCanApproveOrDenySpeakingTurnsAnd')}
                   </p>
                 </div>
                 <span style={{
@@ -1741,7 +1263,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   color: otrasSolicitudes.length > 0 ? '#60a5fa' : '#22c55e',
                   border: `1px solid ${otrasSolicitudes.length > 0 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(34, 197, 94, 0.3)'}`
                 }}>
-                  {otrasSolicitudes.length} Turnos Pendientes
+                  {otrasSolicitudes.length} {t('ui.pendingSpeakingTurns')}
                 </span>
               </div>
 
@@ -1755,9 +1277,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   color: 'var(--muted-text)'
                 }}>
                   <Zap size={36} style={{ opacity: 0.35, marginBottom: '0.6rem' }} />
-                  <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>No hay solicitudes de turno pendientes</div>
+                  <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{t('ui.noPendingSpeakingRequests')}</div>
                   <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-                    Cuando un delegado solicite turno GSL, Caucus o Moción en modo con aprobación, aparecerá aquí instantáneamente.
+                    {t('ui.whenADelegateRequestsAGslTurnCaucusTurnOr')}
                   </div>
                 </div>
               ) : (
@@ -1789,7 +1311,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                             color: req.speechType === 'GSL' ? '#60a5fa' : (req.speechType === 'CAUCUS' ? '#c084fc' : '#facc15'),
                             border: `1px solid ${req.speechType === 'GSL' ? '#3b82f644' : (req.speechType === 'CAUCUS' ? '#a855f744' : '#eab30844')}`
                           }}>
-                            {req.speechType === 'GSL' ? 'Lista GSL' : (req.speechType === 'CAUCUS' ? 'Debate' : (req.details?.tipo === 'Caucus Moderado' ? 'Debate' : (req.details?.tipo || 'Moción')))}
+                            {req.speechType === 'GSL' ? t('ui.gslList') : (req.speechType === 'CAUCUS' ? t('sidebar.widgets.pizarra_mociones.category') : (req.details?.tipo === 'Caucus Moderado' ? t('sidebar.widgets.pizarra_mociones.category') : (req.details?.tipo || t('ui.motion'))))}
                           </span>
                           <span style={{ fontWeight: '800', fontSize: '1.05rem' }}>
                             {req.country}
@@ -1798,10 +1320,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
                         {req.details?.tema && (
                           <div style={{ fontSize: '0.82rem', color: 'var(--muted-text)', marginTop: '4px' }}>
-                            Tema: <strong style={{ color: 'var(--text-color)' }}>{req.details.tema}</strong>
+                            {t('ui.topic2')} <strong style={{ color: 'var(--text-color)' }}>{req.details.tema}</strong>
                             {req.details.tiempoTotal ? ` • ${Math.round(req.details.tiempoTotal / 60)} min` : ''}
-                            {req.details.tiempoOrador ? ` • ${req.details.tiempoOrador}s / orador` : ''}
-                            {req.details.posicionProponente ? ` • Posición: ${req.details.posicionProponente}` : ''}
+                            {req.details.tiempoOrador ? t('ui.sSpeaker', { v0: req.details.tiempoOrador }) : ''}
+                            {req.details.posicionProponente ? t('ui.position', { v0: req.details.posicionProponente }) : ''}
                           </div>
                         )}
                       </div>
@@ -1825,7 +1347,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          <Check size={16} /> Aprobar
+                          <Check size={16} /> {t('motions.approve')}
                         </button>
 
                         <button
@@ -1842,7 +1364,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          Rechazar
+                          {t('ui.reject')}
                         </button>
                       </div>
                     </div>
@@ -1882,7 +1404,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   gap: '0.45rem'
                 }}
               >
-                <Vote size={15} /> Sistema de Votación Oficial (Roll Call / Mayorías)
+                <Vote size={15} /> {t('ui.officialVotingSystemRollCallMajorities')}
               </button>
 
               <button
@@ -1901,7 +1423,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   gap: '0.45rem'
                 }}
               >
-                <Map size={15} /> Mapa Mundial de Votación (Geopolítico)
+                <Map size={15} /> {t('ui.worldVotingMapGeopolitical')}
               </button>
             </div>
 
@@ -1950,7 +1472,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <Globe size={15} /> Matriz de Asistencia & Quórum
+                <Globe size={15} /> {t('ui.attendanceQuorumMatrix')}
               </button>
 
               <button
@@ -1970,7 +1492,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <UserPlus size={15} /> Añadir Países a Oradores
+                <UserPlus size={15} /> {t('ui.addCountriesToSpeakers')}
               </button>
 
               <button
@@ -1990,7 +1512,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <BarChart3 size={15} /> Histórico de Delegaciones
+                <BarChart3 size={15} /> {t('ui.delegationHistory')}
               </button>
 
               <button
@@ -2010,7 +1532,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <Calendar size={15} /> Establecer Agenda y Temas
+                <Calendar size={15} /> {t('ui.setAgendaAndTopics')}
               </button>
 
               <button
@@ -2030,7 +1552,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <Users size={15} /> Importar Delegaciones
+                <Users size={15} /> {t('sidebar.widgets.importar_paises.title')}
               </button>
 
               <button
@@ -2050,7 +1572,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <FileText size={15} /> Pizarra de Mociones
+                <FileText size={15} /> {t('sidebar.widgets.pizarra_mociones.title')}
               </button>
 
               <button
@@ -2070,7 +1592,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   whiteSpace: 'nowrap'
                 }}
               >
-                <Dices size={15} /> Ruleta / Selector
+                <Dices size={15} /> {t('ui.rouletteSelector')}
               </button>
             </div>
 
@@ -2110,10 +1632,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
-                  Ajustes de Sala y Permisos de Delegados
+                  {t('ui.roomSettingsAndDelegatePermissions')}
                 </h3>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--muted-text)' }}>
-                  Las modificaciones efectuadas por Secretaría se sincronizan de inmediato con el Chair y todas las delegaciones.
+                  {t('ui.changesMadeByTheSecretariatSyncImmediatelyWithTheChair')}
                 </p>
               </div>
             </div>
@@ -2130,10 +1652,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                  <Zap size={18} color="#3b82f6" /> Modo de Solicitudes a la Lista de Oradores (GSL)
+                  <Zap size={18} color="#3b82f6" /> {t('liveSession.gslRequestMode')}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                  Define cómo se procesan las peticiones de los delegados para incorporarse a la Lista General de Oradores.
+                  {t('liveSession.gslRequestModeDesc')}
                 </div>
               </div>
 
@@ -2156,12 +1678,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'direct' ? '#22c55e' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Zap size={14} /> Directas
+                      <Zap size={14} /> {t('liveSession.requestModeDirect')}
                     </span>
                     {roomSettings.speakerRequestMode === 'direct' && <CheckCircle2 size={16} color="#22c55e" />}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    El delegado entra a la lista automáticamente sin confirmación de la Mesa.
+                    {t('ui.theDelegateJoinsTheListAutomaticallyWithoutChairConfirmation')}
                   </span>
                 </div>
 
@@ -2182,12 +1704,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'approval' ? '#eab308' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Hand size={14} /> Con Aprobación
+                      <Hand size={14} /> {t('liveSession.requestModeApproval')}
                     </span>
                     {roomSettings.speakerRequestMode === 'approval' && <CheckCircle2 size={16} color="#eab308" />}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    Requiere validación de la Mesa o de Secretaría.
+                    {t('ui.requiresApprovalFromTheChairOrSecretariat')}
                   </span>
                 </div>
 
@@ -2208,12 +1730,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'disabled' ? '#ef4444' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Lock size={14} /> Deshabilitadas
+                      <Lock size={14} /> {t('liveSession.requestModeDisabled')}
                     </span>
                     {roomSettings.speakerRequestMode === 'disabled' && <CheckCircle2 size={16} color="#ef4444" />}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    Bloquea solicitudes de turno desde la vista de delegado.
+                    {t('ui.blocksSpeakingRequestsFromTheDelegateView')}
                   </span>
                 </div>
               </div>
@@ -2231,10 +1753,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                  <Clock size={18} color="#a855f7" /> Modo de Solicitudes a Caucus Moderado
+                  <Clock size={18} color="#a855f7" /> {t('liveSession.caucusRequestMode')}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                  Control de incorporación de delegados a la lista durante un debate moderado.
+                  {t('ui.controlHowDelegatesJoinTheListDuringAModeratedDebate')}
                 </div>
               </div>
 
@@ -2256,12 +1778,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'direct' ? '#22c55e' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Zap size={14} /> Directas
+                      <Zap size={14} /> {t('liveSession.requestModeDirect')}
                     </span>
                     {roomSettings.caucusRequestMode === 'direct' && <CheckCircle2 size={16} color="#22c55e" />}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    Ingreso automático a la lista de Caucus.
+                    {t('ui.automaticEntryToTheCaucusList')}
                   </span>
                 </div>
 
@@ -2282,12 +1804,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'approval' ? '#eab308' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Hand size={14} /> Con Aprobación
+                      <Hand size={14} /> {t('liveSession.requestModeApproval')}
                     </span>
                     {roomSettings.caucusRequestMode === 'approval' && <CheckCircle2 size={16} color="#eab308" />}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    La Mesa o Secretaría autoriza cada turno.
+                    {t('ui.theChairOrSecretariatApprovesEachTurn')}
                   </span>
                 </div>
 
@@ -2308,12 +1830,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'disabled' ? '#ef4444' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Lock size={14} /> Deshabilitadas
+                      <Lock size={14} /> {t('liveSession.requestModeDisabled')}
                     </span>
                     {roomSettings.caucusRequestMode === 'disabled' && <CheckCircle2 size={16} color="#ef4444" />}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    Peticiones bloqueadas durante el Caucus.
+                    {t('ui.requestsBlockedDuringTheCaucus')}
                   </span>
                 </div>
               </div>
@@ -2330,7 +1852,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
               gap: '1rem'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                <Shield size={18} color="#10b981" /> Permisos y Capacidades de Delegados
+                <Shield size={18} color="#10b981" /> {t('liveSession.delegatePermissions')}
               </div>
 
               <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
@@ -2346,9 +1868,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 }}>
                   <div>
                     <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Mail size={15} /> Notas entre Delegaciones
+                      <Mail size={15} /> {t('liveSession.allowDelegateNotes')}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite pajes privados entre delegados</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowDelegateNotesDesc')}</div>
                   </div>
                   <input
                     type="checkbox"
@@ -2370,9 +1892,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 }}>
                   <div>
                     <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Landmark size={15} /> Notas a la Mesa (Chair)
+                      <Landmark size={15} /> {t('liveSession.allowChairNotes')}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite mensajes directos a la Mesa</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowChairNotesDesc')}</div>
                   </div>
                   <input
                     type="checkbox"
@@ -2394,9 +1916,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 }}>
                   <div>
                     <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <FileText size={15} /> Proponer Mociones y Puntos
+                      <FileText size={15} /> {t('liveSession.allowMotions')}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite formular mociones desde su panel</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowMotionsDesc')}</div>
                   </div>
                   <input
                     type="checkbox"
@@ -2418,9 +1940,9 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 }}>
                   <div>
                     <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Vote size={15} /> Votación Telemática en Vivo
+                      <Vote size={15} /> {t('liveSession.allowLiveVoting')}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite emitir voto en votaciones activas</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowLiveVotingDesc')}</div>
                   </div>
                   <input
                     type="checkbox"
@@ -2450,10 +1972,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
             }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
-                  Dispositivos y Delegaciones Conectadas ({connectedPeers.length})
+                  {t('ui.connectedDevicesAndDelegations')}{connectedPeers.length})
                 </h3>
                 <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--muted-text)' }}>
-                  Monitor de conexiones en vivo en tiempo real con capacidad de expulsión.
+                  {t('ui.monitorLiveConnectionsWithTheAbilityToRemoveParticipants')}
                 </p>
               </div>
             </div>
@@ -2468,7 +1990,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 color: 'var(--muted-text)'
               }}>
                 <Users size={36} style={{ opacity: 0.35, marginBottom: '0.6rem' }} />
-                <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>No hay dispositivos conectados</div>
+                <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{t('ui.noDevicesConnected')}</div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -2495,10 +2017,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                       }} />
                       <div>
                         <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>
-                          {peer.country || 'Sin Identificador'}
+                          {peer.country || t('ui.noIdentifier')}
                         </div>
                         <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
-                          ID: {peer.peerId.substring(0, 10)}... • Rol: {peer.role}
+                          ID: {peer.peerId.substring(0, 10)}{t('ui.role')} {peer.role}
                         </div>
                       </div>
                     </div>
@@ -2517,7 +2039,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
                       <button
                         onClick={() => {
-                          if (confirm(`¿Deseas expulsar de la sesión a ${peer.country || peer.peerId}?`)) {
+                          if (confirm(t('ui.removeFromTheSession', { v0: peer.country || peer.peerId }))) {
                             kickPeer(peer.peerId);
                           }
                         }}
@@ -2535,7 +2057,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                           gap: '0.35rem'
                         }}
                       >
-                        <UserX size={14} /> Expulsar
+                        <UserX size={14} /> {t('liveSession.kickPeer')}
                       </button>
                     </div>
                   </div>
@@ -2574,7 +2096,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   gap: '0.45rem'
                 }}
               >
-                <Users size={15} /> Monitor de Colas (GSL & Caucus)
+                <Users size={15} /> {t('ui.queueMonitorGslCaucus')}
               </button>
 
               <button
@@ -2593,7 +2115,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                   gap: '0.45rem'
                 }}
               >
-                <UserPlus size={15} /> Añadir Países a Colas
+                <UserPlus size={15} /> {t('ui.addCountriesToQueues')}
               </button>
             </div>
 
@@ -2624,7 +2146,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Users size={16} color="#c084fc" /> Lista General de Oradores ({oradoresGSL.length})
+                      <Users size={16} color="#c084fc" /> {t('ui.generalSpeakersList')}{oradoresGSL.length})
                     </div>
                     <button
                       onClick={() => setSubTabDebate('ANADIR')}
@@ -2642,13 +2164,13 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                         gap: '0.3rem'
                       }}
                     >
-                      <UserPlus size={12} /> Añadir Oradores
+                      <UserPlus size={12} /> {t('ui.addSpeakers')}
                     </button>
                   </div>
 
                   {oradoresGSL.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.82rem' }}>
-                      Lista GSL vacía
+                      {t('ui.gslListEmpty')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
@@ -2688,13 +2210,13 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             {idx === 0 && (
                               <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#22c55e' }}>
-                                EN TURNO
+                                {t('ui.speaking2')}
                               </span>
                             )}
                             <button
                               onClick={() => removerOrador(o.id || o.nombre)}
-                              title="Remover de la lista"
-                              aria-label="Remover de la lista"
+                              title={t('ui.removeFromList')}
+                              aria-label={t('ui.removeFromList')}
                               style={{
                                 background: 'transparent',
                                 border: 'none',
@@ -2728,7 +2250,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Clock size={16} color="#fb923c" /> Caucus Moderado ({oradoresCaucus.length})
+                      <Clock size={16} color="#fb923c" /> {t('ui.moderatedCaucus')}{oradoresCaucus.length})
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       {oradoresCaucus.length > 0 && (
@@ -2748,7 +2270,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                             gap: '0.3rem'
                           }}
                         >
-                          <SkipForward size={12} /> Avanzar
+                          <SkipForward size={12} /> {t('ui.next')}
                         </button>
                       )}
                       <button
@@ -2767,7 +2289,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                           gap: '0.3rem'
                         }}
                       >
-                        <UserPlus size={12} /> Añadir Oradores
+                        <UserPlus size={12} /> {t('ui.addSpeakers')}
                       </button>
                       <span style={{
                         fontSize: '0.7rem',
@@ -2777,20 +2299,20 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                         backgroundColor: caucusActivo.activo ? 'rgba(34, 197, 94, 0.15)' : 'rgba(113, 113, 122, 0.15)',
                         color: caucusActivo.activo ? '#22c55e' : '#a1a1aa'
                       }}>
-                        {caucusActivo.activo ? 'Activo' : 'Inactivo'}
+                        {caucusActivo.activo ? t('agenda.active') : t('ui.inactive')}
                       </span>
                     </div>
                   </div>
 
                   {caucusActivo.activo && caucusActivo.tema && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--muted-text)' }}>
-                      Tema: <strong>{caucusActivo.tema}</strong>
+                      {t('ui.topic2')} <strong>{caucusActivo.tema}</strong>
                     </div>
                   )}
 
                   {oradoresCaucus.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.82rem' }}>
-                      No hay oradores en Caucus
+                      {t('ui.noCaucusSpeakers')}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
@@ -2830,13 +2352,13 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             {idx === 0 && (
                               <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#c084fc' }}>
-                                EN TURNO
+                                {t('ui.speaking2')}
                               </span>
                             )}
                             <button
                               onClick={() => removerOradorCaucus(o.id || o.nombre)}
-                              title="Remover del caucus"
-                              aria-label="Remover del caucus"
+                              title={t('ui.removeFromCaucus')}
+                              aria-label={t('ui.removeFromCaucus')}
                               style={{
                                 background: 'transparent',
                                 border: 'none',

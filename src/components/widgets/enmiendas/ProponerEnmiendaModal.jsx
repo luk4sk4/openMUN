@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -26,6 +27,7 @@ const ProponerEnmiendaModal = ({
   initialTextoOriginal = '',
   isLight = false
 }) => {
+  const { t } = useTranslation();
   const [tipoEnmienda, setTipoEnmienda] = useState('modificacion');
   const [selectedArticuloId, setSelectedArticuloId] = useState(initialArticuloId || null);
   const [paisProponente, setPaisProponente] = useState('');
@@ -78,11 +80,11 @@ const ProponerEnmiendaModal = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (tipoEnmienda !== 'supresion' && !textoPropuesto.trim()) {
-      alert('Por favor escribe el texto propuesto para la enmienda.');
+      alert(t('ui.pleaseWriteTheProposedAmendmentText'));
       return;
     }
     if (tipoEnmienda === 'supresion' && !textoOriginal.trim() && !artTarget) {
-      alert('Debes indicar qué texto o cláusula se propone suprimir.');
+      alert(t('ui.specifyTheTextOrClauseProposedForDeletion'));
       return;
     }
 
@@ -91,7 +93,7 @@ const ProponerEnmiendaModal = ({
     onSubmit({
       tipo: tipoEnmienda,
       articuloId: selectedArticuloId || null,
-      articuloNumero: artTarget ? (artTarget.prefijo || `Artículo ${artTarget.numero}`) : `Nuevo Artículo ${num}`,
+      articuloNumero: artTarget ? (artTarget.prefijo || t('ui.article3', { v0: artTarget.numero })) : t('ui.newArticle', { v0: num }),
       paisProponente: paisProponente.trim() || 'Delegación',
       textoOriginal: textoOriginal.trim(),
       textoPropuesto: textoPropuesto.trim(),
@@ -135,7 +137,7 @@ const ProponerEnmiendaModal = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: '800' }}>
             <FilePlus size={18} style={{ color: 'var(--accent-color)' }} />
-            <span>Proponer Enmienda a la Resolución</span>
+            <span>{t('ui.proposeAmendmentToResolution')}</span>
           </div>
           <button
             onClick={onClose}
@@ -157,7 +159,7 @@ const ProponerEnmiendaModal = ({
           {/* Selector de Naturaleza de la Enmienda */}
           <div>
             <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.35rem' }}>
-              Naturaleza de la Moción:
+              {t('ui.natureOfMotion')}
             </label>
             <div style={{
               display: 'grid',
@@ -183,7 +185,7 @@ const ProponerEnmiendaModal = ({
                 }}
               >
                 <FilePlus size={13} />
-                <span>Adición</span>
+                <span>{t('ui.addition2')}</span>
               </button>
 
               <button
@@ -205,7 +207,7 @@ const ProponerEnmiendaModal = ({
                 }}
               >
                 <FileMinus size={13} />
-                <span>Supresión</span>
+                <span>{t('ui.deletion2')}</span>
               </button>
 
               <button
@@ -227,7 +229,7 @@ const ProponerEnmiendaModal = ({
                 }}
               >
                 <Edit3 size={13} />
-                <span>Modificación</span>
+                <span>{t('ui.modification2')}</span>
               </button>
             </div>
           </div>
@@ -235,7 +237,7 @@ const ProponerEnmiendaModal = ({
           {/* Selector de Apartado Objetivo */}
           <div>
             <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.25rem' }}>
-              Cláusula / Apartado Objetivo:
+              {t('ui.targetClauseSection')}
             </label>
             <select
               value={selectedArticuloId || ''}
@@ -262,11 +264,11 @@ const ProponerEnmiendaModal = ({
               }}
             >
               <option value="" style={{ backgroundColor: optionBgColor, color: optionTextColor }}>
-                -- Cláusula General / Añadir al Final de la Resolución --
+                {t('ui.generalClauseAddAtEndOfResolution')}
               </option>
               {articulos.map(art => (
                 <option key={art.id} value={art.id} style={{ backgroundColor: optionBgColor, color: optionTextColor }}>
-                  {art.prefijo || `Artículo ${art.numero}`} - {art.texto.substring(0, 90)}{art.texto.length > 90 ? '...' : ''}
+                  {art.prefijo || t('ui.article3', { v0: art.numero })} - {art.texto.substring(0, 90)}{art.texto.length > 90 ? '...' : ''}
                 </option>
               ))}
             </select>
@@ -275,7 +277,7 @@ const ProponerEnmiendaModal = ({
           {/* Selector de Delegación Proponente con Bandera */}
           <div>
             <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.25rem' }}>
-              Delegación Proponente:
+              {t('ui.proposingDelegation')}
             </label>
             {paisesAsistentes.length > 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -318,7 +320,7 @@ const ProponerEnmiendaModal = ({
                   fontSize: '0.78rem',
                   outline: 'none'
                 }}
-                placeholder="Nombre de la delegación (ej. Francia)"
+                placeholder={t('ui.delegationNameEGFrance')}
               />
             )}
           </div>
@@ -328,11 +330,11 @@ const ProponerEnmiendaModal = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
                 <label style={{ fontSize: '0.74rem', fontWeight: '700', color: '#ef4444' }}>
-                  {tipoEnmienda === 'supresion' ? 'Texto o cláusula a suprimir:' : 'Texto original a reemplazar:'}
+                  {tipoEnmienda === 'supresion' ? t('ui.textOrClauseToDelete') : t('ui.originalTextToReplace')}
                 </label>
                 {artTarget && (
                   <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)', fontStyle: 'italic' }}>
-                    {artTarget.prefijo || `Artículo ${artTarget.numero}`}
+                    {artTarget.prefijo || t('ui.article3', { v0: artTarget.numero })}
                   </span>
                 )}
               </div>
@@ -355,7 +357,7 @@ const ProponerEnmiendaModal = ({
                   resize: 'vertical',
                   boxSizing: 'border-box'
                 }}
-                placeholder="Pega o escribe el fragmento a eliminar/modificar..."
+                placeholder={t('ui.pasteOrTypeTheExcerptToDeleteModify')}
               />
             </div>
           )}
@@ -365,7 +367,7 @@ const ProponerEnmiendaModal = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
                 <label style={{ fontSize: '0.74rem', fontWeight: '700', color: '#22c55e' }}>
-                  {tipoEnmienda === 'adicion' ? 'Texto nuevo a añadir:' : 'Nueva redacción propuesta:'}
+                  {tipoEnmienda === 'adicion' ? t('ui.newTextToAdd') : t('ui.proposedNewWording')}
                 </label>
                 {tipoEnmienda === 'modificacion' && textoOriginal && (
                   <button
@@ -381,9 +383,9 @@ const ProponerEnmiendaModal = ({
                       padding: '0.1rem 0.2rem',
                       textDecoration: 'underline'
                     }}
-                    title="Copiar el texto original para editarlo directamente"
+                    title={t('ui.copyOriginalTextToEditItDirectly')}
                   >
-                    Copiar original a propuesta
+                    {t('ui.copyOriginalToProposal')}
                   </button>
                 )}
               </div>
@@ -407,7 +409,7 @@ const ProponerEnmiendaModal = ({
                   resize: 'vertical',
                   boxSizing: 'border-box'
                 }}
-                placeholder="Escribe aquí la redacción propuesta..."
+                placeholder={t('ui.writeTheProposedWordingHere')}
               />
             </div>
           )}
@@ -415,7 +417,7 @@ const ProponerEnmiendaModal = ({
           {/* Motivación / Justificación */}
           <div>
             <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.2rem' }}>
-              Justificación / Motivación (Opcional):
+              {t('ui.justificationMotivationOptional')}
             </label>
             <input
               type="text"
@@ -431,7 +433,7 @@ const ProponerEnmiendaModal = ({
                 fontSize: '0.76rem',
                 outline: 'none'
               }}
-              placeholder="Ej. Armonización jurídica con las resoluciones de la AG"
+              placeholder={t('ui.eGLegalHarmonizationWithGaResolutions')}
             />
           </div>
 
@@ -451,7 +453,7 @@ const ProponerEnmiendaModal = ({
                 cursor: 'pointer'
               }}
             >
-              Cancelar
+              {t('toast.cancelBtn')}
             </button>
             <button
               type="submit"
@@ -472,7 +474,7 @@ const ProponerEnmiendaModal = ({
               }}
             >
               <Check size={13} />
-              <span>Registrar Moción</span>
+              <span>{t('motions.addMotion')}</span>
             </button>
           </div>
         </form>

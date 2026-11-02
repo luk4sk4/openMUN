@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Globe,
@@ -37,43 +38,43 @@ import { playChimeAlert } from '../../utils/audioAlerts';
 export const AVISO_TIPOS_CONFIG = {
   info: {
     id: 'info',
-    label: 'Informativo General',
-    shortLabel: 'Info',
+    get label() { return i18n.t('ui.generalInformation'); },
+    get shortLabel() { return i18n.t('ui.info2'); },
     icon: Info,
     color: 'var(--accent-color)',
     border: 'var(--accent-color)',
     bg: 'var(--accent-soft)',
-    badgeText: 'ℹ️ INFORMATIVO'
+    get badgeText() { return i18n.t('ui.information2'); }
   },
   alerta: {
     id: 'alerta',
-    label: 'Alerta / Atención',
-    shortLabel: 'Alerta',
+    get label() { return i18n.t('ui.alertAttention'); },
+    get shortLabel() { return i18n.t('ui.alert'); },
     icon: AlertTriangle,
     color: 'var(--warning-color)',
     border: 'var(--warning-color)',
     bg: 'rgba(245, 158, 11, 0.12)',
-    badgeText: '⚠️ ALERTA'
+    get badgeText() { return i18n.t('ui.alert2'); }
   },
   urgente: {
     id: 'urgente',
-    label: 'Urgente / Crítico',
-    shortLabel: 'Urgente',
+    get label() { return i18n.t('ui.urgentCritical'); },
+    get shortLabel() { return i18n.t('ui.urgent4'); },
     icon: AlertCircle,
     color: 'var(--danger-color)',
     border: 'var(--danger-color)',
     bg: 'rgba(239, 68, 68, 0.12)',
-    badgeText: '🚨 URGENTE'
+    get badgeText() { return i18n.t('ui.urgent5'); }
   },
   logistica: {
     id: 'logistica',
-    label: 'Logística de Conferencia',
-    shortLabel: 'Logística',
+    get label() { return i18n.t('ui.conferenceLogistics'); },
+    get shortLabel() { return i18n.t('ui.logistics3'); },
     icon: Users,
     color: 'var(--info-color)',
     border: 'var(--info-color)',
     bg: 'rgba(56, 189, 248, 0.12)',
-    badgeText: '🛠️ LOGÍSTICA'
+    get badgeText() { return i18n.t('ui.logistics4'); }
   }
 };
 
@@ -194,10 +195,10 @@ const MensajeriaConferencia = ({
       return nombreSala ? `Staff (${nombreSala})` : 'Staff de Sala';
     }
     if (propRole === 'chair' || propRole === 'mesa') {
-      return nombreSala ? `Mesa Directiva (${nombreSala})` : 'Mesa Directiva';
+      return nombreSala ? t('ui.chair3', { v0: nombreSala }) : 'Mesa Directiva';
     }
     return 'Delegación';
-  }, [propRole, effectiveComiteNombre, effectiveComiteId, listaComites]);
+  }, [propRole, effectiveComiteNombre, effectiveComiteId, listaComites, t]);
 
   useEffect(() => {
     setEmisor(getEmisorDefecto());
@@ -365,7 +366,7 @@ const MensajeriaConferencia = ({
       if (nuevoAviso) {
         try { playChimeAlert(0.4); } catch {}
         setMensaje('');
-        setFeedback('¡Aviso emitido y registrado en la conferencia con éxito!');
+        setFeedback(t('ui.announcementSuccessfullyIssuedAndRecordedInTheConference'));
         setTimeout(() => setFeedback(null), 3000);
 
         // Actualizar lista local de inmediato
@@ -380,7 +381,7 @@ const MensajeriaConferencia = ({
         }
       }
     } catch (err) {
-      alert('Error al emitir comunicado a la conferencia: ' + err.message);
+      alert(t('ui.errorIssuingConferenceAnnouncement') + err.message);
     } finally {
       setEnviando(false);
     }
@@ -469,7 +470,7 @@ const MensajeriaConferencia = ({
                 )}
               </div>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                Canal central de secretaría general, alertas operativas y difusión inter-comités
+                {t('ui.centralChannelForTheSecretariatOperationalAlertsAndCommunicationsBetween')}
               </p>
             </div>
           </div>
@@ -491,10 +492,10 @@ const MensajeriaConferencia = ({
                 alignItems: 'center',
                 gap: '0.35rem'
               }}
-              title="Refrescar avisos de la conferencia"
+              title={t('ui.refreshConferenceAnnouncements')}
             >
               <RefreshCw size={13} className={cargando ? 'animate-spin' : ''} />
-              Refrescar
+              {t('avisos.refresh')}
             </button>
           </div>
         </div>
@@ -523,7 +524,7 @@ const MensajeriaConferencia = ({
               gap: '0.4rem'
             }}
           >
-            <Bell size={15} /> Tablón ({avisosFiltrados.length})
+            <Bell size={15} /> {t('ui.noticeboard')}{avisosFiltrados.length})
           </button>
           <button
             role="tab"
@@ -545,7 +546,7 @@ const MensajeriaConferencia = ({
               gap: '0.4rem'
             }}
           >
-            <Send size={15} /> Emitir Comunicado
+            <Send size={15} /> {t('ui.issueAnnouncement')}
           </button>
         </div>
       )}
@@ -571,7 +572,7 @@ const MensajeriaConferencia = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Send size={17} color="var(--accent-color)" />
               <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800' }}>
-                Emitir Comunicado Oficial
+                {t('ui.issueOfficialAnnouncement')}
               </h4>
             </div>
 
@@ -579,13 +580,13 @@ const MensajeriaConferencia = ({
               {/* Emisor */}
               <div>
                 <label style={{ fontSize: '0.73rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Emisor / Firmante
+                  {t('ui.senderSignatory')}
                 </label>
                 <input
                   type="text"
                   value={emisor}
                   onChange={e => setEmisor(e.target.value)}
-                  placeholder="Ej: Organización, Staff General, Mesa de Consejo..."
+                  placeholder={t('ui.eGOrganizersGeneralStaffCouncilChair')}
                   style={{
                     width: '100%',
                     marginTop: '0.35rem',
@@ -604,7 +605,7 @@ const MensajeriaConferencia = ({
               {/* Destinatario */}
               <div>
                 <label style={{ fontSize: '0.73rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Destinatario Central
+                  {t('ui.mainRecipient')}
                 </label>
                 <select
                   value={destino}
@@ -623,14 +624,14 @@ const MensajeriaConferencia = ({
                     cursor: 'pointer'
                   }}
                 >
-                  <optgroup label="🌐 Canales Generales" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
+                  <optgroup label={t('avisos.generalChannels')} style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                     {opcionesDestino.opcionesGenerales.map(op => (
                       <option key={op.value} value={op.value}>{op.label}</option>
                     ))}
                   </optgroup>
 
                   {opcionesDestino.opcionesLocales?.length > 0 && (
-                    <optgroup label="📍 Mi Sala / Comité" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
+                    <optgroup label={t('ui.myRoomCommittee')} style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                       {opcionesDestino.opcionesLocales.map(op => (
                         <option key={op.value} value={op.value}>{op.label}</option>
                       ))}
@@ -638,7 +639,7 @@ const MensajeriaConferencia = ({
                   )}
 
                   {opcionesDestino.gruposSalas?.length > 0 && (
-                    <optgroup label="🏛️ Salas de la Conferencia" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
+                    <optgroup label={t('ui.conferenceRooms')} style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                       {opcionesDestino.gruposSalas.map(op => (
                         <option key={op.value} value={op.value}>{op.label}</option>
                       ))}
@@ -650,7 +651,7 @@ const MensajeriaConferencia = ({
               {/* Prioridad / Tipo */}
               <div>
                 <label style={{ fontSize: '0.73rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Prioridad / Categoría
+                  {t('ui.priorityCategory')}
                 </label>
                 <div style={{
                   display: 'grid',
@@ -694,11 +695,11 @@ const MensajeriaConferencia = ({
               {/* Mensaje */}
               <div>
                 <label style={{ fontSize: '0.73rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  Contenido del Comunicado
+                  {t('ui.announcementContent')}
                 </label>
                 <textarea
                   rows={4}
-                  placeholder="Escribe la directiva, instrucción logística o comunicado oficial..."
+                  placeholder={t('ui.writeTheDirectiveLogisticalInstructionOrOfficialAnnouncement')}
                   value={mensaje}
                   onChange={e => setMensaje(e.target.value)}
                   style={{
@@ -739,12 +740,12 @@ const MensajeriaConferencia = ({
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Send size={15} /> {enviando ? 'Transmitiendo a Conferencia...' : 'Transmitir Aviso Oficial'}
+                <Send size={15} /> {enviando ? t('ui.transmittingToConference') : t('ui.sendOfficialAnnouncement')}
               </button>
 
               {!cleanConfId && (
                 <div style={{ fontSize: '0.72rem', color: 'var(--warning-color)', textAlign: 'center' }}>
-                  ⚠️ No hay conferencia activa vinculada. Inicia o accede a una conferencia para emitir comunicados globales.
+                  {t('ui.noActiveConferenceLinkedStartOrJoinAConferenceTo')}
                 </div>
               )}
 
@@ -782,16 +783,16 @@ const MensajeriaConferencia = ({
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800' }}>
-                    Tablón de Avisos de la Conferencia ({avisosFiltrados.length})
+                    {t('ui.conferenceNoticeboard')}{avisosFiltrados.length})
                   </h4>
                 </div>
 
                 {/* Filtro por Destino Rápido */}
                 <div style={{ display: 'flex', gap: '3px', backgroundColor: 'var(--card-header-bg)', padding: '2px', borderRadius: 'var(--border-radius, 6px)' }}>
                   {[
-                    { id: 'TODOS', label: 'Todos' },
-                    { id: 'MI_SALA', label: 'Mi Sala' },
-                    { id: 'SOLO_STAFF', label: 'Staff' }
+                    { id: 'TODOS', label: t('sidebar.categories.all') },
+                    { id: 'MI_SALA', label: t('ui.myRoom') },
+                    { id: 'SOLO_STAFF', label: t('conferences.issuerStaff') }
                   ].map(f => {
                     const isSelected = filtroDestino === f.id;
                     return (
@@ -833,7 +834,7 @@ const MensajeriaConferencia = ({
                   <Search size={13} color="var(--muted-text)" />
                   <input
                     type="text"
-                    placeholder="Buscar en comunicados..."
+                    placeholder={t('ui.searchAnnouncements')}
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
                     style={{
@@ -858,11 +859,11 @@ const MensajeriaConferencia = ({
 
                 <div style={{ display: 'flex', gap: '0.3rem', overflowX: 'auto', paddingBottom: '2px' }}>
                   {[
-                    { id: 'TODAS', label: 'Todas' },
-                    { id: 'urgente', label: '🚨 Urgentes' },
-                    { id: 'alerta', label: '⚠️ Alertas' },
-                    { id: 'info', label: 'ℹ️ Info' },
-                    { id: 'logistica', label: '🛠️ Logística' }
+                    { id: 'TODAS', label: t('avisos.filterAll') },
+                    { id: 'urgente', label: t('ui.urgent2') },
+                    { id: 'alerta', label: t('ui.alerts') },
+                    { id: 'info', label: t('ui.info') },
+                    { id: 'logistica', label: t('ui.logistics2') }
                   ].map(tFilter => {
                     const isSelected = filtroPrioridad === tFilter.id;
                     return (
@@ -907,10 +908,10 @@ const MensajeriaConferencia = ({
                         alignItems: 'center',
                         gap: '4px'
                       }}
-                      title={mostrarIgnorados ? 'Volver a avisos activos' : 'Ver comunicados ignorados'}
+                      title={mostrarIgnorados ? t('ui.backToActiveAnnouncements') : t('ui.viewIgnoredAnnouncements')}
                     >
                       <EyeOff size={11} />
-                      {mostrarIgnorados ? 'Volver a activos' : `Ignorados (${descartadosLocales.length})`}
+                      {mostrarIgnorados ? t('ui.backToActive') : `Ignorados (${descartadosLocales.length})`}
                     </button>
                   )}
                 </div>
@@ -938,15 +939,15 @@ const MensajeriaConferencia = ({
                   <Globe size={32} style={{ opacity: 0.35, marginBottom: '0.5rem' }} />
                   <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>
                     {mostrarIgnorados
-                      ? 'No tienes comunicados ignorados'
-                      : (busqueda ? 'No se encontraron comunicados con ese criterio' : 'Sin avisos de conferencia activos')}
+                      ? t('ui.youHaveNoIgnoredAnnouncements')
+                      : (busqueda ? t('ui.noAnnouncementsMatchTheseCriteria') : t('ui.noActiveConferenceAnnouncements'))}
                   </div>
                   <div style={{ fontSize: '0.76rem', marginTop: '3px' }}>
                     {mostrarIgnorados
-                      ? 'Los avisos a los que des a "Ignorar" aparecerán aquí si deseas restaurarlos.'
+                      ? t('ui.announcementsYouIgnoreWillAppearHereIfYouWantTo')
                       : (cleanConfId
-                        ? 'Los comunicados emitidos por la secretaría o el staff general aparecerán aquí en vivo.'
-                        : 'Conéctate a una conferencia activa para recibir avisos de toda la organización.')}
+                        ? t('ui.announcementsFromTheSecretariatOrGeneralStaffWillAppearHere')
+                        : t('ui.connectToAnActiveConferenceToReceiveAnnouncementsFromThe'))}
                   </div>
                 </div>
               ) : (
@@ -989,7 +990,7 @@ const MensajeriaConferencia = ({
 
                           {/* Emisor */}
                           <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-color)' }}>
-                            {aviso.emisor || 'Organización'}
+                            {aviso.emisor || t('conferences.issuerOrg')}
                           </span>
 
                           {/* Destinatario */}

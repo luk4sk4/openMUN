@@ -297,12 +297,12 @@ const QuickAddCountryModal = ({ isOpen, onClose, activeTab }) => {
                     padding: '0.55rem 0.8rem',
                     borderRadius: '8px',
                     backgroundColor: isSelected
-                      ? 'rgba(59, 130, 246, 0.12)'
+                      ? 'var(--accent-soft)'
                       : estaEnLista
-                        ? 'rgba(255, 255, 255, 0.03)'
+                        ? 'var(--card-hover)'
                         : 'transparent',
                     border: isSelected
-                      ? '1px solid rgba(59, 130, 246, 0.3)'
+                      ? '1px solid var(--accent-color)'
                       : '1px solid transparent',
                     cursor: 'pointer',
                     transition: 'all 0.1s ease'
@@ -328,11 +328,11 @@ const QuickAddCountryModal = ({ isOpen, onClose, activeTab }) => {
                           fontSize: '0.68rem',
                           padding: '1px 5px',
                           borderRadius: '4px',
-                          backgroundColor: pais.estatus === 'Presente y Votando' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                          backgroundColor: pais.estatus === 'Presente y Votando' ? 'var(--info-soft)' : 'var(--card-hover)',
                           color: 'var(--muted-text)'
                         }}
                       >
-                        {pais.estatus}
+                        {t(`sessionValues.${pais.estatus}`, pais.estatus)}
                       </span>
                     )}
                   </div>
@@ -364,8 +364,8 @@ const QuickAddCountryModal = ({ isOpen, onClose, activeTab }) => {
                           fontSize: '0.75rem',
                           padding: '3px 8px',
                           borderRadius: '6px',
-                          backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                          color: isSelected ? 'var(--primary-color)' : 'var(--muted-text)',
+                          backgroundColor: isSelected ? 'var(--accent-soft)' : 'var(--card-hover)',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--muted-text)',
                           fontWeight: '500'
                         }}
                       >
@@ -394,8 +394,8 @@ const QuickAddCountryModal = ({ isOpen, onClose, activeTab }) => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)' }}>↑↓</kbd> Navegar</span>
-            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)' }}>↵</kbd> Añadir / Retirar</span>
+            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)' }}>↑↓</kbd> {t('ui.navigate')}</span>
+            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)' }}>↵</kbd> {t('ui.addRemove')}</span>
           </div>
           <span>
             <kbd style={{ padding: '1px 5px', borderRadius: '3px', background: 'rgba(255,255,255,0.08)', fontWeight: '600' }}>A</kbd>

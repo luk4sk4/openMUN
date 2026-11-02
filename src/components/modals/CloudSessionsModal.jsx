@@ -1,3 +1,5 @@
+import i18n from '../../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -20,6 +22,7 @@ import { useSession } from '../../context/SessionContext';
 import ConfirmModal from './ConfirmModal';
 
 const CloudSessionsModal = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const {
     isCloudLinked,
     cloudAccount,
@@ -69,11 +72,11 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     if (!nombreConferencia.trim()) {
-      showNotification('Ingresa el nombre de la conferencia o cuenta.', 'error');
+      showNotification(t('ui.enterTheConferenceOrAccountName'), 'error');
       return;
     }
     if (!password) {
-      showNotification('Ingresa la contraseña.', 'error');
+      showNotification(t('ui.enterThePassword'), 'error');
       return;
     }
 
@@ -83,13 +86,13 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
       await conectarCloud(nombreConferencia.trim(), password, isRegister);
       showNotification(
         isRegister
-          ? `¡Cuenta "${nombreConferencia.trim()}" registrada y conectada!`
-          : `Sesión iniciada como "${nombreConferencia.trim()}"`
+          ? t('ui.accountRegisteredAndConnected', { v0: nombreConferencia.trim() })
+          : t('ui.signedInAs', { v0: nombreConferencia.trim() })
       );
       setPassword('');
     } catch (err) {
       console.error('Error al autenticar en la nube:', err);
-      showNotification(err.message || 'Error al conectar con la nube', 'error');
+      showNotification(err.message || t('ui.errorConnectingToTheCloud'), 'error');
     } finally {
       setLoading(false);
     }
@@ -103,21 +106,21 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
 
   const handleCargarComite = (comite) => {
     setConfirmConfig({
-      title: '¿Cargar Comité desde la Nube?',
-      message: 'Esta acción descargará y aplicará todos los datos del comité seleccionado.',
+      title: t('ui.loadCommitteeFromTheCloud'),
+      message: t('ui.thisWillDownloadAndApplyAllDataFromTheSelected'),
       highlightText: comite.name,
-      submessage: '⚠️ Los datos actuales del debate en este navegador se reemplazarán por los del comité guardado.',
-      confirmText: 'Cargar Comité',
-      cancelText: 'Cancelar',
+      submessage: t('ui.currentDebateDataInThisBrowserWillBeReplacedWith'),
+      confirmText: t('ui.loadCommittee'),
+      cancelText: i18n.t('ui.cancel'),
       type: 'load',
       onConfirm: async () => {
         setConfirmConfig(null);
         setLoading(true);
         try {
           await cargarComiteCloud(comite.id, comite.name);
-          showNotification(`Comité "${comite.name}" cargado con éxito`);
+          showNotification(t('ui.committeeLoadedSuccessfully', { v0: comite.name }));
         } catch (err) {
-          showNotification(err.message || 'Error al cargar el comité', 'error');
+          showNotification(err.message || t('ui.errorLoadingCommittee'), 'error');
         } finally {
           setLoading(false);
         }
@@ -131,10 +134,10 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       const res = await guardarComiteCloud(nuevoNombre.trim());
-      showNotification(`Comité "${res.name}" guardado exitosamente en la nube`);
+      showNotification(t('ui.committeeSavedSuccessfullyToTheCloud', { v0: res.name }));
       setMostrarCrear(false);
     } catch (err) {
-      showNotification(err.message || 'Error al guardar el comité', 'error');
+      showNotification(err.message || t('ui.errorSavingCommittee'), 'error');
     } finally {
       setLoading(false);
     }
@@ -142,21 +145,21 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
 
   const handleSobrescribir = (comite) => {
     setConfirmConfig({
-      title: '¿Sobrescribir Comité en la Nube?',
-      message: 'Esta acción reemplazará los datos guardados en la nube con la sesión que tienes actualmente en pantalla.',
+      title: t('ui.overwriteCommitteeInTheCloud'),
+      message: t('ui.thisWillReplaceCloudDataWithTheSessionCurrentlyOn'),
       highlightText: comite.name,
-      submessage: 'Los datos previos de este comité en la nube serán actualizados.',
+      submessage: t('ui.thePreviousCloudDataForThisCommitteeWillBeUpdated'),
       confirmText: 'Sobrescribir',
-      cancelText: 'Cancelar',
+      cancelText: i18n.t('ui.cancel'),
       type: 'warning',
       onConfirm: async () => {
         setConfirmConfig(null);
         setLoading(true);
         try {
           await guardarComiteCloud(comite.name);
-          showNotification(`Comité "${comite.name}" actualizado en la nube`);
+          showNotification(t('ui.committeeUpdatedInTheCloud', { v0: comite.name }));
         } catch (err) {
-          showNotification(err.message || 'Error al actualizar comité', 'error');
+          showNotification(err.message || t('ui.errorUpdatingCommittee'), 'error');
         } finally {
           setLoading(false);
         }
@@ -166,21 +169,21 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
 
   const handleEliminar = (comite) => {
     setConfirmConfig({
-      title: '¿Eliminar Comité de la Nube?',
-      message: '¿Estás seguro de que deseas eliminar permanentemente este comité de tu conferencia en la nube?',
+      title: t('ui.deleteCommitteeFromTheCloud'),
+      message: t('ui.permanentlyDeleteThisCommitteeFromYourCloudConference'),
       highlightText: comite.name,
-      submessage: 'Esta acción no se puede deshacer.',
-      confirmText: 'Eliminar Comité',
-      cancelText: 'Cancelar',
+      submessage: t('ui.thisActionCannotBeUndone'),
+      confirmText: t('ui.deleteCommittee2'),
+      cancelText: i18n.t('ui.cancel'),
       type: 'danger',
       onConfirm: async () => {
         setConfirmConfig(null);
         setLoading(true);
         try {
           await eliminarComiteCloud(comite.id);
-          showNotification(`Comité "${comite.name}" eliminado de la nube`);
+          showNotification(t('ui.committeeDeletedFromTheCloud', { v0: comite.name }));
         } catch (err) {
-          showNotification(err.message || 'Error al eliminar comité', 'error');
+          showNotification(err.message || t('ui.errorDeletingCommittee2'), 'error');
         } finally {
           setLoading(false);
         }
@@ -265,12 +268,12 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                Respaldo en la Nube
+                {t('ui.cloudBackup')}
               </h3>
               <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                 {isCloudLinked && cloudAccount
                   ? `Conferencia activa: ${cloudAccount.name}`
-                  : 'Sincroniza y guarda los comités de tu conferencia'}
+                  : t('ui.syncAndSaveYourConferenceCommittees')}
               </div>
             </div>
           </div>
@@ -278,7 +281,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button
               onClick={onClose}
-              aria-label="Cerrar modal"
+              aria-label={t('ui.closeModal')}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -322,12 +325,12 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
               <div style={{ textAlign: 'center', marginBottom: '1.2rem' }}>
                 <Cloud size={40} style={{ color: 'var(--accent-color)', marginBottom: '0.6rem', opacity: 0.9 }} />
                 <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.1rem', fontWeight: '700' }}>
-                  {authMode === 'login' ? 'Conectar con tu Conferencia' : 'Crear Cuenta para la Conferencia'}
+                  {authMode === 'login' ? t('ui.connectToYourConference') : t('ui.createConferenceAccount')}
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: '1.4' }}>
                   {authMode === 'login'
-                    ? 'Ingresa el nombre y contraseña de tu conferencia para acceder a todos los comités guardados.'
-                    : 'Registra un nombre y contraseña para tu conferencia. Las contraseñas se hashean de forma segura.'}
+                    ? t('ui.enterYourConferenceNameAndPasswordToAccessAllSaved')
+                    : t('ui.registerANameAndPasswordForYourConferencePasswordsAre')}
                 </p>
               </div>
 
@@ -359,7 +362,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     transition: 'all 0.15s'
                   }}
                 >
-                  Iniciar Sesión
+                  {t('ui.signIn')}
                 </button>
                 <button
                   type="button"
@@ -377,7 +380,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     transition: 'all 0.15s'
                   }}
                 >
-                  Crear Cuenta
+                  {t('ui.createAccount')}
                 </button>
               </div>
 
@@ -385,13 +388,13 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
               <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', marginBottom: '0.3rem' }}>
-                    Nombre de la Conferencia / Cuenta
+                    {t('ui.conferenceAccountName')}
                   </label>
                   <input
                     type="text"
                     value={nombreConferencia}
                     onChange={(e) => setNombreConferencia(e.target.value)}
-                    placeholder="Ej: MUN Madrid 2026, URUMUN..."
+                    placeholder={t('ui.eGMunMadrid2026Urumun')}
                     required
                     style={{
                       width: '100%',
@@ -408,14 +411,14 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', marginBottom: '0.3rem' }}>
-                    Contraseña
+                    {t('ui.password')}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Contraseña de la conferencia"
+                      placeholder={t('ui.conferencePassword')}
                       required
                       style={{
                         width: '100%',
@@ -431,7 +434,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      aria-label={showPassword ? t('ui.hidePassword') : t('ui.showPassword')}
                       style={{
                         position: 'absolute',
                         right: '8px',
@@ -474,10 +477,10 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   {loading && <RefreshCw size={15} className="spin-animation" />}
                   <span>
                     {loading
-                      ? 'Conectando...'
+                      ? t('ui.connecting')
                       : authMode === 'login'
-                        ? 'Iniciar Sesión y Cargar Comités'
-                        : 'Crear Conferencia y Vincular'}
+                        ? t('ui.signInAndLoadCommittees')
+                        : t('ui.createAndLinkConference')}
                   </span>
                 </button>
               </form>
@@ -499,11 +502,11 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
               >
                 <div>
                   <div style={{ fontSize: '0.68rem', color: 'var(--accent-color)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Conferencia Vinculada
+                    {t('ui.linkedConference')}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '1px' }}>
                     <span style={{ fontSize: '0.95rem', fontWeight: '700' }}>
-                      {cloudAccount?.name || 'Conferencia'}
+                      {cloudAccount?.name || t('ui.conference')}
                     </span>
                     <span style={{
                       fontSize: '0.62rem',
@@ -529,20 +532,20 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                       }`
                     }}>
                       {cloudSyncStatus === 'syncing'
-                        ? 'Guardando cambios...'
+                        ? t('ui.savingChanges')
                         : cloudSyncStatus === 'error'
-                          ? 'Error al guardar'
-                          : 'Autoguardado activo'}
+                          ? t('ui.errorSaving')
+                          : t('ui.autosaveActive')}
                     </span>
                   </div>
                   {cloudActiveComiteName && (
                     <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                      Comité en pantalla: <strong>{cloudActiveComiteName}</strong>
+                      {t('ui.committeeOnScreen')} <strong>{cloudActiveComiteName}</strong>
                     </div>
                   )}
                   {cloudLastSync && (
                     <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', marginTop: '2px', opacity: 0.85 }}>
-                      Último guardado: {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      {t('ui.lastSaved')} {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </div>
                   )}
                 </div>
@@ -551,7 +554,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   <button
                     onClick={handleRefresh}
                     disabled={loading}
-                    title="Actualizar lista de comités"
+                    title={t('ui.refreshCommitteeList')}
                     style={{
                       background: 'transparent',
                       border: '1px solid var(--border-color)',
@@ -566,12 +569,12 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     }}
                   >
                     <RefreshCw size={13} className={loading ? 'spin-animation' : ''} />
-                    <span>Actualizar</span>
+                    <span>{t('ui.refresh')}</span>
                   </button>
 
                   <button
                     onClick={desconectarCloud}
-                    title="Cerrar sesión de la conferencia"
+                    title={t('ui.signOutOfTheConference')}
                     style={{
                       background: 'transparent',
                       border: '1px solid var(--border-color)',
@@ -586,7 +589,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                     }}
                   >
                     <LogOut size={13} />
-                    <span>Desconectar</span>
+                    <span>{t('ui.disconnect')}</span>
                   </button>
                 </div>
               </div>
@@ -612,7 +615,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   }}
                 >
                   <Plus size={16} />
-                  <span>Guardar Sesión Actual como Nuevo Comité en la Nube</span>
+                  <span>{t('ui.saveCurrentSessionAsANewCommitteeInTheCloud')}</span>
                 </button>
               ) : (
                 <form
@@ -628,14 +631,14 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   }}
                 >
                   <label style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-color)' }}>
-                    Nombre del Comité / Proyecto
+                    {t('ui.committeeProjectName')}
                   </label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input
                       type="text"
                       value={nuevoNombre}
                       onChange={(e) => setNuevoNombre(e.target.value)}
-                      placeholder="Ej: DISEC, Consejo de Seguridad, Crisis..."
+                      placeholder={t('ui.eGDisecSecurityCouncilCrisis')}
                       required
                       autoFocus
                       style={{
@@ -666,7 +669,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                       }}
                     >
                       <Save size={14} />
-                      <span>Guardar</span>
+                      <span>{t('ui.save')}</span>
                     </button>
                     <button
                       type="button"
@@ -681,7 +684,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                         cursor: 'pointer'
                       }}
                     >
-                      Cancelar
+                      {t('toast.cancelBtn')}
                     </button>
                   </div>
                 </form>
@@ -691,10 +694,10 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <span style={{ fontSize: '0.78rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--muted-text)' }}>
-                    Comités Guardados ({cloudComitesList.length})
+                    {t('ui.savedCommittees')}{cloudComitesList.length})
                   </span>
                   <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
-                    Haz clic en "Cargar" para continuar el debate
+                    {t('ui.clickLoadToContinueTheDebate')}
                   </span>
                 </div>
 
@@ -710,10 +713,10 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                   >
                     <FileText size={32} style={{ color: 'var(--muted-text)', opacity: 0.5, marginBottom: '0.5rem' }} />
                     <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>
-                      No hay comités guardados en esta conferencia
+                      {t('ui.noCommitteesSavedInThisConference')}
                     </div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
-                      Pulsa el botón de arriba para guardar la sesión actual en la nube.
+                      {t('ui.useTheButtonAboveToSaveTheCurrentSessionTo')}
                     </div>
                   </div>
                 ) : (
@@ -769,7 +772,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                                       fontWeight: '600'
                                     }}
                                   >
-                                    Cargado
+                                    {t('ui.loaded')}
                                   </span>
                                 )}
                               </div>
@@ -783,7 +786,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
                             <button
                               onClick={() => handleCargarComite(comite)}
-                              title="Cargar y aplicar datos de este comité"
+                              title={t('ui.loadAndApplyThisCommitteeSData')}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -799,12 +802,12 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                               }}
                             >
                               <Download size={12} />
-                              <span>Cargar</span>
+                              <span>{t('ui.load')}</span>
                             </button>
 
                             <button
                               onClick={() => handleSobrescribir(comite)}
-                              title="Actualizar este comité con los datos en pantalla"
+                              title={t('ui.updateThisCommitteeWithTheDataOnScreen')}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -820,12 +823,12 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
                               }}
                             >
                               <RefreshCw size={12} />
-                              <span>Sobrescribir</span>
+                              <span>{t('ui.overwrite')}</span>
                             </button>
 
                             <button
                               onClick={() => handleEliminar(comite)}
-                              title="Eliminar este comité de la nube"
+                              title={t('ui.deleteThisCommitteeFromTheCloud')}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',

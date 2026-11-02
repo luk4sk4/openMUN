@@ -57,7 +57,7 @@ export default function LibreWidgetBanner({ onClose, isLight = false }) {
           e.currentTarget.style.backgroundColor = 'transparent';
         }}
         title={t('common.close', 'Cerrar')}
-        aria-label="Cerrar banner"
+        aria-label={t('ui.closeBanner')}
       >
         <X size={14} />
       </button>

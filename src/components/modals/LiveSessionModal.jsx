@@ -250,7 +250,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
 
           <button
             onClick={onClose}
-            aria-label="Cerrar modal"
+            aria-label={t('ui.closeModal')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -398,7 +398,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               transition: 'all 0.15s ease'
             }}
           >
-            <Mail size={15} /> Notas & Pajes
+            <Mail size={15} /> {t('ui.notesPages')}
             {unreadNotesCount > 0 && (
               <span style={{
                 backgroundColor: 'var(--danger-color)',
@@ -770,7 +770,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                             gap: '0.4rem',
                             transition: 'all 0.15s ease'
                           }}
-                          title="Copiar enlace de invitación para delegados"
+                          title={t('ui.copyInvitationLinkForDelegates')}
                         >
                           {copiado ? <Check size={16} /> : <Copy size={16} />}
                           {copiado ? t('common.copied', '¡Copiado!') : t('liveSession.copyLink', 'Copiar Link')}
@@ -865,7 +865,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 {isHostActive && roomSettings?.privacyMode !== 'hidden' && (
                   <div
                     onClick={() => setMostrarQRFullscreen(true)}
-                    title="Haz clic para ver el código QR en pantalla completa"
+                    title={t('ui.clickToViewTheQrCodeInFullScreen')}
                     style={{
                       backgroundColor: '#ffffff',
                       padding: '12px 14px 10px 14px',
@@ -1126,12 +1126,12 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'direct' ? 'var(--success-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <Zap size={14} /> Directas
+                        <Zap size={14} /> {t('liveSession.requestModeDirect')}
                       </span>
                       {roomSettings.caucusRequestMode === 'direct' && <CheckCircle2 size={16} style={{ color: 'var(--success-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                      Ingreso instantáneo a la cola del Caucus.
+                      {t('liveSession.requestModeDirectCaucusDesc')}
                     </span>
                   </div>
 
@@ -1152,12 +1152,12 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'approval' ? 'var(--warning-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <Hand size={14} /> Con Aprobación
+                        <Hand size={14} /> {t('liveSession.requestModeApproval')}
                       </span>
                       {roomSettings.caucusRequestMode === 'approval' && <CheckCircle2 size={16} style={{ color: 'var(--warning-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                      La Mesa o Secretaría autoriza cada turno de Caucus.
+                      {t('liveSession.requestModeApprovalCaucusDesc')}
                     </span>
                   </div>
 
@@ -1178,12 +1178,12 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'disabled' ? 'var(--danger-color)' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <Lock size={14} /> Deshabilitadas
+                        <Lock size={14} /> {t('liveSession.requestModeDisabled')}
                       </span>
                       {roomSettings.caucusRequestMode === 'disabled' && <CheckCircle2 size={16} style={{ color: 'var(--danger-color)' }} />}
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                      Peticiones de orador bloqueadas durante el Caucus.
+                      {t('liveSession.requestModeDisabledCaucusDesc')}
                     </span>
                   </div>
                 </div>
@@ -1216,9 +1216,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   }}>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Mail size={15} /> Notas entre Delegaciones
+                        <Mail size={15} /> {t('liveSession.allowDelegateNotes')}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite pajes privados entre delegados</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowDelegateNotesDesc')}</div>
                     </div>
                     <input
                       type="checkbox"
@@ -1230,8 +1230,8 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
 
                   <label className="note-approval-toggle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 16px', border: '1px solid var(--subborder-color)', borderRadius: 'var(--border-radius, 6px)' }}>
                     <span>
-                      <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700 }}>Requerir aprobación de staff para las notas de delegados</span>
-                      <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-text)' }}>Staff debe aprobar cada nota antes de entregarla. Sin staff, las notas quedarán pendientes. Desactivar esta opción no libera las ya pendientes.</span>
+                      <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700 }}>{t('ui.requireStaffApprovalForDelegateNotes')}</span>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-text)' }}>{t('ui.staffMustApproveEachNoteBeforeDeliveryWithoutStaffNotes')}</span>
                     </span>
                     <input type="checkbox" checked={!!roomSettings.requireStaffNoteApproval} onChange={e => updateRoomSettings({ requireStaffNoteApproval: e.target.checked })} style={{ width: '18px', height: '18px', flexShrink: 0, accentColor: 'var(--accent-color)' }} />
                   </label>
@@ -1248,9 +1248,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   }}>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Landmark size={15} /> Notas a la Mesa (Chair)
+                        <Landmark size={15} /> {t('liveSession.allowChairNotes')}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite mensajes directos a la Mesa</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowChairNotesDesc')}</div>
                     </div>
                     <input
                       type="checkbox"
@@ -1272,9 +1272,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   }}>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <FileText size={15} /> Proponer Mociones y Puntos
+                        <FileText size={15} /> {t('liveSession.allowMotions')}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite formular mociones desde su panel</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowMotionsDesc')}</div>
                     </div>
                     <input
                       type="checkbox"
@@ -1296,9 +1296,9 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   }}>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Vote size={15} /> Votación Telemática en Vivo
+                        <Vote size={15} /> {t('liveSession.allowLiveVoting')}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>Permite emitir voto en votaciones activas</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowLiveVotingDesc')}</div>
                     </div>
                     <input
                       type="checkbox"
@@ -1569,10 +1569,10 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                         }} />
                         <div>
                           <div style={{ fontWeight: '800', fontSize: '0.9rem' }}>
-                            {peer.country || 'Sin Nombre'}
+                            {peer.country || t('ui.unnamed')}
                           </div>
                           <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-                            Peer ID: {peer.peerId.substring(0, 10)}... • Rol: {peer.role}
+                            Peer ID: {peer.peerId.substring(0, 10)}{t('ui.role')} {peer.role}
                           </div>
                         </div>
                       </div>
@@ -1592,7 +1592,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
 
                         <button
                           onClick={() => {
-                            if (confirm(`¿Deseas desconectar a ${peer.country || peer.peerId}?`)) {
+                            if (confirm(t('ui.disconnect2', { v0: peer.country || peer.peerId }))) {
                               kickPeer(peer.peerId);
                             }
                           }}
@@ -1641,7 +1641,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
                     <FileText size={18} style={{ color: 'var(--accent-color)' }} />
                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--accent-color)' }}>
-                      Propuestas de Enmienda ({enmiendasPropuestas.length})
+                      {t('ui.amendmentProposals')}{enmiendasPropuestas.length})
                     </h4>
                   </div>
 
@@ -1672,7 +1672,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                               color: 'var(--accent-color)',
                               border: '1px solid var(--accent-color)'
                             }}>
-                              {prop.tipoEnmienda?.toUpperCase() || 'ENMIENDA'}
+                              {prop.tipoEnmienda?.toUpperCase() || t('ui.amendment')}
                             </span>
                           </div>
 
@@ -1707,7 +1707,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                                 gap: '0.3rem'
                               }}
                             >
-                              <Check size={13} /> Incorporar
+                              <Check size={13} /> {t('ui.incorporate')}
                             </button>
                             <button
                               onClick={() => {
@@ -1726,14 +1726,14 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                                 cursor: 'pointer'
                               }}
                             >
-                              Descartar
+                              {t('avisos.ignore')}
                             </button>
                           </div>
                         </div>
 
                         {prop.textoPropuesto && (
                           <div style={{ fontSize: '0.8rem', color: 'var(--success-color)', backgroundColor: 'var(--success-soft)', padding: '0.4rem 0.6rem', borderRadius: 'var(--border-radius, 6px)', border: '1px solid var(--success-color)' }}>
-                            <strong>Propuesto:</strong> {prop.textoPropuesto}
+                            <strong>{t('ui.proposed')}</strong> {prop.textoPropuesto}
                           </div>
                         )}
                         {prop.justificacion && (
@@ -1795,7 +1795,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                             color: req.speechType === 'GSL' ? 'var(--info-color)' : (req.speechType === 'CAUCUS' ? 'var(--accent-color)' : 'var(--warning-color)'),
                             border: `1px solid ${req.speechType === 'GSL' ? 'var(--info-color)' : (req.speechType === 'CAUCUS' ? 'var(--accent-color)' : 'var(--warning-color)')}`
                           }}>
-                            {req.speechType === 'GSL' ? 'Lista GSL' : (req.speechType === 'CAUCUS' ? 'Debate' : (req.speechType === 'POINT' ? 'Punto Parlamentario (POI)' : (req.details?.tipo === 'Caucus Moderado' ? 'Debate' : (req.details?.tipo || 'Moción'))))}
+                            {req.speechType === 'GSL' ? t('ui.gslList') : (req.speechType === 'CAUCUS' ? t('sidebar.widgets.pizarra_mociones.category') : (req.speechType === 'POINT' ? t('ui.parliamentaryPointPoi') : (req.details?.tipo === 'Caucus Moderado' ? t('sidebar.widgets.pizarra_mociones.category') : (req.details?.tipo || t('ui.motion')))))}
                           </span>
                           <span style={{ fontWeight: '800', fontSize: '0.95rem' }}>
                             {req.country}
@@ -1804,7 +1804,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
 
                         {req.details?.tipo && (
                           <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '4px' }}>
-                            Tipo: <strong>{req.details.tipo}</strong> {req.details.tema ? `• Motivo/Tema: ${req.details.tema}` : ''}
+                            {t('ui.type')} <strong>{req.details.tipo}</strong> {req.details.tema ? t('ui.reasonTopic', { v0: req.details.tema }) : ''}
                           </div>
                         )}
                       </div>
@@ -1826,7 +1826,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                             gap: '0.35rem'
                           }}
                         >
-                          <Check size={14} /> Aceptar
+                          <Check size={14} /> {t('ui.accept')}
                         </button>
 
                         <button
@@ -1842,7 +1842,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                             cursor: 'pointer'
                           }}
                         >
-                          Rechazar
+                          {t('ui.reject')}
                         </button>
                       </div>
                     </div>
@@ -1895,8 +1895,8 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
               e.stopPropagation();
               setMostrarQRFullscreen(false);
             }}
-            aria-label="Cerrar pantalla completa"
-            title="Cerrar (Esc)"
+            aria-label={t('ui.exitFullScreen')}
+            title={t('ui.closeEsc')}
             style={{
               position: 'absolute',
               top: '24px',
@@ -1959,7 +1959,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 letterSpacing: '0.04em'
               }}>
                 <Radio size={16} color="#38bdf8" />
-                SESIÓN EN DIRECTO OPENMUN
+                {t('ui.openmunLiveSession')}
               </div>
               
               <h2 style={{
@@ -1969,7 +1969,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 color: '#ffffff',
                 letterSpacing: '-0.02em'
               }}>
-                Escanear para Unirse
+                {t('liveSession.scanToJoin')}
               </h2>
               
               <p style={{
@@ -1979,7 +1979,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 maxWidth: '440px',
                 lineHeight: 1.45
               }}>
-                Apunta con la cámara de tu teléfono móvil o tablet al código QR para conectar inmediatamente con la sala.
+                {t('ui.pointYourPhoneOrTabletCameraAtTheQrCode')}
               </p>
             </div>
 
@@ -2024,7 +2024,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                 backdropFilter: 'blur(8px)'
               }}>
                 <span style={{ fontSize: '0.88rem', color: '#94a3b8', fontWeight: '600' }}>
-                  Código de Sala:
+                  {t('ui.roomCode')}
                 </span>
                 <span style={{
                   fontSize: '1.25rem',
@@ -2056,7 +2056,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                   }}
                 >
                   {copiado ? <Check size={16} /> : <Copy size={16} />}
-                  {copiado ? '¡Enlace Copiado!' : 'Copiar Enlace Directo'}
+                  {copiado ? t('ui.linkCopied') : t('ui.copyDirectLink')}
                 </button>
 
                 <button
@@ -2076,7 +2076,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <X size={16} /> Salir de Pantalla Completa
+                  <X size={16} /> {t('header.exitFullscreen')}
                 </button>
               </div>
             </div>

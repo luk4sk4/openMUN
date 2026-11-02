@@ -84,7 +84,7 @@ export default function NotFoundView({ isLight = false, onGoHome }) {
 
       {/* Footer hint */}
       <div className={`mt-8 text-xs relative z-10 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-        OpenMUN &copy; {new Date().getFullYear()} — Plataforma Web de Modelo de Naciones Unidas
+        OpenMUN &copy; {new Date().getFullYear()} {t('ui.modelUnitedNationsWebPlatform')}
       </div>
     </div>
   );

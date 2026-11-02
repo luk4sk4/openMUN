@@ -169,13 +169,13 @@ const MatrizPaises = () => {
       >
         {/* Lado Izquierdo: Drag + Bandera + Nombre + Veto */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <GripVertical size={13} style={{ color: '#71717a', cursor: 'grab', flexShrink: 0 }} title="Arrastrar para reordenar país" />
+          <GripVertical size={13} style={{ color: '#71717a', cursor: 'grab', flexShrink: 0 }} title={t('ui.dragToReorderCountry')} />
           
           {/* Bandera con click para editar */}
           <div
             onClick={() => setPaisAEditar(p)}
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-            title="Haz clic para cambiar bandera o imagen"
+            title={t('ui.clickToChangeFlagOrImage')}
           >
             <CountryFlag bandera={p.bandera} nombre={p.nombre} size="md" />
           </div>
@@ -190,7 +190,7 @@ const MatrizPaises = () => {
               alignItems: 'center',
               gap: '0.35rem'
             }}
-            title="Haz clic para editar delegación"
+            title={t('ui.clickToEditDelegation')}
           >
             {p.nombre}
           </span>
@@ -207,7 +207,7 @@ const MatrizPaises = () => {
               alignItems: 'center',
               opacity: p.veto ? 1 : 0.2
             }}
-            title={p.veto ? 'Tiene derecho a Veto (P5)' : 'Sin derecho a Veto'}
+            title={p.veto ? t('ui.hasVetoPowerP5') : t('ui.noVetoPower')}
           >
             <Crown size={14} color={p.veto ? 'var(--warning-color)' : '#888888'} fill={p.veto ? 'var(--warning-color)' : 'none'} />
           </button>
@@ -225,7 +225,7 @@ const MatrizPaises = () => {
               alignItems: 'center',
               opacity: 0.6
             }}
-            title="Editar nombre o bandera"
+            title={t('ui.editNameOrFlag')}
           >
             <Edit2 size={12} />
           </button>
@@ -378,11 +378,11 @@ const MatrizPaises = () => {
             {t('voting.majorityRequired', 'Mayorías (Simp / 2/3)')}
           </span>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
-            <span style={{ fontSize: '1.5rem', fontWeight: '650', color: 'var(--text-color)' }} title="Mayoría Simple">
+            <span style={{ fontSize: '1.5rem', fontWeight: '650', color: 'var(--text-color)' }} title={t('ui.simpleMajority')}>
               {mayoriaSimple}
             </span>
             <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>|</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: '650', color: 'var(--text-color)' }} title="Mayoría Cualificada (2/3)">
+            <span style={{ fontSize: '1.5rem', fontWeight: '650', color: 'var(--text-color)' }} title={t('ui.qualifiedMajority23')}>
               {mayoriaCualificada}
             </span>
           </div>
@@ -456,7 +456,7 @@ const MatrizPaises = () => {
               fontWeight: '600',
               cursor: 'pointer'
             }}
-            title="Ordenar alfabéticamente A-Z"
+            title={t('ui.sortAlphabeticallyAZ')}
           >
             <ArrowUpDown size={13} />
             <span>A-Z</span>
@@ -477,7 +477,7 @@ const MatrizPaises = () => {
               fontWeight: '600',
               cursor: 'pointer'
             }}
-            title="Marcar a todos como Ausente para iniciar nueva sesión"
+            title={t('ui.markEveryoneAbsentToStartANewSession')}
           >
             <RotateCcw size={13} />
             <span>{t('countries.resetAttendance', 'Reiniciar Lista')}</span>
@@ -537,11 +537,11 @@ const MatrizPaises = () => {
                 <CountryFlag bandera={paisActualRollCall.bandera} nombre={paisActualRollCall.nombre} size="xl" />
                 <div>
                   <div style={{ fontSize: '0.68rem', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {t('countries.currentStatus', 'Estatus actual')}: {paisActualRollCall.estatus}
+                    {t('countries.currentStatus', 'Estatus actual')}: {t(`sessionValues.${paisActualRollCall.estatus}`, paisActualRollCall.estatus)}
                   </div>
                   <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                     <span>{paisActualRollCall.nombre}</span>
-                    {paisActualRollCall.veto && <Crown size={16} color="var(--warning-color)" fill="var(--warning-color)" title="Veto P5" />}
+                    {paisActualRollCall.veto && <Crown size={16} color="var(--warning-color)" fill="var(--warning-color)" title={t('voting.vetoP5')} />}
                   </div>
                 </div>
               </div>

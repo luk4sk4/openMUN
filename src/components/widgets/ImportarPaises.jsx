@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   Upload,
@@ -25,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import {
+  emojiToIso,
   normalizarBandera,
   procesarImagenBandera,
   DICCIONARIO_PAISES_ISO
@@ -511,7 +513,7 @@ function parsearJSON(texto) {
     } catch {}
   }
 
-  if (!arr) throw new Error('El JSON debe contener una lista o un array en "paises".');
+  if (!arr) throw new Error(i18n.t('ui.jsonMustContainAListOrAnArrayInPaises'));
   return arr.map((item, i) => filaAPais(item, i)).filter(Boolean);
 }
 
@@ -529,7 +531,7 @@ async function parsearXLSX(archivo) {
   const buffer = await archivo.arrayBuffer();
   const wb = XLSX.read(buffer, { type: 'array' });
   if (!wb.SheetNames || wb.SheetNames.length === 0) {
-    throw new Error('El archivo Excel no contiene hojas de cálculo.');
+    throw new Error(i18n.t('ui.theExcelFileContainsNoWorksheets'));
   }
 
   // Buscar la primera hoja con datos
@@ -546,7 +548,7 @@ async function parsearXLSX(archivo) {
   }
 
   if (rawData.length === 0) {
-    throw new Error('El archivo Excel está vacío o no contiene filas con datos.');
+    throw new Error(i18n.t('ui.theExcelFileIsEmptyOrContainsNoDataRows'));
   }
 
   // Filtrar filas completamente vacías
@@ -555,7 +557,7 @@ async function parsearXLSX(archivo) {
     .map(row => row.map(cell => cell !== null && cell !== undefined ? String(cell).trim() : ''));
 
   if (filasMatriz.length === 0) {
-    throw new Error('No se detectaron delegaciones válidas en el archivo Excel.');
+    throw new Error(i18n.t('ui.noValidDelegationsDetectedInTheExcelFile'));
   }
 
   // Detectar columnas y fila de inicio revisando cabeceras en las primeras filas
@@ -640,11 +642,11 @@ const ImportarPaises = () => {
             try {
               const base64 = await procesarImagenBandera(file);
               setNuevaBandera(base64);
-              setMensajeFeedbackIndividual('¡Imagen pegada del portapapeles con éxito!');
+              setMensajeFeedbackIndividual(t('ui.imagePastedFromClipboardSuccessfully'));
               setTimeout(() => setMensajeFeedbackIndividual(''), 3000);
             } catch (err) {
               console.error('Error al procesar imagen del portapapeles:', err);
-              setMensajeFeedbackIndividual('Error al procesar imagen');
+              setMensajeFeedbackIndividual(t('ui.errorProcessingImage'));
             }
           }
           break;
@@ -719,12 +721,12 @@ const ImportarPaises = () => {
               } else if (tab === 'individual') {
                 e.preventDefault();
                 setNuevaBandera(base64);
-                setExito('Imagen de bandera asignada');
+                setExito(t('ui.flagImageAssigned'));
                 setTimeout(() => setExito(''), 3000);
               }
             } catch (err) {
               console.error('Error al procesar imagen pegada:', err);
-              setError('No se pudo procesar la imagen del portapapeles');
+              setError(t('ui.couldNotProcessClipboardImage'));
             }
           }
           break;
@@ -766,17 +768,17 @@ const ImportarPaises = () => {
       } else if (ext === 'xlsx' || ext === 'xls') {
         parsed = await parsearXLSX(archivo);
       } else {
-        throw new Error('Formato no soportado. Sube archivos .xlsx, .xls, .csv, .tsv, .json o .txt');
+        throw new Error(t('ui.unsupportedFormatUploadXlsxXlsCsvTsvJsonOrTxt'));
       }
 
       if (parsed.length === 0) {
-        throw new Error('No se detectaron delegaciones válidas en el archivo.');
+        throw new Error(t('ui.noValidDelegationsDetectedInTheFile'));
       }
       setPreview(parsed);
-      setExito(`¡Archivo procesado con éxito! Revisa la lista antes de guardar.`);
+      setExito(t('ui.fileProcessedSuccessfullyReviewTheListBeforeSaving'));
       setTimeout(() => setExito(''), 3500);
     } catch (err) {
-      setError(err.message || 'Error al procesar el archivo.');
+      setError(err.message || t('ui.errorProcessingFile'));
     } finally {
       setCargando(false);
     }
@@ -813,7 +815,7 @@ const ImportarPaises = () => {
     setExito('');
     setSesionCompletaDetectada(null);
     if (!textoPegar.trim()) {
-      setError('Pega una lista de países o datos antes de continuar.');
+      setError(t('ui.pasteACountryListOrDataBeforeContinuing'));
       return;
     }
     try {
@@ -835,7 +837,7 @@ const ImportarPaises = () => {
       }
 
       if (parsed.length === 0) {
-        setError('No se encontraron países válidos en el texto.');
+        setError(t('ui.noValidCountriesFoundInTheText'));
         return;
       }
       setPreview(parsed);
@@ -843,7 +845,7 @@ const ImportarPaises = () => {
       setExito(`Se detectaron ${parsed.length} delegaciones.`);
       setTimeout(() => setExito(''), 3000);
     } catch (err) {
-      setError(err.message || 'Error al interpretar el texto pegado.');
+      setError(err.message || t('ui.errorParsingPastedText'));
     }
   };
 
@@ -851,20 +853,20 @@ const ImportarPaises = () => {
   const handlePegarDesdeClipboard = async () => {
     try {
       if (!navigator.clipboard?.readText) {
-        setError('Acceso al portapapeles no soportado por el navegador.');
+        setError(t('ui.clipboardAccessIsNotSupportedByYourBrowser'));
         return;
       }
       const text = await navigator.clipboard.readText();
       if (!text) {
-        setError('El portapapeles está vacío.');
+        setError(t('ui.theClipboardIsEmpty'));
         return;
       }
       setTextoPegar(text);
-      setExito('Texto pegado del portapapeles');
+      setExito(t('ui.textPastedFromClipboard'));
       setTimeout(() => setExito(''), 2500);
     } catch (err) {
       console.error(err);
-      setError('Permiso de portapapeles denegado. Usa Ctrl+V manualmente.');
+      setError(t('ui.clipboardPermissionDeniedUseCtrlVManually'));
     }
   };
 
@@ -884,7 +886,7 @@ const ImportarPaises = () => {
 
     if (aplicarDirecto) {
       setPaises(parsed);
-      setExito(`Comité "${preset.nombre}" cargado (${parsed.length} delegaciones).`);
+      setExito(t('ui.committeeLoadedDelegations', { v0: preset.nombre, v1: parsed.length }));
       setTimeout(() => setExito(''), 3500);
     } else {
       setPreview(parsed);
@@ -896,7 +898,7 @@ const ImportarPaises = () => {
   const handleAñadirIndividual = (e) => {
     e?.preventDefault();
     if (!nuevoNombre.trim()) {
-      setError('Escribe el nombre de la delegación.');
+      setError(t('ui.enterTheDelegationSName'));
       return;
     }
 
@@ -914,7 +916,7 @@ const ImportarPaises = () => {
     // Validar duplicado exacto
     const existe = paises.some(p => p.nombre.toLowerCase() === nuevo.nombre.toLowerCase());
     if (existe) {
-      if (!confirm(`"${nuevo.nombre}" ya existe en la sesión. ¿Añadirla de todos modos?`)) {
+      if (!confirm(t('ui.alreadyExistsInTheSessionAddItAnyway', { v0: nuevo.nombre }))) {
         return;
       }
     }
@@ -923,7 +925,7 @@ const ImportarPaises = () => {
     setNuevoNombre('');
     setNuevaBandera('');
     setNuevoVeto(false);
-    setExito(`"${nuevo.nombre}" añadida a la sesión.`);
+    setExito(t('ui.addedToTheSession', { v0: nuevo.nombre }));
     setTimeout(() => setExito(''), 3000);
     setTimeout(() => {
       inputIndividualRef.current?.focus();
@@ -946,7 +948,7 @@ const ImportarPaises = () => {
       setTimeout(() => setExito(''), 3000);
     } catch (err) {
       console.error(err);
-      setError('Error al procesar la imagen seleccionada.');
+      setError(t('ui.errorProcessingTheSelectedImage'));
     } finally {
       if (rowFileInputRef.current) rowFileInputRef.current.value = '';
     }
@@ -960,11 +962,11 @@ const ImportarPaises = () => {
     try {
       const base64 = await procesarImagenBandera(file);
       setNuevaBandera(base64);
-      setMensajeFeedbackIndividual('Imagen cargada correctamente');
+      setMensajeFeedbackIndividual(t('ui.imageLoadedSuccessfully'));
       setTimeout(() => setMensajeFeedbackIndividual(''), 3000);
     } catch (err) {
       console.error(err);
-      setError('Error al procesar la imagen.');
+      setError(t('ui.errorProcessingImage2'));
     }
   };
 
@@ -976,7 +978,7 @@ const ImportarPaises = () => {
       try {
         const base64 = await procesarImagenBandera(file);
         setNuevaBandera(base64);
-        setMensajeFeedbackIndividual('Imagen arrastrada y procesada');
+        setMensajeFeedbackIndividual(t('ui.droppedImageProcessed'));
         setTimeout(() => setMensajeFeedbackIndividual(''), 3000);
       } catch (err) {
         console.error('Error al procesar drop:', err);
@@ -987,7 +989,7 @@ const ImportarPaises = () => {
   const handleAplicarUrlIndividual = () => {
     if (urlInputIndividual.trim()) {
       setNuevaBandera(urlInputIndividual.trim());
-      setMensajeFeedbackIndividual('URL de imagen aplicada');
+      setMensajeFeedbackIndividual(t('ui.imageUrlApplied'));
       setTimeout(() => setMensajeFeedbackIndividual(''), 3000);
     }
   };
@@ -995,14 +997,7 @@ const ImportarPaises = () => {
   // Descargar plantilla CSV de muestra (con estatus Ausente de base)
   const handleDescargarPlantilla = () => {
     const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(
-      'Nombre,Bandera,Veto\n' +
-      'Estados Unidos,us,true\n' +
-      'Reino Unido,gb,true\n' +
-      'Francia,fr,true\n' +
-      'España,es,false\n' +
-      'México,mx,false\n' +
-      'Japón,jp,false\n' +
-      'Brasil,br,false\n'
+      t('samples.downloadCsv')
     );
     const link = document.createElement('a');
     link.setAttribute('href', csvContent);
@@ -1010,7 +1005,7 @@ const ImportarPaises = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setExito('Plantilla CSV descargada');
+    setExito(t('ui.csvTemplateDownloaded'));
     setTimeout(() => setExito(''), 3000);
   };
 
@@ -1025,7 +1020,7 @@ const ImportarPaises = () => {
         } else {
           setPaises(preview);
         }
-        setExito(`¡Comité "${sesionCompletaDetectada.nombreComite}" cargado al 100%! (${preview.length} delegaciones y agenda restauradas).`);
+        setExito(t('ui.committeeFullyLoadedDelegationsAndAgendaRestored', { v0: sesionCompletaDetectada.nombreComite, v1: preview.length }));
       } else {
         if (!nombreComite && sesionCompletaDetectada.nombreComite && typeof setNombreComite === 'function') {
           setNombreComite(sesionCompletaDetectada.nombreComite);
@@ -1036,7 +1031,7 @@ const ImportarPaises = () => {
         const nombresExistentes = new Set(paises.map(p => p.nombre.toLowerCase()));
         const nuevos = preview.filter(p => !nombresExistentes.has(p.nombre.toLowerCase()));
         setPaises([...paises, ...nuevos]);
-        setExito(`${nuevos.length} delegaciones nuevas añadidas.`);
+        setExito(t('ui.newDelegationsAdded', { v0: nuevos.length }));
       }
     } else {
       if (modo === 'reemplazar') {
@@ -1046,7 +1041,7 @@ const ImportarPaises = () => {
         const nombresExistentes = new Set(paises.map(p => p.nombre.toLowerCase()));
         const nuevos = preview.filter(p => !nombresExistentes.has(p.nombre.toLowerCase()));
         setPaises([...paises, ...nuevos]);
-        setExito(`${nuevos.length} delegaciones nuevas añadidas.`);
+        setExito(t('ui.newDelegationsAdded', { v0: nuevos.length }));
       }
     }
     setPreview(null);
@@ -1060,7 +1055,7 @@ const ImportarPaises = () => {
     if (paises.length === 0) return;
     setPaises([]);
     setConfirmandoVaciar(false);
-    setExito('Lista de delegaciones vaciada por completo.');
+    setExito(t('ui.delegationListCompletelyCleared'));
     setTimeout(() => setExito(''), 3000);
   };
 
@@ -1141,7 +1136,7 @@ const ImportarPaises = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '650', fontSize: '0.95rem' }}>
-              <span>Importar Países</span>
+              <span>{t('ui.importCountries')}</span>
               <span style={{
                 fontSize: '0.68rem',
                 backgroundColor: 'transparent',
@@ -1150,7 +1145,7 @@ const ImportarPaises = () => {
                 borderRadius: '4px',
                 fontWeight: '700'
               }}>
-                {paises.length} en sesión
+                {paises.length} {t('countries.inSession')}
               </span>
               {totalVetosSesion > 0 && (
                 <span style={{
@@ -1164,7 +1159,7 @@ const ImportarPaises = () => {
                   gap: '2px',
                   fontWeight: '700'
                 }}>
-                  <Crown size={10} /> {totalVetosSesion} Veto
+                  <Crown size={10} /> {totalVetosSesion} {t('voting.vetoWord')}
                 </span>
               )}
             </div>
@@ -1176,7 +1171,7 @@ const ImportarPaises = () => {
           <button
             type="button"
             onClick={handleDescargarPlantilla}
-            title="Descargar plantilla de Excel / CSV lista para rellenar"
+            title={t('ui.downloadAnExcelCsvTemplateReadyToFillIn')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -1194,7 +1189,7 @@ const ImportarPaises = () => {
             }}
           >
             <Download size={12} color="var(--accent-color)" />
-            <span>Plantilla</span>
+            <span>{t('countries.downloadTemplate')}</span>
           </button>
 
           {paises.length > 0 && !confirmandoVaciar && (
@@ -1214,29 +1209,29 @@ const ImportarPaises = () => {
                 fontWeight: '600',
                 cursor: 'pointer'
               }}
-              title="Borrar todas las delegaciones de la sesión"
+              title={t('ui.deleteAllSessionDelegations')}
             >
               <Trash2 size={12} />
-              <span>Vaciar</span>
+              <span>{t('ui.clear')}</span>
             </button>
           )}
 
           {confirmandoVaciar && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', backgroundColor: 'var(--danger-soft)', padding: '0.15rem 0.4rem', borderRadius: '5px', border: '1px solid var(--danger-solid)' }}>
-              <span style={{ fontSize: '0.68rem', color: 'var(--danger-color)', fontWeight: '700' }}>¿Vaciar?</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--danger-color)', fontWeight: '700' }}>{t('ui.clear2')}</span>
               <button
                 type="button"
                 onClick={handleVaciarLista}
                 style={{ background: 'var(--danger-solid)', color: '#fff', border: 'none', borderRadius: '3px', padding: '1px 6px', fontSize: '0.66rem', fontWeight: '700', cursor: 'pointer' }}
               >
-                Sí
+                {t('ui.yes')}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmandoVaciar(false)}
                 style={{ background: 'transparent', color: 'var(--text-color)', border: 'none', padding: '1px 4px', fontSize: '0.66rem', cursor: 'pointer' }}
               >
-                No
+                {t('ui.no')}
               </button>
             </div>
           )}
@@ -1256,9 +1251,9 @@ const ImportarPaises = () => {
       }}>
         {[
           { key: 'archivo', label: t('countries.tabFile', 'Archivo'), icon: Upload, desc: 'Excel, CSV, JSON' },
-          { key: 'pegar', label: t('countries.tabPaste', 'Pegar'), icon: ClipboardPaste, desc: 'Texto directo' },
-          { key: 'individual', label: t('countries.tabSingle', 'Añadir País'), icon: UserPlus, desc: 'Añadir único' },
-          { key: 'presets', label: t('countries.tabPresets', 'Plantillas'), icon: Layers, desc: 'Comités listos' }
+          { key: 'pegar', label: t('countries.tabPaste', 'Pegar'), icon: ClipboardPaste, desc: t('ui.directText') },
+          { key: 'individual', label: t('countries.tabSingle', 'Añadir País'), icon: UserPlus, desc: t('ui.addSingle') },
+          { key: 'presets', label: t('countries.tabPresets', 'Plantillas'), icon: Layers, desc: t('ui.readyCommittees') }
         ].map(m => {
           const Icon = m.icon;
           const activo = tab === m.key && !preview;
@@ -1388,7 +1383,7 @@ const ImportarPaises = () => {
             </div>
 
             <div style={{ fontWeight: '800', fontSize: '0.88rem', color: 'var(--text-color)' }}>
-              {isDraggingFile ? '¡Suelta el archivo aquí!' : 'Arrastra tu archivo o haz clic para explorar'}
+              {isDraggingFile ? t('ui.dropTheFileHere') : t('ui.dragYourFileOrClickToBrowse')}
             </div>
 
             <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -1418,7 +1413,7 @@ const ImportarPaises = () => {
                 fontWeight: '700'
               }}>
                 <Clock size={14} className="animate-spin" />
-                <span>Analizando archivo y banderas...</span>
+                <span>{t('ui.analyzingFileAndFlags')}</span>
               </div>
             )}
           </div>
@@ -1445,7 +1440,7 @@ const ImportarPaises = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <FileSpreadsheet size={13} color="var(--accent-color)" />
-                <span>Columnas Soportadas</span>
+                <span>{t('ui.supportedColumns')}</span>
               </div>
               <button
                 type="button"
@@ -1460,15 +1455,15 @@ const ImportarPaises = () => {
                   textDecoration: 'underline'
                 }}
               >
-                Descargar Ejemplo
+                {t('ui.downloadExample')}
               </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem' }}>
               {[
-                { col: 'Nombre / Pais', req: true, desc: 'Nombre delegación (ej: España)' },
-                { col: 'Bandera / ISO', req: false, desc: 'Código ISO (es, us) o URL' },
-                { col: 'Veto / P5', req: false, desc: 'true/si/1 para derecho a veto' }
+                { col: t('ui.nameCountry'), req: true, desc: t('ui.delegationNameEGSpain') },
+                { col: t('ui.flagIso'), req: false, desc: t('ui.isoCodeEsUsOrUrl') },
+                { col: t('ui.vetoP5'), req: false, desc: t('ui.trueYes1ForVetoPower') }
               ].map(c => (
                 <div key={c.col} style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.03)',
@@ -1522,12 +1517,12 @@ const ImportarPaises = () => {
                 }}
               >
                 <ClipboardPaste size={12} />
-                <span>Pegar Portapapeles</span>
+                <span>{t('ui.pasteClipboard')}</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setTextoPegar("España\nFrancia\nAlemania\nEstados Unidos\nChina\nJapón\nBrasil")}
+                onClick={() => setTextoPegar(t('samples.countryList'))}
                 style={{
                   padding: '0.25rem 0.45rem',
                   backgroundColor: 'rgba(255,255,255,0.05)',
@@ -1538,12 +1533,12 @@ const ImportarPaises = () => {
                   cursor: 'pointer'
                 }}
               >
-                Ejemplo Lista
+                {t('ui.listExample')}
               </button>
 
               <button
                 type="button"
-                onClick={() => setTextoPegar("nombre,bandera,veto\nEstados Unidos,us,true\nFrancia,fr,true\nEspaña,es,false\nChile,cl,false")}
+                onClick={() => setTextoPegar(t('samples.countryCsv'))}
                 style={{
                   padding: '0.25rem 0.45rem',
                   backgroundColor: 'rgba(255,255,255,0.05)',
@@ -1554,7 +1549,7 @@ const ImportarPaises = () => {
                   cursor: 'pointer'
                 }}
               >
-                Ejemplo CSV
+                {t('ui.csvExample')}
               </button>
             </div>
 
@@ -1573,7 +1568,7 @@ const ImportarPaises = () => {
                   gap: '2px'
                 }}
               >
-                <Trash2 size={11} /> Limpiar
+                <Trash2 size={11} /> {t('ui.clear3')}
               </button>
             )}
           </div>
@@ -1582,7 +1577,7 @@ const ImportarPaises = () => {
             <textarea
               value={textoPegar}
               onChange={(e) => setTextoPegar(e.target.value)}
-              placeholder="Pega nombres de países (uno por línea o separados por coma):&#10;España&#10;Francia&#10;Estados Unidos&#10;Reino Unido&#10;China&#10;Japón..."
+              placeholder={t('ui.pasteCountryNamesOnePerLineOrSeparatedByCommas')}
               style={{
                 flex: 1,
                 minHeight: '120px',
@@ -1609,7 +1604,7 @@ const ImportarPaises = () => {
                 fontSize: '0.65rem',
                 color: 'var(--muted-text)'
               }}>
-                {textoPegar.split(/\r?\n/).filter(Boolean).length} líneas
+                {textoPegar.split(/\r?\n/).filter(Boolean).length} {t('ui.lines')}
               </div>
             )}
           </div>
@@ -1634,7 +1629,7 @@ const ImportarPaises = () => {
             }}
           >
             <CheckCircle2 size={14} />
-            <span>Interpretar y Previsualizar</span>
+            <span>{t('ui.parseAndPreview')}</span>
           </button>
         </div>
       )}
@@ -1659,7 +1654,7 @@ const ImportarPaises = () => {
               {t('countries.singleCountryTitle', 'Añadir delegación individual')}
             </span>
             <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-              {paises.length} {paises.length === 1 ? 'delegación en sesión' : 'delegaciones en sesión'}
+              {paises.length} {paises.length === 1 ? t('ui.delegationInSession') : t('ui.delegationsInSession')}
             </span>
           </div>
 
@@ -1691,7 +1686,7 @@ const ImportarPaises = () => {
                   flexShrink: 0,
                   transition: 'transform 0.15s ease'
                 }}
-                title={nuevaBandera ? 'Bandera personalizada (clic para opciones)' : `Bandera detectada: ${banderaDetectadaIndividual.toUpperCase()} (clic para personalizar)`}
+                title={nuevaBandera ? t('ui.customFlagClickForOptions') : t('ui.flagDetectedClickToCustomize', { v0: banderaDetectadaIndividual.toUpperCase() })}
               >
                 <CountryFlag
                   bandera={banderaDetectadaIndividual}
@@ -1789,10 +1784,10 @@ const ImportarPaises = () => {
                   flexShrink: 0,
                   transition: 'all 0.15s ease'
                 }}
-                title={nuevoVeto ? 'Miembro Permanente con Derecho a Veto (P5) activado' : 'Hacer clic para otorgar derecho a veto (P5)'}
+                title={nuevoVeto ? t('ui.permanentMemberVetoPowerP5Enabled') : t('ui.clickToGrantVetoPowerP5')}
               >
                 <Crown size={13} fill={nuevoVeto ? 'var(--warning-color)' : 'none'} color={nuevoVeto ? 'var(--warning-color)' : 'currentColor'} />
-                <span>{nuevoVeto ? 'Veto P5' : 'Veto'}</span>
+                <span>{nuevoVeto ? t('voting.vetoP5') : t('voting.vetoWord')}</span>
               </button>
 
               {/* Botón Añadir principal */}
@@ -1824,7 +1819,7 @@ const ImportarPaises = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--muted-text)', paddingTop: '2px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Check size={12} color="var(--success-color)" />
-                {nuevaBandera ? 'Bandera personalizada activa' : 'Bandera y Veto detectados automáticamente'}
+                {nuevaBandera ? t('ui.customFlagActive') : t('ui.flagAndVetoDetectedAutomatically')}
               </span>
               <button
                 type="button"
@@ -1843,7 +1838,7 @@ const ImportarPaises = () => {
                 }}
               >
                 <ImageIcon size={11} />
-                {mostrarPersonalizarBandera ? 'Cerrar opciones de bandera' : 'Personalizar bandera...'}
+                {mostrarPersonalizarBandera ? t('ui.closeFlagOptions') : t('ui.customizeFlag')}
               </button>
             </div>
           </div>
@@ -1862,7 +1857,7 @@ const ImportarPaises = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                   <ImageIcon size={13} color="var(--accent-color)" />
-                  Personalizar imagen de bandera
+                  {t('ui.customizeFlagImage')}
                 </span>
                 {mensajeFeedbackIndividual && (
                   <span style={{ fontSize: '0.7rem', color: 'var(--success-color)', fontWeight: '600' }}>
@@ -1877,7 +1872,7 @@ const ImportarPaises = () => {
                   type="text"
                   value={urlInputIndividual}
                   onChange={(e) => setUrlInputIndividual(e.target.value)}
-                  placeholder="Pegar URL de imagen (https://...)"
+                  placeholder={t('ui.pasteImageUrlHttps')}
                   style={{
                     flex: 1,
                     padding: '0.35rem 0.55rem',
@@ -1922,7 +1917,7 @@ const ImportarPaises = () => {
                   }}
                 >
                   <Upload size={12} />
-                  Subir
+                  {t('agenda.moveUp')}
                 </button>
                 <input
                   ref={individualFileInputRef}
@@ -1944,9 +1939,9 @@ const ImportarPaises = () => {
                       cursor: 'pointer',
                       fontSize: '0.7rem'
                     }}
-                    title="Restablecer a bandera automática"
+                    title={t('ui.resetToAutomaticFlag')}
                   >
-                    Restablecer
+                    {t('ui.reset2')}
                   </button>
                 )}
               </div>
@@ -1964,22 +1959,22 @@ const ImportarPaises = () => {
             borderRadius: '8px'
           }}>
             <div style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--muted-text)' }}>
-              Sugerencias rápidas (clic para autocompletar):
+              {t('ui.quickSuggestionsClickToAutocomplete')}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
               {[
-                { nombre: 'España', iso: 'es' },
-                { nombre: 'Estados Unidos', iso: 'us' },
-                { nombre: 'Reino Unido', iso: 'gb' },
-                { nombre: 'Francia', iso: 'fr' },
-                { nombre: 'Alemania', iso: 'de' },
-                { nombre: 'Japón', iso: 'jp' },
-                { nombre: 'Brasil', iso: 'br' },
+                { nombre: t('ui.spain'), iso: 'es' },
+                { nombre: t('ui.unitedStates'), iso: 'us' },
+                { nombre: t('ui.unitedKingdom'), iso: 'gb' },
+                { nombre: t('ui.france'), iso: 'fr' },
+                { nombre: t('ui.germany'), iso: t('ui.of') },
+                { nombre: t('ui.japan'), iso: 'jp' },
+                { nombre: t('ui.brazil'), iso: 'br' },
                 { nombre: 'China', iso: 'cn' },
-                { nombre: 'México', iso: 'mx' },
+                { nombre: t('ui.mexico'), iso: 'mx' },
                 { nombre: 'Argentina', iso: 'ar' },
-                { nombre: 'Italia', iso: 'it' },
-                { nombre: 'Canadá', iso: 'ca' }
+                { nombre: t('ui.italy'), iso: 'it' },
+                { nombre: t('ui.canada'), iso: 'ca' }
               ]
                 .filter(p => !paises.some(exist => exist.nombre.toLowerCase() === p.nombre.toLowerCase()))
                 .slice(0, 8)
@@ -2033,7 +2028,7 @@ const ImportarPaises = () => {
             <Search size={13} style={{ color: 'var(--muted-text)', flexShrink: 0 }} />
             <input
               type="text"
-              placeholder="Buscar plantilla de comité (.json)..."
+              placeholder={t('ui.searchCommitteeTemplateJson')}
               value={busquedaPreset}
               onChange={e => setBusquedaPreset(e.target.value)}
               style={{
@@ -2120,11 +2115,11 @@ const ImportarPaises = () => {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--accent-color)' }}>
-                        {p.paises.length} delegaciones
+                        {p.paises.length} {t('ui.delegations2')}
                       </span>
                       {vetosCount > 0 && (
                         <span style={{ fontSize: '0.64rem', color: 'var(--success-color)', display: 'inline-flex', alignItems: 'center', gap: '1px', fontWeight: '700' }}>
-                          • <Crown size={10} /> {vetosCount} Veto
+                          • <Crown size={10} /> {vetosCount} {t('voting.vetoWord')}
                         </span>
                       )}
                     </div>
@@ -2151,7 +2146,7 @@ const ImportarPaises = () => {
                       }}
                     >
                       <Edit2 size={11} />
-                      <span>Revisar / Editar</span>
+                      <span>{t('ui.reviewEdit')}</span>
                     </button>
 
                     <button
@@ -2173,7 +2168,7 @@ const ImportarPaises = () => {
                       }}
                     >
                       <Check size={12} />
-                      <span>Cargar Inmediato</span>
+                      <span>{t('ui.loadImmediately')}</span>
                     </button>
                   </div>
                 </div>
@@ -2199,7 +2194,7 @@ const ImportarPaises = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <CheckCircle2 size={14} color="var(--accent-color)" />
               <span style={{ fontWeight: '800', fontSize: '0.8rem' }}>
-                Revisión: <strong style={{ color: 'var(--accent-color)' }}>{preview.length} delegaciones</strong>
+                {t('ui.review')} <strong style={{ color: 'var(--accent-color)' }}>{preview.length} {t('ui.delegations2')}</strong>
               </span>
             </div>
 
@@ -2207,7 +2202,7 @@ const ImportarPaises = () => {
               <button
                 type="button"
                 onClick={handleOrdenarPreviewAZ}
-                title="Ordenar alfabéticamente A-Z"
+                title={t('ui.sortAlphabeticallyAZ')}
                 style={{
                   padding: '0.2rem 0.45rem',
                   fontSize: '0.68rem',
@@ -2235,7 +2230,7 @@ const ImportarPaises = () => {
                   cursor: 'pointer',
                   padding: '2px'
                 }}
-                title="Cancelar y volver"
+                title={t('ui.cancelAndGoBack')}
               >
                 <X size={14} />
               </button>
@@ -2257,7 +2252,7 @@ const ImportarPaises = () => {
               <Search size={12} style={{ color: 'var(--muted-text)' }} />
               <input
                 type="text"
-                placeholder="Filtrar delegación..."
+                placeholder={t('ui.filterDelegation')}
                 value={busquedaPreview}
                 onChange={(e) => setBusquedaPreview(e.target.value)}
                 style={{
@@ -2286,7 +2281,7 @@ const ImportarPaises = () => {
                   fontWeight: '700'
                 }}
               >
-                <Crown size={11} style={{ display: 'inline', marginRight: '2px' }} /> Solo Veto
+                <Crown size={11} style={{ display: 'inline', marginRight: '2px' }} /> {t('ui.vetoOnly')}
               </button>
             </div>
           </div>
@@ -2301,7 +2296,7 @@ const ImportarPaises = () => {
             padding: '0.15rem 0.2rem'
           }}>
             <Camera size={12} color="var(--accent-color)" />
-            <span>Haz clic en una fila y presiona <strong>Ctrl+V</strong> o el icono de cámara para cambiar la bandera.</span>
+            <span>{t('ui.clickARowAndPress')} <strong>Ctrl+V</strong> {t('ui.orTheCameraIconToChangeTheFlag')}</span>
           </div>
 
           {/* Lista de Delegaciones en Previsualización (Sin selector de estatus, siempre Ausente de base) */}
@@ -2319,7 +2314,7 @@ const ImportarPaises = () => {
           }}>
             {previewFiltrada.length === 0 ? (
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted-text)', fontSize: '0.75rem', padding: '1rem' }}>
-                No se encontraron delegaciones con el filtro actual.
+                {t('ui.noDelegationsMatchTheCurrentFilter')}
               </div>
             ) : (
               previewFiltrada.map((p, idx) => {
@@ -2349,7 +2344,7 @@ const ImportarPaises = () => {
                     {/* Botón rápido de cámara para imagen */}
                     <button
                       type="button"
-                      title="Cambiar imagen de bandera"
+                      title={t('ui.changeFlagImage')}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedPreviewIndex(originalIndex);
@@ -2410,7 +2405,7 @@ const ImportarPaises = () => {
                           textOverflow: 'ellipsis'
                         }}
                       >
-                        Delegado: {p.delegado}
+                        {t('ui.delegate')} {p.delegado}
                       </span>
                     )}
 
@@ -2425,7 +2420,7 @@ const ImportarPaises = () => {
                           return copy;
                         });
                       }}
-                      title={p.veto ? 'Tiene derecho a veto (P5)' : 'Sin derecho a veto'}
+                      title={p.veto ? t('ui.hasVetoPowerP52') : t('ui.noVetoPower2')}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -2454,7 +2449,7 @@ const ImportarPaises = () => {
                         cursor: 'pointer',
                         padding: '2px'
                       }}
-                      title="Eliminar de la lista"
+                      title={t('ui.removeFromList2')}
                     >
                       <X size={13} />
                     </button>
@@ -2479,7 +2474,7 @@ const ImportarPaises = () => {
             }}>
               <CheckCircle2 size={13} style={{ flexShrink: 0 }} />
               <span>
-                Se detectaron datos completos de <strong>"{sesionCompletaDetectada.nombreComite}"</strong> (Agenda, Tópicos y Módulos). Al reemplazar se restaurará el comité al 100%.
+                {t('ui.fullDataDetectedFor')} <strong>"{sesionCompletaDetectada.nombreComite}"</strong> {t('ui.agendaTopicsAndModulesReplacingWillFullyRestoreTheCommittee')}
               </span>
             </div>
           )}

@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import React from 'react';
 import { Globe, Users, Shield, Landmark, MessageSquare, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 
@@ -21,10 +22,10 @@ export const CODIGOS_DESTINO = {
  */
 export const obtenerOpcionesDestino = (comites = [], rolActual = 'mesa', currentComiteId = null) => {
   const opcionesGenerales = [
-    { value: 'GLOBAL', label: '📢 Toda la Conferencia (Global)', icon: Globe },
-    { value: 'SECRETARIA', label: '🛡️ Organización / Secretaría General', icon: Shield },
-    { value: 'STAFF_ALL', label: '👥 Todo el Equipo de Staff', icon: Users },
-    { value: 'CHAIRS_ALL', label: '🏛️ Todas las Mesas Directivas', icon: Landmark }
+    { value: 'GLOBAL', label: i18n.t('conferences.targetGlobal'), icon: Globe },
+    { value: 'SECRETARIA', label: i18n.t('ui.organizersSecretariat'), icon: Shield },
+    { value: 'STAFF_ALL', label: i18n.t('ui.allStaff'), icon: Users },
+    { value: 'CHAIRS_ALL', label: i18n.t('ui.allChairs'), icon: Landmark }
   ];
 
   // Si el emisor está en un comité, añadir accesos rápidos locales
@@ -36,20 +37,20 @@ export const obtenerOpcionesDestino = (comites = [], rolActual = 'mesa', current
     if (rolActual === 'chair' || rolActual === 'mesa') {
       opcionesLocales.push({
         value: `STAFF_COMITE_${currentComiteId}`,
-        label: `👥 Staff Asignado a mi Sala (${comiteNombre})`
+        label: i18n.t('ui.staffAssignedToMyRoom', { v0: comiteNombre })
       });
       opcionesLocales.push({
         value: currentComiteId,
-        label: `🌐 Mi Comité Completo (${comiteNombre})`
+        label: i18n.t('ui.myEntireCommittee', { v0: comiteNombre })
       });
     } else if (rolActual === 'staff') {
       opcionesLocales.push({
         value: `CHAIR_${currentComiteId}`,
-        label: `🏛️ Mesa Directiva de mi Sala (${comiteNombre})`
+        label: i18n.t('ui.chairOfMyRoom', { v0: comiteNombre })
       });
       opcionesLocales.push({
         value: currentComiteId,
-        label: `🌐 Mi Comité Completo (${comiteNombre})`
+        label: i18n.t('ui.myEntireCommittee', { v0: comiteNombre })
       });
     }
   }
@@ -58,7 +59,7 @@ export const obtenerOpcionesDestino = (comites = [], rolActual = 'mesa', current
   const gruposMesas = (comites || []).map(c => ({
     value: `CHAIR_${c.id}`,
     comiteId: c.id,
-    label: `🏛️ Mesa de ${c.nombre || c.id}`
+    label: i18n.t('ui.chairOf2', { v0: c.nombre || c.id })
   }));
 
   const gruposStaff = (comites || []).map(c => ({
@@ -70,7 +71,7 @@ export const obtenerOpcionesDestino = (comites = [], rolActual = 'mesa', current
   const gruposSalas = (comites || []).map(c => ({
     value: c.id,
     comiteId: c.id,
-    label: `🌐 Sala Completa de ${c.nombre || c.id}`
+    label: i18n.t('ui.entireRoomOf', { v0: c.nombre || c.id })
   }));
 
   return {
@@ -111,7 +112,7 @@ export const normalizarIdComite = (id) => {
 export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
   if (!comiteId || comiteId === 'GLOBAL' || comiteId === '' || comiteId === 'ALL' || comiteId === 'TODOS') {
     return {
-      label: 'Toda la Conferencia',
+      label: i18n.t('ui.entireConference'),
       shortLabel: 'Global',
       icon: Globe,
       badgeBg: 'var(--accent-soft)',
@@ -125,8 +126,8 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
 
   if (cleanUpper === 'SECRETARIA' || cleanUpper === 'ORGANIZACION') {
     return {
-      label: 'Organización / Secretaría',
-      shortLabel: 'Organización',
+      label: i18n.t('ui.organizersSecretariat2'),
+      shortLabel: i18n.t('conferences.issuerOrg'),
       icon: Shield,
       badgeBg: 'rgba(139, 92, 246, 0.12)',
       badgeColor: 'var(--info-color)',
@@ -136,8 +137,8 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
 
   if (cleanUpper === 'STAFF_ALL' || cleanUpper === 'STAFF_GLOBAL') {
     return {
-      label: 'Todo el Staff',
-      shortLabel: 'Todo Staff',
+      label: i18n.t('ui.allStaff2'),
+      shortLabel: i18n.t('ui.allStaff3'),
       icon: Users,
       badgeBg: 'rgba(245, 158, 11, 0.12)',
       badgeColor: 'var(--warning-color)',
@@ -147,8 +148,8 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
 
   if (['CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL'].includes(cleanUpper)) {
     return {
-      label: 'Todas las Mesas',
-      shortLabel: 'Todas Mesas',
+      label: i18n.t('ui.allChairs2'),
+      shortLabel: i18n.t('ui.allChairs3'),
       icon: Landmark,
       badgeBg: 'rgba(16, 185, 129, 0.12)',
       badgeColor: 'var(--success-color)',
@@ -175,8 +176,8 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
     const comite = (comites || []).find(c => normalizarIdComite(c.id) === rawId);
     const nombre = comite?.nombre || rawId;
     return {
-      label: `Mesa de ${nombre}`,
-      shortLabel: `Mesa (${nombre})`,
+      label: i18n.t('ui.chairOf3', { v0: nombre }),
+      shortLabel: i18n.t('ui.chair2', { v0: nombre }),
       icon: Landmark,
       badgeBg: 'rgba(16, 185, 129, 0.12)',
       badgeColor: 'var(--success-color)',
@@ -190,7 +191,7 @@ export const obtenerEtiquetaDestino = (comiteId, comites = []) => {
   const nombre = comite?.nombre || rawId;
 
   return {
-    label: `Sala de ${nombre}`,
+    label: i18n.t('ui.roomOf2', { v0: nombre }),
     shortLabel: nombre,
     icon: Globe,
     badgeBg: 'var(--accent-soft)',
@@ -256,7 +257,7 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
           }}
         >
-          <span style={{ opacity: 0.75, fontWeight: '600' }}>Para:</span>
+          <span style={{ opacity: 0.75, fontWeight: '600' }}>{i18n.t('ui.to')}</span>
           <span>{targetClean}</span>
         </span>
         <span>{contenidoRestante}</span>
@@ -287,7 +288,7 @@ export const formatearMensajeAviso = (mensaje, comiteId = null, comites = []) =>
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
           }}
         >
-          <span style={{ opacity: 0.75, fontWeight: '600' }}>Para:</span>
+          <span style={{ opacity: 0.75, fontWeight: '600' }}>{i18n.t('ui.to')}</span>
           <span>{meta.shortLabel}</span>
         </span>
         <span>{mensaje}</span>

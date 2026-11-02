@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Search,
@@ -7,7 +8,7 @@ import {
   SkipForward,
   RotateCcw,
   Plus,
-  Minus,
+  Minus, Home,
   Settings,
   Mic,
   Timer,
@@ -72,8 +73,8 @@ const CommandPaletteModal = ({
       {
         id: 'announcements-center',
         category: 'Conferencia',
-        title: 'Centro de Avisos & Comunicados',
-        desc: 'Emitir y revisar avisos oficiales entre Mesas, Staff y Organización',
+        title: t('avisos.title'),
+        desc: t('ui.issueAndReviewOfficialAnnouncementsBetweenChairsStaffAndOrganizers'),
         icon: Megaphone,
         shortcut: 'V',
         action: () => {
@@ -148,9 +149,9 @@ const CommandPaletteModal = ({
       },
       {
         id: 'analytics-view',
-        category: 'Analíticas',
-        title: 'Ver Analíticas y Gráficos de Participación',
-        desc: 'Visualiza el podio de oradores, balance GSL/Caucus y delegaciones silenciosas',
+        category: i18n.t('ui.analytics'),
+        title: t('ui.viewParticipationAnalyticsAndCharts'),
+        desc: t('ui.viewTheSpeakerPodiumGslCaucusBalanceAndSilentDelegations'),
         icon: BarChart2,
         shortcut: 'Alt + 6',
         action: () => setActiveTab('INFO')
@@ -158,8 +159,16 @@ const CommandPaletteModal = ({
 
       // ── NAVEGACIÓN DE PESTAÑAS ──
       {
+        id: 'tab-home',
+        category: i18n.t('ui.navigation'),
+        title: t('tabs.home', 'Ir a Inicio / Menú Principal'),
+        desc: t('palette.tabHomeDesc', 'Página principal de bienvenida y acceso general'),
+        icon: Home,
+        action: () => setActiveTab('HOME')
+      },
+      {
         id: 'tab-setup',
-        category: 'Navegación',
+        category: i18n.t('ui.navigation'),
         title: t('tabs.setup', 'Ir a Comienzo y Agenda'),
         desc: t('palette.tabSetupDesc', 'Matriz de asistencia, agenda e importación'),
         icon: Settings,
@@ -168,7 +177,7 @@ const CommandPaletteModal = ({
       },
       {
         id: 'tab-gsl',
-        category: 'Navegación',
+        category: i18n.t('ui.navigation'),
         title: t('tabs.gsl', 'Ir a Lista General de Oradores (GSL)'),
         desc: t('palette.tabGslDesc', 'Cronómetro principal y cola de discursos'),
         icon: Mic,
@@ -177,7 +186,7 @@ const CommandPaletteModal = ({
       },
       {
         id: 'tab-debate',
-        category: 'Navegación',
+        category: i18n.t('ui.navigation'),
         title: t('tabs.debate', 'Ir a Debate y Mociones'),
         desc: t('palette.tabDebateDesc', 'Pizarra de mociones y cronómetro de caucus'),
         icon: Timer,
@@ -186,7 +195,7 @@ const CommandPaletteModal = ({
       },
       {
         id: 'tab-voting',
-        category: 'Navegación',
+        category: i18n.t('ui.navigation'),
         title: t('tabs.voting', 'Ir a Votación Oficial'),
         desc: t('palette.tabVotingDesc', 'Votación nominal, mapa de votos y quórum'),
         icon: Vote,
@@ -195,7 +204,7 @@ const CommandPaletteModal = ({
       },
       {
         id: 'tab-amendments',
-        category: 'Navegación',
+        category: i18n.t('ui.navigation'),
         title: t('tabs.amendments', 'Ir a Enmiendas y Resolución'),
         desc: t('palette.tabAmendmentsDesc', 'Controlador de enmiendas y proyecto de resolución'),
         icon: FileSignature,
@@ -204,7 +213,7 @@ const CommandPaletteModal = ({
       },
       {
         id: 'tab-info',
-        category: 'Navegación',
+        category: i18n.t('ui.navigation'),
         title: t('tabs.info', 'Ir a Información y Quórum'),
         desc: t('palette.tabInfoDesc', 'Histórico de oradores y matriz de países'),
         icon: BarChart2,
@@ -213,9 +222,9 @@ const CommandPaletteModal = ({
       },
       {
         id: 'tab-custom',
-        category: 'Navegación',
+        category: i18n.t('ui.navigation'),
         title: isModular ? t('tabs.custom', 'Ir a Panel Libre') : t('tabs.crisis', 'Crisis'),
-        desc: isModular ? t('palette.tabCustomDesc', 'Tablero personalizado de widgets') : 'Gestión de crisis, noticias y pizarra',
+        desc: isModular ? t('palette.tabCustomDesc', 'Tablero personalizado de widgets') : i18n.t('ui.manageCrisesNewsAndWhiteboard'),
         icon: LayoutGrid,
         shortcut: 'Alt + 7',
         action: () => setActiveTab(isModular ? 'LIBRE' : 'CRISIS')
@@ -242,7 +251,7 @@ const CommandPaletteModal = ({
       },
       {
         id: 'session-live',
-        category: 'Sesión',
+        category: i18n.t('ui.session'),
         title: t('header.liveSession', 'Sesión en Vivo / Conectar Sala'),
         desc: t('palette.liveDesc', 'Sincronizar con delegados y pantalla de proyección P2P'),
         icon: Radio,
@@ -251,7 +260,7 @@ const CommandPaletteModal = ({
       },
       {
         id: 'session-export',
-        category: 'Sesión',
+        category: i18n.t('ui.session'),
         title: t('header.exportSession', 'Exportar / Guardar Sesión'),
         desc: t('palette.exportDesc', 'Descargar respaldo en JSON o sincronizar con Drive'),
         icon: Download,
@@ -376,7 +385,8 @@ const CommandPaletteModal = ({
                 fontSize: '0.7rem',
                 padding: '2px 6px',
                 borderRadius: '4px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'var(--card-header-bg)',
+                border: '1px solid var(--border-color)',
                 color: 'var(--muted-text)',
                 fontWeight: '600'
               }}
@@ -436,8 +446,8 @@ const CommandPaletteModal = ({
                     justifyContent: 'space-between',
                     padding: '0.65rem 0.85rem',
                     borderRadius: '8px',
-                    backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                    border: isSelected ? '1px solid rgba(59, 130, 246, 0.35)' : '1px solid transparent',
+                    backgroundColor: isSelected ? 'var(--accent-soft)' : 'transparent',
+                    border: isSelected ? '1px solid var(--accent-color)' : '1px solid transparent',
                     cursor: 'pointer',
                     transition: 'all 0.1s ease',
                     marginBottom: '2px'
@@ -450,7 +460,7 @@ const CommandPaletteModal = ({
                         height: '32px',
                         borderRadius: '6px',
                         backgroundColor: isSelected ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-                        color: isSelected ? '#ffffff' : 'var(--text-color)',
+                        color: isSelected ? 'var(--btn-text)' : 'var(--text-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -465,7 +475,7 @@ const CommandPaletteModal = ({
                         style={{
                           fontSize: '0.88rem',
                           fontWeight: isSelected ? '700' : '600',
-                          color: isSelected ? '#ffffff' : 'var(--text-color)',
+                          color: 'var(--text-color)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis'
@@ -506,9 +516,9 @@ const CommandPaletteModal = ({
                           fontSize: '0.7rem',
                           padding: '2px 7px',
                           borderRadius: '4px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                          border: '1px solid var(--border-color)',
-                          color: isSelected ? '#93c5fd' : 'var(--text-color)',
+                          backgroundColor: isSelected ? 'var(--card-header-bg)' : 'var(--panel-color)',
+                          border: isSelected ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                          color: isSelected ? 'var(--accent-color)' : 'var(--text-color)',
                           fontWeight: '700',
                           fontFamily: 'inherit'
                         }}
@@ -537,9 +547,9 @@ const CommandPaletteModal = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--border-color)' }}>↑↓</kbd> Navegar</span>
-            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--border-color)' }}>↵</kbd> Ejecutar</span>
-            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--border-color)' }}>esc</kbd> Cerrar</span>
+            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--border-color)' }}>↑↓</kbd> {t('ui.navigate')}</span>
+            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--border-color)' }}>↵</kbd> {t('ui.run')}</span>
+            <span><kbd style={{ padding: '1px 4px', borderRadius: '3px', border: '1px solid var(--border-color)' }}>esc</kbd> {t('ui.close')}</span>
           </div>
           <span style={{ opacity: 0.6 }}>OpenMUN Command Center</span>
         </div>

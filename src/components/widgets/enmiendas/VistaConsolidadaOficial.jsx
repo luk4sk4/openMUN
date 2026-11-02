@@ -1,3 +1,5 @@
+import i18n from '../../../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import {
   Copy,
@@ -24,12 +26,13 @@ import {
  * modificadas por enmiendas y exportador multiformato (Word, PDF, TXT).
  */
 const VistaConsolidadaOficial = ({
-  titulo = 'Proyecto de Resolución',
+  titulo = i18n.t('ui.draftResolution'),
   articulos = [],
   textoResolucion = '',
   isLight = false,
   onShowToast
 }) => {
+  const { t } = useTranslation();
   const [descargando, setDescargando] = useState(null);
   const [copiado, setCopiado] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -45,7 +48,7 @@ const VistaConsolidadaOficial = ({
   const handleCopiar = () => {
     navigator.clipboard.writeText(textoFinal);
     setCopiado(true);
-    if (onShowToast) onShowToast('¡Resolución copiada al portapapeles!');
+    if (onShowToast) onShowToast(t('ui.resolutionCopiedToClipboard'));
     setTimeout(() => setCopiado(false), 2200);
   };
 
@@ -68,7 +71,7 @@ const VistaConsolidadaOficial = ({
       if (onShowToast) onShowToast(`Archivo ${formato.toUpperCase()} generado correctamente`);
     } catch (err) {
       console.error('Error al exportar resolución:', err);
-      alert(`Error al generar archivo ${formato.toUpperCase()}: ${err.message}`);
+      alert(t('ui.errorGeneratingFile', { v0: formato.toUpperCase(), v1: err.message }));
     } finally {
       setDescargando(null);
     }
@@ -116,7 +119,7 @@ const VistaConsolidadaOficial = ({
               type="text"
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              placeholder="Buscar en el documento..."
+              placeholder={t('ui.searchDocument')}
               style={{
                 border: 'none',
                 background: 'transparent',
@@ -145,7 +148,7 @@ const VistaConsolidadaOficial = ({
             }}
           >
             {modoRaw ? <BookOpen size={12} /> : <FileText size={12} />}
-            <span>{modoRaw ? 'Ver Formato MUN' : 'Ver Texto Plano'}</span>
+            <span>{modoRaw ? t('ui.viewMunFormat') : t('ui.viewPlainText')}</span>
           </button>
         </div>
 
@@ -167,17 +170,17 @@ const VistaConsolidadaOficial = ({
               gap: '0.25rem',
               transition: 'all 0.15s ease'
             }}
-            title="Copiar resolución completa al portapapeles"
+            title={t('ui.copyFullResolutionToClipboard')}
           >
             {copiado ? <Check size={12} /> : <Copy size={12} />}
-            <span>{copiado ? '¡Copiado!' : 'Copiar'}</span>
+            <span>{copiado ? t('ui.copied') : t('ui.copy')}</span>
           </button>
 
           {/* Word (.docx) */}
           <button
             onClick={() => handleDescargar('docx')}
             disabled={descargando === 'docx'}
-            title="Descargar documento Word (.docx) con formato formal"
+            title={t('ui.downloadAFormallyFormattedWordDocumentDocx')}
             style={{
               backgroundColor: 'rgba(37, 99, 235, 0.15)',
               border: '1px solid #3b82f6',
@@ -204,7 +207,7 @@ const VistaConsolidadaOficial = ({
           <button
             onClick={() => handleDescargar('pdf')}
             disabled={descargando === 'pdf'}
-            title="Descargar documento formal en PDF (.pdf)"
+            title={t('ui.downloadFormalDocumentAsPdfPdf')}
             style={{
               backgroundColor: 'rgba(220, 38, 38, 0.15)',
               border: '1px solid #ef4444',
@@ -231,7 +234,7 @@ const VistaConsolidadaOficial = ({
           <button
             onClick={() => handleDescargar('txt')}
             disabled={descargando === 'txt'}
-            title="Descargar archivo de texto plano (.txt)"
+            title={t('ui.downloadPlainTextFileTxt')}
             style={{
               backgroundColor: 'rgba(16, 185, 129, 0.15)',
               border: '1px solid #10b981',
@@ -272,7 +275,7 @@ const VistaConsolidadaOficial = ({
           userSelect: 'text',
           overflowY: 'auto'
         }}>
-          {textoFinal || 'Sin contenido de resolución cargado.'}
+          {textoFinal || t('ui.noResolutionContentLoaded')}
         </div>
       ) : (
         /* Vista Formal de Documento de Naciones Unidas */
@@ -298,7 +301,7 @@ const VistaConsolidadaOficial = ({
               textTransform: 'uppercase',
               marginBottom: '0.35rem'
             }}>
-              NACIONES UNIDAS • PROYECTO OFICIAL DE RESOLUCIÓN
+              {t('ui.unitedNationsOfficialDraftResolution')}
             </div>
             <h2 style={{
               fontSize: '1.2rem',
@@ -307,7 +310,7 @@ const VistaConsolidadaOficial = ({
               margin: '0.25rem 0',
               letterSpacing: '-0.01em'
             }}>
-              {titulo || 'Proyecto de Resolución'}
+              {titulo || t('ui.draftResolution')}
             </h2>
             <div style={{
               fontSize: '0.74rem',
@@ -317,8 +320,8 @@ const VistaConsolidadaOficial = ({
               justifyContent: 'center',
               gap: '1rem'
             }}>
-              <span>{operativos.length} Cláusulas Operativas</span>
-              {preambulo && <span>• Cláusulas Preambulatorias</span>}
+              <span>{operativos.length} {t('ui.operativeClauses2')}</span>
+              {preambulo && <span>{t('ui.preambulatoryClauses2')}</span>}
             </div>
           </div>
 
@@ -335,7 +338,7 @@ const VistaConsolidadaOficial = ({
                 alignItems: 'center',
                 gap: '0.35rem'
               }}>
-                <span>CLÁUSULAS PREAMBULATORIAS</span>
+                <span>{t('ui.preambulatoryClauses3')}</span>
               </div>
               <div style={{
                 fontSize: '0.82rem',
@@ -369,7 +372,7 @@ const VistaConsolidadaOficial = ({
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em'
               }}>
-                CLÁUSULAS OPERATIVAS
+                {t('ui.operativeClauses3')}
               </div>
 
               {articulosFiltrados.filter(a => !a.esPreambulo).map(art => (
@@ -393,7 +396,7 @@ const VistaConsolidadaOficial = ({
                       fontSize: '0.84rem',
                       flexShrink: 0
                     }}>
-                      {art.prefijo || `Artículo ${art.numero}.`}
+                      {art.prefijo || t('ui.article2', { v0: art.numero })}
                     </span>
                     <span style={{
                       fontSize: '0.82rem',
@@ -414,7 +417,7 @@ const VistaConsolidadaOficial = ({
                         alignSelf: 'flex-start',
                         flexShrink: 0
                       }}>
-                        Modificado
+                        {t('ui.modified2')}
                       </span>
                     )}
                   </div>
@@ -425,7 +428,7 @@ const VistaConsolidadaOficial = ({
 
           {articulos.length === 0 && !textoFinal && (
             <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--muted-text)', fontSize: '0.85rem' }}>
-              No hay cláusulas en la resolución actual. Carga un archivo Word/PDF o pega el texto desde la pestaña "Cargar / Importar".
+              {t('ui.noClausesInTheCurrentResolutionLoadAWordPdf')}
             </div>
           )}
         </div>

@@ -1,3 +1,5 @@
+import i18n from '../../../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from 'react';
 import {
   Layers,
@@ -26,6 +28,7 @@ const ConfiguradorApartadosModal = ({
   onGuardar,
   isLight = false
 }) => {
+  const { t } = useTranslation();
   const [apartados, setApartados] = useState([]);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ const ConfiguradorApartadosModal = ({
       return {
         ...ap,
         esPreambulo: nuevoEsPreambulo,
-        prefijo: nuevoEsPreambulo ? 'Preámbulo / Antecedentes' : `Artículo ${ap.numero || 1}.`
+        prefijo: nuevoEsPreambulo ? i18n.t('ui.preambleBackground') : t('ui.article2', { v0: ap.numero || 1 })
       };
     }));
   };
@@ -66,14 +69,14 @@ const ConfiguradorApartadosModal = ({
       const lineas = (actual.texto || '').split(/\n/);
       const mitad = Math.max(1, Math.floor(lineas.length / 2));
       const parte1 = lineas.slice(0, mitad).join('\n').trim();
-      const parte2 = lineas.slice(mitad).join('\n').trim() || '[Nueva Cláusula]';
+      const parte2 = lineas.slice(mitad).join('\n').trim() || i18n.t('ui.newClause');
 
       const ap1 = { ...actual, texto: parte1 };
       const ap2 = {
         id: `manual_apartado_${Date.now()}_split`,
         esPreambulo: actual.esPreambulo,
         numero: (actual.numero || 1) + 1,
-        prefijo: actual.esPreambulo ? 'Preámbulo / Antecedentes' : `Artículo ${(actual.numero || 1) + 1}.`,
+        prefijo: actual.esPreambulo ? i18n.t('ui.preambleBackground') : t('ui.article2', { v0: (actual.numero || 1) + 1 }),
         texto: parte2
       };
 
@@ -119,7 +122,7 @@ const ConfiguradorApartadosModal = ({
       id: `manual_apartado_${Date.now()}_nuevo`,
       esPreambulo: false,
       numero: num,
-      prefijo: `Artículo ${num}.`,
+      prefijo: t('ui.article2', { v0: num }),
       texto: ''
     };
     setApartados(prev => [...prev, nuevo]);
@@ -127,20 +130,20 @@ const ConfiguradorApartadosModal = ({
 
   const handleGuardarDefinitivo = () => {
     if (apartados.length === 0) {
-      alert('Debes definir al menos un apartado para guardar la resolución.');
+      alert(t('ui.defineAtLeastOneSectionToSaveTheResolution'));
       return;
     }
 
     let contadorOperativo = 1;
     const apartadosNormalizados = apartados.map(ap => {
       if (ap.esPreambulo) {
-        return { ...ap, numero: 0, prefijo: 'Preámbulo / Antecedentes' };
+        return { ...ap, numero: 0, prefijo: i18n.t('ui.preambleBackground') };
       }
       const num = contadorOperativo++;
       return {
         ...ap,
         numero: num,
-        prefijo: ap.prefijo?.trim() || `Artículo ${num}.`
+        prefijo: ap.prefijo?.trim() || t('ui.article2', { v0: num })
       };
     });
 
@@ -185,10 +188,10 @@ const ConfiguradorApartadosModal = ({
           <div>
             <div style={{ fontSize: '0.95rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Layers size={18} style={{ color: 'var(--accent-color)' }} />
-              <span>Configurador y Reordenador de Apartados</span>
+              <span>{t('ui.sectionConfigurationAndOrdering')}</span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '0.15rem' }}>
-              Ajusta la clasificación entre Preámbulo y Artículos, divide o fusiona cláusulas con control total.
+              {t('ui.reclassifyPreambleAndArticlesSplitOrMergeClausesWithFull')}
             </div>
           </div>
           <button
@@ -202,7 +205,7 @@ const ConfiguradorApartadosModal = ({
         {/* Acciones de la barra */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)' }}>
-            Total apartados: {apartados.length} ({apartados.filter(a => a.esPreambulo).length} preámbulo, {apartados.filter(a => !a.esPreambulo).length} operativos)
+            {t('ui.totalSections')} {apartados.length} ({apartados.filter(a => a.esPreambulo).length} {t('ui.preambulatory')} {apartados.filter(a => !a.esPreambulo).length} {t('ui.operative')}
           </div>
           <button
             type="button"
@@ -221,7 +224,7 @@ const ConfiguradorApartadosModal = ({
               gap: '0.25rem'
             }}
           >
-            <Plus size={13} /> Añadir Apartado
+            <Plus size={13} /> {t('ui.addSection')}
           </button>
         </div>
 
@@ -248,7 +251,7 @@ const ConfiguradorApartadosModal = ({
                     <button
                       type="button"
                       onClick={() => handleToggleTipo(ap.id)}
-                      title="Alternar entre Preámbulo y Artículo Operativo"
+                      title={t('ui.switchBetweenPreambleAndOperativeArticle')}
                       style={{
                         backgroundColor: esPreambulo ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
                         border: `1px solid ${esPreambulo ? '#a855f7' : '#3b82f6'}`,
@@ -263,14 +266,14 @@ const ConfiguradorApartadosModal = ({
                         gap: '0.25rem'
                       }}
                     >
-                      <Wand2 size={11} /> {esPreambulo ? 'Preámbulo' : 'Artículo Operativo'} ⇄
+                      <Wand2 size={11} /> {esPreambulo ? t('ui.preamble2') : t('ui.operativeArticle')} ⇄
                     </button>
 
                     <input
                       type="text"
                       value={ap.prefijo || ''}
                       onChange={e => handleUpdate(ap.id, 'prefijo', e.target.value)}
-                      placeholder={esPreambulo ? 'Preámbulo' : `Artículo ${idx + 1}.`}
+                      placeholder={esPreambulo ? t('ui.preamble2') : t('ui.article2', { v0: idx + 1 })}
                       style={{
                         padding: '0.2rem 0.45rem',
                         backgroundColor: inputBgColor,
@@ -290,7 +293,7 @@ const ConfiguradorApartadosModal = ({
                       type="button"
                       onClick={() => handleMover(idx, -1)}
                       disabled={idx === 0}
-                      title="Subir"
+                      title={t('agenda.moveUp')}
                       style={{
                         backgroundColor: 'transparent',
                         border: '1px solid var(--subborder-color)',
@@ -307,7 +310,7 @@ const ConfiguradorApartadosModal = ({
                       type="button"
                       onClick={() => handleMover(idx, 1)}
                       disabled={idx === apartados.length - 1}
-                      title="Bajar"
+                      title={t('agenda.moveDown')}
                       style={{
                         backgroundColor: 'transparent',
                         border: '1px solid var(--subborder-color)',
@@ -323,7 +326,7 @@ const ConfiguradorApartadosModal = ({
                     <button
                       type="button"
                       onClick={() => handleDividir(ap.id)}
-                      title="Dividir este párrafo en dos"
+                      title={t('ui.splitThisParagraphInTwo')}
                       style={{
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         border: '1px solid rgba(59, 130, 246, 0.25)',
@@ -338,14 +341,14 @@ const ConfiguradorApartadosModal = ({
                         gap: '0.2rem'
                       }}
                     >
-                      <Scissors size={11} /> Dividir
+                      <Scissors size={11} /> {t('ui.split')}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleUnir(idx)}
                       disabled={idx === apartados.length - 1}
-                      title="Fusionar con el siguiente"
+                      title={t('ui.mergeWithNext')}
                       style={{
                         backgroundColor: 'transparent',
                         border: '1px solid var(--subborder-color)',
@@ -360,13 +363,13 @@ const ConfiguradorApartadosModal = ({
                         gap: '0.2rem'
                       }}
                     >
-                      <Link2 size={11} /> Unir
+                      <Link2 size={11} /> {t('ui.merge')}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleEliminar(ap.id)}
-                      title="Eliminar apartado"
+                      title={t('ui.deleteSection')}
                       style={{
                         backgroundColor: 'transparent',
                         border: 'none',
@@ -397,7 +400,7 @@ const ConfiguradorApartadosModal = ({
                     outline: 'none',
                     fontFamily: 'inherit'
                   }}
-                  placeholder={esPreambulo ? 'Texto de las cláusulas preambulatorias...' : 'Texto de la cláusula operativa...'}
+                  placeholder={esPreambulo ? t('ui.preambulatoryClauseText') : t('ui.operativeClauseText2')}
                 />
               </div>
             );
@@ -419,7 +422,7 @@ const ConfiguradorApartadosModal = ({
               cursor: 'pointer'
             }}
           >
-            Cancelar
+            {t('toast.cancelBtn')}
           </button>
           <button
             type="button"
@@ -439,7 +442,7 @@ const ConfiguradorApartadosModal = ({
               boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)'
             }}
           >
-            <Check size={14} /> Guardar y Aplicar Resolución
+            <Check size={14} /> {t('ui.saveAndApplyResolution')}
           </button>
         </div>
       </div>

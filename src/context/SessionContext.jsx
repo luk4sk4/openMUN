@@ -1,3 +1,5 @@
+import i18n from '../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import { normalizarSesionesDebate, necesitaConfirmarSesion, fechaRegistro } from '../utils/debateSessions';
 import NewDebateSessionModal from '../components/modals/NewDebateSessionModal';
 import { registrarVotoConDerechos } from '../utils/votingRights';
@@ -24,6 +26,7 @@ const PAISES_INICIALES = [];
 const SESSION_SYNC_CHANNEL_NAME = 'openmun_session_sync';
 
 export const SessionProvider = ({ children }) => {
+  const { t } = useTranslation();
   const [confirmarSesion, setConfirmarSesion] = useState(false);
   const confirmarSesionRef = useRef(null);
   const tabInstanceId = useRef(`tab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`).current;
@@ -80,7 +83,7 @@ export const SessionProvider = ({ children }) => {
   const [votacionSesion, setVotacionSesionState] = useState(() => {
     const saved = localStorage.getItem('openmun_votacion');
     return saved ? JSON.parse(saved) : {
-      asunto: 'Proyecto de Resolución / Moción',
+      asunto: i18n.t('ui.draftResolutionMotion'),
       tipoVotacion: 'procedural',
       tipoMayoria: 'simple',
       aplicarVeto: true,
@@ -104,7 +107,7 @@ export const SessionProvider = ({ children }) => {
   const [enmiendasSesion, setEnmiendasSesionState] = useState(() => {
     const saved = localStorage.getItem('openmun_enmiendas');
     return saved ? JSON.parse(saved) : {
-      tituloProyecto: 'Proyecto de Resolución A/RES/79/1',
+      tituloProyecto: i18n.t('ui.draftResolutionARes791'),
       textoResolucion: '',
       articulos: [],
       enmiendas: []
@@ -205,7 +208,7 @@ export const SessionProvider = ({ children }) => {
       votacionSesion,
       agendaSesion,
       proyectoResolucion: {
-        titulo: enmiendasSesion?.tituloProyecto || 'Proyecto de Resolución A/RES/79/1',
+        titulo: enmiendasSesion?.tituloProyecto || i18n.t('ui.draftResolutionARes791'),
         texto: enmiendasSesion?.textoResolucion || '',
         articulos: enmiendasSesion?.articulos || [],
         enmiendas: enmiendasSesion?.enmiendas || []
@@ -320,7 +323,7 @@ export const SessionProvider = ({ children }) => {
     setCaucusActivoState(nuevoCaucus);
     setTipoSesionState(nuevoTipo);
     setVotacionSesionState(nuevaVotacion || {
-      asunto: 'Proyecto de Resolución / Moción',
+      asunto: i18n.t('ui.draftResolutionMotion'),
       tipoVotacion: 'procedural',
       tipoMayoria: 'simple',
       aplicarVeto: true,
@@ -1375,7 +1378,7 @@ export const SessionProvider = ({ children }) => {
         tiempoOrador: 45
       });
       setVotacionSesionState({
-        asunto: 'Proyecto de Resolución / Moción',
+        asunto: i18n.t('ui.draftResolutionMotion'),
         tipoVotacion: 'procedural',
         tipoMayoria: 'simple',
         aplicarVeto: true,
@@ -1388,7 +1391,7 @@ export const SessionProvider = ({ children }) => {
       });
       setNombreComiteState('');
       setEnmiendasSesionState({
-        tituloProyecto: 'Proyecto de Resolución A/RES/79/1',
+        tituloProyecto: i18n.t('ui.draftResolutionARes791'),
         textoResolucion: '',
         articulos: [],
         enmiendas: []
@@ -1451,7 +1454,7 @@ export const SessionProvider = ({ children }) => {
     } catch (e) {}
 
     const resolucionData = {
-      titulo: enmiendasSesion?.tituloProyecto || enmiendasSesion?.titulo || 'Proyecto de Resolución A/RES/79/1',
+      titulo: enmiendasSesion?.tituloProyecto || enmiendasSesion?.titulo || i18n.t('ui.draftResolutionARes791'),
       texto: enmiendasSesion?.textoResolucion || enmiendasSesion?.texto || '',
       articulos: Array.isArray(enmiendasSesion?.articulos) ? enmiendasSesion.articulos : [],
       enmiendas: Array.isArray(enmiendasSesion?.enmiendas) ? enmiendasSesion.enmiendas : []
@@ -1499,7 +1502,7 @@ export const SessionProvider = ({ children }) => {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Error al exportar sesión completa:', err);
-      alert('No se pudo exportar la sesión. Verifica los permisos o configuración del navegador.');
+      alert(t('ui.couldNotExportTheSessionCheckYourBrowserPermissionsOr'));
     }
   };
 
@@ -1559,7 +1562,7 @@ export const SessionProvider = ({ children }) => {
           const ok = cargarSesionJSON(sesionRemota);
           if (!ok) {
             console.warn('[Google Drive] El archivo de sesión en Drive no superó la validación.');
-            alert('El archivo encontrado en Google Drive no contiene una sesión válida de OpenMUN.');
+            alert(t('ui.theGoogleDriveFileDoesNotContainAValidOpenmun'));
             setDriveSyncStatus('error');
             return false;
           }
@@ -1597,7 +1600,7 @@ export const SessionProvider = ({ children }) => {
     } catch (err) {
       console.error('[Google Drive Connect Error]:', err);
       setDriveSyncStatus('error');
-      alert('No se pudo conectar con Google Drive. Verifica tu conexión e inténtalo de nuevo.');
+      alert(t('ui.couldNotConnectToGoogleDriveCheckYourConnectionAnd'));
       return false;
     }
   };
@@ -1606,7 +1609,7 @@ export const SessionProvider = ({ children }) => {
   const cargarSesionDesdeDrive = async (fileId, fileName) => {
     try {
       if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-        alert('Identificador de archivo no válido.');
+        alert(t('ui.invalidFileIdentifier'));
         return false;
       }
       setDriveSyncStatus('syncing');
@@ -1628,13 +1631,13 @@ export const SessionProvider = ({ children }) => {
         return true;
       } else {
         setDriveSyncStatus('error');
-        alert('El archivo seleccionado no contiene una estructura válida de sesión para OpenMUN.');
+        alert(t('ui.theSelectedFileDoesNotContainAValidOpenmunSession'));
         return false;
       }
     } catch (err) {
       console.error('[Google Drive Load Error]:', err);
       setDriveSyncStatus('error');
-      alert('No se pudo cargar la sesión seleccionada desde Google Drive.');
+      alert(t('ui.couldNotLoadTheSelectedSessionFromGoogleDrive'));
       return false;
     }
   };
@@ -1666,7 +1669,7 @@ export const SessionProvider = ({ children }) => {
     } catch (err) {
       console.error('[Google Drive Create Error]:', err);
       setDriveSyncStatus('error');
-      alert('No se pudo crear el archivo en Google Drive.');
+      alert(t('ui.couldNotCreateTheFileInGoogleDrive'));
       return null;
     }
   };
@@ -1722,7 +1725,7 @@ export const SessionProvider = ({ children }) => {
       return true;
     } catch (err) {
       console.error('[Google Drive Delete Error]:', err);
-      alert('No se pudo eliminar el archivo de Google Drive.');
+      alert(t('ui.couldNotDeleteTheFileFromGoogleDrive'));
       return false;
     }
   };
@@ -1876,7 +1879,7 @@ export const SessionProvider = ({ children }) => {
   const guardarComiteCloud = async (customName) => {
     try {
       setCloudSyncStatus('syncing');
-      const finalName = (customName || nombreComite || 'Comité Principal').trim();
+      const finalName = (customName || nombreComite || i18n.t('ui.mainCommittee')).trim();
       const snapshot = generarSnapshotSesion();
       const res = await guardarComite(finalName, snapshot);
       setCloudActiveComiteName(finalName);
@@ -1897,7 +1900,7 @@ export const SessionProvider = ({ children }) => {
     try {
       setCloudSyncStatus('syncing');
       const data = await cargarComite(comiteId);
-      if (!data) throw new Error('No se encontraron datos para este comité.');
+      if (!data) throw new Error(t('ui.noDataFoundForThisCommittee'));
       const ok = cargarSesionJSON(data);
       if (ok) {
         if (comiteName) {
@@ -1909,7 +1912,7 @@ export const SessionProvider = ({ children }) => {
         return true;
       } else {
         setCloudSyncStatus('error');
-        throw new Error('El archivo del comité no contiene una estructura válida de sesión para OpenMUN.');
+        throw new Error(t('ui.theCommitteeFileDoesNotContainAValidOpenmunSession'));
       }
     } catch (err) {
       setCloudSyncStatus('error');
@@ -1944,7 +1947,7 @@ export const SessionProvider = ({ children }) => {
       return;
     }
 
-    const comiteNameTarget = (cloudActiveComiteName || nombreComite || 'Comité Principal').trim();
+    const comiteNameTarget = (cloudActiveComiteName || nombreComite || i18n.t('ui.mainCommittee')).trim();
     if (!comiteNameTarget) return;
 
     setCloudSyncStatus('syncing');
@@ -2073,7 +2076,7 @@ export const SessionProvider = ({ children }) => {
       const rawResData = sesionData.proyectoResolucion || sesionData.enmiendasSesion || sesionData.resolucion || snapshot.openmun_enmiendas;
       if (rawResData && typeof rawResData === 'object') {
         const normalizedResolucion = {
-          tituloProyecto: rawResData.tituloProyecto || rawResData.titulo || 'Proyecto de Resolución A/RES/79/1',
+          tituloProyecto: rawResData.tituloProyecto || rawResData.titulo || i18n.t('ui.draftResolutionARes791'),
           textoResolucion: rawResData.textoResolucion || rawResData.texto || '',
           articulos: Array.isArray(rawResData.articulos) ? rawResData.articulos : [],
           enmiendas: Array.isArray(rawResData.enmiendas) ? rawResData.enmiendas : []
@@ -2162,7 +2165,7 @@ export const SessionProvider = ({ children }) => {
       tiempoOrador: 45
     });
     setVotacionSesionState({
-      asunto: 'Proyecto de Resolución / Moción',
+      asunto: i18n.t('ui.draftResolutionMotion'),
       tipoVotacion: 'procedural',
       tipoMayoria: 'simple',
       aplicarVeto: true,
@@ -2175,7 +2178,7 @@ export const SessionProvider = ({ children }) => {
     });
     setNombreComiteState('');
     setEnmiendasSesionState({
-      tituloProyecto: 'Proyecto de Resolución A/RES/79/1',
+      tituloProyecto: i18n.t('ui.draftResolutionARes791'),
       textoResolucion: '',
       articulos: [],
       enmiendas: []
@@ -2446,7 +2449,7 @@ export const SessionProvider = ({ children }) => {
 export const useSession = () => {
   const context = useContext(SessionContext);
   if (!context) {
-    throw new Error('useSession debe ser usado dentro de un SessionProvider');
+    throw new Error(i18n.t('ui.usesessionMustBeUsedWithinASessionprovider'));
   }
   return context;
 };

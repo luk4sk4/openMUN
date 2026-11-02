@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, SkipForward, Clock, ChevronUp, ChevronDown, PictureInPicture2, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -142,8 +143,8 @@ const CronometroDual = ({ modoInicial = null }) => {
     return {
       className: '',
       style: {
-        backgroundColor: 'var(--timer-display-bg, var(--card-header-bg))',
-        border: '1px solid var(--timer-display-border, var(--border-color))',
+        backgroundColor: 'var(--timer-display-bg, transparent)',
+        border: '1px solid var(--timer-display-border, transparent)',
         color: 'var(--text-color)'
       }
     };
@@ -151,7 +152,7 @@ const CronometroDual = ({ modoInicial = null }) => {
 
   const oradorActual = oradoresCaucus.length > 0
     ? oradoresCaucus[0]
-    : { nombre: 'Delegación en turno', bandera: '🇺🇳' };
+    : { nombre: i18n.t('ui.currentDelegation'), bandera: '🇺🇳' };
 
   const displayOradorState = getTimerStyle(tiempoOradorSeg, corriendo);
   const displayTotalState = getTimerStyle(tiempoTotalSeg, corriendo);
@@ -207,7 +208,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                       borderRadius: '3px',
                       fontWeight: '700'
                     }}>
-                      PROPONENTE
+                      {t('ui.proponent2')}
                     </span>
                   )}
                 </div>
@@ -215,7 +216,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                   {oradorActual.nombre}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--accent-color)', fontWeight: '600', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {tipoMocion} • {caucusActivo?.tema || 'Sin Tema Asignado'}
+                  {tipoMocion} • {caucusActivo?.tema || t('ui.noTopicAssigned')}
                 </div>
               </div>
             </div>
@@ -227,7 +228,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                   {tipoMocion}
                 </div>
                 <div style={{ fontWeight: '800', fontSize: '1.2rem', color: 'var(--text-color)', lineHeight: 1.2 }}>
-                  {caucusActivo?.tema || 'Sin Tema Asignado'}
+                  {caucusActivo?.tema || t('ui.noTopicAssigned')}
                 </div>
               </div>
             </div>
@@ -240,8 +241,8 @@ const CronometroDual = ({ modoInicial = null }) => {
               alignItems: 'center',
               gap: '0.55rem',
               padding: '0.35rem 0.75rem',
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--panel-color)',
+              border: '1px solid var(--subborder-color)',
               borderRadius: 'var(--border-radius, 6px)',
               flexShrink: 0
             }}>
@@ -277,68 +278,75 @@ const CronometroDual = ({ modoInicial = null }) => {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
-              padding: '0.3rem 0.65rem',
+              gap: '0.65rem',
+              backgroundColor: 'var(--panel-color)',
+              border: '1px solid var(--subborder-color)',
+              padding: '0.35rem 0.75rem',
               borderRadius: 'var(--border-radius, 6px)'
             }}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.62rem', color: 'var(--muted-text)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>
-                  Total Caucus
+                <div style={{
+                  fontSize: '0.68rem',
+                  color: 'var(--muted-text)',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  lineHeight: 1
+                }}>
+                  {t('timers.totalCaucus', 'Total Caucus')}
                 </div>
                 <div style={{
                   fontFamily: 'monospace',
                   fontVariantNumeric: 'tabular-nums',
-                  fontWeight: '800',
-                  fontSize: '1.15rem',
+                  fontWeight: '850',
+                  fontSize: '1.45rem',
                   color: tiempoTotalSeg < 0 ? 'var(--danger-color)' : 'var(--text-color)',
-                  lineHeight: 1.2,
+                  lineHeight: 1.15,
                   marginTop: '2px'
                 }}>
                   {formatTimeWithNegative(tiempoTotalSeg)}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => handleModificarTiempoTotal(-60)}
                   style={{
-                    padding: '0.2rem 0.35rem',
+                    padding: '0.25rem 0.4rem',
                     backgroundColor: 'var(--input-bg)',
                     border: '1px solid var(--border-color)',
                     color: 'var(--danger-color)',
-                    borderRadius: '3px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '0.7rem',
+                    fontSize: '0.74rem',
                     fontWeight: '700',
                     display: 'flex',
                     alignItems: 'center'
                   }}
-                  title="Quitar 1 min al total del caucus"
+                  title={t('ui.subtract1MinuteFromTotalCaucusTime')}
                 >
-                  <ChevronDown size={11} />
+                  <ChevronDown size={12} />
                   <span>-1m</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleModificarTiempoTotal(60)}
                   style={{
-                    padding: '0.2rem 0.35rem',
+                    padding: '0.25rem 0.4rem',
                     backgroundColor: 'var(--input-bg)',
                     border: '1px solid var(--border-color)',
                     color: 'var(--success-color)',
-                    borderRadius: '3px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
-                    fontSize: '0.7rem',
+                    fontSize: '0.74rem',
                     fontWeight: '700',
                     display: 'flex',
                     alignItems: 'center'
                   }}
-                  title="Sumar 1 min al total del caucus"
+                  title={t('ui.add1MinuteToTotalCaucusTime')}
                 >
-                  <ChevronUp size={11} />
+                  <ChevronUp size={12} />
                   <span>+1m</span>
                 </button>
               </div>
@@ -363,7 +371,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                 fontWeight: '600',
                 transition: 'all 0.15s ease'
               }}
-              title={isPipActive ? 'Cerrar ventana PiP' : 'Abrir ventana flotante PiP'}
+              title={isPipActive ? t('ui.closePipWindow') : t('ui.openFloatingPipWindow')}
             >
               <PictureInPicture2 size={13} />
               <span>PiP</span>
@@ -388,9 +396,9 @@ const CronometroDual = ({ modoInicial = null }) => {
           textAlign: 'center',
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: 'var(--card-header-bg)',
-          border: '1px solid var(--border-color)',
-          boxShadow: (esTiempoSoloGeneral ? displayTotalState : displayOradorState).className ? undefined : 'var(--timer-display-shadow, 0 4px 20px rgba(0,0,0,0.15))',
+          backgroundColor: 'var(--timer-display-bg, transparent)',
+          border: '1px solid var(--timer-display-border, transparent)',
+          boxShadow: (esTiempoSoloGeneral ? displayTotalState : displayOradorState).className ? undefined : 'var(--timer-display-shadow, none)',
           ...(esTiempoSoloGeneral ? displayTotalState : displayOradorState).style
         }}
       >
@@ -546,7 +554,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                 gap: '2px',
                 transition: 'all 0.15s ease'
               }}
-              title="Quitar 5 segundos al orador"
+              title={t('ui.subtract5SecondsFromSpeakerTime')}
             >
               <ChevronDown size={13} />
               <span>-5s</span>
@@ -568,7 +576,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                 gap: '2px',
                 transition: 'all 0.15s ease'
               }}
-              title="Sumar 5 segundos al orador"
+              title={t('ui.add5SecondsToSpeakerTime')}
             >
               <ChevronUp size={13} />
               <span>+5s</span>
@@ -578,7 +586,7 @@ const CronometroDual = ({ modoInicial = null }) => {
               onClick={() => handleModificarTiempoOrador(15)}
               style={{
                 padding: '0.6rem 0.45rem',
-                backgroundColor: 'var(--card-header-bg)',
+                backgroundColor: 'var(--panel-color)',
                 border: '1px solid var(--border-color)',
                 color: 'var(--text-color)',
                 fontWeight: '600',
@@ -590,7 +598,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                 gap: '2px',
                 transition: 'all 0.15s ease'
               }}
-              title="Sumar 15 segundos al orador"
+              title={t('ui.add15SecondsToSpeakerTime')}
             >
               <ChevronUp size={13} />
               <span>+15s</span>
@@ -613,7 +621,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                 alignItems: 'center',
                 gap: '2px'
               }}
-              title="Quitar 1 minuto"
+              title={t('ui.subtract1Minute')}
             >
               <ChevronDown size={13} />
               <span>-1m</span>
@@ -634,7 +642,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                 alignItems: 'center',
                 gap: '2px'
               }}
-              title="Sumar 1 minuto"
+              title={t('ui.add1Minute')}
             >
               <ChevronUp size={13} />
               <span>+1m</span>
@@ -655,7 +663,7 @@ const CronometroDual = ({ modoInicial = null }) => {
                 alignItems: 'center',
                 gap: '2px'
               }}
-              title="Sumar 5 minutos"
+              title={t('ui.add5Minutes')}
             >
               <ChevronUp size={13} />
               <span>+5m</span>
@@ -683,7 +691,7 @@ const CronometroDual = ({ modoInicial = null }) => {
               fontSize: '0.85rem',
               transition: 'all 0.15s ease'
             }}
-            title="Terminar intervención y pasar al siguiente orador"
+            title={t('ui.endContributionAndAdvanceToTheNextSpeaker')}
           >
             <SkipForward size={16} /> {t('timers.nextSpeaker', 'Siguiente Orador')}
           </button>

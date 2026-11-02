@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Plus, Minus, Square, Download, Clock, CheckCircle2, ArrowRightLeft, Shield, HelpCircle, SkipForward, AlertTriangle, ChevronUp, ChevronDown, PictureInPicture2, Search, X, Users } from 'lucide-react';
@@ -23,7 +24,7 @@ const CronometroPrincipal = () => {
   // Hook de Picture-in-Picture interactivo
   const { isPipActive, isSupported: isPipSupported, pipContainer, togglePip, closePip } = usePictureInPictureTimer();
 
-  const oradorActual = oradoresCola.length > 0 ? oradoresCola[0] : { nombre: 'Delegación en uso', bandera: '🇺🇳' };
+  const oradorActual = oradoresCola.length > 0 ? oradoresCola[0] : { nombre: i18n.t('ui.activeDelegation2'), bandera: '🇺🇳' };
 
   // Lista de delegaciones disponibles para ceder tiempo con filtrado por búsqueda
   const delegacionesCeder = useMemo(() => {
@@ -167,8 +168,8 @@ const CronometroPrincipal = () => {
     return {
       className: '',
       style: {
-        backgroundColor: 'var(--timer-display-bg, var(--card-header-bg))',
-        border: '2px solid var(--timer-display-border, var(--border-color))',
+        backgroundColor: 'var(--timer-display-bg, transparent)',
+        border: '1px solid var(--timer-display-border, transparent)',
         color: 'var(--text-color)'
       }
     };
@@ -215,8 +216,8 @@ const CronometroPrincipal = () => {
               alignItems: 'center',
               gap: '0.55rem',
               padding: '0.35rem 0.75rem',
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--panel-color)',
+              border: '1px solid var(--subborder-color)',
               borderRadius: '6px'
             }}>
               <CountryFlag bandera={oradoresCola[1].bandera} nombre={oradoresCola[1].nombre} size="md" />
@@ -266,7 +267,7 @@ const CronometroPrincipal = () => {
                 fontWeight: '600',
                 transition: 'all 0.15s ease'
               }}
-              title={isPipActive ? 'Cerrar ventana Picture-in-Picture' : 'Abrir ventana flotante Picture-in-Picture (siempre visible sobre Word/PDF)'}
+              title={isPipActive ? t('ui.closePictureInPictureWindow') : t('ui.openFloatingPictureInPictureWindowAlwaysVisibleOverWord')}
             >
               <PictureInPicture2 size={13} />
               <span>PiP</span>
@@ -301,7 +302,7 @@ const CronometroPrincipal = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '0.25rem',
-            backgroundColor: 'var(--card-header-bg)',
+            backgroundColor: 'var(--input-bg)',
             padding: '0.15rem 0.35rem',
             borderRadius: '5px',
             border: '1px solid var(--border-color)'
@@ -330,7 +331,7 @@ const CronometroPrincipal = () => {
                 textAlign: 'center',
                 outline: 'none'
               }}
-              title="Ingresar cantidad exacta de segundos para el cronómetro"
+              title={t('ui.enterExactNumberOfSecondsForTheTimer')}
             />
             {/* Flechas estilizadas para sumar/quitar tiempo */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
@@ -349,7 +350,7 @@ const CronometroPrincipal = () => {
                   borderRadius: '2px',
                   lineHeight: 1
                 }}
-                title="Aumentar 5 segundos"
+                title={t('ui.add5Seconds')}
               >
                 <ChevronUp size={10} />
               </button>
@@ -368,7 +369,7 @@ const CronometroPrincipal = () => {
                   borderRadius: '2px',
                   lineHeight: 1
                 }}
-                title="Quitar 5 segundos"
+                title={t('ui.subtract5Seconds')}
               >
                 <ChevronDown size={10} />
               </button>
@@ -395,7 +396,7 @@ const CronometroPrincipal = () => {
           transition: displayState.className ? 'none' : 'all 0.3s ease',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: displayState.className ? undefined : 'var(--timer-display-shadow, 0 4px 20px rgba(0,0,0,0.15))',
+          boxShadow: displayState.className ? undefined : 'var(--timer-display-shadow, none)',
           ...displayState.style
         }}
       >
@@ -520,7 +521,7 @@ const CronometroPrincipal = () => {
             justifyContent: 'center',
             fontSize: '0.85rem'
           }}
-          title="Reiniciar"
+          title={t('ui.reset')}
         >
           <RotateCcw size={15} />
         </button>
@@ -542,7 +543,7 @@ const CronometroPrincipal = () => {
               gap: '2px',
               transition: 'all 0.15s ease'
             }}
-            title="Quitar 5 segundos al orador"
+            title={t('ui.subtract5SecondsFromSpeakerTime')}
           >
             <ChevronDown size={13} />
             <span>-5s</span>
@@ -564,7 +565,7 @@ const CronometroPrincipal = () => {
               gap: '2px',
               transition: 'all 0.15s ease'
             }}
-            title="Sumar 5 segundos al orador"
+            title={t('ui.add5SecondsToSpeakerTime')}
           >
             <ChevronUp size={13} />
             <span>+5s</span>
@@ -574,7 +575,7 @@ const CronometroPrincipal = () => {
             onClick={handleAdd15Sec}
             style={{
               padding: '0.6rem 0.45rem',
-              backgroundColor: 'var(--card-header-bg)',
+              backgroundColor: 'var(--panel-color)',
               border: '1px solid var(--border-color)',
               color: 'var(--text-color)',
               fontWeight: '600',
@@ -586,7 +587,7 @@ const CronometroPrincipal = () => {
               gap: '2px',
               transition: 'all 0.15s ease'
             }}
-            title="Sumar 15 segundos al orador"
+            title={t('ui.add15SecondsToSpeakerTime')}
           >
             <ChevronUp size={13} />
             <span>+15s</span>
@@ -612,7 +613,7 @@ const CronometroPrincipal = () => {
             fontSize: '0.82rem',
             opacity: oradoresCola.length > 0 ? 1 : 0.5
           }}
-          title="Ceder el tiempo restante (Yield)"
+          title={t('ui.yieldRemainingTime')}
         >
           <ArrowRightLeft size={15} /> {t('timers.yield', 'Ceder (Yield)')}
         </button>
@@ -634,7 +635,7 @@ const CronometroPrincipal = () => {
             gap: '0.4rem',
             fontSize: '0.85rem'
           }}
-          title="Terminar intervención y pasar al siguiente orador"
+          title={t('ui.endContributionAndAdvanceToTheNextSpeaker')}
         >
           <SkipForward size={16} /> {t('timers.nextSpeaker', 'Siguiente Orador')}
         </button>
@@ -780,7 +781,7 @@ const CronometroPrincipal = () => {
                         autoFocus
                         value={delegacionBusqueda}
                         onChange={e => setDelegacionBusqueda(e.target.value)}
-                        placeholder="Buscar delegación..."
+                        placeholder={t('countries.searchPlaceholder')}
                         style={{
                           width: '100%',
                           background: 'transparent',
@@ -805,7 +806,7 @@ const CronometroPrincipal = () => {
                     <div style={{ overflowY: 'auto', flex: 1, padding: '0.2rem' }}>
                       {delegacionesCeder.length === 0 ? (
                         <div style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.73rem', color: 'var(--muted-text)' }}>
-                          No se encontraron delegaciones
+                          {t('ui.noDelegationsFound')}
                         </div>
                       ) : (
                         delegacionesCeder.map(p => (

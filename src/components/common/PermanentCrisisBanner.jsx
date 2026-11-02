@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Flame, 
@@ -24,36 +25,36 @@ import CountryFlag from './CountryFlag';
 
 const CATEGORIAS = {
   CRITICA: {
-    nombre: 'Última Hora',
-    badge: '🔴 ÚLTIMA HORA',
+    get nombre() { return i18n.t('ui.breakingNews'); },
+    get badge() { return i18n.t('ui.breakingNews2'); },
     color: '#ef4444',
     bg: '#b91c1c',
     icon: Flame
   },
   MILITAR: {
-    nombre: 'Alerta Militar',
-    badge: '⚔️ ALERTA MILITAR',
+    get nombre() { return i18n.t('ui.militaryAlert'); },
+    get badge() { return i18n.t('ui.militaryAlert2'); },
     color: '#f97316',
     bg: '#c2410c',
     icon: ShieldAlert
   },
   DIPLOMATICA: {
-    nombre: 'Comunicado',
-    badge: '🌐 COMUNICADO DIPLOMÁTICO',
+    get nombre() { return i18n.t('ui.announcement2'); },
+    get badge() { return i18n.t('ui.diplomaticAnnouncement'); },
     color: '#3b82f6',
     bg: '#1d4ed8',
     icon: Megaphone
   },
   ECONOMICA: {
-    nombre: 'Crisis Financiera',
-    badge: '💵 IMPACTO ECONÓMICO',
+    get nombre() { return i18n.t('ui.financialCrisis'); },
+    get badge() { return i18n.t('ui.economicImpact'); },
     color: '#a855f7',
     bg: '#7e22ce',
     icon: TrendingUp
   },
   CIBERNETICA: {
-    nombre: 'Ciberataque',
-    badge: '⚡ FILTRACIÓN / CIBER',
+    get nombre() { return i18n.t('ui.cyberattack'); },
+    get badge() { return i18n.t('ui.leakCyber'); },
     color: '#10b981',
     bg: '#047857',
     icon: Zap
@@ -266,7 +267,7 @@ const PermanentCrisisBanner = ({ isLight }) => {
           {/* Botón Expandir / Contraer Detalles */}
           <button
             onClick={() => setModoExpandido(!modoExpandido)}
-            title={modoExpandido ? "Contraer detalles" : "Ver detalles completos"}
+            title={modoExpandido ? t('ui.collapseDetails') : t('ui.viewFullDetails')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -288,7 +289,7 @@ const PermanentCrisisBanner = ({ isLight }) => {
           {/* Botón Ocultar / Desactivar Banner Permanente */}
           <button
             onClick={() => setBannerActivo(false)}
-            title="Ocultar banner permanente (puedes reactivarlo en ajustes)"
+            title={t('ui.hidePermanentBannerYouCanEnableItAgainInSettings')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -336,7 +337,7 @@ const PermanentCrisisBanner = ({ isLight }) => {
               }}>
                 <img
                   src={eventoCrisis.imagen}
-                  alt="Transmisión"
+                  alt={t('ui.broadcast')}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>

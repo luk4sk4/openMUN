@@ -190,19 +190,19 @@ export default function PrivacyPolicyPage({ isLight = false, onBack }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.88rem', color: textMuted, lineHeight: '1.55' }}>
                 <CheckCircle2 size={16} style={{ color: '#ec4899', marginTop: '3px', flexShrink: 0 }} />
-                <span><strong style={{ color: textPrimary }}>Finalidad:</strong> {t('privacy.sec2Finalidad', 'Utilizaremos tu email únicamente para remitirte el archivo exportado de tu conferencia o comité.')}</span>
+                <span><strong style={{ color: textPrimary }}>{t('ui.purpose')}</strong> {t('privacy.sec2Finalidad', 'Utilizaremos tu email únicamente para remitirte el archivo exportado de tu conferencia o comité.')}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.88rem', color: textMuted, lineHeight: '1.55' }}>
                 <CheckCircle2 size={16} style={{ color: '#ec4899', marginTop: '3px', flexShrink: 0 }} />
-                <span><strong style={{ color: textPrimary }}>Base jurídica:</strong> {t('privacy.sec2BaseJuridica', 'El consentimiento explícito al solicitar el envío de dicho archivo.')}</span>
+                <span><strong style={{ color: textPrimary }}>{t('ui.legalBasis')}</strong> {t('privacy.sec2BaseJuridica', 'El consentimiento explícito al solicitar el envío de dicho archivo.')}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.88rem', color: textMuted, lineHeight: '1.55' }}>
                 <CheckCircle2 size={16} style={{ color: '#ec4899', marginTop: '3px', flexShrink: 0 }} />
-                <span><strong style={{ color: textPrimary }}>Conservación:</strong> {t('privacy.sec2Conservacion', 'Tu dirección de correo se utiliza de forma transitoria para procesar el envío y no se emplea para fines comerciales, boletines (newsletters) ni cesión a terceros.')}</span>
+                <span><strong style={{ color: textPrimary }}>{t('ui.retention')}</strong> {t('privacy.sec2Conservacion', 'Tu dirección de correo se utiliza de forma transitoria para procesar el envío y no se emplea para fines comerciales, boletines (newsletters) ni cesión a terceros.')}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.88rem', color: textMuted, lineHeight: '1.55' }}>
                 <CheckCircle2 size={16} style={{ color: '#ec4899', marginTop: '3px', flexShrink: 0 }} />
-                <span><strong style={{ color: textPrimary }}>Terceros proveedores:</strong> {t('privacy.sec2Terceros', 'Para la entrega del correo electrónico podemos apoyarnos en servicios de infraestructura de correo transaccional que cumplen con las normativas europeas de protección de datos.')}</span>
+                <span><strong style={{ color: textPrimary }}>{t('ui.thirdPartyProviders')}</strong> {t('privacy.sec2Terceros', 'Para la entrega del correo electrónico podemos apoyarnos en servicios de infraestructura de correo transaccional que cumplen con las normativas europeas de protección de datos.')}</span>
               </div>
             </div>
           </div>
@@ -441,12 +441,12 @@ export default function PrivacyPolicyPage({ isLight = false, onBack }) {
 
         {/* Footer */}
         <div style={{ marginTop: '3.5rem', textAlign: 'center', fontSize: '0.85rem', color: textMuted }}>
-          <p style={{ margin: '0 0 0.75rem 0' }}>Última actualización: Agosto {new Date().getFullYear()} — OpenMUN</p>
+          <p style={{ margin: '0 0 0.75rem 0' }}>{t('ui.lastUpdatedAugust')} {new Date().getFullYear()} — OpenMUN</p>
           <button
             onClick={onBack}
             style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontWeight: '700', fontSize: '0.9rem', textDecoration: 'underline' }}
           >
-            ← Volver al panel principal de OpenMUN
+            {t('common.backToMainPanel')}
           </button>
         </div>
       </main>

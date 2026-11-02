@@ -134,7 +134,7 @@ const AnadirPaisesGSL = () => {
               alignItems: 'center',
               gap: '0.4rem'
             }}>
-              Añadir Países GSL
+              {t('sidebar.widgets.anadir_paises_gsl.title')}
             </h3>
           </div>
         </div>
@@ -144,7 +144,7 @@ const AnadirPaisesGSL = () => {
           <button
             type="button"
             onClick={ordenarPaisesAlfabetico}
-            title="Ordenar países alfabéticamente (A-Z)"
+            title={t('ui.sortCountriesAlphabeticallyAZ')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -171,7 +171,7 @@ const AnadirPaisesGSL = () => {
               }
             }}
             disabled={oradoresCola.length === 0}
-            title="Eliminar todos de GSL"
+            title={t('ui.removeAllFromGsl')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -444,7 +444,7 @@ const AnadirPaisesGSL = () => {
                     setDragOverIndex(null);
                   }}
                   onClick={() => handleTogglePais(pais)}
-                  title={estaEnLista ? `${pais.nombre} (En GSL #${posEnLista}) - Clic para retirar` : `${pais.nombre} - Clic para añadir a GSL (Arrastra para reordenar)`}
+                  title={estaEnLista ? t('ui.inGslClickToRemove', { v0: pais.nombre, v1: posEnLista }) : t('ui.clickToAddToGslDragToReorder', { v0: pais.nombre })}
                   style={{
                     position: 'relative',
                     padding: '0.5rem 0.6rem',
@@ -501,7 +501,7 @@ const AnadirPaisesGSL = () => {
                       {pais.nombre}
                     </span>
                     {pais.veto && (
-                      <Crown size={11} color="var(--warning-color)" style={{ flexShrink: 0 }} title="Miembro Permanente (P5)" />
+                      <Crown size={11} color="var(--warning-color)" style={{ flexShrink: 0 }} title={t('ui.permanentMemberP5')} />
                     )}
                   </div>
 

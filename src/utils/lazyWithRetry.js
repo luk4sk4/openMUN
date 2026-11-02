@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import React, { lazy } from 'react';
 
 /**
@@ -58,11 +59,11 @@ export function lazyWithRetry(componentImport, componentName = 'component') {
                   color: 'inherit'
                 }
               },
-              React.createElement('p', { style: { margin: 0, fontWeight: 600, fontSize: '0.95rem' } }, 'Módulo no disponible sin conexión'),
+              React.createElement('p', { style: { margin: 0, fontWeight: 600, fontSize: '0.95rem' } }, i18n.t('ui.moduleUnavailableOffline')),
               React.createElement(
                 'p',
                 { style: { margin: '6px 0 0 0', fontSize: '0.82rem', opacity: 0.8 } },
-                'Este componente no se encuentra en la caché local y requiere conexión para descargarse por primera vez.'
+                i18n.t('ui.thisComponentIsNotCachedLocallyAndRequiresAConnection')
               )
             )
           };
@@ -89,7 +90,7 @@ export function lazyWithRetry(componentImport, componentName = 'component') {
           default: () => React.createElement(
             'div',
             { style: { padding: '1rem', textAlign: 'center', opacity: 0.7, fontSize: '0.85rem' } },
-            'Contenido no disponible temporalmente sin conexión.'
+            i18n.t('ui.contentTemporarilyUnavailableOffline')
           )
         };
       }

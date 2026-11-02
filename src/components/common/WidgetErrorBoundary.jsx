@@ -1,3 +1,5 @@
+import { withTranslation } from 'react-i18next';
+import i18n from '../../languages/index.js';
 import React, { Component } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -43,7 +45,7 @@ export class WidgetErrorBoundary extends Component {
 
   handleReloadPage = () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      alert('No tienes conexión a internet en este momento. Espera a recuperar la conexión antes de recargar la aplicación.');
+      alert(i18n.t('ui.youAreCurrentlyOfflineWaitForYourConnectionToReturn'));
       return;
     }
     window.location.reload();
@@ -85,12 +87,12 @@ export class WidgetErrorBoundary extends Component {
 
           <div style={{ maxWidth: '280px' }}>
             <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', fontWeight: 600 }}>
-              {isChunk ? 'Nueva versión disponible' : `Error en ${widgetTitle}`}
+              {isChunk ? i18n.t('ui.newVersionAvailable') : i18n.t('ui.errorIn', { v0: widgetTitle })}
             </h4>
             <p style={{ margin: 0, fontSize: '0.78rem', opacity: 0.7, lineHeight: 1.35 }}>
               {isChunk
-                ? 'El widget se ha actualizado en el servidor. Pulsa recargar para sincronizar.'
-                : 'No se pudo cargar este módulo correctamente. Tus datos siguen intactos.'}
+                ? i18n.t('ui.theWidgetHasBeenUpdatedOnTheServerReloadTo')
+                : i18n.t('ui.thisModuleCouldNotBeLoadedCorrectlyYourDataIs')}
             </p>
           </div>
 
@@ -113,7 +115,7 @@ export class WidgetErrorBoundary extends Component {
                 }}
               >
                 <RefreshCw size={13} />
-                <span>Actualizar aplicación</span>
+                <span>{i18n.t('ui.updateApplication')}</span>
               </button>
             ) : (
               <button
@@ -133,7 +135,7 @@ export class WidgetErrorBoundary extends Component {
                 }}
               >
                 <RefreshCw size={13} />
-                <span>Reintentar</span>
+                <span>{i18n.t('ui.retry')}</span>
               </button>
             )}
           </div>
@@ -145,4 +147,4 @@ export class WidgetErrorBoundary extends Component {
   }
 }
 
-export default WidgetErrorBoundary;
+export default withTranslation()(WidgetErrorBoundary);

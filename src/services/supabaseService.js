@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import { getSupabaseClient } from './supabaseClient';
 
 const STORAGE_ACCOUNT_KEY = 'openmun_cloud_account';
@@ -69,7 +70,7 @@ export const obtenerCuentaActiva = () => {
  * Formatea errores de Supabase y traduce errores de red o autenticación a mensajes claros
  */
 export const formatSupabaseError = (err) => {
-  if (!err) return 'Error desconocido al conectar con Supabase';
+  if (!err) return i18n.t('ui.unknownErrorConnectingToSupabase');
   const str = String(err?.message || err?.error_description || err?.msg || err || '');
   const code = String(err?.code || err?.error_code || '');
 
@@ -80,7 +81,7 @@ export const formatSupabaseError = (err) => {
     str.toLowerCase().includes('already registered') ||
     code === '23505'
   ) {
-    return 'Ya existe una conferencia registrada con este nombre.';
+    return i18n.t('ui.aConferenceWithThisNameIsAlreadyRegistered');
   }
 
   if (
@@ -96,7 +97,7 @@ export const formatSupabaseError = (err) => {
     str.toLowerCase().includes('violates the document\'s content security policy') ||
     str.toLowerCase().includes('csp')
   ) {
-    return 'La política de seguridad (CSP) del sitio bloquea la conexión con Supabase.';
+    return i18n.t('ui.theSiteContentSecurityPolicyCspBlocksTheConnectionTo');
   }
 
   if (
@@ -104,7 +105,7 @@ export const formatSupabaseError = (err) => {
     str.toLowerCase().includes('failed to fetch') ||
     str.toLowerCase().includes('fetch failed')
   ) {
-    return 'Error de red al conectar con Supabase. Revisa tu conexión o que ningún proxy/bloqueador esté interfiriendo.';
+    return i18n.t('ui.networkErrorConnectingToSupabaseCheckYourConnectionAndWhether');
   }
 
   return str;
@@ -117,12 +118,12 @@ export const formatSupabaseError = (err) => {
 export async function registrarConferencia(nombre, password) {
   const client = getSupabaseClient();
   if (!client) {
-    throw new Error('Supabase no está configurado. Por favor ingresa la Anon Key de Supabase.');
+    throw new Error(i18n.t('ui.supabaseIsNotConfiguredPleaseEnterTheSupabaseAnonKey'));
   }
 
   const cleanName = (nombre || '').trim();
-  if (!cleanName) throw new Error('El nombre de la conferencia es obligatorio.');
-  if (!password || password.length < 4) throw new Error('La contraseña debe tener al menos 4 caracteres.');
+  if (!cleanName) throw new Error(i18n.t('ui.conferenceNameIsRequired'));
+  if (!password || password.length < 4) throw new Error(i18n.t('ui.passwordMustContainAtLeast4Characters'));
 
   const email = formatEmail(cleanName);
 
@@ -138,7 +139,7 @@ export async function registrarConferencia(nombre, password) {
 
   const user = authData?.user;
   if (!user) {
-    throw new Error('No se pudo crear el usuario en Supabase.');
+    throw new Error(i18n.t('ui.couldNotCreateTheUserInSupabase'));
   }
 
   // Si signUp no devolvió sesión automática, iniciar sesión explícitamente para tener token de auth
@@ -179,12 +180,12 @@ export async function registrarConferencia(nombre, password) {
 export async function loginConferencia(nombre, password) {
   const client = getSupabaseClient();
   if (!client) {
-    throw new Error('Supabase no está configurado. Por favor ingresa la Anon Key de Supabase.');
+    throw new Error(i18n.t('ui.supabaseIsNotConfiguredPleaseEnterTheSupabaseAnonKey'));
   }
 
   const cleanName = (nombre || '').trim();
-  if (!cleanName) throw new Error('El nombre de la conferencia es obligatorio.');
-  if (!password) throw new Error('Ingresa la contraseña de la conferencia.');
+  if (!cleanName) throw new Error(i18n.t('ui.conferenceNameIsRequired'));
+  if (!password) throw new Error(i18n.t('ui.enterTheConferencePassword'));
 
   const email = formatEmail(cleanName);
 
@@ -198,7 +199,7 @@ export async function loginConferencia(nombre, password) {
   }
 
   if (!authData?.user) {
-    throw new Error('Nombre de conferencia o contraseña incorrectos.');
+    throw new Error(i18n.t('ui.incorrectConferenceNameOrPassword'));
   }
 
   // Obtener nombre real desde conferences si está disponible
@@ -241,10 +242,10 @@ export async function cerrarSesionConferencia() {
  */
 export async function guardarComite(nombreComite, payloadJSON) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase no está configurado.');
+  if (!client) throw new Error(i18n.t('ui.supabaseIsNotConfigured'));
 
   const account = obtenerCuentaActiva();
-  if (!account) throw new Error('No hay una conferencia autenticada.');
+  if (!account) throw new Error(i18n.t('ui.noConferenceIsSignedIn'));
 
   const cleanName = (nombreComite || 'Comité').trim();
   const timestamp = new Date().toISOString();
@@ -271,10 +272,10 @@ export async function guardarComite(nombreComite, payloadJSON) {
  */
 export async function listarComites() {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase no está configurado.');
+  if (!client) throw new Error(i18n.t('ui.supabaseIsNotConfigured'));
 
   const account = obtenerCuentaActiva();
-  if (!account) throw new Error('No hay una conferencia autenticada.');
+  if (!account) throw new Error(i18n.t('ui.noConferenceIsSignedIn'));
 
   const { data, error } = await client
     .from('committees')
@@ -291,7 +292,7 @@ export async function listarComites() {
  */
 export async function cargarComite(comiteId) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase no está configurado.');
+  if (!client) throw new Error(i18n.t('ui.supabaseIsNotConfigured'));
 
   const { data, error } = await client
     .from('committees')
@@ -308,7 +309,7 @@ export async function cargarComite(comiteId) {
  */
 export async function eliminarComite(comiteId) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase no está configurado.');
+  if (!client) throw new Error(i18n.t('ui.supabaseIsNotConfigured'));
 
   const { error } = await client
     .from('committees')

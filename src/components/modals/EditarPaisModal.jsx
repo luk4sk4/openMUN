@@ -80,11 +80,11 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
             try {
               const base64 = await procesarImagenBandera(file);
               setBandera(base64);
-              setMensajeFeedback('¡Imagen pegada del portapapeles con éxito!');
+              setMensajeFeedback(t('ui.imagePastedFromClipboardSuccessfully'));
               setTimeout(() => setMensajeFeedback(''), 3000);
             } catch (err) {
               console.error('Error al procesar imagen del portapapeles:', err);
-              setMensajeFeedback('Error al procesar imagen');
+              setMensajeFeedback(t('ui.errorProcessingImage'));
             }
           }
           break;
@@ -105,11 +105,11 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
     try {
       const base64 = await procesarImagenBandera(file);
       setBandera(base64);
-      setMensajeFeedback('Imagen cargada correctamente');
+      setMensajeFeedback(t('ui.imageLoadedSuccessfully'));
       setTimeout(() => setMensajeFeedback(''), 3000);
     } catch (err) {
       console.error('Error al subir imagen:', err);
-      alert('No se pudo procesar la imagen seleccionada.');
+      alert(t('ui.couldNotProcessTheSelectedImage'));
     }
   };
 
@@ -121,7 +121,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
       try {
         const base64 = await procesarImagenBandera(file);
         setBandera(base64);
-        setMensajeFeedback('Imagen arrastrada y procesada');
+        setMensajeFeedback(t('ui.droppedImageProcessed'));
         setTimeout(() => setMensajeFeedback(''), 3000);
       } catch (err) {
         console.error('Error al procesar drop:', err);
@@ -132,7 +132,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const handleAplicarUrl = () => {
     if (urlInput.trim()) {
       setBandera(urlInput.trim());
-      setMensajeFeedback('URL de imagen aplicada');
+      setMensajeFeedback(t('ui.imageUrlApplied'));
       setTimeout(() => setMensajeFeedback(''), 3000);
     }
   };
@@ -140,14 +140,14 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const handleAutoDetectar = () => {
     const autoIso = normalizarBandera('', nombre);
     setBandera(autoIso || 'un');
-    setMensajeFeedback('Bandera autodetectada');
+    setMensajeFeedback(t('ui.flagDetectedAutomatically'));
     setTimeout(() => setMensajeFeedback(''), 3000);
   };
 
   const handleGuardar = (e) => {
     e.preventDefault();
     if (!nombre.trim()) {
-      alert('El nombre de la delegación no puede estar vacío');
+      alert(t('ui.delegationNameCannotBeEmpty'));
       return;
     }
 
@@ -225,7 +225,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar diálogo"
+            aria-label={t('ui.closeDialog')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -265,7 +265,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                 type="text"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Ej. Francia, Cruz Roja, República de..."
+                placeholder={t('ui.eGFranceRedCrossRepublicOf')}
                 style={{
                   flex: 1,
                   padding: '0.5rem 0.75rem',
@@ -281,7 +281,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
               <button
                 type="button"
                 onClick={handleAutoDetectar}
-                title="Autodetectar bandera según nombre"
+                title={t('ui.detectFlagAutomaticallyFromName')}
                 style={{
                   padding: '0.5rem 0.75rem',
                   backgroundColor: 'transparent',
@@ -442,7 +442,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                 <button
                   type="button"
                   onClick={() => { setBandera('un'); setUrlInput(''); }}
-                  title="Restablecer a bandera de ONU"
+                  title={t('editCountry.resetUnFlag', 'Restablecer a bandera de ONU')}
                   style={{
                     padding: '0.4rem 0.55rem',
                     backgroundColor: 'transparent',
@@ -458,7 +458,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                   }}
                 >
                   <RotateCcw size={12} />
-                  ONU
+                  {t('editCountry.unFlag', 'ONU')}
                 </button>
               </div>
 
@@ -478,7 +478,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                     <Search size={12} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-text)' }} />
                     <input
                       type="text"
-                      placeholder="Filtrar por país..."
+                      placeholder={t('editCountry.filterCountry', 'Filtrar por país...')}
                       value={filtroIso}
                       onChange={(e) => setFiltroIso(e.target.value)}
                       style={{
@@ -507,7 +507,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                         type="button"
                         onClick={() => {
                           setBandera(p.iso);
-                          setMensajeFeedback(`Bandera seleccionada: ${p.nombre}`);
+                          setMensajeFeedback(t('editCountry.flagSelected', { country: p.nombre, defaultValue: `Bandera seleccionada: ${p.nombre}` }));
                           setTimeout(() => setMensajeFeedback(''), 2500);
                         }}
                         style={{
@@ -580,7 +580,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
               <button
                 type="button"
                 onClick={() => {
-                  if (confirm(t('editCountry.confirmDelete', `¿Eliminar definitivamente la delegación de "${nombre}" del comité?`))) {
+                  if (confirm(t('editCountry.confirmDelete', { name: nombre, defaultValue: `¿Eliminar definitivamente la delegación de "${nombre}" del comité?` }))) {
                     onEliminar(pais.id);
                     onClose();
                   }

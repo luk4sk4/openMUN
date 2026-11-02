@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilidades de Banderas e Imágenes de Delegaciones para openMUN
 // ─────────────────────────────────────────────────────────────────────────────
@@ -358,7 +359,7 @@ export function generarColorAvatar(nombre = '') {
 export function procesarImagenBandera(fileOrBlob, maxWidth = 200, maxHeight = 150) {
   return new Promise((resolve, reject) => {
     if (!fileOrBlob) {
-      return reject(new Error('No se proporcionó ningún archivo de imagen'));
+      return reject(new Error(i18n.t('ui.noImageFileProvided')));
     }
 
     const reader = new FileReader();
@@ -389,10 +390,10 @@ export function procesarImagenBandera(fileOrBlob, maxWidth = 200, maxHeight = 15
         const dataUrl = canvas.toDataURL('image/png', 0.88);
         resolve(dataUrl);
       };
-      img.onerror = () => reject(new Error('No se pudo decodificar la imagen'));
+      img.onerror = () => reject(new Error(i18n.t('ui.couldNotDecodeImage')));
       img.src = e.target.result;
     };
-    reader.onerror = () => reject(new Error('Error al leer el archivo'));
+    reader.onerror = () => reject(new Error(i18n.t('ui.errorReadingFile')));
     reader.readAsDataURL(fileOrBlob);
   });
 }

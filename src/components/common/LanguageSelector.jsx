@@ -9,6 +9,7 @@ import { AVAILABLE_LANGUAGES, changeAppLanguage } from '../../languages';
  * Muestra automáticamente todos los idiomas registrados en `AVAILABLE_LANGUAGES`.
  */
 export default function LanguageSelector({ showIcon = true, className = '', style = {} }) {
+  const { t } = useTranslation();
   const { i18n } = useTranslation();
   const { isLight } = useAccessibility();
   const currentLang = i18n.language || 'es';
@@ -27,7 +28,7 @@ export default function LanguageSelector({ showIcon = true, className = '', styl
       <select
         value={currentLang}
         onChange={(e) => changeAppLanguage(e.target.value)}
-        aria-label="Seleccionar idioma / Select language"
+        aria-label={t('ui.selectLanguage')}
         style={{
           backgroundColor: isLight ? '#ffffff' : 'var(--card-header-bg, #1e1e24)',
           color: 'var(--text-color)',

@@ -1,3 +1,5 @@
+import i18n from '../../languages/index.js';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   CheckCircle2,
@@ -12,10 +14,18 @@ import { useAccessibility } from '../../context/AccessibilityContext';
 
 /**
  * ToastNotification
- * Sistema de notificaciones toast estilizado, ultra-moderno y accesible.
- * Admite notificaciones estándar y toasts grandes interactivos de confirmación y acción.
+ * Sistema de notificaciones toast conforme al sistema de diseño de OpenMUN (openmun-design).
+ *
+ * Principios aplicados:
+ * - Tokens semánticos: variables CSS (--panel-color, --text-color, --muted-text, --border-color,
+ *   --accent-color, --btn-bg, --btn-text, --success-color, --danger-color, --warning-color, --info-color).
+ * - Superficies planas y continuas con elevación sutil sin brillos ni degradados de fantasía.
+ * - Bordes de 1px con borde de acento sutil para indicar estado semántico sin saturar.
+ * - Iconos proporcionados con texto descriptivo para máxima accesibilidad.
+ * - Foco accesible y soporte para reducción de movimiento.
  */
 export const ToastNotification = ({ toasts, onDismiss }) => {
+  const { t } = useTranslation();
   const { currentTheme } = useAccessibility();
   const isLight = currentTheme === 'light';
 
@@ -25,17 +35,20 @@ export const ToastNotification = ({ toasts, onDismiss }) => {
 
   return (
     <div
+      role="region"
+      aria-label={t('ui.notifications')}
       style={{
         position: 'fixed',
-        top: '1.25rem',
-        right: '1.25rem',
+        top: '1rem',
+        right: '1rem',
         zIndex: 99999,
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.75rem',
-        maxWidth: hasLargeToast ? '520px' : '420px',
-        width: 'calc(100vw - 2.5rem)',
+        gap: '0.5rem',
+        maxWidth: hasLargeToast ? '460px' : '380px',
+        width: 'calc(100vw - 2rem)',
         pointerEvents: 'none',
+        fontFamily: 'var(--font-family, Inter, system-ui, sans-serif)',
         transition: 'max-width 0.2s ease'
       }}
     >
@@ -52,6 +65,7 @@ export const ToastNotification = ({ toasts, onDismiss }) => {
 };
 
 const ToastItem = ({ toast, isLight, onDismiss }) => {
+  const { t } = useTranslation();
   const {
     type = 'info',
     title,
@@ -60,9 +74,10 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
     onConfirm,
     onCancel,
     confirmText = 'Confirmar',
-    cancelText = 'Cancelar',
+    cancelText = i18n.t('ui.cancel'),
     isLarge = false,
-    action
+    action,
+    destructive = true
   } = toast;
 
   const isConfirmation = type === 'confirm' || typeof onConfirm === 'function';
@@ -113,47 +128,37 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
     }
   };
 
-  // Configuración de estilo según el tipo de Toast
+  // Configuración semántica estricta según OpenMUN Design System
   const typeConfig = {
     success: {
-      accentColor: '#10b981',
-      bgGlow: 'rgba(16, 185, 129, 0.15)',
-      badgeBg: 'rgba(16, 185, 129, 0.18)',
-      borderColor: isLight ? 'rgba(16, 185, 129, 0.35)' : 'rgba(16, 185, 129, 0.45)',
-      icon: <CheckCircle2 size={20} color="#10b981" strokeWidth={2.4} />,
-      progressBg: 'linear-gradient(90deg, #10b981, #34d399)'
+      accentColor: 'var(--success-color, #a4d4b3)',
+      badgeBg: 'var(--success-soft, rgba(116, 183, 138, 0.15))',
+      borderColor: 'var(--success-color, #a4d4b3)',
+      icon: <CheckCircle2 size={16} strokeWidth={2.4} />
     },
     error: {
-      accentColor: '#f43f5e',
-      bgGlow: 'rgba(244, 63, 94, 0.18)',
-      badgeBg: 'rgba(244, 63, 94, 0.2)',
-      borderColor: isLight ? 'rgba(244, 63, 94, 0.35)' : 'rgba(244, 63, 94, 0.45)',
-      icon: <AlertOctagon size={20} color="#f43f5e" strokeWidth={2.4} />,
-      progressBg: 'linear-gradient(90deg, #f43f5e, #fb7185)'
+      accentColor: 'var(--danger-color, #edaaa1)',
+      badgeBg: 'var(--danger-soft, rgba(220, 130, 117, 0.18))',
+      borderColor: 'var(--danger-color, #edaaa1)',
+      icon: <AlertOctagon size={16} strokeWidth={2.4} />
     },
     warning: {
-      accentColor: '#f59e0b',
-      bgGlow: 'rgba(245, 158, 11, 0.15)',
-      badgeBg: 'rgba(245, 158, 11, 0.2)',
-      borderColor: isLight ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.45)',
-      icon: <AlertTriangle size={20} color="#f59e0b" strokeWidth={2.4} />,
-      progressBg: 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+      accentColor: 'var(--warning-color, #cbb58d)',
+      badgeBg: 'var(--warning-soft, rgba(203, 181, 141, 0.15))',
+      borderColor: 'var(--warning-color, #cbb58d)',
+      icon: <AlertTriangle size={16} strokeWidth={2.4} />
     },
     confirm: {
-      accentColor: '#ef4444',
-      bgGlow: 'rgba(239, 68, 68, 0.22)',
-      badgeBg: 'rgba(239, 68, 68, 0.2)',
-      borderColor: isLight ? 'rgba(239, 68, 68, 0.5)' : 'rgba(239, 68, 68, 0.6)',
-      icon: <AlertTriangle size={22} color="#ef4444" strokeWidth={2.5} />,
-      progressBg: 'linear-gradient(90deg, #ef4444, #f87171)'
+      accentColor: destructive ? 'var(--danger-color, #edaaa1)' : 'var(--accent-color, #efa37f)',
+      badgeBg: destructive ? 'var(--danger-soft, rgba(220, 130, 117, 0.18))' : 'var(--accent-soft, rgba(239, 163, 127, 0.12))',
+      borderColor: destructive ? 'var(--danger-color, #edaaa1)' : 'var(--accent-color, #efa37f)',
+      icon: <AlertTriangle size={16} strokeWidth={2.4} />
     },
     info: {
-      accentColor: '#3b82f6',
-      bgGlow: 'rgba(59, 130, 246, 0.15)',
-      badgeBg: 'rgba(59, 130, 246, 0.2)',
-      borderColor: isLight ? 'rgba(59, 130, 246, 0.35)' : 'rgba(59, 130, 246, 0.45)',
-      icon: <Info size={20} color="#3b82f6" strokeWidth={2.4} />,
-      progressBg: 'linear-gradient(90deg, #3b82f6, #60a5fa)'
+      accentColor: 'var(--info-color, #a6b8c9)',
+      badgeBg: 'var(--info-soft, rgba(166, 184, 201, 0.12))',
+      borderColor: 'var(--info-color, #a6b8c9)',
+      icon: <Info size={16} strokeWidth={2.4} />
     }
   };
 
@@ -165,6 +170,8 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
 
   return (
     <div
+      role={isConfirmation || type === 'error' ? 'alert' : 'status'}
+      aria-live="polite"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{
@@ -172,50 +179,51 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        padding: isExpandedLayout ? '1.15rem 1.25rem' : '0.9rem 1.05rem',
-        borderRadius: '14px',
-        backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(17, 22, 33, 0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: `1px solid ${config.borderColor}`,
+        padding: isExpandedLayout ? '0.85rem 1rem' : '0.75rem 0.9rem',
+        borderRadius: 'var(--border-radius, 6px)',
+        backgroundColor: 'var(--panel-color, #363636)',
+        border: '1px solid var(--border-color, #4b4b4b)',
+        borderLeft: `3px solid ${config.accentColor}`,
         boxShadow: isLight
-          ? `0 16px 36px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0,0,0,0.05), 0 0 24px ${config.bgGlow}, inset 0 1px 0 rgba(255,255,255,0.9)`
-          : `0 20px 42px rgba(0, 0, 0, 0.6), 0 0 28px ${config.bgGlow}, inset 0 1px 0 rgba(255,255,255,0.1)`,
-        color: isLight ? '#0f172a' : '#f8fafc',
+          ? '0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04)'
+          : '0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2)',
+        color: 'var(--text-color, #f7f2eb)',
         overflow: 'hidden',
-        animation: 'toastSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        transition: 'all 0.2s ease',
+        animation: 'toastSlideIn 0.2s ease-out forwards',
+        transition: 'border-color 0.15s ease, background-color 0.15s ease',
         cursor: 'default'
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.95rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
         {/* Icon Badge */}
         <div
           style={{
             flexShrink: 0,
-            width: isExpandedLayout ? '40px' : '36px',
-            height: isExpandedLayout ? '40px' : '36px',
-            borderRadius: '10px',
+            width: '28px',
+            height: '28px',
+            borderRadius: 'var(--border-radius, 6px)',
             backgroundColor: config.badgeBg,
+            color: config.accentColor,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: `0 0 14px ${config.bgGlow}`
+            marginTop: '1px'
           }}
+          aria-hidden="true"
         >
           {config.icon}
         </div>
 
         {/* Contenido de Texto */}
-        <div style={{ flex: 1, minWidth: 0, paddingTop: '0.05rem' }}>
+        <div style={{ flex: 1, minWidth: 0, paddingTop: '1px' }}>
           {title && (
             <div
               style={{
-                fontWeight: '700',
-                fontSize: isExpandedLayout ? '0.95rem' : '0.88rem',
+                fontWeight: '650',
+                fontSize: isExpandedLayout ? '0.88rem' : '0.82rem',
                 lineHeight: '1.3',
-                marginBottom: message ? '0.35rem' : 0,
-                color: isLight ? '#0f172a' : '#f1f5f9',
+                marginBottom: message ? '0.25rem' : 0,
+                color: 'var(--text-color, #f7f2eb)',
                 letterSpacing: '-0.01em'
               }}
             >
@@ -225,9 +233,9 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
           {message && (
             <div
               style={{
-                fontSize: isExpandedLayout ? '0.82rem' : '0.78rem',
+                fontSize: isExpandedLayout ? '0.8rem' : '0.76rem',
                 lineHeight: '1.45',
-                color: isLight ? '#334155' : '#94a3b8',
+                color: 'var(--muted-text, #b9b9b9)',
                 wordBreak: 'break-word',
                 whiteSpace: 'pre-line'
               }}
@@ -239,6 +247,7 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
 
         {/* Botón Cerrar */}
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             if (isConfirmation && typeof onCancel === 'function') {
@@ -250,27 +259,35 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
             flexShrink: 0,
             background: 'transparent',
             border: 'none',
-            color: isLight ? '#94a3b8' : '#64748b',
+            color: 'var(--muted-text, #b9b9b9)',
             cursor: 'pointer',
-            padding: '4px',
-            borderRadius: '6px',
+            padding: '3px',
+            borderRadius: 'var(--border-radius, 6px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.15s ease',
-            marginLeft: '0.2rem'
+            transition: 'color 0.15s ease, background-color 0.15s ease',
+            marginLeft: '0.25rem'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = isLight ? '#0f172a' : '#f8fafc';
-            e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.1)';
+            e.currentTarget.style.color = 'var(--text-color, #f7f2eb)';
+            e.currentTarget.style.backgroundColor = 'var(--subborder-color, rgba(255,255,255,0.06))';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = isLight ? '#94a3b8' : '#64748b';
+            e.currentTarget.style.color = 'var(--muted-text, #b9b9b9)';
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
-          title="Cerrar notificación"
+          onFocus={(e) => {
+            e.currentTarget.style.outline = '2px solid var(--accent-color)';
+            e.currentTarget.style.outlineOffset = '2px';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.outline = 'none';
+          }}
+          title={t('ui.closeNotification')}
+          aria-label={t('ui.closeNotification')}
         >
-          <X size={16} />
+          <X size={15} />
         </button>
       </div>
 
@@ -281,10 +298,10 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            gap: '0.65rem',
-            marginTop: '1rem',
-            paddingTop: '0.75rem',
-            borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.08)'}`
+            gap: '0.5rem',
+            marginTop: '0.75rem',
+            paddingTop: '0.6rem',
+            borderTop: '1px solid var(--subborder-color, #414141)'
           }}
         >
           <button
@@ -295,21 +312,28 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
               onDismiss();
             }}
             style={{
-              padding: '6px 14px',
-              borderRadius: '7px',
-              border: `1px solid ${isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.16)'}`,
-              backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)',
-              color: isLight ? '#475569' : '#cbd5e1',
-              fontSize: '0.8rem',
+              padding: '5px 12px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color, #4b4b4b)',
+              backgroundColor: 'transparent',
+              color: 'var(--text-color, #f7f2eb)',
+              fontSize: '0.78rem',
               fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.15s ease'
+              transition: 'background-color 0.15s ease, border-color 0.15s ease'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.backgroundColor = 'var(--subborder-color, rgba(255,255,255,0.06))';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+            onFocus={e => {
+              e.currentTarget.style.outline = '2px solid var(--accent-color)';
+              e.currentTarget.style.outlineOffset = '2px';
+            }}
+            onBlur={e => {
+              e.currentTarget.style.outline = 'none';
             }}
           >
             {cancelText}
@@ -325,28 +349,32 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              padding: '6px 15px',
-              borderRadius: '7px',
-              border: 'none',
-              backgroundColor: '#ef4444',
-              color: '#ffffff',
-              fontSize: '0.8rem',
-              fontWeight: '700',
+              gap: '0.35rem',
+              padding: '5px 13px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: destructive ? '1px solid var(--danger-color, #edaaa1)' : 'none',
+              backgroundColor: destructive ? 'var(--danger-solid, #a95449)' : 'var(--btn-bg, #b45432)',
+              color: 'var(--btn-text, #ffffff)',
+              fontSize: '0.78rem',
+              fontWeight: '650',
               cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(239, 68, 68, 0.4)',
-              transition: 'all 0.15s ease'
+              transition: 'opacity 0.15s ease'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = '#dc2626';
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.opacity = '0.9';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = '#ef4444';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.opacity = '1';
+            }}
+            onFocus={e => {
+              e.currentTarget.style.outline = '2px solid var(--accent-color)';
+              e.currentTarget.style.outlineOffset = '2px';
+            }}
+            onBlur={e => {
+              e.currentTarget.style.outline = 'none';
             }}
           >
-            <Trash2 size={14} />
+            {destructive && <Trash2 size={13} />}
             <span>{confirmText}</span>
           </button>
         </div>
@@ -359,9 +387,9 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-start',
-            marginTop: '0.75rem',
-            paddingTop: '0.65rem',
-            borderTop: `1px solid ${isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.08)'}`
+            marginTop: '0.65rem',
+            paddingTop: '0.55rem',
+            borderTop: '1px solid var(--subborder-color, #414141)'
           }}
         >
           <button
@@ -378,45 +406,49 @@ const ToastItem = ({ toast, isLight, onDismiss }) => {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.45rem',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              border: `1px solid ${config.borderColor}`,
-              backgroundColor: isLight ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.18)',
-              color: isLight ? '#b45309' : '#fde68a',
-              fontSize: '0.8rem',
-              fontWeight: '700',
+              gap: '0.4rem',
+              padding: '5px 12px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: 'none',
+              backgroundColor: 'var(--btn-bg, #b45432)',
+              color: 'var(--btn-text, #ffffff)',
+              fontSize: '0.78rem',
+              fontWeight: '650',
               cursor: 'pointer',
-              boxShadow: isLight ? '0 1px 3px rgba(0,0,0,0.06)' : '0 2px 8px rgba(0,0,0,0.3)',
-              transition: 'all 0.15s ease'
+              transition: 'opacity 0.15s ease'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = isLight ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.3)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.opacity = '0.9';
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = isLight ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.18)';
-              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.opacity = '1';
+            }}
+            onFocus={e => {
+              e.currentTarget.style.outline = '2px solid var(--accent-color)';
+              e.currentTarget.style.outlineOffset = '2px';
+            }}
+            onBlur={e => {
+              e.currentTarget.style.outline = 'none';
             }}
           >
-            {action.icon || <Download size={14} />}
+            {action.icon || <Download size={13} />}
             <span>{action.label}</span>
           </button>
         </div>
       )}
 
-      {/* Barra de progreso */}
+      {/* Barra de progreso sutil y sobria */}
       {effectiveDuration > 0 && (
         <div
           style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
-            height: '3px',
+            height: '2px',
             width: `${progress}%`,
-            background: config.progressBg,
-            transition: isPaused ? 'none' : 'width 25ms linear',
-            borderRadius: '0 2px 2px 0'
+            backgroundColor: config.accentColor,
+            opacity: 0.75,
+            transition: isPaused ? 'none' : 'width 25ms linear'
           }}
         />
       )}

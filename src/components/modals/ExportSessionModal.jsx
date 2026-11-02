@@ -81,13 +81,13 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
                 color: 'var(--text-color)'
               }}
             >
-              Exportar Sesión a JSON
+              {t('ui.exportSessionToJson')}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar diálogo"
+            aria-label={t('ui.closeDialog')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -117,14 +117,14 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleExport} style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--muted-text)', marginBottom: '0.4rem', fontWeight: '500' }}>
-              Nombre del archivo a exportar:
+              {t('ui.fileNameToExport')}
             </label>
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
-                placeholder="sesion_activa.json"
+                placeholder={t('ui.activeSessionJson')}
                 style={{
                   width: '100%',
                   background: 'var(--input-bg)',
@@ -143,7 +143,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
               />
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '0.4rem', lineHeight: '1.4' }}>
-              Este archivo contiene la copia completa de delegaciones, oradores, agenda, mociones y configuraciones.
+              {t('ui.thisFileContainsACompleteCopyOfDelegationsSpeakersAgenda')}
             </div>
           </div>
 
@@ -165,7 +165,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--card-hover)'; }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
-              Cancelar
+              {t('toast.cancelBtn')}
             </button>
             <button
               type="submit"
@@ -187,7 +187,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
               }}
             >
               <Download size={14} />
-              <span>Descargar Archivo</span>
+              <span>{t('ui.downloadFile')}</span>
             </button>
           </div>
         </form>

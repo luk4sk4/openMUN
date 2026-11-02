@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   FileSignature,
@@ -26,6 +27,7 @@ import {
 import { useSession } from '../../context/SessionContext';
 import { useP2P } from '../../context/P2PContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { useToast } from '../../context/ToastContext';
 import { useTranslation } from 'react-i18next';
 import {
   extraerTextoDeArchivo,
@@ -48,37 +50,12 @@ import BuzonPropuestasModal from './enmiendas/BuzonPropuestasModal';
 import VistaConsolidadaOficial from './enmiendas/VistaConsolidadaOficial';
 
 // Plantilla de ejemplo de resolución MUN para pruebas y demostraciones
-const RESOLUCION_EJEMPLO = `# PROYECTO DE RESOLUCIÓN A/RES/79/L.4
 
-**Comité:** Asamblea General - Primera Comisión (DISEC)  
-**Tema:** Cooperación Internacional en la Prevención de Ciberamenazas y Seguridad Digital  
-**Países Firmantes:** Francia, Brasil, Japón, Sudáfrica, Canadá  
-
----
-
-### CLÁUSULAS PREAMBULATORIAS
-
-*Reafirmando* los propósitos y principios consagrados en la Carta de las Naciones Unidas relativos al mantenimiento de la paz y seguridad internacional,
-
-*Reconociendo* la creciente interdependencia de las infraestructuras críticas globales y su vulnerabilidad frente a ataques cibernéticos transfronterizos,
-
-*Consciente* de la imperiosa necesidad de fortalecer las capacidades técnicas y de ciberdefensa en los Estados en desarrollo,
-
----
-
-### CLÁUSULAS OPERATIVAS
-
-**Artículo 1.** *Insta* a todos los Estados Miembros a adoptar directrices multilaterales vinculantes para la protección de infraestructuras críticas energéticas, financieras y hospitalarias contra ciberataques hostiles.
-
-**Artículo 2.** *Propone* la creación de un Fondo Global de Asistencia Tecnológica y Ciberseguridad (FGATC), administrado bajo la supervisión de la Unión Internacional de Telecomunicaciones (UIT), financiado mediante contribuciones voluntarias de los Estados y el sector privado.
-
-**Artículo 3.** *Exhorta* a la cooperación entre los equipos nacionales de respuesta a emergencias cibernéticas (CERT/CSIRT) para el intercambio ágil de información técnica sobre amenazas emergentes y vulnerabilidades críticas.
-
-**Artículo 4.** *Solicita* al Secretario General que presente un informe exhaustivo en el octogésimo período de sesiones sobre los avances e implementación de mecanismos de fomento de la confianza en el ciberespacio.`;
 
 const ControladorEnmiendas = () => {
   const { t } = useTranslation();
   const { isLight } = useAccessibility();
+  const { addToast } = useToast();
   const {
     paises = [],
     enmiendasSesion = {},
@@ -98,7 +75,7 @@ const ControladorEnmiendas = () => {
   } = useP2P() || {};
 
   const {
-    tituloProyecto = 'Proyecto de Resolución A/RES/79/1',
+    tituloProyecto = i18n.t('ui.draftResolutionARes791'),
     textoResolucion = '',
     articulos = [],
     enmiendas = []
@@ -132,13 +109,10 @@ const ControladorEnmiendas = () => {
   const fileInputRef = useRef(null);
 
   // Toast de retroalimentación visual no invasivo
-  const [toastMessage, setToastMessage] = useState(null);
-  const showToast = useCallback((msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(prev => (prev === msg ? null : prev));
-    }, 2800);
-  }, []);
+  // Toast de retroalimentación visual via ToastContext
+  const showToast = useCallback((msg, type = 'info') => {
+    addToast({ title: t('ui.amendmentsResolution'), message: msg, type });
+  }, [addToast, t]);
 
   // Países asistentes para filtros y selectores
   const paisesAsistentes = useMemo(() => {
@@ -247,33 +221,33 @@ const ControladorEnmiendas = () => {
 
   const handleCrearEnmienda = (nuevaEnmienda) => {
     agregarEnmiendaResolucion(nuevaEnmienda);
-    showToast(`Moción de enmienda de ${nuevaEnmienda.paisProponente || 'Delegación'} registrada`);
+    showToast(t('ui.amendmentMotionFromRegistered', { v0: nuevaEnmienda.paisProponente || 'Delegación' }));
   };
 
   const handleResolverEnmienda = (id, nuevoEstado) => {
     resolverEnmiendaResolucion(id, nuevoEstado);
     showToast(
       nuevoEstado === 'aceptada'
-        ? 'Enmienda aceptada e incorporada al texto'
+        ? t('ui.amendmentAcceptedAndIncorporatedIntoTheText')
         : nuevoEstado === 'rechazada'
-          ? 'Enmienda rechazada'
-          : 'Decisión de enmienda restablecida a pendiente'
+          ? t('ui.amendmentRejected2')
+          : t('ui.amendmentDecisionResetToPending')
     );
   };
 
   const handleEliminarEnmienda = (id) => {
     eliminarEnmiendaResolucion(id);
-    showToast('Enmienda eliminada');
+    showToast(t('ui.amendmentDeleted'));
   };
 
   const handleVotarEnmienda = (enmienda) => {
     const tipoBadge = enmienda.tipo === 'adicion'
-      ? 'Adición'
+      ? i18n.t('ui.addition2')
       : enmienda.tipo === 'supresion'
-        ? 'Supresión'
-        : 'Modificación';
+        ? i18n.t('ui.deletion2')
+        : i18n.t('ui.modification2');
 
-    const asuntoVoto = `Enmienda de ${tipoBadge} - ${enmienda.articuloNumero || 'Art.'} (${enmienda.paisProponente})`;
+    const asuntoVoto = t('ui.amendmentSubject', { type: tipoBadge, article: enmienda.articuloNumero || 'Art.', country: enmienda.paisProponente });
 
     configurarVotacion({
       asunto: asuntoVoto,
@@ -282,14 +256,14 @@ const ControladorEnmiendas = () => {
       aplicarVeto: true
     });
     resetearVotacion();
-    showToast(`Moción enviada a Votación: ${asuntoVoto}`);
+    showToast(t('ui.motionSentToVoting', { v0: asuntoVoto }));
   };
 
   const handleAprobarPropuestaDelegado = (prop) => {
     agregarEnmiendaResolucion({
       tipo: prop.tipo || 'modificacion',
       articuloId: prop.articuloId || null,
-      articuloNumero: prop.articuloNumero || 'Artículo',
+      articuloNumero: prop.articuloNumero || i18n.t('ui.article4'),
       paisProponente: prop.paisProponente || 'Delegación',
       textoOriginal: prop.textoOriginal || '',
       textoPropuesto: prop.textoPropuesto || '',
@@ -316,7 +290,7 @@ const ControladorEnmiendas = () => {
       articulos: updated,
       texto: nuevoTexto
     });
-    showToast('Cláusula actualizada correctamente');
+    showToast(t('ui.clauseUpdatedSuccessfully'));
   };
 
   const handleEliminarArticulo = (artId) => {
@@ -326,7 +300,7 @@ const ControladorEnmiendas = () => {
       articulos: updated,
       texto: nuevoTexto
     });
-    showToast('Apartado eliminado de la resolución');
+    showToast(t('ui.sectionDeletedFromResolution'));
   };
 
   const handleGuardarNuevoArticulo = (e) => {
@@ -336,7 +310,7 @@ const ControladorEnmiendas = () => {
     const nuevo = {
       id: `art_${Date.now()}_nuevo`,
       numero: num,
-      prefijo: nuevoArticuloPrefijo.trim() || `Artículo ${num}.`,
+      prefijo: nuevoArticuloPrefijo.trim() || t('ui.article2', { v0: num }),
       texto: nuevoArticuloTexto.trim(),
       modificado: true
     };
@@ -349,31 +323,31 @@ const ControladorEnmiendas = () => {
     setModalNuevoArticuloOpen(false);
     setNuevoArticuloTexto('');
     setNuevoArticuloPrefijo('');
-    showToast(`Artículo ${num} añadido a la resolución`);
+    showToast(t('ui.articleAddedToTheResolution', { v0: num }));
   };
 
   const handleGuardarApartadosManuales = (apartadosNormalizados, textoReconstruido) => {
     guardarResolucionEnmiendas({
-      titulo: rawInputTitulo.trim() || 'Proyecto de Resolución',
+      titulo: rawInputTitulo.trim() || i18n.t('ui.draftResolution'),
       texto: textoReconstruido,
       articulos: apartadosNormalizados
     });
     setRawInputTexto(textoReconstruido);
-    showToast('Estructura de apartados reconfigurada con éxito');
+    showToast(t('ui.sectionStructureReconfiguredSuccessfully'));
   };
 
   // Cargar borrador de ejemplo
   const handleCargarEjemplo = () => {
-    const parsed = parsearResolucion(RESOLUCION_EJEMPLO);
+    const parsed = parsearResolucion(t('samples.resolution'));
     guardarResolucionEnmiendas({
-      titulo: 'Proyecto de Resolución A/RES/79/L.4',
-      texto: RESOLUCION_EJEMPLO,
+      titulo: i18n.t('ui.draftResolutionARes79L4'),
+      texto: t('samples.resolution'),
       articulos: parsed
     });
-    setRawInputTexto(RESOLUCION_EJEMPLO);
-    setRawInputTitulo('Proyecto de Resolución A/RES/79/L.4');
+    setRawInputTexto(t('samples.resolution'));
+    setRawInputTitulo(i18n.t('ui.draftResolutionARes79L4'));
     setTabInterna('articulos');
-    showToast('Resolución de ejemplo cargada');
+    showToast(t('ui.sampleResolutionLoaded'));
   };
 
   // Guardar texto pegado
@@ -381,12 +355,12 @@ const ControladorEnmiendas = () => {
     e.preventDefault();
     const parsed = parsearResolucion(rawInputTexto);
     guardarResolucionEnmiendas({
-      titulo: rawInputTitulo.trim() || 'Proyecto de Resolución',
+      titulo: rawInputTitulo.trim() || i18n.t('ui.draftResolution'),
       texto: rawInputTexto,
       articulos: parsed
     });
     setTabInterna('articulos');
-    showToast('Resolución procesada y guardada');
+    showToast(t('ui.resolutionProcessedAndSaved'));
   };
 
   // Procesamiento de archivos subidos (.docx, .pdf, .txt, .md)
@@ -398,11 +372,11 @@ const ControladorEnmiendas = () => {
     try {
       const { texto, nombre } = await extraerTextoDeArchivo(file);
       if (!texto || !texto.trim()) {
-        throw new Error('No se pudo extraer texto del archivo o el documento está vacío.');
+        throw new Error(t('ui.couldNotExtractFileTextOrTheDocumentIsEmpty'));
       }
 
       const parsed = parsearResolucion(texto);
-      const tituloFinal = nombre || 'Proyecto de Resolución';
+      const tituloFinal = nombre || i18n.t('ui.draftResolution');
 
       guardarResolucionEnmiendas({
         titulo: tituloFinal,
@@ -416,9 +390,9 @@ const ControladorEnmiendas = () => {
       showToast(`Archivo "${file.name}" cargado y parseado`);
     } catch (err) {
       console.error('Error al procesar archivo:', err);
-      const msg = err.message || 'Error al procesar el archivo seleccionado.';
+      const msg = err.message || i18n.t('ui.errorProcessingTheSelectedFile');
       setErrorArchivo(msg);
-      alert(`Error al procesar el archivo: ${msg}`);
+      alert(t('ui.errorProcessingFile2', { v0: msg }));
     } finally {
       setCargandoArchivo(false);
     }
@@ -473,32 +447,7 @@ const ControladorEnmiendas = () => {
         position: 'relative'
       }}
     >
-      {/* ── TOAST FLOTANTE DE RETROALIMENTACIÓN ── */}
-      {toastMessage && (
-        <div style={{
-          position: 'absolute',
-          top: '12px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',
-          color: '#ffffff',
-          border: '1px solid var(--accent-color)',
-          padding: '0.45rem 0.9rem',
-          borderRadius: '8px',
-          fontSize: '0.74rem',
-          fontWeight: '700',
-          zIndex: 200,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          pointerEvents: 'none',
-          animation: 'fadeIn 0.2s ease'
-        }}>
-          <Check size={14} color="var(--accent-color)" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+
 
       {/* ── OVERLAY DE DRAG & DROP ── */}
       {isDragging && (
@@ -529,10 +478,10 @@ const ControladorEnmiendas = () => {
             <Upload size={40} />
           </div>
           <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>
-            Suelta aquí el archivo de la resolución
+            {t('ui.dropTheResolutionFileHere')}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--accent-color)' }}>
-            Formatos soportados: Word (.docx), PDF (.pdf) y Texto (.txt, .md)
+            {t('ui.supportedFormatsWordDocxPdfPdfAndTextTxtMd')}
           </div>
         </div>
       )}
@@ -557,10 +506,10 @@ const ControladorEnmiendas = () => {
         }}>
           <Loader2 size={36} color="var(--accent-color)" style={{ animation: 'spin 1s linear infinite' }} />
           <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#ffffff' }}>
-            Analizando y estructurando documento...
+            {t('ui.analyzingAndStructuringDocument')}
           </div>
           <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
-            Detectando cláusulas preambulatorias y artículos operativos
+            {t('ui.detectingPreambulatoryClausesAndOperativeArticles')}
           </div>
         </div>
       )}
@@ -586,7 +535,7 @@ const ControladorEnmiendas = () => {
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
-            {tituloProyecto || 'Controlador de Enmiendas & Resolución'}
+            {tituloProyecto || t('ui.amendmentResolutionController')}
           </div>
           <div style={{
             fontSize: '0.68rem',
@@ -597,17 +546,17 @@ const ControladorEnmiendas = () => {
             flexWrap: 'wrap'
           }}>
             <span style={{ fontWeight: '700' }}>
-              {articulosOperativos.length} {articulosOperativos.length === 1 ? 'artículo' : 'artículos'}
-              {tienePreambulo && ' • preámbulo'}
+              {articulosOperativos.length} {articulosOperativos.length === 1 ? t('ui.article') : t('ui.articles')}
+              {tienePreambulo && t('ui.preamble')}
             </span>
             <span>•</span>
-            <span style={{ color: 'var(--warning-color)', fontWeight: '700' }}>{enmiendasPendientes} pendientes</span>
+            <span style={{ color: 'var(--warning-color)', fontWeight: '700' }}>{enmiendasPendientes} {t('ui.pending')}</span>
             <span>•</span>
-            <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>{enmiendasAceptadas} aceptadas</span>
+            <span style={{ color: 'var(--success-color)', fontWeight: '700' }}>{enmiendasAceptadas} {t('ui.accepted')}</span>
             {enmiendasRechazadas > 0 && (
               <>
                 <span>•</span>
-                <span style={{ color: 'var(--danger-color)', fontWeight: '700' }}>{enmiendasRechazadas} rechazadas</span>
+                <span style={{ color: 'var(--danger-color)', fontWeight: '700' }}>{enmiendasRechazadas} {t('ui.rejected')}</span>
               </>
             )}
           </div>
@@ -645,7 +594,7 @@ const ControladorEnmiendas = () => {
             }}
           >
             <Layers size={13} />
-            <span>Por Artículos</span>
+            <span>{t('ui.byArticle')}</span>
           </button>
 
           <button
@@ -665,12 +614,12 @@ const ControladorEnmiendas = () => {
             }}
           >
             <BookOpen size={13} />
-            <span>Documento Consolidado</span>
+            <span>{t('ui.consolidatedDocument')}</span>
           </button>
 
           <button
             onClick={() => setTabInterna('importar')}
-            title="Importar o Pegar Resolución"
+            title={t('ui.importOrPasteResolution')}
             style={{
               background: tabInterna === 'importar' ? 'var(--btn-bg)' : 'var(--card-hover, rgba(255,255,255,0.05))',
               color: tabInterna === 'importar' ? 'var(--btn-text)' : 'var(--muted-text)',
@@ -686,7 +635,7 @@ const ControladorEnmiendas = () => {
             }}
           >
             <Upload size={13} />
-            <span>Cargar / Pegar</span>
+            <span>{t('ui.loadPaste')}</span>
           </button>
         </div>
 
@@ -711,7 +660,7 @@ const ControladorEnmiendas = () => {
               }}
             >
               <Inbox size={13} />
-              <span>Buzón Delegados ({enmiendasPropuestas.length})</span>
+              <span>{t('ui.delegateInbox')}{enmiendasPropuestas.length})</span>
             </button>
           )}
 
@@ -730,10 +679,10 @@ const ControladorEnmiendas = () => {
               alignItems: 'center',
               gap: '0.25rem'
             }}
-            title="Mostrar / Ocultar Cronómetro de Intervenciones"
+            title={t('ui.showHideContributionTimer')}
           >
             <Clock size={13} />
-            <span>Cronómetro</span>
+            <span>{t('timers.title')}</span>
           </button>
         </div>
       </div>
@@ -790,10 +739,10 @@ const ControladorEnmiendas = () => {
               </div>
               <div>
                 <div style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-color)', marginBottom: '0.25rem' }}>
-                  Arrastra o selecciona un archivo de resolución
+                  {t('ui.dropOrSelectAResolutionFile')}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--muted-text)', lineHeight: 1.4 }}>
-                  Compatible con documentos Word (.docx), PDF (.pdf) y texto (.txt, .md)
+                  {t('ui.supportsWordDocxPdfPdfAndTextTxtMdDocuments')}
                 </div>
               </div>
 
@@ -827,7 +776,7 @@ const ControladorEnmiendas = () => {
                   gap: '0.35rem'
                 }}
               >
-                <FileText size={14} /> Cargar Resolución de Ejemplo
+                <FileText size={14} /> {t('ui.loadSampleResolution')}
               </button>
 
               <button
@@ -846,7 +795,7 @@ const ControladorEnmiendas = () => {
                   gap: '0.35rem'
                 }}
               >
-                <Edit3 size={14} /> Pegar Texto Manualmente
+                <Edit3 size={14} /> {t('ui.pasteTextManually')}
               </button>
             </div>
 
@@ -890,7 +839,7 @@ const ControladorEnmiendas = () => {
                     type="text"
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
-                    placeholder="Filtrar..."
+                    placeholder={t('ui.filter')}
                     style={{
                       border: 'none',
                       background: 'transparent',
@@ -917,10 +866,10 @@ const ControladorEnmiendas = () => {
                       outline: 'none'
                     }}
                   >
-                    <option value="todos">Todas ({totalEnmiendas})</option>
-                    <option value="pendiente">Pendientes ({enmiendasPendientes})</option>
-                    <option value="aceptada">Aceptadas ({enmiendasAceptadas})</option>
-                    <option value="rechazada">Rechazadas ({enmiendasRechazadas})</option>
+                    <option value="todos">{t('ui.all')}{totalEnmiendas})</option>
+                    <option value="pendiente">{t('ui.pending2')}{enmiendasPendientes})</option>
+                    <option value="aceptada">{t('ui.accepted2')}{enmiendasAceptadas})</option>
+                    <option value="rechazada">{t('ui.rejected2')}{enmiendasRechazadas})</option>
                   </select>
                 </div>
               </div>
@@ -943,17 +892,17 @@ const ControladorEnmiendas = () => {
                     alignItems: 'center',
                     gap: '0.25rem'
                   }}
-                  title="Configurar y reclasificar los apartados manualmente"
+                  title={t('ui.configureAndReclassifySectionsManually')}
                 >
                   <Layers size={13} />
-                  <span>Ajustar Apartados</span>
+                  <span>{t('ui.adjustSections')}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
                     const nextNum = articulosOperativos.length + 1;
-                    setNuevoArticuloPrefijo(`Artículo ${nextNum}.`);
+                    setNuevoArticuloPrefijo(t('ui.article2', { v0: nextNum }));
                     setNuevoArticuloTexto('');
                     setModalNuevoArticuloOpen(true);
                   }}
@@ -972,7 +921,7 @@ const ControladorEnmiendas = () => {
                   }}
                 >
                   <Plus size={13} />
-                  <span>Añadir Cláusula</span>
+                  <span>{t('ui.addClause2')}</span>
                 </button>
 
                 <button
@@ -992,7 +941,7 @@ const ControladorEnmiendas = () => {
                   }}
                 >
                   <FilePlus size={13} />
-                  <span>Proponer Enmienda</span>
+                  <span>{t('ui.proposeAmendment')}</span>
                 </button>
               </div>
             </div>
@@ -1031,7 +980,7 @@ const ControladorEnmiendas = () => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: '800', color: 'var(--accent-color)' }}>
                   <FilePlus size={14} />
-                  <span>Nuevos Artículos y Enmiendas Generales al Final ({enmiendasGeneralesOFinales.length})</span>
+                  <span>{t('ui.newArticlesAndGeneralAmendmentsAtTheEnd')}{enmiendasGeneralesOFinales.length})</span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
@@ -1061,9 +1010,9 @@ const ControladorEnmiendas = () => {
         ) : (
           /* ── VISTA DE IMPORTACIÓN Y PEGADO CON DROPZONE ── */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: '800' }}>Cargar Proyecto de Resolución</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: '800' }}>{t('ui.loadDraftResolution')}</div>
             <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
-              Arrastra un archivo Word (.docx), PDF (.pdf) o pega el texto directamente. El sistema detectará las cláusulas preambulatorias y operativas.
+              {t('ui.dropAWordDocxOrPdfPdfFileOrPaste')}
             </div>
 
             {/* Dropzone interactivo */}
@@ -1092,10 +1041,10 @@ const ControladorEnmiendas = () => {
                 <Upload size={22} />
               </div>
               <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-color)' }}>
-                Haz clic o arrastra aquí tu archivo Word (.docx), PDF (.pdf) o Texto (.txt / .md)
+                {t('ui.clickOrDropYourWordDocxPdfPdfOrText')}
               </div>
               <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-                Se estructurarán los artículos y cláusulas automáticamente
+                {t('ui.articlesAndClausesWillBeStructuredAutomatically')}
               </div>
             </div>
 
@@ -1111,7 +1060,7 @@ const ControladorEnmiendas = () => {
             <form onSubmit={handleGuardarTextoPegado} style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
               <div>
                 <label style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.2rem' }}>
-                  Título del Proyecto de Resolución:
+                  {t('ui.draftResolutionTitle')}
                 </label>
                 <input
                   type="text"
@@ -1127,13 +1076,13 @@ const ControladorEnmiendas = () => {
                     fontSize: '0.8rem',
                     outline: 'none'
                   }}
-                  placeholder="Ej. Proyecto de Resolución A/RES/79/L.2"
+                  placeholder={t('ui.eGDraftResolutionARes79L2')}
                 />
               </div>
 
               <div>
                 <label style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.2rem' }}>
-                  Texto Completo del Borrador:
+                  {t('ui.fullDraftText')}
                 </label>
                 <textarea
                   value={rawInputTexto}
@@ -1152,7 +1101,7 @@ const ControladorEnmiendas = () => {
                     resize: 'vertical',
                     outline: 'none'
                   }}
-                  placeholder="Pega aquí el contenido de la resolución..."
+                  placeholder={t('ui.pasteTheResolutionContentHere')}
                 />
               </div>
 
@@ -1171,7 +1120,7 @@ const ControladorEnmiendas = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Usar Ejemplo
+                  {t('ui.useExample')}
                 </button>
 
                 <button
@@ -1191,7 +1140,7 @@ const ControladorEnmiendas = () => {
                   }}
                 >
                   <Check size={13} />
-                  <span>Procesar y Guardar</span>
+                  <span>{t('ui.processAndSave')}</span>
                 </button>
               </div>
             </form>
@@ -1263,7 +1212,7 @@ const ControladorEnmiendas = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.95rem', fontWeight: '800' }}>
                 <Plus size={16} style={{ color: 'var(--accent-color)' }} />
-                <span>Añadir Nueva Cláusula a la Resolución</span>
+                <span>{t('ui.addNewClauseToResolution')}</span>
               </div>
               <button
                 onClick={() => setModalNuevoArticuloOpen(false)}
@@ -1276,7 +1225,7 @@ const ControladorEnmiendas = () => {
             <form onSubmit={handleGuardarNuevoArticulo} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
                 <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.2rem' }}>
-                  Prefijo / Numeración de la Cláusula:
+                  {t('ui.clausePrefixNumbering')}
                 </label>
                 <input
                   type="text"
@@ -1292,13 +1241,13 @@ const ControladorEnmiendas = () => {
                     fontSize: '0.78rem',
                     outline: 'none'
                   }}
-                  placeholder="Ej. Artículo 5. o Cláusula 5."
+                  placeholder={t('ui.eGArticle5OrClause5')}
                 />
               </div>
 
               <div>
                 <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.2rem' }}>
-                  Texto de la Cláusula Operativa:
+                  {t('ui.operativeClauseText')}
                 </label>
                 <textarea
                   value={nuevoArticuloTexto}
@@ -1318,7 +1267,7 @@ const ControladorEnmiendas = () => {
                     resize: 'vertical',
                     outline: 'none'
                   }}
-                  placeholder="Escribe el texto de la nueva cláusula..."
+                  placeholder={t('ui.writeTheNewClauseText')}
                 />
               </div>
 
@@ -1337,7 +1286,7 @@ const ControladorEnmiendas = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Cancelar
+                  {t('toast.cancelBtn')}
                 </button>
                 <button
                   type="submit"
@@ -1353,7 +1302,7 @@ const ControladorEnmiendas = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Añadir Cláusula
+                  {t('ui.addClause2')}
                 </button>
               </div>
             </form>

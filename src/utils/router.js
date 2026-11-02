@@ -34,6 +34,18 @@ export function getNormalizedRoute() {
     return 'terms';
   }
 
+  if (
+    path === '/create-conference' ||
+    path === '/crear-conferencia' ||
+    path === '/nueva-conferencia' ||
+    pageParam === 'create-conference' ||
+    pageParam === 'crear-conferencia' ||
+    hash === 'create-conference' ||
+    hash === 'crear-conferencia'
+  ) {
+    return 'create-conference';
+  }
+
   return null;
 }
 
@@ -51,10 +63,17 @@ export function navigateTo(path) {
     url.searchParams.delete('page');
     url.hash = '';
     
-    // Si estamos en un subdirectorio o raíz, pushState a pathname sin /privacy /terms
+    // Si estamos en un subdirectorio o raíz, pushState a pathname sin /privacy /terms /create-conference
     let targetPath = url.pathname;
-    if (targetPath.endsWith('/privacy') || targetPath.endsWith('/terms') || targetPath.endsWith('/politica-privacidad') || targetPath.endsWith('/terminos-condiciones')) {
-      targetPath = targetPath.substring(0, targetPath.lastIndexOf('/')) || '/';
+    const knownSuffixes = [
+      '/privacy', '/terms', '/politica-privacidad', '/terminos-condiciones',
+      '/create-conference', '/crear-conferencia', '/nueva-conferencia'
+    ];
+    for (const suffix of knownSuffixes) {
+      if (targetPath.endsWith(suffix)) {
+        targetPath = targetPath.substring(0, targetPath.lastIndexOf('/')) || '/';
+        break;
+      }
     }
 
     window.history.pushState({}, '', targetPath + url.search);

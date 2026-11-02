@@ -303,7 +303,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
 
               {/* Acción Secundaria: Crear Conferencia */}
               <button
-                onClick={() => setIsCreateConfModalOpen(true)}
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
+                    detail: { view: 'create-conference' }
+                  }));
+                }}
                 style={{
                   width: '100%',
                   padding: '0.82rem 1.15rem',

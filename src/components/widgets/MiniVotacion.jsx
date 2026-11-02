@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useMemo } from 'react';
 import {
   Vote,
@@ -54,7 +55,7 @@ const MiniVotacion = () => {
   const [paisesPasados, setPaisesPasados] = useState([]); // IDs de países que pasaron en Ronda 1
 
   // Configuración de la votación actual
-  const { asunto = 'Votación de Enmienda', tipoVotacion = 'procedural', tipoMayoria = 'simple', aplicarVeto = true, votos = {} } = votacionSesion || {};
+  const { asunto = i18n.t('ui.amendmentVote'), tipoVotacion = 'procedural', tipoMayoria = 'simple', aplicarVeto = true, votos = {} } = votacionSesion || {};
 
   // Formulario local de ajustes
   const [tempAsunto, setTempAsunto] = useState(asunto);
@@ -261,7 +262,7 @@ const MiniVotacion = () => {
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
-            {asunto || 'Votación Nominal'}
+            {asunto || t('ui.rollCallVoting')}
           </div>
 
           <div style={{
@@ -282,7 +283,7 @@ const MiniVotacion = () => {
               fontWeight: '600',
               fontSize: '0.62rem'
             }}>
-              {tipoVotacion === 'substantive' ? 'Sustantiva' : 'Procedimental'}
+              {tipoVotacion === 'substantive' ? t('voting.substantiveShort') : t('voting.proceduralShort')}
             </span>
 
             {proponenteDetectado && (
@@ -321,7 +322,7 @@ const MiniVotacion = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
           <button
             onClick={() => setModoVista('manos')}
-            title="Votación a Mano Alzada (Contadores Rápidos)"
+            title={t('ui.showOfHandsVotingQuickCounters')}
             style={{
               background: modoVista === 'manos' ? 'var(--accent-color)' : 'var(--card-hover, rgba(255,255,255,0.05))',
               border: `1px solid ${modoVista === 'manos' ? 'var(--accent-color)' : 'var(--subborder-color)'}`,
@@ -337,12 +338,12 @@ const MiniVotacion = () => {
             }}
           >
             <Hand size={11} />
-            <span>Mano Alzada</span>
+            <span>{t('ui.showOfHands')}</span>
           </button>
 
           <button
             onClick={() => setModoVista(m => m === 'rollcall' ? 'lista' : 'rollcall')}
-            title={modoVista === 'rollcall' ? 'Ver Modo Lista' : 'Ver Modo Roll Call'}
+            title={modoVista === 'rollcall' ? t('ui.viewListMode') : t('ui.viewRollCallMode')}
             style={{
               background: modoVista !== 'manos' ? 'var(--card-hover, rgba(255,255,255,0.1))' : 'var(--card-hover, rgba(255,255,255,0.05))',
               border: '1px solid var(--subborder-color)',
@@ -358,7 +359,7 @@ const MiniVotacion = () => {
             }}
           >
             <ListFilter size={11} />
-            <span>{modoVista === 'lista' ? 'Lista' : 'Roll Call'}</span>
+            <span>{modoVista === 'lista' ? t('ui.list') : 'Roll Call'}</span>
           </button>
 
           <button
@@ -369,7 +370,7 @@ const MiniVotacion = () => {
               setTempAplicarVeto(aplicarVeto);
               setShowSettings(true);
             }}
-            title="Ajustes de Votación"
+            title={t('ui.votingSettings')}
             style={{
               background: 'var(--card-hover, rgba(255,255,255,0.05))',
               border: '1px solid var(--subborder-color)',
@@ -385,7 +386,7 @@ const MiniVotacion = () => {
             }}
           >
             <Settings size={11} />
-            <span>Ajustes</span>
+            <span>{t('views.backroom.tabSettings')}</span>
           </button>
         </div>
 
@@ -393,7 +394,7 @@ const MiniVotacion = () => {
           {votosEmitidos > 0 && (
             <button
               onClick={() => setShowResultModal(true)}
-              title="Ver Dictamen y Resultado en Grande"
+              title={t('ui.viewVerdictAndResultEnlarged')}
               style={{
                 background: estadoVotacion === 'APROBADA'
                   ? 'rgba(34, 197, 94, 0.2)'
@@ -413,13 +414,13 @@ const MiniVotacion = () => {
               }}
             >
               <Award size={11} />
-              <span>Veredicto</span>
+              <span>{t('ui.verdict')}</span>
             </button>
           )}
 
           <button
             onClick={() => setShowExpandedModal(true)}
-            title="Expandir Votación Completa"
+            title={t('ui.expandFullVotingView')}
             style={{
               background: 'rgba(59, 130, 246, 0.12)',
               border: '1px solid rgba(59, 130, 246, 0.3)',
@@ -435,7 +436,7 @@ const MiniVotacion = () => {
             }}
           >
             <Maximize2 size={11} />
-            <span>Expandir</span>
+            <span>{t('ui.expand')}</span>
           </button>
         </div>
       </div>
@@ -455,9 +456,9 @@ const MiniVotacion = () => {
             gap: '0.3rem'
           }}>
             <Users size={22} style={{ opacity: 0.4 }} />
-            <div style={{ fontSize: '0.74rem', fontWeight: '700' }}>Sin delegaciones en sala</div>
+            <div style={{ fontSize: '0.74rem', fontWeight: '700' }}>{t('ui.noDelegationsInTheRoom')}</div>
             <div style={{ fontSize: '0.64rem', opacity: 0.8 }}>
-              Pasa lista en la pestaña de Comienzo o Info para registrar asistencia.
+              {t('ui.takeAttendanceInTheStartOrInfoTabToRegister')}
             </div>
           </div>
         ) : modoVista === 'manos' ? (
@@ -481,7 +482,7 @@ const MiniVotacion = () => {
                 textAlign: 'center'
               }}>
                 <span style={{ fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--success-color)' }}>
-                  A Favor
+                  {t('voting.inFavor')}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                   <button
@@ -548,7 +549,7 @@ const MiniVotacion = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Todos a favor
+                  {t('agenda.allVotesFavor')}
                 </button>
               </div>
 
@@ -565,7 +566,7 @@ const MiniVotacion = () => {
                 textAlign: 'center'
               }}>
                 <span style={{ fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--danger-color)' }}>
-                  En Contra
+                  {t('voting.against')}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                   <button
@@ -632,7 +633,7 @@ const MiniVotacion = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Todos en contra
+                  {t('agenda.allVotesContra')}
                 </button>
               </div>
 
@@ -650,7 +651,7 @@ const MiniVotacion = () => {
                   textAlign: 'center'
                 }}>
                   <span style={{ fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--warning-color)' }}>
-                    Abstención
+                    {t('voting.abstention')}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                     <button
@@ -717,7 +718,7 @@ const MiniVotacion = () => {
                       cursor: 'pointer'
                     }}
                   >
-                    Todos abs
+                    {t('ui.allAbstain')}
                   </button>
                 </div>
               )}
@@ -746,7 +747,7 @@ const MiniVotacion = () => {
                   fontWeight: '800',
                   fontSize: '0.6rem'
                 }}>
-                  {rondaRollCall === 1 ? 'Ronda 1' : 'Ronda 2'}
+                  {rondaRollCall === 1 ? t('ui.round1') : t('ui.round2')}
                 </span>
                 <span style={{ color: 'var(--muted-text)', fontWeight: '700' }}>
                   {indiceRollCall + 1} / {listaRollCall.length}
@@ -818,7 +819,7 @@ const MiniVotacion = () => {
                           backgroundColor: paisActual.estatus === 'Presente y Votando' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)',
                           color: paisActual.estatus === 'Presente y Votando' ? '#eab308' : '#22c55e'
                         }}>
-                          {paisActual.estatus}
+                          {t(`sessionValues.${paisActual.estatus}`, paisActual.estatus)}
                         </span>
                         {paisActual.veto && (
                           <span style={{
@@ -829,7 +830,7 @@ const MiniVotacion = () => {
                             backgroundColor: 'rgba(239, 68, 68, 0.2)',
                             color: '#ef4444'
                           }}>
-                            Veto P5
+                            {t('voting.vetoP5')}
                           </span>
                         )}
                       </div>
@@ -854,7 +855,7 @@ const MiniVotacion = () => {
                     </span>
                   ) : (
                     <span style={{ fontSize: '0.6rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                      Pendiente
+                      {t('agenda.pending')}
                     </span>
                   )}
                 </div>
@@ -886,7 +887,7 @@ const MiniVotacion = () => {
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <Check size={12} /> Favor
+                    <Check size={12} /> {t('ui.for')}
                   </button>
 
                   <button
@@ -907,13 +908,13 @@ const MiniVotacion = () => {
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <X size={12} /> Contra
+                    <X size={12} /> {t('ui.against')}
                   </button>
 
                   <button
                     onClick={() => handleVotarRollCall('abstencion')}
                     disabled={paisActual.estatus === 'Presente y Votando'}
-                    title={paisActual.estatus === 'Presente y Votando' ? 'No puede abstenerse (Presente y Votando)' : 'Abstención'}
+                    title={paisActual.estatus === 'Presente y Votando' ? t('ui.cannotAbstainPresentAndVoting') : t('voting.abstention')}
                     style={{
                       backgroundColor: votos[paisActual.id] === 'abstencion' ? '#ca8a04' : 'rgba(234, 179, 8, 0.15)',
                       border: `1px solid ${votos[paisActual.id] === 'abstencion' ? '#eab308' : 'rgba(234, 179, 8, 0.35)'}`,
@@ -930,13 +931,13 @@ const MiniVotacion = () => {
                       gap: '0.15rem'
                     }}
                   >
-                    <Minus size={12} /> Abs
+                    <Minus size={12} /> {t('ui.abst')}
                   </button>
 
                   <button
                     onClick={() => handleVotarRollCall('pasar')}
                     disabled={rondaRollCall === 2}
-                    title={rondaRollCall === 2 ? 'No se puede pasar en segunda ronda' : 'Pasar a segunda ronda'}
+                    title={rondaRollCall === 2 ? t('ui.cannotPassInTheSecondRound') : t('ui.passToSecondRound')}
                     style={{
                       backgroundColor: 'rgba(168, 85, 247, 0.12)',
                       border: '1px solid rgba(168, 85, 247, 0.35)',
@@ -953,7 +954,7 @@ const MiniVotacion = () => {
                       gap: '0.15rem'
                     }}
                   >
-                    <RotateCcw size={11} /> Pasar
+                    <RotateCcw size={11} /> {t('countries.pass')}
                   </button>
                 </div>
               </div>
@@ -1001,7 +1002,7 @@ const MiniVotacion = () => {
                         fontWeight: '700'
                       }}
                     >
-                      Sí
+                      {t('ui.yes')}
                     </button>
                     <button
                       onClick={() => registrarVotoPais(p.id, votoActual === 'contra' ? null : 'contra')}
@@ -1016,7 +1017,7 @@ const MiniVotacion = () => {
                         fontWeight: '700'
                       }}
                     >
-                      No
+                      {t('ui.no')}
                     </button>
                     <button
                       onClick={() => registrarVotoPais(p.id, votoActual === 'abstencion' ? null : 'abstencion')}
@@ -1033,7 +1034,7 @@ const MiniVotacion = () => {
                         fontWeight: '700'
                       }}
                     >
-                      Abs
+                      {t('ui.abst')}
                     </button>
                   </div>
                 </div>
@@ -1066,10 +1067,10 @@ const MiniVotacion = () => {
           fontFamily: 'var(--font-family)',
           fontVariantNumeric: 'tabular-nums'
         }}>
-          <span style={{ color: 'var(--success-color)' }}>F: {favor}</span>
-          <span style={{ color: 'var(--danger-color)' }}>C: {contra}</span>
-          {tipoVotacion === 'substantive' && <span style={{ color: 'var(--warning-color)' }}>A: {abstencion}</span>}
-          <span style={{ color: 'var(--accent-color)' }}>Req: {requeridos}</span>
+          <span style={{ color: 'var(--success-color)' }}>{t('ui.f')} {favor}</span>
+          <span style={{ color: 'var(--danger-color)' }}>{t('ui.ag')} {contra}</span>
+          {tipoVotacion === 'substantive' && <span style={{ color: 'var(--warning-color)' }}>{t('ui.ab')} {abstencion}</span>}
+          <span style={{ color: 'var(--accent-color)' }}>{t('ui.req')} {requeridos}</span>
         </div>
 
         {/* Estado / Dictamen Interactivo y Reset */}
@@ -1106,7 +1107,7 @@ const MiniVotacion = () => {
 
           <button
             onClick={handleReset}
-            title="Reiniciar Votación"
+            title={t('voting.resetVoting')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -1187,7 +1188,7 @@ const MiniVotacion = () => {
                 letterSpacing: '0.02em',
                 color: estadoVotacion === 'APROBADA' ? '#22c55e' : estadoVotacion === 'RECHAZADA' || estadoVotacion === 'VETO EJERCIDO' ? '#ef4444' : '#3b82f6'
               }}>
-                {estadoVotacion === 'APROBADA' ? '¡ENMIENDA APROBADA!' : estadoVotacion === 'RECHAZADA' ? 'ENMIENDA RECHAZADA' : estadoVotacion === 'VETO EJERCIDO' ? 'VETO EJERCIDO' : 'RESULTADO PARCIAL'}
+                {estadoVotacion === 'APROBADA' ? t('ui.amendmentPassed') : estadoVotacion === 'RECHAZADA' ? t('ui.amendmentRejected') : estadoVotacion === 'VETO EJERCIDO' ? t('ui.vetoExercised') : t('ui.partialResult')}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-color)', marginTop: '2px', fontWeight: '700' }}>
                 {asunto}
@@ -1206,21 +1207,21 @@ const MiniVotacion = () => {
               border: '1px solid var(--subborder-color)'
             }}>
               <div>
-                <div style={{ fontSize: '0.62rem', color: '#22c55e', fontWeight: '700' }}>A FAVOR</div>
+                <div style={{ fontSize: '0.62rem', color: '#22c55e', fontWeight: '700' }}>{t('voting.inFavorUpper')}</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#22c55e' }}>{favor}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.62rem', color: '#ef4444', fontWeight: '700' }}>EN CONTRA</div>
+                <div style={{ fontSize: '0.62rem', color: '#ef4444', fontWeight: '700' }}>{t('voting.againstUpper')}</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#ef4444' }}>{contra}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.62rem', color: '#eab308', fontWeight: '700' }}>ABSTENCIÓN</div>
+                <div style={{ fontSize: '0.62rem', color: '#eab308', fontWeight: '700' }}>{t('voting.abstentionUpper')}</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#eab308' }}>{abstencion}</div>
               </div>
             </div>
 
             <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-              Umbral requerido: {requeridos} votos ({tipoMayoria === 'simple' ? 'Mayoría Simple' : tipoMayoria === '2/3' ? '2/3' : 'Consenso'})
+              {t('ui.requiredThreshold')} {requeridos} {t('ui.votes')}{tipoMayoria === 'simple' ? t('ui.simpleMajority') : tipoMayoria === '2/3' ? '2/3' : t('voting.consensusShort')})
             </div>
 
             {/* Acciones directas */}
@@ -1243,7 +1244,7 @@ const MiniVotacion = () => {
                     gap: '0.3rem'
                   }}
                 >
-                  {estadoVotacion === 'APROBADA' ? <FileCheck2 size={13} /> : <FileX2 size={13} />} {estadoVotacion === 'APROBADA' ? 'Aplicar Aceptación a Resolución' : 'Registrar como Rechazada'}
+                  {estadoVotacion === 'APROBADA' ? <FileCheck2 size={13} /> : <FileX2 size={13} />} {estadoVotacion === 'APROBADA' ? t('ui.applyAcceptanceToResolution') : t('ui.recordAsRejected')}
                 </button>
               )}
 
@@ -1262,7 +1263,7 @@ const MiniVotacion = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Nueva Votación
+                  {t('ui.newVote')}
                 </button>
                 <button
                   onClick={() => setShowResultModal(false)}
@@ -1278,7 +1279,7 @@ const MiniVotacion = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Cerrar
+                  {t('ui.close')}
                 </button>
               </div>
             </div>
@@ -1315,7 +1316,7 @@ const MiniVotacion = () => {
             boxShadow: isLight ? '0 12px 30px rgba(0,0,0,0.15)' : '0 12px 30px rgba(0,0,0,0.5)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: '800' }}>Configuración de Votación</div>
+              <div style={{ fontSize: '0.82rem', fontWeight: '800' }}>{t('ui.votingSettings2')}</div>
               <button
                 onClick={() => setShowSettings(false)}
                 style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer' }}
@@ -1327,7 +1328,7 @@ const MiniVotacion = () => {
             <form onSubmit={handleGuardarAjustes} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div>
                 <label style={{ fontSize: '0.66rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.15rem' }}>
-                  Asunto / Moción / Enmienda:
+                  {t('ui.subjectMotionAmendment')}
                 </label>
                 <input
                   type="text"
@@ -1342,13 +1343,13 @@ const MiniVotacion = () => {
                     color: 'var(--text-color)',
                     fontSize: '0.74rem'
                   }}
-                  placeholder="Ej. Enmienda de Adición - Art. 2"
+                  placeholder={t('ui.eGAdditionAmendmentArt2')}
                 />
               </div>
 
               <div>
                 <label style={{ fontSize: '0.66rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.15rem' }}>
-                  Naturaleza del Voto:
+                  {t('ui.natureOfVote')}
                 </label>
                 <select
                   value={tempTipoVotacion}
@@ -1363,14 +1364,14 @@ const MiniVotacion = () => {
                     fontSize: '0.74rem'
                   }}
                 >
-                  <option value="procedural">Procedimental (Sin Abstenciones)</option>
-                  <option value="substantive">Sustantiva (Permite Abstenciones)</option>
+                  <option value="procedural">{t('ui.proceduralNoAbstentions')}</option>
+                  <option value="substantive">{t('ui.substantiveAbstentionsAllowed')}</option>
                 </select>
               </div>
 
               <div>
                 <label style={{ fontSize: '0.66rem', fontWeight: '700', color: 'var(--muted-text)', display: 'block', marginBottom: '0.15rem' }}>
-                  Umbral de Mayoría:
+                  {t('ui.majorityThreshold')}
                 </label>
                 <select
                   value={tempTipoMayoria}
@@ -1385,9 +1386,9 @@ const MiniVotacion = () => {
                     fontSize: '0.74rem'
                   }}
                 >
-                  <option value="simple">Mayoría Simple (50% + 1)</option>
-                  <option value="2/3">Dos Tercios (2/3)</option>
-                  <option value="consensus">Consenso</option>
+                  <option value="simple">{t('ui.simpleMajority501')}</option>
+                  <option value="2/3">{t('ui.twoThirds23')}</option>
+                  <option value="consensus">{t('voting.consensusShort')}</option>
                 </select>
               </div>
 
@@ -1399,7 +1400,7 @@ const MiniVotacion = () => {
                   onChange={e => setTempAplicarVeto(e.target.checked)}
                 />
                 <label htmlFor="chkMiniVeto" style={{ fontSize: '0.7rem', fontWeight: '600', cursor: 'pointer' }}>
-                  Habilitar poder de Veto (P5)
+                  {t('ui.enableVetoPowerP5')}
                 </label>
               </div>
 
@@ -1418,7 +1419,7 @@ const MiniVotacion = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Cancelar
+                  {t('toast.cancelBtn')}
                 </button>
                 <button
                   type="submit"
@@ -1434,7 +1435,7 @@ const MiniVotacion = () => {
                     cursor: 'pointer'
                   }}
                 >
-                  Guardar
+                  {t('ui.save')}
                 </button>
               </div>
             </form>
@@ -1481,7 +1482,7 @@ const MiniVotacion = () => {
                 <div>
                   <div style={{ fontSize: '1rem', fontWeight: '800' }}>{asunto}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-                    {totalAsistentes} Delegaciones · Mayoría {tipoMayoria} · {tipoVotacion === 'substantive' ? 'Sustantiva' : 'Procedimental'}
+                    {totalAsistentes} {t('ui.delegationsMajority')} {tipoMayoria} · {tipoVotacion === 'substantive' ? t('voting.substantiveShort') : t('voting.proceduralShort')}
                   </div>
                 </div>
               </div>
@@ -1502,7 +1503,7 @@ const MiniVotacion = () => {
                   fontWeight: '700'
                 }}
               >
-                <Minimize2 size={14} /> Cerrar Vista
+                <Minimize2 size={14} /> {t('ui.closeView')}
               </button>
             </div>
 
@@ -1515,19 +1516,19 @@ const MiniVotacion = () => {
                 gap: '0.6rem'
               }}>
                 <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '6px', padding: '0.75rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#22c55e' }}>A FAVOR</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#22c55e' }}>{t('voting.inFavorUpper')}</div>
                   <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#22c55e' }}>{favor}</div>
                 </div>
                 <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '6px', padding: '0.75rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#ef4444' }}>EN CONTRA</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#ef4444' }}>{t('voting.againstUpper')}</div>
                   <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#ef4444' }}>{contra}</div>
                 </div>
                 <div style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '6px', padding: '0.75rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#eab308' }}>ABSTENCIONES</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#eab308' }}>{t('ui.abstentions')}</div>
                   <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#eab308' }}>{abstencion}</div>
                 </div>
                 <div style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '6px', padding: '0.75rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#3b82f6' }}>REQUERIDOS</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#3b82f6' }}>{t('ui.required')}</div>
                   <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#3b82f6' }}>{requeridos}</div>
                 </div>
               </div>
@@ -1535,7 +1536,7 @@ const MiniVotacion = () => {
               {/* Matriz Completa de Votos */}
               <div>
                 <div style={{ fontSize: '0.82rem', fontWeight: '800', marginBottom: '0.5rem' }}>
-                  Desglose de Votos por Delegación
+                  {t('ui.voteBreakdownByDelegation')}
                 </div>
                 <div style={{
                   display: 'grid',
@@ -1574,7 +1575,7 @@ const MiniVotacion = () => {
                           fontWeight: '800',
                           color: voto === 'favor' ? '#22c55e' : voto === 'contra' ? '#ef4444' : voto === 'abstencion' ? '#eab308' : 'var(--muted-text)'
                         }}>
-                          {voto ? voto.toUpperCase() : 'PENDIENTE'}
+                          {voto ? voto.toUpperCase() : t('voting.pendingUpper')}
                         </span>
                       </div>
                     );

@@ -130,7 +130,7 @@ const DonationBanner = ({ showDonationBanner, setShowDonationBanner, isLight, t 
         </a>
         <button
           onClick={() => setShowDonationBanner(false)}
-          title="Cerrar banner"
+          title={t('ui.closeBanner')}
           style={buttonStyle}
           onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '0.75')}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Radio, 
-  ArrowLeft, 
   Key, 
   ShieldCheck, 
   User, 
@@ -15,8 +14,6 @@ import {
   Building2, 
   ShieldAlert, 
   CheckCircle2,
-  Sun,
-  Moon,
   Megaphone
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +21,7 @@ import { useP2P } from '../../context/P2PContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import AccessibilityModal from '../modals/AccessibilityModal';
 import OpenMunLogo from '../common/OpenMunLogo';
-import LanguageSelector from '../common/LanguageSelector';
+import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 
 const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
   const { t } = useTranslation();
@@ -57,7 +54,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
   const handleJoin = async (e) => {
     e.preventDefault();
     if (!roomIdInput.trim()) {
-      alert('Por favor introduce el código de la sala');
+      alert(t('ui.pleaseEnterTheRoomCode'));
       return;
     }
 
@@ -78,7 +75,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem 1rem',
+      padding: '8rem 1rem 2rem',
       backgroundColor: 'var(--bg-color)',
       color: 'var(--text-color)',
       fontFamily: 'var(--font-family, Inter, system-ui, sans-serif)',
@@ -86,91 +83,16 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
     }}>
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
-      {/* Barra Superior con botón Volver y Controles */}
-      <header className="openmun-join-topbar" style={{
-        position: 'absolute',
-        top: '20px',
-        left: '20px',
-        right: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '0.5rem',
-        zIndex: 10
-      }}>
-        {/* Botón Volver a la Mesa Principal */}
-        <button
-          onClick={onBackToChair}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: '10px',
-            color: 'var(--muted-text)',
-            padding: '0.5rem 0.85rem',
-            fontSize: '0.8rem',
-            fontWeight: '700',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.45rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <ArrowLeft size={16} /> <span className="btn-text">{t('views.join.backToHome', 'Volver a Modo Mesa (Chair)')}</span>
-        </button>
-
-        {/* Controles de Accesibilidad y Tema */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.4rem'
-        }}>
-          <button
-            className="openmun-topbar-btn"
-            onClick={() => setIsAccessModalOpen(true)}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '10px',
-              color: 'var(--text-color)',
-              padding: '0.5rem 0.75rem',
-              fontSize: '0.8rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              transition: 'all 0.15s ease'
-            }}
-            title={t('accessibility.title', "Accesibilidad y Tema")}
-          >
-            <Eye size={15} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
-          </button>
-          <button
-            className="openmun-topbar-btn"
-            onClick={toggleThemeMode}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '10px',
-              color: 'var(--text-color)',
-              padding: '0.5rem 0.65rem',
-              fontSize: '0.8rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              transition: 'all 0.15s ease'
-            }}
-            title={isLight ? t('header.darkMode', "Cambiar a Modo Oscuro") : t('header.lightMode', "Cambiar a Modo Claro")}
-          >
-            {isLight ? <Moon size={15} /> : <Sun size={15} />}
-          </button>
-          <LanguageSelector showIcon={false} />
-        </div>
-      </header>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+        <ConsoleNavbar
+          title={t('views.join.title', 'Unirse a una sesión')}
+          showContext={false}
+          isLight={isLight}
+          toggleThemeMode={toggleThemeMode}
+          setIsAccessOpen={setIsAccessModalOpen}
+          onBack={onBackToChair}
+        />
+      </div>
 
       <div className="openmun-join-card" style={{
         backgroundColor: 'var(--panel-color)',
@@ -220,12 +142,12 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
           {/* Código de Sala */}
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Código de Sala (Room ID)
+              {t('ui.roomCodeRoomId')}
             </label>
             <div style={{ position: 'relative', marginTop: '0.4rem' }}>
               <input
                 type="text"
-                placeholder="Ej: MUN-4921"
+                placeholder={t('ui.eGMun4921')}
                 value={roomIdInput}
                 onChange={e => setRoomIdInput(e.target.value.toUpperCase())}
                 style={{
@@ -249,7 +171,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
           {/* Selector de Rol en Tarjetas */}
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Tipo de Acceso / Rol
+              {t('ui.accessTypeRole')}
             </label>
             <div className="openmun-grid-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginTop: '0.4rem' }}>
               {/* Delegado */}
@@ -271,7 +193,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
               >
                 <User size={18} color={selectedRole === 'delegate' ? '#22c55e' : 'var(--muted-text)'} />
                 <span style={{ fontSize: '0.76rem', fontWeight: '800', color: selectedRole === 'delegate' ? '#22c55e' : 'var(--text-color)' }}>
-                  Delegado
+                  {t('liveSession.roles.delegate')}
                 </span>
               </div>
 
@@ -294,7 +216,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
               >
                 <Layers size={18} color={selectedRole === 'secretariat' ? '#3b82f6' : 'var(--muted-text)'} />
                 <span style={{ fontSize: '0.76rem', fontWeight: '800', color: selectedRole === 'secretariat' ? '#3b82f6' : 'var(--text-color)' }}>
-                  Secretaría
+                  {t('views.secretariat.badge')}
                 </span>
               </div>
 
@@ -317,7 +239,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
               >
                 <Megaphone size={18} color={selectedRole === 'staff' ? '#10b981' : 'var(--muted-text)'} />
                 <span style={{ fontSize: '0.76rem', fontWeight: '800', color: selectedRole === 'staff' ? '#10b981' : 'var(--text-color)' }}>
-                  Staff
+                  {t('conferences.issuerStaff')}
                 </span>
               </div>
 
@@ -340,7 +262,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
               >
                 <ShieldAlert size={18} color={selectedRole === 'backroom' ? '#f97316' : 'var(--muted-text)'} />
                 <span style={{ fontSize: '0.76rem', fontWeight: '800', color: selectedRole === 'backroom' ? '#f97316' : 'var(--text-color)' }}>
-                  Backroom
+                  {t('views.backroom.badge')}
                 </span>
               </div>
             </div>
@@ -372,22 +294,22 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                 <div style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-color)' }}>
-                  Acceso de Delegaciones Oficiales
+                  {t('ui.officialDelegationAccess')}
                 </div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', lineHeight: '1.35' }}>
-                  Al conectar, recibirás la lista oficial de países configurada en la sesión para que elijas tu delegación asignada.
+                  {t('ui.whenYouConnectYouWillReceiveTheOfficialCountryList')}
                 </div>
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Contraseña de Acceso ({selectedRole === 'secretariat' ? 'Secretaría' : selectedRole === 'staff' ? 'Staff' : 'Backroom'})
+                {t('ui.accessPassword')}{selectedRole === 'secretariat' ? t('views.secretariat.badge') : selectedRole === 'staff' ? t('conferences.issuerStaff') : t('views.backroom.badge')})
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={mostrarPassword ? 'text' : 'password'}
-                  placeholder="Introduce la contraseña proporcionada por el Chair"
+                  placeholder={t('ui.enterThePasswordProvidedByTheChair')}
                   value={passwordInput}
                   onChange={e => setPasswordInput(e.target.value)}
                   style={{
@@ -442,7 +364,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
               transition: 'all 0.15s ease'
             }}
           >
-            <Radio size={17} /> {isSubmitting ? 'Conectando...' : 'Entrar a la Sesión'}
+            <Radio size={17} /> {isSubmitting ? t('ui.connecting') : t('ui.enterSession')}
           </button>
         </form>
       </div>

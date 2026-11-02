@@ -156,7 +156,7 @@ const AnadirPaises = () => {
               alignItems: 'center',
               gap: '0.4rem'
             }}>
-              Añadir Países
+              {t('ui.addCountries')}
             </h3>
           </div>
         </div>
@@ -166,7 +166,7 @@ const AnadirPaises = () => {
           <button
             type="button"
             onClick={ordenarPaisesAlfabetico}
-            title="Ordenar países alfabéticamente (A-Z)"
+            title={t('ui.sortCountriesAlphabeticallyAZ')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -194,7 +194,7 @@ const AnadirPaises = () => {
               }
             }}
             disabled={listaActiva.length === 0}
-            title={`Eliminar todos los oradores de ${esGSL ? 'GSL' : 'Debate'}`}
+            title={t('ui.removeAllSpeakersFrom', { v0: esGSL ? t('tabs.gsl') : t('sidebar.widgets.pizarra_mociones.category') })}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -457,7 +457,7 @@ const AnadirPaises = () => {
             color: 'var(--muted-text)',
             fontSize: '0.8rem'
           }}>
-            No se encontraron países con "{busqueda}".
+            {t('ui.noCountriesFoundMatching')}{busqueda}".
           </div>
         ) : (
           <div style={{
@@ -516,7 +516,7 @@ const AnadirPaises = () => {
                     setDragOverIndex(null);
                   }}
                   onClick={() => handleTogglePais(pais)}
-                  title={estaEnLista ? `${pais.nombre} (En lista #${posEnLista}) - Clic para retirar` : `${pais.nombre} - Clic para añadir a ${esGSL ? 'Lista General' : 'Debate'} (Arrastra para reordenar)`}
+                  title={estaEnLista ? t('ui.onListClickToRemove', { v0: pais.nombre, v1: posEnLista }) : t('ui.clickToAddToDragToReorder', { v0: pais.nombre, v1: esGSL ? t('timers.generalList') : t('sidebar.widgets.pizarra_mociones.category') })}
                   style={{
                     position: 'relative',
                     padding: '0.5rem 0.6rem',
@@ -573,7 +573,7 @@ const AnadirPaises = () => {
                       {pais.nombre}
                     </span>
                     {pais.veto && (
-                      <Crown size={11} color="#eab308" style={{ flexShrink: 0 }} title="Miembro Permanente (P5)" />
+                      <Crown size={11} color="#eab308" style={{ flexShrink: 0 }} title={t('ui.permanentMemberP5')} />
                     )}
                   </div>
 
@@ -627,7 +627,7 @@ const AnadirPaises = () => {
           color: '#71717a'
         }}>
           <span>
-            Destino: <strong style={{ color: esGSL ? '#c084fc' : '#fb923c' }}>{esGSL ? 'Lista General' : 'Debate'}</strong>
+            {t('ui.destination')} <strong style={{ color: esGSL ? '#c084fc' : '#fb923c' }}>{esGSL ? t('timers.generalList') : t('sidebar.widgets.pizarra_mociones.category')}</strong>
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
             <span style={{
@@ -636,7 +636,7 @@ const AnadirPaises = () => {
               borderRadius: '50%',
               backgroundColor: cantEnLista > 0 ? '#22c55e' : '#52525b'
             }} />
-            {cantEnLista} en cola activa
+            {cantEnLista} {t('ui.inActiveQueue')}
           </span>
         </div>
       )}

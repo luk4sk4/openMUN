@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 /**
  * Servicio de sincronización con Google Drive API v3
  * Utiliza Google Identity Services (GIS) para autenticación sin backend
@@ -39,7 +40,7 @@ class GoogleDriveService {
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
-      script.onerror = (err) => reject(new Error('No se pudo cargar el SDK de Google Identity Services: ' + err));
+      script.onerror = (err) => reject(new Error(i18n.t('ui.couldNotLoadGoogleIdentityServicesSdk') + err));
       document.body.appendChild(script);
     });
   }
@@ -50,7 +51,7 @@ class GoogleDriveService {
   async init(clientId = GOOGLE_CLIENT_ID) {
     await this.loadGisScript();
     if (!window.google?.accounts?.oauth2) {
-      throw new Error('Google Identity Services no está disponible');
+      throw new Error(i18n.t('ui.googleIdentityServicesIsUnavailable'));
     }
 
     return new Promise((resolve) => {
@@ -83,7 +84,7 @@ class GoogleDriveService {
     return new Promise((resolve, reject) => {
       this.tokenClient.callback = async (tokenResponse) => {
         if (tokenResponse.error) {
-          return reject(new Error(tokenResponse.error_description || tokenResponse.error || 'Autenticación cancelada'));
+          return reject(new Error(tokenResponse.error_description || tokenResponse.error || i18n.t('ui.authenticationCanceled')));
         }
         this.accessToken = tokenResponse.access_token;
         if (tokenResponse.expires_in) {
@@ -150,7 +151,7 @@ class GoogleDriveService {
    * Obtiene o crea automáticamente la carpeta 'openMUN' en Google Drive
    */
   async obtenerOCrearCarpetaOpenMUN() {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
 
     if (this.openMunFolderId) {
       return { id: this.openMunFolderId, name: OPENMUN_FOLDER_NAME };
@@ -180,13 +181,13 @@ class GoogleDriveService {
       body: JSON.stringify({
         name: OPENMUN_FOLDER_NAME,
         mimeType: 'application/vnd.google-apps.folder',
-        description: 'Carpeta de sesiones y copias de seguridad de openMUN'
+        description: i18n.t('ui.openmunSessionsAndBackupFolder')
       })
     });
 
     if (!createRes.ok) {
       const err = await createRes.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Error al crear carpeta openMUN en Drive (Status: ${createRes.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorCreatingOpenmunFolderInDriveStatus', { v0: createRes.status }));
     }
 
     const folderData = await createRes.json();
@@ -198,7 +199,7 @@ class GoogleDriveService {
    * Lista todos los archivos de sesión guardados en la carpeta openMUN
    */
   async listarArchivosSesion(folderId = null) {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
 
     const targetFolderId = folderId || this.openMunFolderId || (await this.obtenerOCrearCarpetaOpenMUN()).id;
     
@@ -210,7 +211,7 @@ class GoogleDriveService {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Error al listar sesiones en Drive (Status: ${res.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorListingDriveSessionsStatus', { v0: res.status }));
     }
 
     const data = await res.json();
@@ -221,7 +222,7 @@ class GoogleDriveService {
    * Busca un archivo por nombre exacto dentro de la carpeta openMUN
    */
   async buscarArchivoSesion(nombreArchivo = DEFAULT_DRIVE_FILE_NAME, folderId = null) {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
 
     const targetFolderId = folderId || this.openMunFolderId || (await this.obtenerOCrearCarpetaOpenMUN()).id;
     const q = encodeURIComponent(`'${targetFolderId}' in parents and name = '${nombreArchivo}' and trashed = false`);
@@ -232,7 +233,7 @@ class GoogleDriveService {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Error al buscar archivo en Drive (Status: ${res.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorFindingFileInDriveStatus', { v0: res.status }));
     }
 
     const data = await res.json();
@@ -243,9 +244,9 @@ class GoogleDriveService {
    * Obtiene metadatos de un archivo específico (modificación, versión, nombre)
    */
   async obtenerMetadatosArchivo(fileId) {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
     if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-      throw new Error('ID de archivo de Google Drive inválido');
+      throw new Error(i18n.t('ui.invalidGoogleDriveFileId'));
     }
 
     const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,modifiedTime,version,size,parents`, {
@@ -255,7 +256,7 @@ class GoogleDriveService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error('[GoogleDriveService Metadatos Error]:', err);
-      throw new Error(err.error?.message || `Error al obtener metadatos (Status: ${res.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorRetrievingMetadataStatus', { v0: res.status }));
     }
 
     return await res.json();
@@ -291,9 +292,9 @@ class GoogleDriveService {
    * Descarga el contenido JSON del archivo desde Google Drive
    */
   async descargarSesion(fileId) {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
     if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-      throw new Error('ID de archivo de Google Drive inválido');
+      throw new Error(i18n.t('ui.invalidGoogleDriveFileId'));
     }
 
     const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
@@ -303,7 +304,7 @@ class GoogleDriveService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error('[GoogleDriveService Descargar Error]:', err);
-      throw new Error(err.error?.message || `Error al descargar sesión de Drive (Status: ${res.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorDownloadingDriveSessionStatus', { v0: res.status }));
     }
 
     return await res.json();
@@ -313,7 +314,7 @@ class GoogleDriveService {
    * Crea un nuevo archivo en Google Drive dentro de la carpeta openMUN
    */
   async crearArchivoSesion(sesionData, nombreArchivo = DEFAULT_DRIVE_FILE_NAME, folderId = null) {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
 
     const targetFolderId = folderId || this.openMunFolderId || (await this.obtenerOCrearCarpetaOpenMUN()).id;
 
@@ -322,7 +323,7 @@ class GoogleDriveService {
 
     const metadata = {
       name: cleanFileName,
-      description: `Sesión de openMUN - Comité: ${sesionData.comision || sesionData.nombreComite || 'General'}`,
+      description: i18n.t('ui.openmunSessionCommittee', { v0: sesionData.comision || sesionData.nombreComite || 'General' }),
       mimeType: 'application/json',
       parents: [targetFolderId]
     };
@@ -352,7 +353,7 @@ class GoogleDriveService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error('[GoogleDriveService Crear Error]:', err);
-      throw new Error(err.error?.message || `Error al crear archivo en Drive (Status: ${res.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorCreatingFileInDriveStatus', { v0: res.status }));
     }
 
     return await res.json();
@@ -363,9 +364,9 @@ class GoogleDriveService {
    * Soporta comprobación de conflictos por tiempo de modificación remota.
    */
   async actualizarArchivoSesion(fileId, sesionData, options = {}) {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
     if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-      throw new Error('ID de archivo de Google Drive inválido');
+      throw new Error(i18n.t('ui.invalidGoogleDriveFileId'));
     }
 
     // Comprobación de conflicto si se especificó expectedModifiedTime y checkConflict !== false
@@ -391,7 +392,7 @@ class GoogleDriveService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error('[GoogleDriveService Actualizar Error]:', err);
-      throw new Error(err.error?.message || `Error al actualizar archivo en Drive (Status: ${res.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorUpdatingFileInDriveStatus', { v0: res.status }));
     }
 
     return await res.json();
@@ -401,9 +402,9 @@ class GoogleDriveService {
    * Elimina un archivo de Google Drive
    */
   async eliminarArchivo(fileId) {
-    if (!this.isAuthenticated()) throw new Error('No autenticado en Google Drive');
+    if (!this.isAuthenticated()) throw new Error(i18n.t('ui.notSignedInToGoogleDrive'));
     if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-      throw new Error('ID de archivo de Google Drive inválido');
+      throw new Error(i18n.t('ui.invalidGoogleDriveFileId'));
     }
 
     const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
@@ -414,7 +415,7 @@ class GoogleDriveService {
     if (!res.ok && res.status !== 204 && res.status !== 404) {
       const err = await res.json().catch(() => ({}));
       console.error('[GoogleDriveService Eliminar Error]:', err);
-      throw new Error(err.error?.message || `Error al eliminar archivo en Drive (Status: ${res.status})`);
+      throw new Error(err.error?.message || i18n.t('ui.errorDeletingFileFromDriveStatus', { v0: res.status }));
     }
 
     return true;

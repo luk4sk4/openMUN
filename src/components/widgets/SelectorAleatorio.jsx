@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Dices, 
@@ -136,7 +137,7 @@ const SelectorAleatorio = () => {
 
     ctx.clearRect(0, 0, width, height);
 
-    const items = paisesElegibles.length > 0 ? paisesElegibles : [{ nombre: 'Sin delegaciones', bandera: '🌐' }];
+    const items = paisesElegibles.length > 0 ? paisesElegibles : [{ nombre: i18n.t('ui.noDelegations'), bandera: '🌐' }];
     const totalSectores = items.length;
     const arc = (2 * Math.PI) / totalSectores;
 
@@ -407,7 +408,7 @@ const SelectorAleatorio = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--subnav-bg)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
           <button
             onClick={() => setModoVista('ruleta')}
-            title="Modo Ruleta Visual"
+            title={t('ui.visualRouletteMode')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -428,7 +429,7 @@ const SelectorAleatorio = () => {
           </button>
           <button
             onClick={() => setModoVista('tarjeta')}
-            title="Modo Ranura Digital / Placard"
+            title={t('ui.digitalSlotPlacardMode')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -478,7 +479,7 @@ const SelectorAleatorio = () => {
           {/* Botón Sin Repetir */}
           <button
             onClick={() => setModoSinRepetir(!modoSinRepetir)}
-            title={modoSinRepetir ? "Modo Sin Repetir Activado (Bolsa de Sorteo)" : "Modo Con Repetición"}
+            title={modoSinRepetir ? t('ui.noRepeatModeEnabledDrawPool') : t('ui.repeatMode')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -500,7 +501,7 @@ const SelectorAleatorio = () => {
           {/* Sonido */}
           <button
             onClick={() => setSonidoHabilitado(!sonidoHabilitado)}
-            title={sonidoHabilitado ? "Efectos de Sonido Activados" : "Sonido Silenciado"}
+            title={sonidoHabilitado ? t('ui.soundEffectsEnabled') : t('ui.soundMuted')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -519,7 +520,7 @@ const SelectorAleatorio = () => {
           {/* Historial */}
           <button
             onClick={() => setMostrarHistorial(!mostrarHistorial)}
-            title="Ver Historial de Sorteos"
+            title={t('ui.viewDrawHistory')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -587,12 +588,12 @@ const SelectorAleatorio = () => {
           }}>
             <HelpCircle size={32} color="var(--muted-text)" />
             <div style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-color)' }}>
-              {paises.length === 0 ? 'No hay países cargados en la sesión' : 'Se han sorteado todos los países de la ronda'}
+              {paises.length === 0 ? t('ui.noCountriesLoadedInTheSession') : t('ui.allCountriesHaveBeenDrawnThisRound')}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--muted-text)', maxWidth: '280px' }}>
               {paises.length === 0 
-                ? 'Importa países desde el widget de Configuración para comenzar.' 
-                : 'Reinicia la bolsa para volver a sortear entre todas las delegaciones.'}
+                ? t('ui.importCountriesFromTheSettingsWidgetToGetStarted')
+                : t('ui.resetThePoolToDrawFromAllDelegationsAgain')}
             </div>
             {paises.length > 0 && modoSinRepetir && paisesExcluidosRonda.length > 0 && (
               <button
@@ -613,7 +614,7 @@ const SelectorAleatorio = () => {
                 }}
               >
                 <RotateCcw size={13} />
-                Reiniciar Ronda ({paisesExcluidosRonda.length} sorteados)
+                {t('ui.resetRound')}{paisesExcluidosRonda.length} {t('ui.drawn')}
               </button>
             )}
           </div>
@@ -792,7 +793,7 @@ const SelectorAleatorio = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
               <button
                 onClick={handleAnadirAGSL}
-                title="Añadir orador a la Lista GSL"
+                title={t('ui.addSpeakerToGslList')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -812,7 +813,7 @@ const SelectorAleatorio = () => {
               </button>
               <button
                 onClick={handleDarPalabraAhora}
-                title="Registrar intervención directa"
+                title={t('ui.recordDirectContribution')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -881,7 +882,7 @@ const SelectorAleatorio = () => {
         {modoSinRepetir && paisesExcluidosRonda.length > 0 && (
           <button
             onClick={reiniciarRonda}
-            title="Reiniciar bolsa de sorteo"
+            title={t('ui.resetDrawPool')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -930,7 +931,7 @@ const SelectorAleatorio = () => {
               {historialSorteos.length > 0 && (
                 <button
                   onClick={() => setHistorialSorteos([])}
-                  title="Vaciar Historial"
+                  title={t('ui.clearHistory')}
                   style={{
                     background: 'transparent',
                     border: 'none',
@@ -1003,7 +1004,7 @@ const SelectorAleatorio = () => {
                       agregarOrador(item.pais);
                       triggerFeedback(`${item.pais.nombre} ${t('random.addedGSLFeedback', 'añadido a la Lista GSL')}`);
                     }}
-                    title="Añadir a GSL"
+                    title={t('ui.addToGsl')}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -1019,7 +1020,7 @@ const SelectorAleatorio = () => {
                     }}
                   >
                     <UserPlus size={10} />
-                    GSL
+                    {t('tabs.gsl')}
                   </button>
                 </div>
               ))

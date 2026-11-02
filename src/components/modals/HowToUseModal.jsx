@@ -266,7 +266,7 @@ const HowToUseModal = ({ isOpen, onClose, onStartModeration }) => {
                         borderRadius: '4px'
                       }}
                     >
-                      PASO {step.badge}
+                      {t('ui.step')} {step.badge}
                     </span>
                     <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontWeight: '600' }}>
                       {t(step.badgeLabelKey, step.labelDefault)}

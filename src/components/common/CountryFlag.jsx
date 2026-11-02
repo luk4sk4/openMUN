@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 import { getFlagImageUrl, obtenerIniciales, generarColorAvatar } from '../../utils/flags';
 
@@ -26,6 +27,7 @@ const CountryFlag = ({
   width: customWidth,
   height: customHeight
 }) => {
+  const { t } = useTranslation();
   const [hasError, setHasError] = useState(false);
 
   // Extraer bandera y nombre de forma resiliente tanto si se pasa country objeto como props separadas
@@ -77,7 +79,7 @@ const CountryFlag = ({
   return (
     <img
       src={imageUrl}
-      alt={nombre || 'Bandera'}
+      alt={nombre || t('editCountry.flag')}
       title={title || nombre}
       onError={() => setHasError(true)}
       className={`country-flag-img ${className}`}

@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   MessageSquare,
@@ -37,63 +38,63 @@ import './NoteModeration.css';
 export const NOTE_TYPES_CONFIG = {
   general: {
     id: 'general',
-    label: 'General / Mensaje',
-    shortLabel: 'General',
+    get label() { return i18n.t('ui.generalMessage'); },
+    get shortLabel() { return i18n.t('ui.general'); },
     icon: FileText,
     color: 'var(--muted-text)',
     bg: 'var(--card-header-bg)',
     border: 'var(--subborder-color)',
-    badgeText: '📄 GENERAL'
+    get badgeText() { return i18n.t('ui.general2'); }
   },
   paje: {
     id: 'paje',
-    label: 'Mensaje de Paje / Entrega',
-    shortLabel: 'Paje',
+    get label() { return i18n.t('ui.pageMessageDelivery'); },
+    get shortLabel() { return i18n.t('ui.page'); },
     icon: Mail,
     color: 'var(--info-color)',
     bg: 'rgba(56, 189, 248, 0.12)',
     border: 'rgba(56, 189, 248, 0.3)',
-    badgeText: '✉️ PAJE'
+    get badgeText() { return i18n.t('ui.page2'); }
   },
   urgente: {
     id: 'urgente',
-    label: 'Urgente / Prioritario',
-    shortLabel: 'Urgente',
+    get label() { return i18n.t('ui.urgentPriority'); },
+    get shortLabel() { return i18n.t('ui.urgent4'); },
     icon: Zap,
     color: 'var(--danger-color)',
     bg: 'rgba(239, 68, 68, 0.12)',
     border: 'rgba(239, 68, 68, 0.35)',
-    badgeText: '🚨 URGENTE'
+    get badgeText() { return i18n.t('ui.urgent5'); }
   },
   logistica: {
     id: 'logistica',
-    label: 'Logística / Asistencia',
-    shortLabel: 'Logística',
+    get label() { return i18n.t('ui.logisticsAssistance'); },
+    get shortLabel() { return i18n.t('ui.logistics3'); },
     icon: Coffee,
     color: 'var(--accent-color)',
     bg: 'var(--accent-soft)',
     border: 'var(--subborder-color)',
-    badgeText: '🛠️ LOGÍSTICA'
+    get badgeText() { return i18n.t('ui.logistics4'); }
   },
   crisis: {
     id: 'crisis',
-    label: 'Crisis / Confidencial',
-    shortLabel: 'Crisis',
+    get label() { return i18n.t('ui.crisisConfidential'); },
+    get shortLabel() { return i18n.t('ui.crisis2'); },
     icon: Flame,
     color: 'var(--warning-color)',
     bg: 'rgba(249, 115, 22, 0.12)',
     border: 'rgba(249, 115, 22, 0.35)',
-    badgeText: '🛡️ CRISIS'
+    get badgeText() { return i18n.t('ui.crisis3'); }
   },
   pregunta: {
     id: 'pregunta',
-    label: 'Duda de Procedimiento',
-    shortLabel: 'Procedimiento',
+    get label() { return i18n.t('ui.parliamentaryInquiry'); },
+    get shortLabel() { return i18n.t('ui.procedure'); },
     icon: HelpCircle,
     color: 'var(--warning-color)',
     bg: 'rgba(234, 179, 8, 0.12)',
     border: 'rgba(234, 179, 8, 0.35)',
-    badgeText: '❓ PROCEDIMIENTO'
+    get badgeText() { return i18n.t('ui.procedure2'); }
   }
 };
 
@@ -293,7 +294,7 @@ const MensajeriaComite = ({
         try { playChimeAlert(0.35); } catch {}
       }
       setTextoNota('');
-      setFeedbackEnvio(effectiveRole === 'delegate' && settings.requireStaffNoteApproval ? 'Nota pendiente de aprobación de staff' : 'Nota enviada con éxito');
+      setFeedbackEnvio(effectiveRole === 'delegate' && settings.requireStaffNoteApproval ? t('ui.notePendingStaffApproval') : t('ui.noteSentSuccessfully'));
       setTimeout(() => setFeedbackEnvio(null), 2500);
 
       if (typeof onNoteSent === 'function') {
@@ -351,9 +352,9 @@ const MensajeriaComite = ({
     if (notasRol.length === 0) return;
     const lines = notasRol.map(n => {
       const hora = new Date(n.timestamp || Date.now()).toLocaleTimeString();
-      return `[${hora}] [${(n.type || 'GENERAL').toUpperCase()}] De: ${n.from} -> Para: ${n.to}\n${n.text}\n--------------------`;
+      return t('ui.fromTo', { v0: hora, v1: (n.type || 'GENERAL').toUpperCase(), v2: n.from, v3: n.to, v4: n.text });
     });
-    const contenido = `REGISTRO DE NOTAS Y MENSAJERÍA - OPENMUN\nComité: ${currentComiteNombre || p2p.roomId || 'Sala'}\nTotal notas: ${notasRol.length}\nFecha: ${new Date().toLocaleString()}\n\n` + lines.join('\n\n');
+    const contenido = t('ui.openmunNotesAndMessagingLogCommitteeTotalNotesDate', { v0: currentComiteNombre || p2p.roomId || 'Sala', v1: notasRol.length, v2: new Date().toLocaleString() }) + lines.join('\n\n');
     const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -415,11 +416,11 @@ const MensajeriaComite = ({
                   color: 'var(--success-color)',
                   border: '1px solid rgba(34, 197, 94, 0.25)'
                 }}>
-                  {p2p.connectionStatus === 'host_active' ? 'Host P2P' : 'Enlace en Vivo'}
+                  {p2p.connectionStatus === 'host_active' ? 'Host P2P' : t('ui.liveLink')}
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                {effectiveCountry ? `Delegación activa: ${effectiveCountry}` : `Rol: ${effectiveRole.toUpperCase()}`} • {notasRol.length} notas en el buzón
+                {effectiveCountry ? t('ui.activeDelegation', { v0: effectiveCountry }) : t('ui.role2', { v0: effectiveRole.toUpperCase() })} • {notasRol.length} {t('ui.notesInInbox')}
               </p>
             </div>
           </div>
@@ -439,7 +440,7 @@ const MensajeriaComite = ({
                 alignItems: 'center',
                 gap: '0.35rem'
               }}
-              title={sonidoHabilitado ? 'Silenciar alertas' : 'Activar sonido de notas'}
+              title={sonidoHabilitado ? t('ui.muteAlerts') : t('ui.enableNoteSounds')}
             >
               {sonidoHabilitado ? <Volume2 size={14} color="var(--accent-color)" /> : <VolumeX size={14} />}
             </button>
@@ -460,9 +461,9 @@ const MensajeriaComite = ({
                   alignItems: 'center',
                   gap: '0.35rem'
                 }}
-                title="Descargar registro de notas en .txt"
+                title={t('ui.downloadNoteLogAsTxt')}
               >
-                <Download size={14} /> Exportar
+                <Download size={14} /> {t('ui.export')}
               </button>
             )}
           </div>
@@ -492,7 +493,7 @@ const MensajeriaComite = ({
               gap: '0.4rem'
             }}
           >
-            <MessageSquare size={15} /> Buzón ({notasRol.length})
+            <MessageSquare size={15} /> {t('ui.inbox')}{notasRol.length})
           </button>
           <button
             role="tab"
@@ -514,7 +515,7 @@ const MensajeriaComite = ({
               gap: '0.4rem'
             }}
           >
-            <Send size={15} /> Redactar Nota
+            <Send size={15} /> {t('views.delegate.compose')}
           </button>
         </div>
       )}
@@ -573,20 +574,20 @@ const MensajeriaComite = ({
                   }}
                 >
                   {/* Grupo Roles & Equipos */}
-                  <optgroup label="🏛️ Mesa & Equipos de Sala" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
+                  <optgroup label={t('ui.chairRoomTeams')} style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                     {canSendToChair && (
-                      <option value="CHAIR">🏛️ Mesa de Presidencia (Chair)</option>
+                      <option value="CHAIR">{t('ui.presidingBoardChair')}</option>
                     )}
-                    <option value="STAFF">👥 Equipo de Staff / Pajes</option>
-                    <option value="BACKROOM">🛡️ Backroom / Gabinete de Crisis</option>
+                    <option value="STAFF">{t('ui.staffPagesTeam')}</option>
+                    <option value="BACKROOM">{t('ui.backroomCrisisCabinet')}</option>
                     {canSendToDelegates && effectiveRole !== 'delegate' && (
-                      <option value="TODOS">📢 Toda la Sala (Todas las Delegaciones)</option>
+                      <option value="TODOS">{t('ui.entireRoomAllDelegations')}</option>
                     )}
                   </optgroup>
 
                   {/* Grupo Delegaciones del Comité */}
                   {canSendToDelegates && listaPaises.length > 0 && (
-                    <optgroup label="🌐 Delegaciones del Comité" style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
+                    <optgroup label={t('ui.committeeDelegations')} style={{ backgroundColor: 'var(--panel-color)', color: 'var(--text-color)' }}>
                       {listaPaises
                         .filter(p => !effectiveCountry || p.nombre.toLowerCase().trim() !== effectiveCountry.toLowerCase().trim())
                         .map(p => (
@@ -656,10 +657,10 @@ const MensajeriaComite = ({
                   maxLength={400}
                   placeholder={
                     destinatario === 'CHAIR'
-                      ? 'Escribe tu nota diplomática o consulta para la Mesa...'
+                      ? t('ui.writeYourDiplomaticNoteOrQuestionToTheChair')
                       : destinatario === 'TODOS'
-                      ? 'Escribe el comunicado para todas las delegaciones...'
-                      : `Escribe el mensaje para ${destinatario}...`
+                      ? t('ui.writeTheAnnouncementForAllDelegations')
+                      : t('ui.writeTheMessageFor', { v0: destinatario })
                   }
                   value={textoNota}
                   onChange={e => setTextoNota(e.target.value)}
@@ -680,7 +681,7 @@ const MensajeriaComite = ({
                   }}
                 />
                 <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', marginTop: '2px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Atajo: <strong>Ctrl + Enter</strong> para enviar</span>
+                  <span>{t('ui.shortcut')} <strong>Ctrl + Enter</strong> {t('ui.toSend')}</span>
                 </div>
               </div>
 
@@ -705,7 +706,7 @@ const MensajeriaComite = ({
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Send size={15} /> {enviando ? 'Transmitiendo...' : t('messaging.sendBtn', 'Enviar Nota')}
+                <Send size={15} /> {enviando ? t('ui.broadcasting') : t('messaging.sendBtn', 'Enviar Nota')}
               </button>
 
               {feedbackEnvio && (
@@ -753,7 +754,7 @@ const MensajeriaComite = ({
                       padding: '0.1rem 0.45rem',
                       borderRadius: '100px'
                     }}>
-                      +{p2p.unreadNotesCount} nuevas
+                      +{p2p.unreadNotesCount} {t('ui.new')}
                     </span>
                   )}
                 </div>
@@ -779,7 +780,7 @@ const MensajeriaComite = ({
                           cursor: 'pointer'
                         }}
                       >
-                        {dir === 'TODAS' ? 'Todas' : dir === 'RECIBIDAS' ? 'Recibidas' : 'Enviadas'}
+                        {dir === 'TODAS' ? t('avisos.filterAll') : dir === 'RECIBIDAS' ? t('ui.received2') : t('ui.sent2')}
                       </button>
                     );
                   })}
@@ -801,7 +802,7 @@ const MensajeriaComite = ({
                   <Search size={13} color="var(--muted-text)" />
                   <input
                     type="text"
-                    placeholder="Filtrar por país o texto..."
+                    placeholder={t('ui.filterByCountryOrText')}
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
                     style={{
@@ -826,10 +827,10 @@ const MensajeriaComite = ({
 
                 <div style={{ display: 'flex', gap: '0.3rem', overflowX: 'auto', paddingBottom: '2px' }}>
                   {[
-                    { id: 'TODOS', label: 'Todos' },
-                    { id: 'URGENTES', label: '🚨 Urgentes' },
-                    { id: 'PAJES', label: '✉️ Pajes' },
-                    { id: 'CRISIS', label: '🛡️ Crisis' }
+                    { id: 'TODOS', label: t('sidebar.categories.all') },
+                    { id: 'URGENTES', label: t('ui.urgent2') },
+                    { id: 'PAJES', label: t('ui.pages') },
+                    { id: 'CRISIS', label: t('ui.crisis') }
                   ].map(tFilter => {
                     const isSelected = filtroTipo === tFilter.id;
                     return (
@@ -878,12 +879,12 @@ const MensajeriaComite = ({
                 }}>
                   <Mail size={32} style={{ opacity: 0.35, marginBottom: '0.5rem' }} />
                   <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>
-                    {busqueda ? 'No se encontraron notas con ese criterio' : 'Buzón de notas vacío'}
+                    {busqueda ? t('ui.noNotesMatchTheseCriteria') : t('ui.noteInboxEmpty')}
                   </div>
                   <div style={{ fontSize: '0.76rem', marginTop: '3px' }}>
                     {busqueda
-                      ? 'Prueba a cambiar el término de búsqueda o restablecer filtros.'
-                      : 'Las notas enviadas y recibidas en tiempo real aparecerán aquí.'}
+                      ? t('ui.tryChangingTheSearchTermOrResettingFilters')
+                      : t('ui.notesSentAndReceivedInRealTimeWillAppearHere')}
                   </div>
                 </div>
               ) : (
@@ -919,13 +920,13 @@ const MensajeriaComite = ({
                     >
                       {nota.status && (
                         <div role="status" style={{ fontSize: '0.75rem', color: nota.status === 'pending' ? 'var(--warning-color)' : nota.status === 'rejected' ? 'var(--danger-color)' : 'var(--success-color)' }}>
-                          {nota.status === 'pending' ? 'Pendiente de aprobación de staff' : nota.status === 'rejected' ? 'Rechazada por staff; no entregada' : nota.status === 'approved' ? 'Aprobada por staff y entregada' : 'Entregada'}
+                          {nota.status === 'pending' ? t('ui.pendingStaffApproval') : nota.status === 'rejected' ? t('ui.rejectedByStaffNotDelivered') : nota.status === 'approved' ? t('ui.approvedByStaffAndDelivered') : t('ui.delivered')}
                         </div>
                       )}
                       {effectiveRole === 'staff' && nota.status === 'pending' && (
                         <div className="note-review-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                          <button type="button" onClick={() => p2p.reviewNote(nota.id, 'approved')} style={{ background: 'var(--btn-bg)', color: 'var(--btn-text)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius, 6px)', padding: '8px 12px', cursor: 'pointer' }}>Aprobar y entregar</button>
-                          <button type="button" onClick={() => p2p.reviewNote(nota.id, 'rejected')} style={{ background: 'transparent', color: 'var(--danger-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius, 6px)', padding: '8px 12px', cursor: 'pointer' }}>Rechazar</button>
+                          <button type="button" onClick={() => p2p.reviewNote(nota.id, 'approved')} style={{ background: 'var(--btn-bg)', color: 'var(--btn-text)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius, 6px)', padding: '8px 12px', cursor: 'pointer' }}>{t('ui.approveAndDeliver')}</button>
+                          <button type="button" onClick={() => p2p.reviewNote(nota.id, 'rejected')} style={{ background: 'transparent', color: 'var(--danger-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius, 6px)', padding: '8px 12px', cursor: 'pointer' }}>{t('ui.reject')}</button>
                         </div>
                       )}
                       {/* Cabecera de la nota */}
@@ -941,7 +942,7 @@ const MensajeriaComite = ({
                             color: isOutgoing ? 'var(--success-color)' : 'var(--accent-color)',
                             border: `1px solid ${isOutgoing ? 'rgba(34, 197, 94, 0.25)' : 'var(--subborder-color)'}`
                           }}>
-                            {isOutgoing ? '➔ Enviada' : '⬅ Recibida'}
+                            {isOutgoing ? t('ui.sent') : t('ui.received')}
                           </span>
 
                           {/* Remitente y Destinatario */}
@@ -950,7 +951,7 @@ const MensajeriaComite = ({
                           </span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--muted-text)' }}>➔</span>
                           <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--accent-color)' }}>
-                            {nota.to === 'TODOS' ? '📢 Toda la Sala' : nota.to === 'CHAIR' ? '🏛️ Mesa' : nota.to}
+                            {nota.to === 'TODOS' ? t('ui.entireRoom') : nota.to === 'CHAIR' ? t('ui.chair') : nota.to}
                           </span>
 
                           {/* Badge de tipo de nota */}
@@ -990,9 +991,9 @@ const MensajeriaComite = ({
                                 gap: '3px',
                                 transition: 'all 0.15s ease'
                               }}
-                              title="Responder a este remitente"
+                              title={t('ui.replyToThisSender')}
                             >
-                              <Reply size={11} /> Responder
+                              <Reply size={11} /> {t('ui.reply')}
                             </button>
                           )}
                         </div>

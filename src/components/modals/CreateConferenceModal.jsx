@@ -35,6 +35,15 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
   const [errorMsg, setErrorMsg] = useState(null);
   const [creacionExitosa, setCreacionExitosa] = useState(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      if (typeof onClose === 'function') onClose();
+      window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
+        detail: { view: 'create-conference' }
+      }));
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleNombreChange = (e) => {
@@ -60,19 +69,19 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
     setErrorMsg(null);
 
     if (!nombre.trim()) {
-      setErrorMsg('El nombre de la conferencia es obligatorio.');
+      setErrorMsg(t('ui.conferenceNameIsRequired'));
       return;
     }
     if (!confId.trim()) {
-      setErrorMsg('El código / ID de la conferencia es obligatorio.');
+      setErrorMsg(t('ui.conferenceCodeIdIsRequired'));
       return;
     }
     if (!pinAdmin.trim()) {
-      setErrorMsg('El PIN de Secretaría (Admin) es obligatorio para proteger el evento.');
+      setErrorMsg(t('ui.theSecretariatAdminPinIsRequiredToProtectTheEvent'));
       return;
     }
     if (requierePinAcceso && !pinAcceso.trim()) {
-      setErrorMsg('Por favor introduce el PIN de acceso general o desmarca la opción.');
+      setErrorMsg(t('ui.pleaseEnterTheGeneralAccessPinOrUncheckTheOption'));
       return;
     }
 
@@ -103,7 +112,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
         onConferenceCreated(confResult);
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Error al crear la conferencia en el servidor.');
+      setErrorMsg(err.message || t('ui.errorCreatingTheConferenceOnTheServer'));
     } finally {
       setIsSubmitting(false);
     }
@@ -210,7 +219,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                   {t('conferences.createdSuccess', '¡Conferencia creada con éxito!')}
                 </h3>
                 <p style={{ fontSize: '0.9rem', color: textMuted, margin: 0 }}>
-                  Tu evento ya está listo en el servidor. Comparte el código con tus mesas y delegados.
+                  {t('ui.yourEventIsReadyOnTheServerShareTheCode')}
                 </p>
               </div>
 
@@ -248,7 +257,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                 </div>
                 {creacionExitosa.email_admin && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: textMuted }}>Email Secretaría:</span>
+                    <span style={{ color: textMuted }}>{t('ui.secretariatEmail')}</span>
                     <strong style={{ color: 'var(--text-color)' }}>{creacionExitosa.email_admin}</strong>
                   </div>
                 )}
@@ -277,21 +286,21 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: isLight ? '#b45309' : '#f59e0b' }}>
                   <Clock size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ color: 'var(--text-color)' }}>Inactividad:</strong> {t('conferences.inactivityNotice', 'Un mes de inactividad provocará el cierre y eliminación automática de la conferencia para optimizar recursos del servidor.')}
+                    <strong style={{ color: 'var(--text-color)' }}>{t('ui.inactivity')}</strong> {t('conferences.inactivityNotice', 'Un mes de inactividad provocará el cierre y eliminación automática de la conferencia para optimizar recursos del servidor.')}
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: '#3b82f6' }}>
                   <Mail size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ color: 'var(--text-color)' }}>Copia de seguridad (Archive):</strong> {t('conferences.archiveEmailNotice', 'Puedes añadir un correo electrónico en la configuración para recibir el archive (copia de seguridad) de tu conferencia.')}
+                    <strong style={{ color: 'var(--text-color)' }}>{t('ui.backupArchive')}</strong> {t('conferences.archiveEmailNotice', 'Puedes añadir un correo electrónico en la configuración para recibir el archive (copia de seguridad) de tu conferencia.')}
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: isLight ? '#64748b' : '#94a3b8' }}>
                   <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ color: 'var(--text-color)' }}>Avisos y mensajes:</strong> {t('conferences.announcementsNotice', 'Los avisos y mensajes emitidos en la conferencia se borran automáticamente a las 24 horas.')}
+                    <strong style={{ color: 'var(--text-color)' }}>{t('ui.announcementsAndMessages')}</strong> {t('conferences.announcementsNotice', 'Los avisos y mensajes emitidos en la conferencia se borran automáticamente a las 24 horas.')}
                   </div>
                 </div>
               </div>
@@ -363,7 +372,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                 color: 'var(--text-color)'
               }}>
                 <p style={{ margin: 0 }}>
-                  Mantener una conferencia conectada a tiempo real consume recursos de nuestros servidores y bases de datos. Recuerda eliminar la conferencia una vez acabado el evento para no tomar más de lo necesario. Si puedes donar, aporta a la comunidad para mantener las funcionalidades gratuitas para todos.
+                  {t('ui.keepingAConferenceConnectedInRealTimeUsesOurServer')}
                 </p>
 
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', margin: '0.1rem 0 0 0' }}>
@@ -387,7 +396,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                   >
-                    Invítanos a un café / Donar <ExternalLink size={12} />
+                    {t('liveSession.donateButton')} <ExternalLink size={12} />
                   </a>
                 </div>
               </div>
@@ -459,13 +468,13 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
               {/* Correo Electrónico de Secretaría (Admin) */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                  Correo Electrónico de Secretaría (Opcional)
+                  {t('ui.secretariatEmailAddressOptional')}
                 </label>
                 <input
                   type="email"
                   value={emailAdmin}
                   onChange={(e) => setEmailAdmin(e.target.value)}
-                  placeholder="ej. secretaria@hmun.org"
+                  placeholder={t('ui.eGSecretariatHmunOrg')}
                   style={{
                     width: '100%',
                     padding: '0.65rem 0.85rem',
@@ -477,7 +486,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                   }}
                 />
                 <span style={{ fontSize: '0.75rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
-                  Permite recibir respaldos automáticos y notificaciones administrativas.
+                  {t('ui.receiveAutomaticBackupsAndAdministrativeNotifications')}
                 </span>
               </div>
 
@@ -492,7 +501,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                     required
                     value={pinAdmin}
                     onChange={(e) => setPinAdmin(e.target.value)}
-                    placeholder="ej. secret2026"
+                    placeholder={t('ui.eGSecret2026')}
                     style={{
                       width: '100%',
                       padding: '0.65rem 2.5rem 0.65rem 0.85rem',
@@ -548,7 +557,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                         type={mostrarPinAcceso ? 'text' : 'password'}
                         value={pinAcceso}
                         onChange={(e) => setPinAcceso(e.target.value)}
-                        placeholder="ej. mun2026"
+                        placeholder={t('ui.eGMun2026')}
                         style={{
                           width: '100%',
                           padding: '0.55rem 2.5rem 0.55rem 0.75rem',
@@ -606,7 +615,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                 }}
               >
                 <Building2 size={18} />
-                {isSubmitting ? 'Creando conferencia...' : t('conferences.createBtn', 'Crear Conferencia')}
+                {isSubmitting ? t('ui.creatingConference') : t('conferences.createBtn', 'Crear Conferencia')}
               </button>
             </form>
           )}

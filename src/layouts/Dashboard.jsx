@@ -43,7 +43,7 @@ const Dashboard = () => {
   const fileInputRef = useRef(null);
 
   // Estados de navegación y UI
-  const [activeTab, setActiveTab] = useState('COMIENZO');
+  const [activeTab, setActiveTab] = useState('HOME');
   const [isModular, setIsModular] = useState(false);
   const tabs = getDashboardTabs(isModular);
   const toggleModulation = () => {
@@ -115,7 +115,7 @@ const Dashboard = () => {
   // Actualización dinámica del título del documento
   useEffect(() => {
     updateDocumentTitleForTab(activeTab);
-  }, [activeTab]);
+  }, [activeTab, t]);
 
   // Verificar si hay navegación pendiente (ej. entrar como Mesa desde Conferencia)
   useEffect(() => {
@@ -188,7 +188,7 @@ const Dashboard = () => {
           addToast({
             type: 'error',
             title: t('toast.importErrorTitle', 'Error al Importar Sesión'),
-            message: 'No se pudo aplicar la sesión.',
+            message: t('ui.couldNotApplyTheSession'),
             duration: 5000
           });
         }

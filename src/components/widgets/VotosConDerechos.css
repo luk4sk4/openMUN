@@ -1,21 +1,395 @@
+/* Botones individuales de Voto con Derechos */
 .voting-rights-button {
-  padding: 4px 8px;
+  padding: 0.28rem 0.55rem;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  background: transparent;
+  background: var(--input-bg, var(--panel-color));
   color: var(--text-color);
-  font: inherit;
-  font-size: 0.75rem;
+  font-family: var(--font-family);
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.voting-rights-button:hover {
+  background: var(--card-hover, var(--subborder-color));
 }
 
 .voting-rights-button[aria-pressed="true"] {
   border-color: var(--accent-color);
   background: var(--accent-soft);
   color: var(--accent-color);
+  font-weight: 750;
 }
 
 .voting-rights-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Banner sutil cuando la votación está en proceso */
+.rights-waiting-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--card-header-bg);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 0.74rem;
+  color: var(--muted-text);
+  flex-wrap: wrap;
+}
+
+.rights-btn-start-now {
+  background: var(--input-bg, var(--panel-color));
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  color: var(--text-color);
+  font-family: var(--font-family);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.rights-btn-start-now:hover {
+  border-color: var(--accent-color);
+  background: var(--accent-soft);
+  color: var(--accent-color);
+}
+
+.rights-btn-start-now:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Panel interactivo de Fundamentación de Voto con Derechos (estilo Set Agenda) */
+.rights-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  background: var(--card-header-bg);
+  border: 1px solid var(--accent-color);
+  border-radius: var(--border-radius);
+  padding: 0.6rem 0.8rem;
+  animation: rightsFadeIn 0.2s ease-out;
+}
+
+@keyframes rightsFadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rights-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--subborder-color);
+  padding-bottom: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.rights-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-color);
+}
+
+.rights-presets {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rights-preset-chip {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  background: var(--input-bg, var(--panel-color));
+  border: 1px solid var(--border-color);
+  color: var(--muted-text);
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: all 0.15s ease;
+}
+
+.rights-preset-chip.active {
+  background: var(--accent-color);
+  color: var(--btn-text, #ffffff);
+  border-color: var(--accent-color);
+  font-weight: 750;
+}
+
+/* Tarjeta Hero del Orador Activo (parecido a Set Agenda) */
+.rights-hero-card {
+  background: var(--panel-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.rights-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.rights-speaker-info {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.rights-speaker-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rights-speaker-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-text);
+}
+
+.rights-speaker-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rights-side-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--border-radius);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.rights-side-badge.favor {
+  background: var(--success-soft);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
+}
+
+.rights-side-badge.contra {
+  background: var(--danger-soft);
+  color: var(--danger-color);
+  border: 1px solid var(--danger-color);
+}
+
+/* Cronómetro Digital y Barra */
+.rights-timer-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rights-clock-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 90px;
+}
+
+.rights-clock-display {
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-color);
+  letter-spacing: 0.02em;
+}
+
+.rights-clock-display.warning {
+  color: var(--warning-color);
+}
+
+.rights-clock-display.danger {
+  color: var(--danger-color);
+}
+
+.rights-progress-bar {
+  height: 3px;
+  background: var(--subborder-color);
+  border-radius: 9999px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.rights-progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  transition: width 0.25s linear;
+}
+
+.rights-progress-fill.warning {
+  background: var(--warning-color);
+}
+
+.rights-progress-fill.danger {
+  background: var(--danger-color);
+}
+
+/* Controles de Cronómetro */
+.rights-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.rights-btn-control {
+  font-family: var(--font-family);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.28rem 0.5rem;
+  border-radius: var(--border-radius);
+  background: var(--input-bg, var(--panel-color));
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.rights-btn-control:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  background: var(--accent-soft);
+  color: var(--accent-color);
+}
+
+.rights-btn-control:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.rights-btn-control:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rights-btn-primary {
+  background: var(--btn-bg);
+  border-color: var(--btn-bg);
+  color: var(--btn-text, #ffffff);
+  font-weight: 750;
+}
+
+.rights-btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+  background: var(--btn-bg);
+  border-color: var(--btn-bg);
+  color: var(--btn-text, #ffffff);
+}
+
+.rights-btn-finish {
+  background: var(--success-solid);
+  border-color: var(--success-solid);
+  color: var(--btn-text, #ffffff);
+  font-weight: 750;
+  padding: 0.28rem 0.65rem;
+}
+
+.rights-btn-finish:hover:not(:disabled) {
+  opacity: 0.92;
+  background: var(--success-solid);
+  color: var(--btn-text, #ffffff);
+}
+
+/* Cola de Delegaciones con Derechos */
+.rights-queue-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
+}
+
+.rights-queue-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  letter-spacing: 0.04em;
+}
+
+.rights-queue-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.rights-chip {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  background: var(--panel-color);
+  border: 1px solid var(--subborder-color);
+  color: var(--text-color);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.15s ease;
+}
+
+.rights-chip:hover {
+  border-color: var(--accent-color);
+  background: var(--accent-soft);
+}
+
+.rights-chip.active {
+  border-color: var(--accent-color);
+  background: var(--accent-soft);
+  color: var(--accent-color);
+  font-weight: 750;
+}
+
+.rights-chip.completed {
+  opacity: 0.55;
+  text-decoration: none;
+}
+
+.rights-chip:focus-visible {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 }

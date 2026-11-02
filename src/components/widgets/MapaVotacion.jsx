@@ -231,9 +231,9 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
   }, []);
 
   const isLight = propIsLight !== undefined ? propIsLight : internalIsLight;
-  const vetoOrange = isLight ? '#ea580c' : '#f97316';
-  const vetoOrangeBg = isLight ? 'rgba(234, 88, 12, 0.1)' : 'rgba(249, 115, 22, 0.15)';
-  const vetoOrangeBorder = isLight ? 'rgba(234, 88, 12, 0.35)' : 'rgba(249, 115, 22, 0.4)';
+  const vetoOrange = 'var(--timer-orange-color, var(--warning-color))';
+  const vetoOrangeBg = 'var(--timer-orange-bg, var(--warning-soft))';
+  const vetoOrangeBorder = 'var(--timer-orange-border, var(--warning-color))';
 
   // Estados de Interacción del Mapa
   const [zoom, setZoom] = useState(1);
@@ -335,26 +335,26 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
       if (tipoVotacion === 'substantive' && totalEmitidos > 0 && votosValidosSinAbstencion > 0) {
         requeridos = Math.floor(votosValidosSinAbstencion / 2) + 1;
         superado = f > c && f >= requeridos;
-        textoRequerido = `${requeridos} votos A Favor (50%+1 de ${votosValidosSinAbstencion} votos válidos emitidos)`;
+        textoRequerido = t('ui.votesInFavor501OfValidVotesCast', { v0: requeridos, v1: votosValidosSinAbstencion });
       } else {
         requeridos = reqSimpleQuorum;
         superado = f > c && f >= reqSimpleQuorum;
-        textoRequerido = `${requeridos} votos A Favor (50%+1 de ${totalAsistentes} delegaciones)`;
+        textoRequerido = t('ui.votesInFavor501OfDelegations', { v0: requeridos, v1: totalAsistentes });
       }
     } else if (tipoMayoria === '2/3') {
       if (tipoVotacion === 'substantive' && totalEmitidos > 0 && votosValidosSinAbstencion > 0) {
         requeridos = Math.ceil((votosValidosSinAbstencion * 2) / 3);
         superado = f >= requeridos && f > 0;
-        textoRequerido = `${requeridos} votos A Favor (2/3 de ${votosValidosSinAbstencion} votos válidos emitidos)`;
+        textoRequerido = t('ui.votesInFavor23OfValidVotesCast', { v0: requeridos, v1: votosValidosSinAbstencion });
       } else {
         requeridos = reqDosTerciosQuorum;
         superado = f >= reqDosTerciosQuorum && f > 0;
-        textoRequerido = `${requeridos} votos A Favor (2/3 de ${totalAsistentes} delegaciones)`;
+        textoRequerido = t('ui.votesInFavor23OfDelegations', { v0: requeridos, v1: totalAsistentes });
       }
     } else if (tipoMayoria === 'consensus') {
       requeridos = 0;
       superado = c === 0 && f > 0 && pendientes === 0;
-      textoRequerido = `0 votos En Contra (100% consenso de ${totalAsistentes} delegaciones)`;
+      textoRequerido = t('ui.0VotesAgainst100ConsensusOfDelegations', { v0: totalAsistentes });
     }
 
     const vetoEjercido = vetoPaises.length > 0;
@@ -376,7 +376,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
       paisesVeto: vetoPaises,
       textoRequerido
     };
-  }, [paisesAsistentes, votos, tipoMayoria, tipoVotacion, aplicarVeto]);
+  }, [paisesAsistentes, votos, tipoMayoria, tipoVotacion, aplicarVeto, t]);
 
   // 1. Zoom con la rueda sin desplazar la pestaña
   useEffect(() => {
@@ -662,7 +662,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     alignItems: 'center',
                     gap: '3px'
                   }}
-                  title="Derecho a Veto del Consejo de Seguridad activo"
+                  title={t('ui.securityCouncilVetoPowerActive')}
                 >
                   <span>{t('voting.vetoP5', 'Veto P5')}</span>
                 </span>
@@ -674,31 +674,44 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
           </div>
         </div>
 
-        {/* Marcadores de Conteo en Vivo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+        {/* Marcadores de Conteo y Filtros Rápidos */}
+        <div
+          role="group"
+          aria-label={t('ui.voteFilters')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            flexWrap: 'wrap',
+            backgroundColor: 'var(--panel-color)',
+            padding: '3px 4px',
+            borderRadius: 'var(--border-radius)',
+            border: '1px solid var(--border-color)'
+          }}
+        >
           {/* A Favor */}
           <button
             type="button"
             aria-pressed={filtroVista === 'FAVOR'}
             onClick={() => setFiltroVista(filtroVista === 'FAVOR' ? 'TODOS' : 'FAVOR')}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              padding: '0.3rem 0.65rem',
-              backgroundColor: filtroVista === 'FAVOR' ? 'var(--success-solid, #4f795d)' : 'var(--success-soft)',
-              border: '1px solid var(--success-color)',
-              borderRadius: 'var(--border-radius)',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              color: filtroVista === 'FAVOR' ? '#ffffff' : 'var(--success-color)',
+              padding: '0.25rem 0.55rem',
+              backgroundColor: filtroVista === 'FAVOR' ? 'var(--success-soft)' : 'transparent',
+              border: `1px solid ${filtroVista === 'FAVOR' ? 'var(--success-color)' : 'transparent'}`,
+              borderRadius: 'calc(var(--border-radius) - 2px)',
+              fontSize: '0.74rem',
+              fontWeight: filtroVista === 'FAVOR' ? '750' : '600',
+              color: filtroVista === 'FAVOR' ? 'var(--success-color)' : 'var(--text-color)',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
-            title="Filtrar delegaciones a favor"
+            title={t('ui.filterDelegationsInFavorClickAgainToShowAll')}
           >
-            <CheckCircle2 size={13} color={filtroVista === 'FAVOR' ? '#ffffff' : 'var(--success-color)'} />
-            <span>{t('voting.inFavor', 'A Favor')}: {stats.favor}</span>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: 'var(--success-color)', flexShrink: 0 }} />
+            <span>{t('voting.inFavor', 'A Favor')}: <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.favor}</strong></span>
           </button>
 
           {/* En Contra */}
@@ -707,23 +720,23 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
             aria-pressed={filtroVista === 'CONTRA'}
             onClick={() => setFiltroVista(filtroVista === 'CONTRA' ? 'TODOS' : 'CONTRA')}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              padding: '0.3rem 0.65rem',
-              backgroundColor: filtroVista === 'CONTRA' ? 'var(--danger-solid, #a95449)' : 'var(--danger-soft)',
-              border: '1px solid var(--danger-color)',
-              borderRadius: 'var(--border-radius)',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              color: filtroVista === 'CONTRA' ? '#ffffff' : 'var(--danger-color)',
+              padding: '0.25rem 0.55rem',
+              backgroundColor: filtroVista === 'CONTRA' ? 'var(--danger-soft)' : 'transparent',
+              border: `1px solid ${filtroVista === 'CONTRA' ? 'var(--danger-color)' : 'transparent'}`,
+              borderRadius: 'calc(var(--border-radius) - 2px)',
+              fontSize: '0.74rem',
+              fontWeight: filtroVista === 'CONTRA' ? '750' : '600',
+              color: filtroVista === 'CONTRA' ? 'var(--danger-color)' : 'var(--text-color)',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
-            title="Filtrar delegaciones en contra"
+            title={t('ui.filterDelegationsAgainstClickAgainToShowAll')}
           >
-            <XCircle size={13} color={filtroVista === 'CONTRA' ? '#ffffff' : 'var(--danger-color)'} />
-            <span>{t('voting.against', 'En Contra')}: {stats.contra}</span>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: 'var(--danger-color)', flexShrink: 0 }} />
+            <span>{t('voting.against', 'En Contra')}: <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.contra}</strong></span>
           </button>
 
           {/* Abstención */}
@@ -732,23 +745,24 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
             aria-pressed={filtroVista === 'ABSTENCION'}
             onClick={() => setFiltroVista(filtroVista === 'ABSTENCION' ? 'TODOS' : 'ABSTENCION')}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              padding: '0.3rem 0.65rem',
-              backgroundColor: filtroVista === 'ABSTENCION' ? 'var(--warning-solid, #80673b)' : 'var(--warning-soft)',
-              border: '1px solid var(--warning-color)',
-              borderRadius: 'var(--border-radius)',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              color: filtroVista === 'ABSTENCION' ? '#ffffff' : 'var(--warning-color)',
+              padding: '0.25rem 0.55rem',
+              backgroundColor: filtroVista === 'ABSTENCION' ? 'var(--warning-soft)' : 'transparent',
+              border: `1px solid ${filtroVista === 'ABSTENCION' ? 'var(--warning-color)' : 'transparent'}`,
+              borderRadius: 'calc(var(--border-radius) - 2px)',
+              fontSize: '0.74rem',
+              fontWeight: filtroVista === 'ABSTENCION' ? '750' : '600',
+              color: filtroVista === 'ABSTENCION' ? 'var(--warning-color)' : 'var(--text-color)',
+              opacity: tipoVotacion === 'procedural' ? 0.45 : 1,
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
-            title="Filtrar abstenciones"
+            title={t('ui.filterAbstentionsClickAgainToShowAll')}
           >
-            <AlertTriangle size={13} color={filtroVista === 'ABSTENCION' ? '#ffffff' : 'var(--warning-color)'} />
-            <span>{t('voting.abstentionShort', 'Abst')}: {stats.abstencion}</span>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: 'var(--warning-color)', flexShrink: 0 }} />
+            <span>{t('voting.abstentionShort', 'Abst')}: <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{tipoVotacion === 'procedural' ? '—' : stats.abstencion}</strong></span>
           </button>
 
           {/* Pendientes */}
@@ -757,28 +771,28 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
             aria-pressed={filtroVista === 'PENDIENTES'}
             onClick={() => setFiltroVista(filtroVista === 'PENDIENTES' ? 'TODOS' : 'PENDIENTES')}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
-              padding: '0.3rem 0.65rem',
-              backgroundColor: filtroVista === 'PENDIENTES' ? 'var(--info-solid, #50677f)' : 'var(--info-soft)',
-              border: '1px solid var(--info-color)',
-              borderRadius: 'var(--border-radius)',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              color: filtroVista === 'PENDIENTES' ? '#ffffff' : 'var(--info-color)',
+              padding: '0.25rem 0.55rem',
+              backgroundColor: filtroVista === 'PENDIENTES' ? 'var(--info-soft)' : 'transparent',
+              border: `1px solid ${filtroVista === 'PENDIENTES' ? 'var(--info-color)' : 'transparent'}`,
+              borderRadius: 'calc(var(--border-radius) - 2px)',
+              fontSize: '0.74rem',
+              fontWeight: filtroVista === 'PENDIENTES' ? '750' : '600',
+              color: filtroVista === 'PENDIENTES' ? 'var(--info-color)' : 'var(--text-color)',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
-            title="Filtrar delegaciones con voto pendiente"
+            title={t('ui.filterDelegationsWithPendingVotesClickAgainToShowAll')}
           >
-            <HelpCircle size={13} color={filtroVista === 'PENDIENTES' ? '#ffffff' : 'var(--info-color)'} />
-            <span>{t('voting.pendingShort', 'Pend')}: {stats.pendientes}</span>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: 'var(--info-color)', flexShrink: 0 }} />
+            <span>{t('voting.pendingShort', 'Pend')}: <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.pendientes}</strong></span>
           </button>
         </div>
 
         {/* ── Botón de Roll Call Nominal & Controles ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
           {/* Botón Ajustes de la Votación */}
           <button
             type="button"
@@ -791,14 +805,14 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               borderRadius: 'var(--border-radius)',
               color: mostrarAjustes ? 'var(--accent-color)' : 'var(--text-color)',
               fontSize: '0.74rem',
-              fontWeight: '750',
+              fontWeight: '700',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
               transition: 'all 0.15s ease'
             }}
-            title="Ajustes de la Votación (Tipo, Mayoría, Veto P5, Asunto)"
+            title={t('ui.votingSettingsTypeMajorityP5VetoSubject')}
           >
             <Settings size={13} color={mostrarAjustes ? 'var(--accent-color)' : 'var(--muted-text)'} />
             <span>{t('common.settings', 'Ajustes')}</span>
@@ -818,12 +832,12 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               fontSize: '0.75rem',
               fontWeight: '750',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.35rem',
               transition: 'all 0.15s ease'
             }}
-            title="Iniciar votación nominal delegación por delegación en el mapa"
+            title={t('ui.startDelegationByDelegationRollCallVotingOnTheMap')}
           >
             {modoRollCall ? <Square size={12} fill="var(--accent-color)" /> : <Play size={12} fill="var(--btn-text)" color="var(--btn-text)" />}
             <span>{modoRollCall ? t('voting.exitRollCall', 'Salir Roll Call') : t('voting.startRollCall', 'Modo Roll Call')}</span>
@@ -833,10 +847,19 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
           <button
             type="button"
             onClick={() => {
-              resetearVotacion();
-              setModoRollCall(false);
-              setRollCallFinalizado(false);
-              setSelectedCountryForVote(null);
+              if (stats.totalEmitidos > 0) {
+                if (window.confirm(t('voting.confirmResetVoting', '¿Deseas reiniciar y limpiar todos los votos registrados?'))) {
+                  resetearVotacion();
+                  setModoRollCall(false);
+                  setRollCallFinalizado(false);
+                  setSelectedCountryForVote(null);
+                }
+              } else {
+                resetearVotacion();
+                setModoRollCall(false);
+                setRollCallFinalizado(false);
+                setSelectedCountryForVote(null);
+              }
             }}
             style={{
               padding: '0.35rem 0.65rem',
@@ -847,7 +870,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               fontSize: '0.74rem',
               fontWeight: '600',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '0.3rem',
               transition: 'all 0.15s ease'
@@ -875,7 +898,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                 color: 'var(--text-color)',
                 fontFamily: 'var(--font-family)',
                 fontSize: '0.74rem',
-                outline: 'none'
+                outline: 'none',
+                transition: 'border-color 0.15s ease'
               }}
             />
           </div>
@@ -894,38 +918,79 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               fontSize: '0.74rem',
               fontWeight: '800',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.25rem'
+              gap: '0.25rem',
+              transition: 'all 0.15s ease'
             }}
-            title="Resaltar países del Consejo de Seguridad con derecho a Veto (P5)"
+            title={t('ui.highlightSecurityCouncilCountriesWithVetoPowerP5')}
           >
+            <Crown size={12} color={filtroVista === 'P5' ? vetoOrange : 'currentColor'} />
             <span>P5</span>
           </button>
 
           {/* Zoom y Reset */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', backgroundColor: 'var(--input-bg, var(--panel-color))', padding: '2px', borderRadius: 'var(--border-radius)', border: '1px solid var(--border-color)' }}>
+          <div
+            role="group"
+            aria-label={t('ui.zoomControls')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              backgroundColor: 'var(--input-bg, var(--panel-color))',
+              padding: '2px',
+              borderRadius: 'var(--border-radius)',
+              border: '1px solid var(--border-color)',
+              gap: '2px'
+            }}
+          >
             <button
               type="button"
               onClick={handleZoomIn}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer', padding: '4px', display: 'flex' }}
-              title="Acercar (Zoom In)"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-color)',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: 'calc(var(--border-radius) - 2px)',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={t('ui.zoomIn')}
             >
               <ZoomIn size={14} />
             </button>
             <button
               type="button"
               onClick={handleZoomOut}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer', padding: '4px', display: 'flex' }}
-              title="Alejar (Zoom Out)"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-color)',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: 'calc(var(--border-radius) - 2px)',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={t('ui.zoomOut')}
             >
               <ZoomOut size={14} />
             </button>
             <button
               type="button"
               onClick={handleResetView}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-color)', cursor: 'pointer', padding: '4px', display: 'flex' }}
-              title="Centrar y Restablecer Vista"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-color)',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: 'calc(var(--border-radius) - 2px)',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={t('ui.centerAndResetView')}
             >
               <RotateCcw size={13} />
             </button>
@@ -942,10 +1007,11 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               borderRadius: 'var(--border-radius)',
               color: 'var(--text-color)',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center'
+              display: 'inline-flex',
+              alignItems: 'center',
+              transition: 'all 0.15s ease'
             }}
-            title={isFullscreen ? 'Salir de Pantalla Completa' : 'Modo Proyector / Pantalla Completa'}
+            title={isFullscreen ? t('header.exitFullscreen') : t('ui.projectorFullScreenMode')}
           >
             {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
           </button>
@@ -1194,7 +1260,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('¿Deseas reiniciar y limpiar todos los votos registrados de esta votación?')) {
+                if (window.confirm(t('ui.resetAndClearAllRecordedVotesForThisVote'))) {
                   resetearVotacion();
                 }
               }}
@@ -1308,11 +1374,11 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                 <CountryFlag bandera={paisActualRollCall.bandera} nombre={paisActualRollCall.nombre} size="xl" />
                 <div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '700' }}>
-                    {paisActualRollCall.estatus}
+                    {t(`sessionValues.${paisActualRollCall.estatus}`, paisActualRollCall.estatus)}
                   </div>
                   <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                     <span>{paisActualRollCall.nombre}</span>
-                    {paisActualRollCall.veto && <Crown size={16} color={vetoOrange} fill={vetoOrange} title="Miembro Permanente (P5) con Veto" />}
+                    {paisActualRollCall.veto && <Crown size={16} color={vetoOrange} fill={vetoOrange} title={t('ui.permanentMemberP5WithVeto')} />}
                   </div>
                 </div>
               </div>
@@ -1336,7 +1402,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                       alignItems: 'center',
                       gap: '2px'
                     }}
-                    title="Retroceder al país anterior"
+                    title={t('ui.goBackToPreviousCountry')}
                   >
                     <ChevronLeft size={14} />
                   </button>
@@ -1347,17 +1413,18 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor')}
                   style={{
-                    padding: '0.55rem 1rem',
-                    backgroundColor: 'var(--success-solid, #4f795d)',
-                    color: '#ffffff',
+                    padding: '0.45rem 0.9rem',
+                    backgroundColor: 'var(--success-solid)',
+                    color: 'var(--btn-text)',
                     fontWeight: '750',
                     border: 'none',
                     borderRadius: 'var(--border-radius)',
                     cursor: 'pointer',
-                    fontSize: '0.86rem',
+                    fontSize: '0.82rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.35rem'
+                    gap: '0.35rem',
+                    transition: 'opacity 0.15s ease'
                   }}
                 >
                   <CheckCircle2 size={16} />
@@ -1368,17 +1435,18 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('contra')}
                   style={{
-                    padding: '0.55rem 1rem',
-                    backgroundColor: 'var(--danger-solid, #a95449)',
-                    color: '#ffffff',
+                    padding: '0.45rem 0.9rem',
+                    backgroundColor: 'var(--danger-solid)',
+                    color: 'var(--btn-text)',
                     fontWeight: '750',
                     border: 'none',
                     borderRadius: 'var(--border-radius)',
                     cursor: 'pointer',
-                    fontSize: '0.86rem',
+                    fontSize: '0.82rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.35rem'
+                    gap: '0.35rem',
+                    transition: 'opacity 0.15s ease'
                   }}
                 >
                   <XCircle size={16} />
@@ -1391,23 +1459,24 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     onClick={() => registrarYAvanzarRollCall('abstencion')}
                     disabled={paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2}
                     style={{
-                      padding: '0.55rem 0.9rem',
-                      backgroundColor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'transparent' : 'var(--warning-solid, #80673b)',
-                      color: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'var(--muted-text)' : '#ffffff',
+                      padding: '0.45rem 0.85rem',
+                      backgroundColor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'transparent' : 'var(--warning-solid)',
+                      color: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'var(--muted-text)' : 'var(--btn-text)',
                       fontWeight: '750',
                       border: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? '1px solid var(--border-color)' : 'none',
                       borderRadius: 'var(--border-radius)',
                       cursor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'not-allowed' : 'pointer',
-                      fontSize: '0.82rem',
+                      fontSize: '0.8rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.35rem',
-                      opacity: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 0.45 : 1
+                      opacity: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 0.45 : 1,
+                      transition: 'opacity 0.15s ease'
                     }}
                     title={
                       rondaRollCall === 2
-                        ? 'En segunda ronda no se puede abstener'
-                        : (paisActualRollCall.estatus === 'Presente y Votando' ? 'Delegaciones en "Presente y Votando" no pueden abstenerse' : 'Abstención')
+                        ? t('ui.abstentionIsNotAllowedInTheSecondRound')
+                        : (paisActualRollCall.estatus === 'Presente y Votando' ? t('ui.delegationsMarkedPresentAndVotingCannotAbstain') : t('voting.abstention'))
                     }
                   >
                     <AlertTriangle size={15} />
@@ -1420,19 +1489,20 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     type="button"
                     onClick={() => registrarYAvanzarRollCall('pasar')}
                     style={{
-                      padding: '0.55rem 0.9rem',
+                      padding: '0.45rem 0.8rem',
                       backgroundColor: 'var(--input-bg, var(--panel-color))',
                       color: 'var(--text-color)',
                       fontWeight: '700',
                       border: '1px solid var(--border-color)',
                       borderRadius: 'var(--border-radius)',
                       cursor: 'pointer',
-                      fontSize: '0.82rem',
+                      fontSize: '0.8rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.35rem'
+                      gap: '0.35rem',
+                      transition: 'all 0.15s ease'
                     }}
-                    title="Pasar / Omitir para votar en Segunda Ronda"
+                    title={t('ui.passSkipToVoteInTheSecondRound')}
                   >
                     <SkipForward size={14} />
                     <span>{t('voting.pass', 'Pasar')}</span>
@@ -1530,7 +1600,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm('¿Deseas reiniciar los votos y comenzar una nueva votación?')) {
+                    if (window.confirm(t('ui.resetVotesAndStartANewVote'))) {
                       resetearVotacion();
                       setModoRollCall(false);
                       setRollCallFinalizado(false);
@@ -1726,7 +1796,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                 {tooltipData.name}
               </span>
               {tooltipData.isP5 && (
-                <Crown size={13} color={vetoOrange} fill={vetoOrange} title="Miembro Permanente (P5) con Veto" />
+                <Crown size={13} color={vetoOrange} fill={vetoOrange} title={t('ui.permanentMemberP5WithVeto')} />
               )}
             </div>
 
@@ -1803,7 +1873,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     {selectedCountryForVote.countryObj.veto && <Crown size={13} color={vetoOrange} fill={vetoOrange} />}
                   </div>
                   <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-                    {selectedCountryForVote.countryObj.estatus}
+                    {t(`sessionValues.${selectedCountryForVote.countryObj.estatus}`, selectedCountryForVote.countryObj.estatus)}
                   </div>
                 </div>
               </div>
@@ -1838,8 +1908,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   padding: '0.45rem 0.7rem',
                   borderRadius: 'var(--border-radius)',
                   border: '1px solid var(--success-color)',
-                  backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' ? 'var(--success-solid, #4f795d)' : 'var(--success-soft)',
-                  color: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' ? '#ffffff' : 'var(--success-color)',
+                  backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' ? 'var(--success-solid)' : 'var(--input-bg, var(--panel-color))',
+                  color: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' ? 'var(--btn-text)' : 'var(--success-color)',
                   fontSize: '0.78rem',
                   fontWeight: '750',
                   cursor: 'pointer',
@@ -1849,7 +1919,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   transition: 'all 0.15s ease'
                 }}
               >
-                <CheckCircle2 size={14} color={(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' ? '#ffffff' : 'var(--success-color)'} />
+                <CheckCircle2 size={14} color={(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' ? 'var(--btn-text)' : 'var(--success-color)'} />
                 <span>{t('voting.inFavor', 'A Favor')}</span>
               </button>
 
@@ -1860,8 +1930,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   padding: '0.45rem 0.7rem',
                   borderRadius: 'var(--border-radius)',
                   border: '1px solid var(--danger-color)',
-                  backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' ? 'var(--danger-solid, #a95449)' : 'var(--danger-soft)',
-                  color: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' ? '#ffffff' : 'var(--danger-color)',
+                  backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' ? 'var(--danger-solid)' : 'var(--input-bg, var(--panel-color))',
+                  color: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' ? 'var(--btn-text)' : 'var(--danger-color)',
                   fontSize: '0.78rem',
                   fontWeight: '750',
                   cursor: 'pointer',
@@ -1871,38 +1941,74 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   transition: 'all 0.15s ease'
                 }}
               >
-                <XCircle size={14} color={(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' ? '#ffffff' : 'var(--danger-color)'} />
+                <XCircle size={14} color={(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' ? 'var(--btn-text)' : 'var(--danger-color)'} />
                 <span>{t('voting.against', 'En Contra')} {selectedCountryForVote.countryObj.veto && aplicarVeto ? `(${t('voting.vetoWord', 'Veto')})` : ''}</span>
               </button>
 
-              <button
-                type="button"
-                disabled={tipoVotacion === 'procedural' || selectedCountryForVote.countryObj.estatus === 'Presente y Votando'}
-                onClick={() => handleSetVote('abstencion')}
-                style={{
-                  padding: '0.45rem 0.7rem',
-                  borderRadius: 'var(--border-radius)',
-                  border: '1px solid var(--warning-color)',
-                  backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--warning-solid, #80673b)' : 'var(--warning-soft)',
-                  color: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? '#ffffff' : 'var(--warning-color)',
-                  fontSize: '0.78rem',
-                  fontWeight: '750',
-                  cursor: (tipoVotacion === 'procedural' || selectedCountryForVote.countryObj.estatus === 'Presente y Votando') ? 'not-allowed' : 'pointer',
-                  opacity: (tipoVotacion === 'procedural' || selectedCountryForVote.countryObj.estatus === 'Presente y Votando') ? 0.35 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  transition: 'all 0.15s ease'
-                }}
-                title={
-                  tipoVotacion === 'procedural'
-                    ? 'Prohibida la abstención en votación procedimental'
-                    : (selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 'Delegaciones en estatus "Presente y Votando" no pueden abstenerse' : 'Abstención')
-                }
-              >
-                <AlertTriangle size={14} color={(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? '#ffffff' : 'var(--warning-color)'} />
-                <span>{t('voting.abstention', 'Abstención')}</span>
-              </button>
+              {tipoVotacion === 'substantive' && (
+                <button
+                  type="button"
+                  disabled={selectedCountryForVote.countryObj.estatus === 'Presente y Votando'}
+                  onClick={() => handleSetVote('abstencion')}
+                  style={{
+                    padding: '0.45rem 0.7rem',
+                    borderRadius: 'var(--border-radius)',
+                    border: '1px solid var(--warning-color)',
+                    backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--warning-solid)' : 'var(--input-bg, var(--panel-color))',
+                    color: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 'var(--muted-text)' : ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--btn-text)' : 'var(--warning-color)'),
+                    fontSize: '0.78rem',
+                    fontWeight: '750',
+                    cursor: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 'not-allowed' : 'pointer',
+                    opacity: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 0.35 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={
+                    tipoVotacion === 'procedural'
+                      ? t('ui.abstentionIsProhibitedInProceduralVoting')
+                      : (selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? t('ui.delegationsWithPresentAndVotingStatusCannotAbstain') : t('voting.abstention'))
+                  }
+                >
+                  <AlertTriangle size={14} color={(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--btn-text)' : 'var(--warning-color)'} />
+                  <span>{t('voting.abstention', 'Abstención')}</span>
+                </button>
+              )}
+
+              {/* Toggle Derecho a Fundamentar Voto (si votó favor o contra en sustantiva) */}
+              {tipoVotacion === 'substantive' && (
+                ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' ||
+                 (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra') && (
+                <button
+                  type="button"
+                  aria-pressed={!!votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id]}
+                  onClick={() => {
+                    const currentVote = (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]);
+                    const conDer = !!votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id];
+                    handleSetVote(conDer ? currentVote : `${currentVote}_derechos`);
+                  }}
+                  style={{
+                    padding: '0.4rem 0.65rem',
+                    borderRadius: 'var(--border-radius)',
+                    border: `1px solid ${votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id] ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                    backgroundColor: votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id] ? 'var(--accent-soft)' : 'var(--input-bg, var(--panel-color))',
+                    color: votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id] ? 'var(--accent-color)' : 'var(--muted-text)',
+                    fontSize: '0.74rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={t('voting.rightsExplanation', 'Derecho a explicar el voto al finalizar la votación.')}
+                >
+                  <Scale size={13} />
+                  <span>{votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id] ? t('voting.withRights', 'c/ Derechos: SÍ') : t('voting.requestRights', '+ Solicitar Derechos')}</span>
+                </button>
+              ))}
 
               {(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) && (
                 <button
@@ -1921,7 +2027,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.35rem',
-                    marginTop: '2px'
+                    marginTop: '2px',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <RotateCcw size={11} /> {t('voting.clearVote', 'Limpiar Voto')}

@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import configMaster from '../config/config_master.json';
 
@@ -63,9 +64,9 @@ export const getThemeCssVars = (theme, accessibility) => {
     '--warning-solid': '#7a591e',
     '--warning-soft': isLight ? 'rgba(122,89,30,0.08)' : 'rgba(203,181,141,0.10)',
     '--grid-line': isLight ? '#dedad3' : '#414141',
-    '--timer-display-bg': isLight ? '#f5f4f0' : '#292929',
-    '--timer-display-border': isLight ? '#dcd8d1' : '#4b4b4b',
-    '--timer-display-shadow': isLight ? '0 2px 10px rgba(0,0,0,0.04)' : '0 4px 20px rgba(0,0,0,0.5)',
+    '--timer-display-bg': 'transparent',
+    '--timer-display-border': 'transparent',
+    '--timer-display-shadow': 'none',
     '--timer-digits-shadow': isLight ? 'none' : '0 4px 20px rgba(0,0,0,0.7)',
     '--timer-orange-bg': isLight ? '#fff7ed' : '#431407',
     '--timer-orange-color': isLight ? '#ea580c' : '#f97316',
@@ -303,7 +304,7 @@ export const AccessibilityProvider = ({ children }) => {
 export const useAccessibility = () => {
   const context = useContext(AccessibilityContext);
   if (!context) {
-    throw new Error('useAccessibility debe ser usado dentro de un AccessibilityProvider');
+    throw new Error(i18n.t('ui.useaccessibilityMustBeUsedWithinAnAccessibilityprovider'));
   }
   return context;
 };

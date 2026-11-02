@@ -96,8 +96,8 @@ const CronometroOnlyTime = () => {
     return {
       className: '',
       style: {
-        backgroundColor: 'var(--timer-display-bg, var(--card-header-bg))',
-        border: '2px solid var(--timer-display-border, var(--border-color))',
+        backgroundColor: 'var(--timer-display-bg, transparent)',
+        border: '1px solid var(--timer-display-border, transparent)',
         color: 'var(--text-color)'
       }
     };
@@ -161,7 +161,7 @@ const CronometroOnlyTime = () => {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '150px',
-          boxShadow: displayState.className ? undefined : 'var(--timer-display-shadow, 0 6px 25px rgba(0,0,0,0.15))',
+          boxShadow: displayState.className ? undefined : 'var(--timer-display-shadow, none)',
           ...displayState.style
         }}
       >
@@ -330,7 +330,7 @@ const CronometroOnlyTime = () => {
             {!corriendo && (
               <button
                 onClick={() => setEditando(true)}
-                title="Ajustar tiempo"
+                title={t('ui.adjustTime')}
                 style={{
                   position: 'absolute',
                   top: '12px',

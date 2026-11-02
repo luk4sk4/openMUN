@@ -38,7 +38,7 @@
 }
 
 .gavel-animation__hammer {
-  transform-origin: 300px 193px;
+  transform-origin: 300px 196px;
   animation: gavel-strike 1.6s linear both;
 }
 

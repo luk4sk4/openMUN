@@ -21,7 +21,7 @@ export default function GavelAnimation({ onComplete }) {
         </g>
         <image href={gavelBase} x="58" y="225" width="150" height="75" />
         <g className="gavel-animation__hammer">
-          <image href={gavelImage} x="80" y="125" width="260" height="130" />
+          <image href={gavelImage} x="80" y="128" width="260" height="130" />
         </g>
       </svg>
     </div>,

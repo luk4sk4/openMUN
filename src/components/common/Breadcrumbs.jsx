@@ -23,7 +23,7 @@ export default function Breadcrumbs({ items = [], isLight = false, onNavigateHom
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={t('ui.breadcrumb')}
       className="inline-flex items-center text-xs font-medium"
     >
       <ol

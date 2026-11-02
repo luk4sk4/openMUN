@@ -1,8 +1,8 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  FolderArchive,
+  Folder,
   RefreshCw,
-  ChevronDown,
   Upload,
   Download,
   Trash2,
@@ -10,11 +10,13 @@ import {
   FolderOpen,
   LogOut,
   ShieldCheck,
+  Building2,
   Save
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../context/SessionContext';
 import { navigateTo } from '../../utils/router';
+import conferenceService from '../../services/conferenceService';
 
 const SessionMenuDropdown = ({
   placement,
@@ -71,58 +73,41 @@ const SessionMenuDropdown = ({
         aria-expanded={sessionMenuOpen}
         aria-label={t('header.sessionMenuTooltip', 'Gestión de Sesión: Guardar en la nube, Importar y Exportar')}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          backgroundColor: sessionMenuOpen
-            ? 'var(--accent-soft)'
-            : (isCloudLinked ? 'var(--card-hover)' : 'transparent'),
-          border: `1px solid ${sessionMenuOpen ? 'var(--accent-color)' : (isCloudLinked ? 'var(--border-color)' : 'var(--subborder-color)')}`,
-          borderRadius: 'var(--border-radius, 6px)',
-          color: sessionMenuOpen ? 'var(--accent-color)' : 'var(--text-color)',
-          padding: '0.4rem 0.65rem',
-          fontSize: '0.78rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          transition: 'all 0.15s ease'
+          width: '100%',
+          backgroundColor: sessionMenuOpen ? 'var(--accent-soft)' : undefined,
+          color: sessionMenuOpen ? 'var(--accent-color)' : undefined
         }}
         title={t('header.sessionMenuTooltip', 'Gestión de Sesión: Guardar en la nube, Importar y Exportar')}
       >
-        <FolderArchive
-          size={15}
+        <Folder
+          size={16}
           style={{
-            color: sessionMenuOpen ? 'var(--accent-color)' : (isCloudLinked ? 'var(--accent-color)' : 'currentColor')
+            color: sessionMenuOpen ? 'var(--accent-color)' : (isCloudLinked ? 'var(--accent-color)' : 'currentColor'),
+            flexShrink: 0
           }}
         />
         <span>{t('header.sessionMenu', 'Sesión')}</span>
 
         {/* Indicador de estado de sincronización */}
         {cloudSyncStatus === 'syncing' ? (
-          <RefreshCw size={11} className="spin-animation" style={{ color: 'var(--accent-color)' }} />
+          <RefreshCw size={11} className="spin-animation" style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
         ) : isCloudLinked && cloudSyncStatus === 'synced' ? (
           <span style={{
             width: '6px',
             height: '6px',
             borderRadius: '50%',
-            backgroundColor: 'var(--success-color)'
+            backgroundColor: 'var(--success-color)',
+            flexShrink: 0
           }} />
         ) : cloudSyncStatus === 'error' ? (
           <span style={{
             width: '6px',
             height: '6px',
             borderRadius: '50%',
-            backgroundColor: 'var(--danger-color)'
+            backgroundColor: 'var(--danger-color)',
+            flexShrink: 0
           }} />
         ) : null}
-
-        <ChevronDown
-          size={13}
-          style={{
-            transform: sessionMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.15s ease',
-            opacity: 0.7
-          }}
-        />
       </button>
 
       {/* Overlay de Fondo Opaco + Menú Desplegable Rediseñado */}
@@ -415,10 +400,10 @@ const SessionMenuDropdown = ({
                         : 'var(--success-color)'
                 }}>
                   {cloudSyncStatus === 'syncing'
-                    ? 'Guardando...'
+                    ? t('ui.saving')
                     : cloudSyncStatus === 'error'
-                      ? 'Error'
-                      : 'Sincronizado'}
+                      ? t('ui.error')
+                      : t('ui.synced')}
                 </span>
               )}
             </div>
@@ -507,7 +492,7 @@ const SessionMenuDropdown = ({
                         flexShrink: 0
                       }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {cloudAccount?.name || 'Conferencia conectada'}
+                        {cloudAccount?.name || t('ui.conferenceConnected')}
                       </span>
                     </div>
                     <span style={{
@@ -520,19 +505,19 @@ const SessionMenuDropdown = ({
                       fontWeight: '700',
                       flexShrink: 0
                     }}>
-                      ACTIVA
+                      {t('ui.active')}
                     </span>
                   </div>
 
                   {cloudActiveComiteName && (
                     <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      Comité: <strong style={{ color: 'var(--text-color)' }}>{cloudActiveComiteName}</strong>
+                      {t('ui.committee')} <strong style={{ color: 'var(--text-color)' }}>{cloudActiveComiteName}</strong>
                     </div>
                   )}
 
                   {cloudLastSync && (
                     <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-                      Último guardado: {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      {t('ui.lastSaved')} {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </div>
                   )}
                 </div>
@@ -571,7 +556,7 @@ const SessionMenuDropdown = ({
                   }}
                 >
                   <FolderOpen size={15} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
-                  <span>Explorar comités ({cloudComitesList.length})</span>
+                  <span>{t('ui.browseCommittees')}{cloudComitesList.length})</span>
                 </button>
 
                 {/* Guardado rápido de comité actual */}
@@ -580,7 +565,7 @@ const SessionMenuDropdown = ({
                     type="button"
                     role="menuitem"
                     onClick={() => {
-                      setQuickSaveName(nombreComite || 'Comité Principal');
+                      setQuickSaveName(nombreComite || i18n.t('ui.mainCommittee'));
                       setQuickSaveOpen(true);
                     }}
                     style={{
@@ -607,7 +592,7 @@ const SessionMenuDropdown = ({
                     }}
                   >
                     <Save size={15} style={{ color: 'var(--muted-text)', flexShrink: 0 }} />
-                    <span>Guardar sesión actual en la nube</span>
+                    <span>{t('ui.saveCurrentSessionToTheCloud')}</span>
                   </button>
                 ) : (
                   <div style={{
@@ -620,14 +605,14 @@ const SessionMenuDropdown = ({
                     gap: '0.4rem'
                   }}>
                     <div style={{ fontSize: '0.74rem', fontWeight: '600', color: 'var(--muted-text)' }}>
-                      Nombre del Comité a guardar:
+                      {t('ui.committeeNameToSave')}
                     </div>
                     <div style={{ display: 'flex', gap: '0.35rem' }}>
                       <input
                         type="text"
                         value={quickSaveName}
                         onChange={(e) => setQuickSaveName(e.target.value)}
-                        placeholder="Ej: DISEC..."
+                        placeholder={t('ui.eGDisec')}
                         style={{
                           flex: 1,
                           padding: '6px 8px',
@@ -648,10 +633,10 @@ const SessionMenuDropdown = ({
                           setCloudLoading(true);
                           try {
                             await guardarComiteCloud(quickSaveName.trim());
-                            if (addToast) addToast(`Comité "${quickSaveName.trim()}" guardado en la nube`, 'success');
+                            if (addToast) addToast(t('ui.committeeSavedToTheCloud', { v0: quickSaveName.trim() }), 'success');
                             setQuickSaveOpen(false);
                           } catch (err) {
-                            if (addToast) addToast(err.message || 'Error al guardar', 'error');
+                            if (addToast) addToast(err.message || t('ui.errorSaving'), 'error');
                           } finally {
                             setCloudLoading(false);
                           }
@@ -668,7 +653,7 @@ const SessionMenuDropdown = ({
                           cursor: 'pointer'
                         }}
                       >
-                        {cloudLoading ? '...' : 'Guardar'}
+                        {cloudLoading ? '...' : t('ui.save')}
                       </button>
                       <button
                         type="button"
@@ -696,7 +681,7 @@ const SessionMenuDropdown = ({
                   onClick={() => {
                     desconectarCloud();
                     setSessionMenuOpen(false);
-                    if (addToast) addToast('Conferencia desconectada de la nube', 'info');
+                    if (addToast) addToast(t('ui.conferenceDisconnectedFromTheCloud'), 'info');
                   }}
                   style={{
                     display: 'flex',
@@ -722,13 +707,55 @@ const SessionMenuDropdown = ({
                   }}
                 >
                   <LogOut size={14} style={{ flexShrink: 0 }} />
-                  <span>Desconectar Nube</span>
+                  <span>{t('ui.disconnectCloud')}</span>
                 </button>
               </div>
             )}
 
             {/* Separador */}
             <div style={{ height: '1px', backgroundColor: 'var(--subborder-color)', margin: '0.35rem 0.2rem' }} />
+
+            {/* Acceso a Conferencias */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setSessionMenuOpen(false);
+                const activeConf = conferenceService.obtenerSesionActiva();
+                window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
+                  detail: {
+                    view: 'conference',
+                    confId: activeConf?.id || '',
+                    mode: 'explore'
+                  }
+                }));
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 'var(--border-radius, 6px)',
+                color: 'var(--text-color)',
+                padding: '0.5rem 0.75rem',
+                fontSize: '0.78rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <Building2 size={15} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+              <span>{t('header.goToConferences', 'Panel de Conferencias')}</span>
+            </button>
 
             {/* Enlace Política de Privacidad */}
             <button

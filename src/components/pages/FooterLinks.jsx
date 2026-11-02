@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React from 'react';
 
 const FooterLinks = ({ navigateTo, accentColor, textPrimary }) => (
@@ -20,7 +21,7 @@ const FooterLinks = ({ navigateTo, accentColor, textPrimary }) => (
           textDecoration: 'underline',
         }}
       >
-        {/* i18n key placeholder */}Privacy Policy
+        {/* i18n key placeholder */}{i18n.t('ui.privacyPolicy')}
       </a>
       <span>•</span>
       <a
@@ -40,7 +41,7 @@ const FooterLinks = ({ navigateTo, accentColor, textPrimary }) => (
           textDecoration: 'underline',
         }}
       >
-        {/* i18n key placeholder */}Terms &amp; Conditions
+        {/* i18n key placeholder */}{i18n.t('ui.termsConditions')}
       </a>
       <span>•</span>
       <span style={{ color: '#10b981', fontWeight: '700', fontSize: '0.8rem' }}>

@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 // Utilidades para análisis, modificación y reconstrucción de resoluciones y enmiendas MUN
 
 /**
@@ -117,7 +118,7 @@ export function parsearResolucion(textoCompleto = '') {
       articulos.push({
         id: `art_${numArticulo - 1}`,
         numero: numArticulo - 1,
-        prefijo: prefijoActual || `Artículo ${numArticulo - 1}.`,
+        prefijo: prefijoActual || i18n.t('ui.article2', { v0: numArticulo - 1 }),
         texto: buffer.join('\n').trim()
       });
       buffer = [];
@@ -131,7 +132,7 @@ export function parsearResolucion(textoCompleto = '') {
         articulos.push({
           id: 'preambulo',
           numero: 0,
-          prefijo: 'Preámbulo / Antecedentes',
+          prefijo: i18n.t('ui.preambleBackground'),
           texto: contenido,
           esPreambulo: true
         });
@@ -180,12 +181,12 @@ export function parsearResolucion(textoCompleto = '') {
     let prefijoDetectado = '';
 
     // Patrón 1: "Artículo 1.", "Art. 1:", "Cláusula 1", "Operative Clause 1", "OP 1:", "OP1.", "Párrafo 1"
-    const mArt = lineaTrim.match(/^(?:(?:\*\*|\*|#+|_{1,2})\s*)?(?:Art[ií]culo|Art\.|Cl[aá]usula|Clause|Operative Clause|OP\b|OP\.|P[aá]rrafo Operativo|P[aá]rrafo|P[aá]r\.)\s*([0-9]+|[IVXLCDM]+)[\.:\*\s\)\-]*(.*)/i);
+    const mArt = lineaTrim.match(/^(?:(?:\*\*|\*|#+|_{1,2})\s*)?(?:Article|Art[ií]culo|Art\.|Cl[aá]usula|Clause|Operative Clause|OP\b|OP\.|P[aá]rrafo Operativo|P[aá]rrafo|P[aá]r\.)\s*([0-9]+|[IVXLCDM]+)[\.:\*\s\)\-]*(.*)/i);
     if (mArt) {
       const rawNum = mArt[1];
       const parsedNum = /^\d+$/.test(rawNum) ? parseInt(rawNum, 10) : (romanoAEntero(rawNum) || numArticulo);
       matchNumero = parsedNum;
-      prefijoDetectado = `Artículo ${rawNum}.`;
+      prefijoDetectado = i18n.t('ui.article2', { v0: rawNum });
       restoTexto = mArt[2] || '';
     } else {
       // Patrón 2: Número arábigo al inicio: "1.", "**1.**", "1)", "1.-", "1: "
@@ -193,7 +194,7 @@ export function parsearResolucion(textoCompleto = '') {
                    lineaTrim.match(/^(?:(?:\*\*|\*|#+|_{1,2})\s*)?(\d+)(?:\*\*|\*|_{1,2})[\.\)\-:]\s*(.*)/);
       if (mNum && (mNum[2].trim().length > 0 || !enPreambulo)) {
         matchNumero = parseInt(mNum[1], 10);
-        prefijoDetectado = `Artículo ${matchNumero}.`;
+        prefijoDetectado = i18n.t('ui.article2', { v0: matchNumero });
         restoTexto = mNum[2] || '';
       } else {
         // Patrón 3: Número romano al inicio: "I.", "**I.**", "II)"
@@ -201,14 +202,14 @@ export function parsearResolucion(textoCompleto = '') {
                      lineaTrim.match(/^([IVXLCDM]{1,6})[\.\)\-:]\s+(.*)/i);
         if (mRom && romanoAEntero(mRom[1])) {
           matchNumero = romanoAEntero(mRom[1]);
-          prefijoDetectado = `Artículo ${mRom[1].toUpperCase()}.`;
+          prefijoDetectado = i18n.t('ui.article2', { v0: mRom[1].toUpperCase() });
           restoTexto = mRom[2] || '';
         } else {
           // Patrón 4: Verbo operativo MUN (permite transicionar a operativo incluso sin cabecera)
           const mVerbo = lineaTrim.match(REGEX_VERBO_OPERATIVO);
           if (mVerbo) {
             matchNumero = numArticulo;
-            prefijoDetectado = `Artículo ${numArticulo}.`;
+            prefijoDetectado = i18n.t('ui.article2', { v0: numArticulo });
             restoTexto = lineaTrim;
           }
         }
@@ -249,7 +250,7 @@ export function parsearResolucion(textoCompleto = '') {
       return parrafos.map((p, idx) => ({
         id: `art_${idx + 1}`,
         numero: idx + 1,
-        prefijo: `Artículo ${idx + 1}.`,
+        prefijo: i18n.t('ui.article2', { v0: idx + 1 }),
         texto: p.trim()
       }));
     }
@@ -261,7 +262,7 @@ export function parsearResolucion(textoCompleto = '') {
     return parrafos.map((p, idx) => ({
       id: `art_${idx + 1}`,
       numero: idx + 1,
-      prefijo: `Artículo ${idx + 1}.`,
+      prefijo: i18n.t('ui.article2', { v0: idx + 1 }),
       texto: p.trim()
     }));
   }
@@ -289,11 +290,11 @@ export function reconstruirTextoResolucion(articulos = []) {
   if (operativos.length > 0) {
     const tieneCabeceraOperativa = preambulo && /CL[AÁ]USULAS OPERATIVAS|OPERATIVE CLAUSES/i.test(preambulo.texto);
     if (preambulo && !tieneCabeceraOperativa) {
-      partes.push('---\n\n### CLÁUSULAS OPERATIVAS');
+      partes.push(i18n.t('ui.operativeClauses4'));
     }
 
     operativos.forEach(op => {
-      const prefijo = op.prefijo ? op.prefijo.trim() : `Artículo ${op.numero}.`;
+      const prefijo = op.prefijo ? op.prefijo.trim() : i18n.t('ui.article2', { v0: op.numero });
       const textoLimpio = (op.texto || '').trim();
       const prefijoSinPunto = prefijo.replace(/[\.:]$/, '');
       const regexPrefijo = new RegExp(`^(?:\\*\\*|#+)?\\s*${prefijoSinPunto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\.:\\*\\s]*`, 'i');
@@ -340,7 +341,7 @@ export function aplicarEnmiendaAArticulos(articulos = [], enmienda = {}) {
           art.texto = reemplazarTextoConTolerancia(textoActual, orig, '').replace(/\s+/g, ' ').trim();
         } else {
           // Supresión del artículo completo
-          art.texto = '[CLÁUSULA SUPRIMIDA]';
+          art.texto = i18n.t('ui.clauseDeleted');
           art.suprimido = true;
         }
         art.modificado = true;
@@ -361,7 +362,7 @@ export function aplicarEnmiendaAArticulos(articulos = [], enmienda = {}) {
     const nuevoArt = {
       id: `art_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       numero: num,
-      prefijo: `Artículo ${num}.`,
+      prefijo: i18n.t('ui.article2', { v0: num }),
       texto: textoPropuesto.trim(),
       modificado: true
     };

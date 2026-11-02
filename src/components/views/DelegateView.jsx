@@ -1,3 +1,4 @@
+import i18n from '../../languages/index.js';
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Radio, 
@@ -6,7 +7,6 @@ import {
   Clock, 
   MessageSquare, 
   FileText, 
-  LogOut, 
   CheckCircle, 
   AlertTriangle, 
   ShieldCheck, 
@@ -24,8 +24,6 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Sun,
-  Moon,
   Search,
   Globe,
   RefreshCw,
@@ -60,8 +58,7 @@ import { getFlagEmoji } from '../../utils/flags';
 import { useP2P } from '../../context/P2PContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import AccessibilityModal from '../modals/AccessibilityModal';
-import OpenMunLogo from '../common/OpenMunLogo';
-import LanguageSelector from '../common/LanguageSelector';
+import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 import ConferenceBanner from '../common/ConferenceBanner';
 import MensajeriaComite from '../messaging/MensajeriaComite';
 import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
@@ -152,13 +149,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const getPriorityBadge = (priority) => {
     switch (priority) {
       case 'urgente':
-        return { bg: 'rgba(239, 68, 68, 0.18)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444', label: 'URGENTE' };
+        return { bg: 'rgba(239, 68, 68, 0.18)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444', label: t('ui.urgent3') };
       case 'logistica':
-        return { bg: 'rgba(59, 130, 246, 0.18)', border: 'rgba(59, 130, 246, 0.4)', text: '#60a5fa', label: 'LOGÍSTICA' };
+        return { bg: 'rgba(59, 130, 246, 0.18)', border: 'rgba(59, 130, 246, 0.4)', text: '#60a5fa', label: t('ui.logistics') };
       case 'receso':
-        return { bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.4)', text: '#34d399', label: 'RECESO' };
+        return { bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.4)', text: '#34d399', label: t('ui.recess') };
       case 'documento':
-        return { bg: 'rgba(168, 85, 247, 0.18)', border: 'rgba(168, 85, 247, 0.4)', text: '#c084fc', label: 'DOCUMENTACIÓN' };
+        return { bg: 'rgba(168, 85, 247, 0.18)', border: 'rgba(168, 85, 247, 0.4)', text: '#c084fc', label: t('ui.documentation') };
       case 'general':
       default:
         return { bg: 'rgba(245, 158, 11, 0.18)', border: 'rgba(245, 158, 11, 0.4)', text: '#fbbf24', label: 'GENERAL' };
@@ -222,7 +219,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const resolucionData = state.enmiendasSesion || {};
   const rawArticulos = resolucionData.articulos || [];
   const rawTexto = resolucionData.textoResolucion || resolucionData.texto || '';
-  const tituloResolucion = resolucionData.tituloProyecto || resolucionData.titulo || 'Proyecto de Resolución';
+  const tituloResolucion = resolucionData.tituloProyecto || resolucionData.titulo || i18n.t('ui.draftResolution');
   const enmiendasGlobales = resolucionData.enmiendas || [];
 
   const articulosDoc = useMemo(() => {
@@ -303,7 +300,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const handleConfirmCountrySelection = async (countryName) => {
     const finalName = (countryName || paisPersonalizadoInput || paisSeleccionadoTemp || '').trim();
     if (!finalName) {
-      setCountrySelectError('Por favor selecciona o introduce el nombre de tu país');
+      setCountrySelectError(t('ui.pleaseSelectOrEnterYourCountrySName'));
       return;
     }
 
@@ -312,10 +309,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     try {
       const res = await selectCountry(finalName);
       if (!res.success) {
-        setCountrySelectError(res.message || 'No se pudo seleccionar este país');
+        setCountrySelectError(res.message || t('ui.couldNotSelectThisCountry'));
       }
     } catch (err) {
-      setCountrySelectError(err.message || 'Error de conexión');
+      setCountrySelectError(err.message || t('ui.connectionError'));
     } finally {
       setIsSubmittingCountry(false);
     }
@@ -354,7 +351,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     {
       id: 'Caucus Moderado',
       nombre: 'Caucus Moderado',
-      subtitulo: 'Oradores cronometrados por turnos',
+      subtitulo: t('ui.timedSpeakingTurns'),
       icon: Mic,
       color: '#3b82f6',
       activeBg: 'rgba(59, 130, 246, 0.15)',
@@ -364,7 +361,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     {
       id: 'Caucus No Moderado',
       nombre: 'Caucus No Moderado',
-      subtitulo: 'Negociación y redacción libre',
+      subtitulo: t('ui.freeNegotiationAndDrafting'),
       icon: Users,
       color: '#a855f7',
       activeBg: 'rgba(168, 85, 247, 0.15)',
@@ -374,7 +371,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     {
       id: 'Consulta General',
       nombre: 'Consulta General',
-      subtitulo: 'Diálogo abierto o ping-pong temático',
+      subtitulo: t('ui.openDialogueOrThemedPingPong'),
       icon: MessageSquare,
       color: '#10b981',
       activeBg: 'rgba(16, 185, 129, 0.15)',
@@ -384,7 +381,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     {
       id: 'Tour de Table',
       nombre: 'Tour de Table',
-      subtitulo: 'Intervención de todas las delegaciones',
+      subtitulo: t('ui.contributionsFromAllDelegations'),
       icon: RotateCcw,
       color: '#f59e0b',
       activeBg: 'rgba(245, 158, 11, 0.15)',
@@ -481,7 +478,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     if (!textoPropuestoDel.trim() && tipoEnmiendaDel !== 'supresion') return;
 
     const artObj = articulosDoc.find(a => a.id === artIdDel);
-    const artNum = artObj ? (artObj.prefijo || `Artículo ${artObj.numero}`) : 'Nuevo Artículo';
+    const artNum = artObj ? (artObj.prefijo || t('ui.article3', { v0: artObj.numero })) : i18n.t('ui.newArticle2');
 
     const nuevaPropuesta = {
       id: `prop_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -514,10 +511,43 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     n.to?.toUpperCase() === 'TODOS'
   );
 
+  const delegateTabs = [
+    { id: 'DEBATE', label: t('views.delegate.debateTab', 'Debate en Vivo'), icon: Mic },
+    { id: 'ENMIENDAS', label: t('views.delegate.amendments', 'Enmiendas'), icon: FileText },
+    { id: 'NOTAS', label: t('views.delegate.notesTab', 'Mensajes'), icon: MessageSquare, badge: misNotas.length },
+    { id: 'AVISOS', label: t('views.staff.announcementsTab', 'Avisos'), icon: Megaphone, badge: visibleAnnouncements.length }
+  ];
+
+  const delegateNavbar = (
+    <ConsoleNavbar
+      title={t('views.delegate.title', 'Panel de Delegación')}
+      roleBadge={clientCountry ? <><CountryFlag nombre={clientCountry} size="sm" />{clientCountry}</> : t('views.join.selectCountry', 'Selección de Delegación')}
+      nombreComite={state.comision || state.nombreComite}
+      agendaSesion={state.agendaSesion}
+      roomId={roomId}
+      connectedPeersCount={connectedPeers.length}
+      activeTab={clientCountry ? activeTab : undefined}
+      setActiveTab={setActiveTab}
+      tabs={clientCountry ? delegateTabs : []}
+      isLight={isLight}
+      toggleThemeMode={toggleThemeMode}
+      setIsAccessOpen={setIsAccessModalOpen}
+      sidebarActions={clientCountry && (
+        <button type="button" onClick={() => {
+          if (window.confirm(t('views.delegate.confirmChangeCountry', '¿Deseas cambiar tu delegación asignada?'))) resetCountrySelection();
+        }} title={t('views.delegate.changeCountry', 'Cambiar delegación')}>
+          <RefreshCw size={16} /><span>{t('views.delegate.changeCountry', 'Cambiar delegación')}</span>
+        </button>
+      )}
+      onExit={() => { leaveRoom(); onExit?.(); }}
+      exitConfirmMessage={t('views.delegate.confirmExit', '¿Deseas desconectarte de la sala?')}
+    />
+  );
+
   // Si aún no ha seleccionado su país / delegación oficial de la sesión
   if (!clientCountry) {
     return (
-      <div style={{
+      <div className="dashboard-shell" style={{
         minHeight: '100vh',
         backgroundColor: 'var(--bg-color)',
         color: 'var(--text-color)',
@@ -527,119 +557,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
       }}>
         <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
-        {/* Header Superior */}
-        <header className="openmun-topbar" style={{
-          padding: '0.85rem 1.5rem',
-          backgroundColor: 'var(--header-bg)',
-          borderBottom: '1px solid var(--subborder-color)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
-            <OpenMunLogo height={32} isLight={isLight} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span className="openmun-topbar-title" style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
-                  {state.comision || state.nombreComite || 'Sesión en Vivo'}
-                </span>
-                <span style={{
-                  fontSize: '0.7rem',
-                  fontWeight: '700',
-                  backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                  color: '#22c55e',
-                  padding: '0.15rem 0.5rem',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
-                  Sala {roomId}
-                </span>
-              </div>
-              <div className="openmun-desktop-only" style={{ fontSize: '0.75rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                Conectado como participante • Selección de Delegación Oficial
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-            <button
-              className="openmun-topbar-btn"
-              onClick={() => setIsAccessModalOpen(true)}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--subborder-color)',
-                borderRadius: '8px',
-                color: 'var(--text-color)',
-                padding: '0.45rem 0.75rem',
-                fontSize: '0.78rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                transition: 'all 0.15s ease'
-              }}
-              title={t('accessibility.title', "Accesibilidad y Tema")}
-            >
-              <Eye size={14} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
-            </button>
-
-            <button
-              className="openmun-topbar-btn"
-              onClick={toggleThemeMode}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--subborder-color)',
-                borderRadius: '8px',
-                color: 'var(--text-color)',
-                padding: '0.45rem 0.65rem',
-                fontSize: '0.78rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                transition: 'all 0.15s ease'
-              }}
-              title={isLight ? t('header.darkMode', "Cambiar a Modo Oscuro") : t('header.lightMode', "Cambiar a Modo Claro")}
-            >
-              {isLight ? <Moon size={14} /> : <Sun size={14} />}
-            </button>
-
-            <LanguageSelector showIcon={false} />
-
-            <button
-              className="openmun-topbar-btn"
-              onClick={() => {
-                if (confirm('¿Deseas desconectarte de la sala?')) {
-                  leaveRoom();
-                  if (onExit) onExit();
-                }
-              }}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--subborder-color)',
-                borderRadius: '8px',
-                color: 'var(--muted-text)',
-                padding: '0.45rem 0.75rem',
-                fontSize: '0.78rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem'
-              }}
-            >
-              <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
-            </button>
-          </div>
-        </header>
+        {delegateNavbar}
 
         {/* Banner de Avisos Oficiales */}
         <ConferenceBanner isLight={isLight} role="delegate" comiteId={roomId} />
@@ -681,18 +599,18 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase'
               }}>
-                <Globe size={14} /> Lista Oficial de la Sesión
+                <Globe size={14} /> {t('ui.officialSessionList')}
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--muted-text)' }}>
-                {paisesFiltrados.length} delegaciones disponibles
+                {paisesFiltrados.length} {t('ui.delegationsAvailable')}
               </span>
             </div>
 
             <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
-              Selecciona tu Delegación
+              {t('views.join.selectCountry')}
             </h2>
             <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--muted-text)', lineHeight: '1.5' }}>
-              Haz clic sobre tu delegación para identificarte en los debates, lista de oradores, votaciones telemáticas y mensajería oficial.
+              {t('ui.clickYourDelegationToIdentifyYourselfInDebatesTheSpeakers')}
             </p>
           </div>
 
@@ -743,10 +661,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               </div>
               <div style={{ maxWidth: '520px' }}>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
-                  Esperando lista oficial de delegaciones
+                  {t('ui.waitingForTheOfficialDelegationList')}
                 </h3>
                 <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.84rem', color: 'var(--muted-text)', lineHeight: '1.5' }}>
-                  La Mesa Directiva (Chair) aún no ha cargado los países o están sincronizándose. Puedes sincronizar o escribir tu delegación abajo para entrar ya.
+                  {t('ui.theChairHasNotLoadedTheCountriesYetOrThey')}
                 </p>
               </div>
               <button
@@ -766,7 +684,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   boxShadow: '0 4px 14px rgba(0,0,0,0.2)'
                 }}
               >
-                <RefreshCw size={14} /> Sincronizar Sesión
+                <RefreshCw size={14} /> {t('ui.syncSession')}
               </button>
             </div>
           ) : (
@@ -775,7 +693,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               <div style={{ position: 'relative', width: '100%' }}>
                 <input
                   type="text"
-                  placeholder="Buscar tu país o delegación..."
+                  placeholder={t('ui.searchForYourCountryOrDelegation')}
                   value={busquedaPais}
                   onChange={e => setBusquedaPais(e.target.value)}
                   style={{
@@ -881,7 +799,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                           borderRadius: '4px',
                           whiteSpace: 'nowrap'
                         }}>
-                          Ocupado
+                          {t('ui.occupied')}
                         </span>
                       ) : isSelected ? (
                         <CheckCircle2 size={18} color="#22c55e" style={{ flexShrink: 0 }} />
@@ -904,12 +822,12 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             gap: '0.65rem'
           }}>
             <div style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              {listaPaisesNormalizada.length === 0 ? 'O introduce el nombre de tu delegación directamente:' : '¿Tu delegación no aparece en la lista anterior?'}
+              {listaPaisesNormalizada.length === 0 ? t('ui.orEnterYourDelegationSNameDirectly') : t('ui.isYourDelegationMissingFromTheListAbove')}
             </div>
             <div style={{ display: 'flex', gap: '0.65rem' }}>
               <input
                 type="text"
-                placeholder="Escribe el nombre de tu delegación (ej: España, Francia, Santa Sede...)"
+                placeholder={t('ui.enterYourDelegationSNameEGSpainFranceHoly')}
                 value={paisPersonalizadoInput}
                 onChange={e => {
                   setPaisPersonalizadoInput(e.target.value);
@@ -951,10 +869,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           }}>
             <div>
               <div style={{ fontSize: '0.72rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                Delegación seleccionada:
+                {t('ui.selectedDelegation')}
               </div>
               <div style={{ fontSize: '1.05rem', fontWeight: '800', color: (paisSeleccionadoTemp || paisPersonalizadoInput) ? '#22c55e' : 'var(--muted-text)', marginTop: '2px' }}>
-                {paisSeleccionadoTemp || paisPersonalizadoInput || 'Ningún país seleccionado'}
+                {paisSeleccionadoTemp || paisPersonalizadoInput || t('ui.noCountrySelected')}
               </div>
             </div>
 
@@ -979,11 +897,11 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
             >
               {isSubmittingCountry ? (
                 <>
-                  <RefreshCw size={16} className="animate-spin" /> Conectando...
+                  <RefreshCw size={16} className="animate-spin" /> {t('ui.connecting')}
                 </>
               ) : (
                 <>
-                  <Check size={16} /> Entrar a la Sesión
+                  <Check size={16} /> {t('ui.enterSession')}
                 </>
               )}
             </button>
@@ -994,7 +912,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
   }
 
   return (
-    <div style={{
+    <div className="dashboard-shell" style={{
       minHeight: '100vh',
       backgroundColor: 'var(--bg-color)',
       color: 'var(--text-color)',
@@ -1004,265 +922,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     }}>
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
-      {/* ── Topbar del Delegado ── */}
-      <header className="openmun-topbar" style={{
-        padding: '0.75rem 1.25rem',
-        backgroundColor: 'var(--header-bg)',
-        borderBottom: '1px solid var(--subborder-color)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
-          <OpenMunLogo height={30} isLight={isLight} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'nowrap', minWidth: 0, overflow: 'hidden' }}>
-              <CountryFlag nombre={clientCountry} size="sm" />
-              <span className="openmun-topbar-title" style={{ fontWeight: '800', fontSize: '1rem', letterSpacing: '-0.01em' }}>
-                {clientCountry || 'Delegación'}
-              </span>
-              <button
-                className="openmun-topbar-btn"
-                onClick={() => {
-                  if (confirm('¿Deseas cambiar tu delegación asignada?')) {
-                    resetCountrySelection();
-                  }
-                }}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--subborder-color)',
-                  borderRadius: '6px',
-                  color: 'var(--muted-text)',
-                  padding: '0.2rem 0.45rem',
-                  fontSize: '0.7rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  flexShrink: 0
-                }}
-                title="Cambiar de país asignado"
-              >
-                <RefreshCw size={11} /> <span className="btn-text">Cambiar</span>
-              </button>
-              <span style={{
-                fontSize: '0.68rem',
-                fontWeight: '700',
-                backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                color: '#22c55e',
-                padding: '0.1rem 0.45rem',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3px'
-              }}>
-                <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
-                En Vivo ({roomId})
-              </span>
-            </div>
-            <div className="openmun-desktop-only" style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
-              {state.comision || 'Comité Conectado'}
-            </div>
-          </div>
-        </div>
+      {delegateNavbar}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-          {/* Botón Accesibilidad y Tema */}
-          <button
-            className="openmun-topbar-btn"
-            onClick={() => setIsAccessModalOpen(true)}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '6px',
-              color: 'var(--text-color)',
-              padding: '0.35rem 0.65rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.15s ease'
-            }}
-            title={t('accessibility.title', "Accesibilidad y Tema")}
-          >
-            <Eye size={13} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
-          </button>
-
-          {/* Botón Rápido Modo Claro / Oscuro */}
-          <button
-            className="openmun-topbar-btn"
-            onClick={toggleThemeMode}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '6px',
-              color: 'var(--text-color)',
-              padding: '0.35rem 0.55rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.15s ease'
-            }}
-            title={isLight ? t('header.darkMode', "Cambiar a Modo Oscuro") : t('header.lightMode', "Cambiar a Modo Claro")}
-          >
-            {isLight ? <Moon size={13} /> : <Sun size={13} />}
-          </button>
-
-          <LanguageSelector showIcon={false} />
-
-          {/* Botón Salir */}
-          <button
-            className="openmun-topbar-btn"
-            onClick={() => {
-              if (confirm('¿Deseas desconectarte de la sala?')) {
-                leaveRoom();
-                if (onExit) onExit();
-              }
-            }}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '6px',
-              color: 'var(--muted-text)',
-              padding: '0.35rem 0.65rem',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-          >
-            <LogOut size={13} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Banner de Avisos Oficiales */}
       <ConferenceBanner isLight={isLight} role="delegate" comiteId={roomId} />
-
-      {/* ── Subheader / Navegación ── */}
-      <div className="openmun-nav-tabs-container" style={{
-        borderBottom: '1px solid var(--subborder-color)',
-        backgroundColor: 'var(--subnav-bg)',
-        padding: '0.4rem 1.25rem',
-        display: 'flex',
-        justifyContent: 'center',
-        width: '100%',
-        boxSizing: 'border-box'
-      }}>
-        <div className="openmun-nav-tabs-list" style={{
-          display: 'flex',
-          gap: '0.5rem',
-          maxWidth: '1300px',
-          width: '100%',
-          alignItems: 'center',
-          overflowX: 'auto'
-        }}>
-        <button
-          className="openmun-nav-tab-btn"
-          onClick={() => setActiveTab('DEBATE')}
-          style={{
-            flex: 1,
-            padding: '0.5rem',
-            borderRadius: '6px',
-            border: 'none',
-            backgroundColor: activeTab === 'DEBATE' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'DEBATE' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.4rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Mic size={14} /> Debate en Vivo
-        </button>
-
-        <button
-          className="openmun-nav-tab-btn"
-          onClick={() => setActiveTab('ENMIENDAS')}
-          style={{
-            flex: 1,
-            padding: '0.5rem',
-            borderRadius: '6px',
-            border: 'none',
-            backgroundColor: activeTab === 'ENMIENDAS' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'ENMIENDAS' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.4rem',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <FileText size={14} /> Enmiendas
-        </button>
-
-        <button
-          className="openmun-nav-tab-btn"
-          onClick={() => setActiveTab('NOTAS')}
-          style={{
-            flex: 1,
-            padding: '0.5rem',
-            borderRadius: '6px',
-            border: 'none',
-            backgroundColor: activeTab === 'NOTAS' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'NOTAS' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.4rem',
-            position: 'relative',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <MessageSquare size={14} /> Mensajes ({misNotas.length})
-        </button>
-
-        <button
-          className="openmun-nav-tab-btn"
-          onClick={() => setActiveTab('AVISOS')}
-          style={{
-            flex: 1,
-            padding: '0.5rem',
-            borderRadius: '6px',
-            border: 'none',
-            backgroundColor: activeTab === 'AVISOS' ? 'var(--btn-bg)' : 'transparent',
-            color: activeTab === 'AVISOS' ? 'var(--btn-text)' : 'var(--muted-text)',
-            fontWeight: '700',
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.4rem',
-            position: 'relative',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Megaphone size={14} /> {t('views.staff.announcementsTab', 'Avisos')} ({visibleAnnouncements.length})
-        </button>
-        </div>
-      </div>
 
       {/* ── Cuerpo Principal del Delegado ── */}
       <main className="openmun-main-content" style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '1300px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -1302,7 +964,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   padding: '0.1rem 0.45rem',
                   borderRadius: '10px'
                 }}>
-                  {visibleAnnouncements.length} {visibleAnnouncements.length === 1 ? 'aviso' : 'avisos'}
+                  {visibleAnnouncements.length} {visibleAnnouncements.length === 1 ? t('ui.announcement') : t('ui.announcements')}
                 </span>
               </div>
 
@@ -1353,7 +1015,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             {badge.label}
                           </span>
                           <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                            De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Staff'}</strong>
+                            {t('ui.from')} <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || t('conferences.issuerStaff')}</strong>
                           </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -1443,17 +1105,17 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', fontSize: '0.9rem', color: '#60a5fa' }}>
-                    <Vote size={18} /> Votación Telemática en Vivo
+                    <Vote size={18} /> {t('liveSession.allowLiveVoting')}
                   </div>
                   {miVotoRegistrado && (
                     <span style={{ fontSize: '0.74rem', fontWeight: '800', color: '#22c55e', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Check size={13} /> Voto Emitido: {
+                      <Check size={13} /> {t('ui.voteCast')} {
                         miVotoRegistrado === 'favor_derechos' ? t('voting.inFavorWithRights') :
                         miVotoRegistrado === 'contra_derechos' ? t('voting.againstWithRights') :
-                        miVotoRegistrado === 'favor' ? 'A Favor' :
-                        miVotoRegistrado === 'contra' ? 'En Contra' :
-                        miVotoRegistrado === 'abstencion' ? 'Abstención' :
-                        miVotoRegistrado === 'pasar' ? 'Pase' : miVotoRegistrado
+                        miVotoRegistrado === 'favor' ? t('voting.inFavor') :
+                        miVotoRegistrado === 'contra' ? t('voting.against') :
+                        miVotoRegistrado === 'abstencion' ? t('voting.abstention') :
+                        miVotoRegistrado === 'pasar' ? t('ui.pass') : miVotoRegistrado
                       }{votacionSesion.derechos?.[miPaisObj?.id || clientCountry] && ' · ' + t('voting.withRights')}
                     </span>
                   )}
@@ -1465,7 +1127,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
                 {votacionSesion?.tipoVotacion === 'procedural' && (
                   <div style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '600' }}>
-                    ℹ️ Votación de procedimiento: No se permiten abstenciones.
+                    {t('ui.proceduralVoteAbstentionsAreNotAllowed')}
                   </div>
                 )}
 
@@ -1484,7 +1146,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       cursor: 'pointer'
                     }}
                   >
-                    A Favor
+                    {t('voting.inFavor')}
                   </button>
 
                   <button
@@ -1500,7 +1162,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       cursor: 'pointer'
                     }}
                   >
-                    En Contra
+                    {t('voting.against')}
                   </button>
 
                   <button
@@ -1521,9 +1183,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       cursor: votacionSesion?.tipoVotacion === 'procedural' ? 'not-allowed' : 'pointer',
                       opacity: votacionSesion?.tipoVotacion === 'procedural' ? 0.4 : 1
                     }}
-                    title={votacionSesion?.tipoVotacion === 'procedural' ? 'No se permiten abstenciones en mociones o cuestiones de procedimiento' : ''}
+                    title={votacionSesion?.tipoVotacion === 'procedural' ? t('ui.abstentionsAreNotAllowedOnMotionsOrProceduralMatters') : ''}
                   >
-                    Abstención
+                    {t('voting.abstention')}
                   </button>
 
                   <button
@@ -1539,7 +1201,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       cursor: 'pointer'
                     }}
                   >
-                    Pase
+                    {t('ui.pass')}
                   </button>
                 </div>
               </div>
@@ -1560,14 +1222,14 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <Zap size={16} color="#3b82f6" /> Lista General (GSL)
+                    <Zap size={16} color="#3b82f6" /> {t('ui.generalSpeakersListGsl')}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '3px' }}>
                     {settings.speakerRequestMode === 'direct'
-                      ? 'Modo Directo: Ingreso inmediato'
+                      ? t('ui.directModeJoinImmediately')
                       : (settings.speakerRequestMode === 'approval'
-                          ? 'Requiere validación de la Mesa'
-                          : 'Solicitudes cerradas por la Mesa')}
+                          ? t('ui.requiresChairApproval')
+                          : t('ui.requestsClosedByTheChair'))}
                   </div>
                 </div>
 
@@ -1586,7 +1248,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     justifyContent: 'center',
                     gap: '0.35rem'
                   }}>
-                    <CheckCircle size={14} /> ¡Ya estás en la lista GSL!
+                    <CheckCircle size={14} /> {t('ui.youAreAlreadyOnTheGsl')}
                   </div>
                 ) : (
                   <button
@@ -1612,9 +1274,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     }}
                   >
                     {settings.speakerRequestMode === 'disabled' ? (
-                      <><Lock size={14} /> Cerrado</>
+                      <><Lock size={14} /> {t('ui.closed')}</>
                     ) : (
-                      solicitudGSLHecha ? <><Check size={14} /> Solicitud Enviada</> : <><Mic size={14} /> Pedir Turno GSL</>
+                      solicitudGSLHecha ? <><Check size={14} /> {t('ui.requestSent')}</> : <><Mic size={14} /> {t('ui.requestGslSpeakingTurn')}</>
                     )}
                   </button>
                 )}
@@ -1633,14 +1295,14 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <Clock size={16} color="#a855f7" /> Debate
+                    <Clock size={16} color="#a855f7" /> {t('sidebar.widgets.pizarra_mociones.category')}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '3px' }}>
                     {settings.caucusRequestMode === 'direct'
-                      ? 'Modo Directo: Ingreso inmediato'
+                      ? t('ui.directModeJoinImmediately')
                       : (settings.caucusRequestMode === 'approval'
-                          ? 'Requiere validación de la Mesa'
-                          : 'Solicitudes cerradas')}
+                          ? t('ui.requiresChairApproval')
+                          : t('ui.requestsClosed'))}
                   </div>
                 </div>
 
@@ -1659,7 +1321,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     justifyContent: 'center',
                     gap: '0.35rem'
                   }}>
-                    <CheckCircle size={14} /> ¡En lista de Debate!
+                    <CheckCircle size={14} /> {t('ui.onTheDebateList')}
                   </div>
                 ) : (
                   <button
@@ -1685,9 +1347,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     }}
                   >
                     {settings.caucusRequestMode === 'disabled' ? (
-                      <><Lock size={14} /> Cerrado</>
+                      <><Lock size={14} /> {t('ui.closed')}</>
                     ) : (
-                      solicitudCaucusHecha ? <><Check size={14} /> Solicitud Enviada</> : <><Mic size={14} /> Pedir Turno de Debate</>
+                      solicitudCaucusHecha ? <><Check size={14} /> {t('ui.requestSent')}</> : <><Mic size={14} /> {t('ui.requestDebateSpeakingTurn')}</>
                     )}
                   </button>
                 )}
@@ -1709,12 +1371,12 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#3b82f6' }}>
-                    <FileText size={16} /> Moción de Debate
+                    <FileText size={16} /> {t('ui.debateMotion')}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '4px', lineHeight: '1.4' }}>
                     {settings.allowMotions
-                      ? 'Propón Debate, Caucus No Moderado, Consulta o Tour de Table.'
-                      : 'Mociones deshabilitadas por la Mesa.'}
+                      ? t('ui.proposeADebateUnmoderatedCaucusConsultationOrRoundRobin')
+                      : t('ui.motionsDisabledByTheChair')}
                   </div>
                 </div>
 
@@ -1739,12 +1401,12 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 >
                   {settings.allowMotions ? (
                     solicitudMocionHecha ? (
-                      <><Check size={14} style={{ color: '#22c55e' }} /> Moción Transmitida</>
+                      <><Check size={14} style={{ color: '#22c55e' }} /> {t('ui.motionSent')}</>
                     ) : (
-                      <><Plus size={14} /> Proponer Moción</>
+                      <><Plus size={14} /> {t('views.delegate.raiseMotion')}</>
                     )
                   ) : (
-                    <><Lock size={14} /> Bloqueado</>
+                    <><Lock size={14} /> {t('ui.blocked')}</>
                   )}
                 </button>
               </div>
@@ -1762,10 +1424,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               }}>
                 <div>
                   <div style={{ fontWeight: '800', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#eab308' }}>
-                    <HelpCircle size={16} /> Puntos & POI
+                    <HelpCircle size={16} /> {t('ui.pointsPoi')}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '4px', lineHeight: '1.4' }}>
-                    Punto de Información (POI), Privilegio personal, Orden o Duda de procedimiento.
+                    {t('ui.pointOfInformationPoiPersonalPrivilegeOrderOrParliamentaryInquiry')}
                   </div>
                 </div>
 
@@ -1786,7 +1448,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     gap: '0.35rem'
                   }}
                 >
-                  <Hand size={14} /> Levantar Punto / POI
+                  <Hand size={14} /> {t('ui.raisePointPoi')}
                 </button>
               </div>
             </div>
@@ -1831,13 +1493,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     <span>{tituloResolucion}</span>
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span>{articulosDoc.length} cláusulas / artículos</span>
+                    <span>{articulosDoc.length} {t('ui.clausesArticles')}</span>
                     <span>•</span>
-                    <span>{enmiendasGlobales.length} enmiendas en sesión</span>
+                    <span>{enmiendasGlobales.length} {t('ui.amendmentsInSession')}</span>
                     <span>•</span>
                     <span style={{ color: '#22c55e', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                       <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
-                      Sincronizado en Vivo
+                      {t('ui.syncedLive')}
                     </span>
                   </div>
                 </div>
@@ -1847,7 +1509,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   <button
                     onClick={() => handleCopiarTexto(
                       rawTexto || articulosDoc.map(a => `${a.prefijo ? a.prefijo + ' ' : ''}${a.texto}`).join('\n\n'),
-                      'Resolución Completa'
+                      i18n.t('ui.fullResolution')
                     )}
                     disabled={articulosDoc.length === 0}
                     style={{
@@ -1865,10 +1527,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       gap: '0.3rem',
                       transition: 'all 0.15s ease'
                     }}
-                    title="Copiar texto completo de la resolución"
+                    title={t('ui.copyFullResolutionText')}
                   >
                     <Copy size={13} />
-                    <span>Copiar Texto</span>
+                    <span>{t('ui.copyText')}</span>
                   </button>
 
                   <button
@@ -1887,10 +1549,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       gap: '0.3rem',
                       transition: 'all 0.15s ease'
                     }}
-                    title="Recargar el estado más reciente de la resolución y enmiendas desde la Mesa"
+                    title={t('ui.reloadTheLatestResolutionAndAmendmentStateFromTheChair')}
                   >
                     <RefreshCw size={13} />
-                    <span>Sincronizar</span>
+                    <span>{t('conferences.sync')}</span>
                   </button>
                 </div>
               </div>
@@ -1927,7 +1589,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   }}
                 >
                   <BookOpen size={13} />
-                  <span>Ver Documento</span>
+                  <span>{t('ui.viewDocument')}</span>
                   {articulosDoc.length > 0 && (
                     <span style={{
                       fontSize: '0.65rem',
@@ -1963,7 +1625,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   }}
                 >
                   <Layers size={13} />
-                  <span>Por Cláusulas</span>
+                  <span>{t('ui.byClause')}</span>
                 </button>
 
                 <button
@@ -1988,7 +1650,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   }}
                 >
                   <Edit3 size={13} />
-                  <span>Redactar Enmienda</span>
+                  <span>{t('ui.draftAmendment')}</span>
                 </button>
 
                 <button
@@ -2013,7 +1675,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   }}
                 >
                   <Clock size={13} />
-                  <span>Historial ({misEnmiendasEnviadas.length})</span>
+                  <span>{t('ui.history')}{misEnmiendasEnviadas.length})</span>
                 </button>
               </div>
             </div>
@@ -2033,7 +1695,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 gap: '0.4rem',
                 animation: 'scaleUp 0.2s ease'
               }}>
-                <CheckCheck size={16} /> ¡{copiadoFeedback} copiado al portapapeles!
+                <CheckCheck size={16} /> {t('ui.copiedItem', { item: copiadoFeedback })}
               </div>
             )}
 
@@ -2051,7 +1713,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 gap: '0.4rem',
                 animation: 'scaleUp 0.2s ease'
               }}>
-                <CheckCircle2 size={16} /> ¡Propuesta de enmienda enviada a la Mesa Directiva para su revisión!
+                <CheckCircle2 size={16} /> {t('ui.amendmentProposalSentToTheChairForReview')}
               </div>
             )}
 
@@ -2064,7 +1726,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 <div style={{ position: 'relative', width: '100%' }}>
                   <input
                     type="text"
-                    placeholder="Buscar palabras clave, artículos o términos en la resolución..."
+                    placeholder={t('ui.searchKeywordsArticlesOrTermsInTheResolution')}
                     value={busquedaDocEnmiendas}
                     onChange={e => setBusquedaDocEnmiendas(e.target.value)}
                     style={{
@@ -2114,10 +1776,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   }}>
                     <FileText size={36} style={{ opacity: 0.3 }} />
                     <div style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-color)' }}>
-                      Sin Documento de Resolución
+                      {t('ui.noResolutionDocument')}
                     </div>
                     <div style={{ fontSize: '0.8rem', maxWidth: '420px', lineHeight: 1.5 }}>
-                      La Presidencia de la Mesa Directiva aún no ha transmitido el texto o borrador de resolución para este comité.
+                      {t('ui.theChairHasNotTransmittedTheResolutionTextOrDraft')}
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                       <button
@@ -2136,7 +1798,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                           gap: '0.35rem'
                         }}
                       >
-                        <RefreshCw size={13} /> Sincronizar
+                        <RefreshCw size={13} /> {t('conferences.sync')}
                       </button>
                       <button
                         onClick={() => handlePrepararEnmiendaDeArticulo(null, 'adicion')}
@@ -2154,7 +1816,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                           gap: '0.35rem'
                         }}
                       >
-                        <Plus size={13} /> Proponer Cláusula Inicial
+                        <Plus size={13} /> {t('ui.proposeInitialClause')}
                       </button>
                     </div>
                   </div>
@@ -2184,13 +1846,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         textTransform: 'uppercase',
                         letterSpacing: '0.08em'
                       }}>
-                        NACIONES UNIDAS • DOCUMENTO DE TRABAJO OFICIAL
+                        {t('ui.unitedNationsOfficialWorkingPaper')}
                       </div>
                       <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#60a5fa', lineHeight: 1.3 }}>
                         {tituloResolucion}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--muted-text)' }}>
-                        Comité: <strong style={{ color: 'var(--text-color)' }}>{state.comision || state.nombreComite || 'Asamblea General'}</strong>
+                        {t('ui.committee')} <strong style={{ color: 'var(--text-color)' }}>{state.comision || state.nombreComite || t('agenda.templateGA')}</strong>
                       </div>
                     </div>
 
@@ -2217,7 +1879,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em'
                           }}>
-                            Cláusulas Preambulatorias
+                            {t('ui.preambulatoryClauses')}
                           </span>
                           <button
                             onClick={() => handlePrepararEnmiendaDeArticulo(preambuloDoc, 'modificacion')}
@@ -2235,7 +1897,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               gap: '0.25rem'
                             }}
                           >
-                            <Edit3 size={11} /> Enmendar Preámbulo
+                            <Edit3 size={11} /> {t('ui.amendPreamble')}
                           </button>
                         </div>
                         <div style={{
@@ -2262,7 +1924,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         alignItems: 'center',
                         justifyContent: 'space-between'
                       }}>
-                        <span>Cláusulas Operativas ({articulosFiltradosDoc.length})</span>
+                        <span>{t('ui.operativeClauses')}{articulosFiltradosDoc.length})</span>
                         <button
                           onClick={() => handlePrepararEnmiendaDeArticulo(null, 'adicion')}
                           style={{
@@ -2279,7 +1941,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             gap: '0.25rem'
                           }}
                         >
-                          <Plus size={12} /> + Añadir Cláusula
+                          <Plus size={12} /> {t('ui.addClause')}
                         </button>
                       </div>
 
@@ -2314,7 +1976,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                   padding: '0.15rem 0.5rem',
                                   borderRadius: '4px'
                                 }}>
-                                  {art.prefijo || `Artículo ${art.numero}`}
+                                  {art.prefijo || t('ui.article3', { v0: art.numero })}
                                 </span>
 
                                 {(art.modificado || tieneEnmiendasAprobadas) && (
@@ -2329,7 +1991,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                     alignItems: 'center',
                                     gap: '3px'
                                   }}>
-                                    <CheckCircle2 size={10} /> Enmendado
+                                    <CheckCircle2 size={10} /> {t('ui.amended')}
                                   </span>
                                 )}
 
@@ -2342,7 +2004,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                     padding: '0.1rem 0.4rem',
                                     borderRadius: '4px'
                                   }}>
-                                    Enmienda en debate
+                                    {t('ui.amendmentUnderDebate')}
                                   </span>
                                 )}
                               </div>
@@ -2350,7 +2012,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               {/* Barra de Acciones Directas de la Cláusula */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                 <button
-                                  onClick={() => handleCopiarTexto(`${art.prefijo ? art.prefijo + ' ' : ''}${art.texto}`, art.prefijo || 'Cláusula')}
+                                  onClick={() => handleCopiarTexto(`${art.prefijo ? art.prefijo + ' ' : ''}${art.texto}`, art.prefijo || i18n.t('ui.clause'))}
                                   style={{
                                     background: 'transparent',
                                     border: '1px solid var(--subborder-color)',
@@ -2364,9 +2026,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                     alignItems: 'center',
                                     gap: '0.2rem'
                                   }}
-                                  title="Copiar texto de esta cláusula"
+                                  title={t('ui.copyThisClauseSText')}
                                 >
-                                  <Copy size={11} /> Copiar
+                                  <Copy size={11} /> {t('ui.copy')}
                                 </button>
 
                                 <button
@@ -2384,9 +2046,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                     alignItems: 'center',
                                     gap: '0.25rem'
                                   }}
-                                  title="Proponer modificación sobre esta cláusula"
+                                  title={t('ui.proposeAModificationToThisClause')}
                                 >
-                                  <Edit3 size={11} /> Enmendar
+                                  <Edit3 size={11} /> {t('ui.amend')}
                                 </button>
 
                                 <button
@@ -2404,9 +2066,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                     alignItems: 'center',
                                     gap: '0.2rem'
                                   }}
-                                  title="Proponer supresión de esta cláusula"
+                                  title={t('ui.proposeDeletingThisClause')}
                                 >
-                                  <FileMinus size={11} /> Suprimir
+                                  <FileMinus size={11} /> {t('ui.delete')}
                                 </button>
                               </div>
                             </div>
@@ -2448,7 +2110,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 }}>
                   <div style={{ fontSize: '0.78rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <Filter size={13} color="var(--muted-text)" />
-                    <span>Filtro de Cláusulas:</span>
+                    <span>{t('ui.clauseFilter')}</span>
                   </div>
 
                   <select
@@ -2464,9 +2126,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       fontWeight: '600'
                     }}
                   >
-                    <option value="todos">Todas las Cláusulas ({articulosOperativosDoc.length})</option>
-                    <option value="modificadas">Solo Enmendadas</option>
-                    <option value="con_enmiendas">Con Enmiendas en Sesión</option>
+                    <option value="todos">{t('ui.allClauses')}{articulosOperativosDoc.length})</option>
+                    <option value="modificadas">{t('ui.amendedOnly')}</option>
+                    <option value="con_enmiendas">{t('ui.withAmendmentsInSession')}</option>
                   </select>
 
                   <button
@@ -2485,7 +2147,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       gap: '0.25rem'
                     }}
                   >
-                    <Plus size={13} /> Proponer Nueva Cláusula
+                    <Plus size={13} /> {t('ui.proposeNewClause')}
                   </button>
                 </div>
 
@@ -2515,7 +2177,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             fontWeight: '800',
                             color: '#60a5fa'
                           }}>
-                            {art.prefijo || `Artículo ${art.numero}`}
+                            {art.prefijo || t('ui.article3', { v0: art.numero })}
                           </span>
                           {art.modificado && (
                             <span style={{
@@ -2526,7 +2188,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               padding: '0.1rem 0.4rem',
                               borderRadius: '4px'
                             }}>
-                              Modificado
+                              {t('ui.modified2')}
                             </span>
                           )}
                         </div>
@@ -2548,7 +2210,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               gap: '0.25rem'
                             }}
                           >
-                            <Edit3 size={11} /> Modificar
+                            <Edit3 size={11} /> {t('ui.modify')}
                           </button>
                           <button
                             onClick={() => handlePrepararEnmiendaDeArticulo(art, 'supresion')}
@@ -2566,7 +2228,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               gap: '0.25rem'
                             }}
                           >
-                            <FileMinus size={11} /> Suprimir
+                            <FileMinus size={11} /> {t('ui.delete')}
                           </button>
                         </div>
                       </div>
@@ -2586,7 +2248,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       {enmiendasArt.length > 0 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.2rem' }}>
                           <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                            Enmiendas registradas ({enmiendasArt.length})
+                            {t('ui.registeredAmendments')}{enmiendasArt.length})
                           </div>
                           {enmiendasArt.map(e => (
                             <div
@@ -2604,7 +2266,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             >
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <span style={{ fontWeight: '800', color: '#60a5fa' }}>
-                                  {e.tipo?.toUpperCase()} por {e.paisProponente}
+                                  {e.tipo?.toUpperCase()} {t('ui.by')} {e.paisProponente}
                                 </span>
                                 <span style={{
                                   fontSize: '0.65rem',
@@ -2614,7 +2276,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                   backgroundColor: e.estado === 'aceptada' ? 'rgba(34, 197, 94, 0.2)' : e.estado === 'rechazada' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.2)',
                                   color: e.estado === 'aceptada' ? '#22c55e' : e.estado === 'rechazada' ? '#ef4444' : '#eab308'
                                 }}>
-                                  {e.estado?.toUpperCase() || 'EN DEBATE'}
+                                  {e.estado?.toUpperCase() || t('ui.inDebate')}
                                 </span>
                               </div>
                               {e.textoPropuesto && (
@@ -2650,7 +2312,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                     <Edit3 size={18} color="#3b82f6" />
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '800' }}>
-                      Redactar Propuesta de Enmienda
+                      {t('ui.draftAmendmentProposal')}
                     </h3>
                   </div>
                   <span style={{
@@ -2661,18 +2323,18 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     padding: '0.2rem 0.5rem',
                     borderRadius: '5px'
                   }}>
-                    Proponente: {clientCountry || 'Delegación'}
+                    {t('ui.proponent')} {clientCountry || t('history.delegation')}
                   </span>
                 </div>
 
                 <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', lineHeight: 1.4 }}>
-                  Formula tu propuesta de enmienda formal. Al enviarla, llegará de forma telemática e instantánea al panel de la Mesa Directiva para su evaluación parlamentaria.
+                  {t('ui.writeYourFormalAmendmentProposalItWillBeSentInstantly')}
                 </div>
 
                 {/* 1. Selector de Naturaleza de la Enmienda */}
                 <div>
                   <label style={{ fontSize: '0.74rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Tipo de Enmienda
+                    {t('ui.amendmentType')}
                   </label>
                   <div 
                     className="selector-tipo-enmienda-del"
@@ -2708,8 +2370,8 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>➔ Modificación</span>
-                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>Reemplazar texto</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{t('ui.modification')}</span>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{t('ui.replaceText')}</span>
                     </button>
 
                     <button
@@ -2735,8 +2397,8 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>+ Adición</span>
-                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>Añadir nuevo texto</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{t('ui.addition')}</span>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{t('ui.addNewText')}</span>
                     </button>
 
                     <button
@@ -2762,8 +2424,8 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>- Supresión</span>
-                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>Tachar / eliminar</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{t('ui.deletion')}</span>
+                      <span style={{ fontSize: '0.62rem', opacity: 0.8, fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{t('ui.strikeOutDelete')}</span>
                     </button>
                   </div>
                 </div>
@@ -2772,7 +2434,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <label style={{ fontSize: '0.74rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                      Cláusula a Enmendar
+                      {t('ui.clauseToAmend')}
                     </label>
                     {artIdDel && (
                       <button
@@ -2793,7 +2455,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                           cursor: 'pointer'
                         }}
                       >
-                        Restablecer texto original
+                        {t('ui.restoreOriginalText')}
                       </button>
                     )}
                   </div>
@@ -2826,10 +2488,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       fontWeight: '600'
                     }}
                   >
-                    <option value="">-- Añadir como Nueva Cláusula al Final / General --</option>
+                    <option value="">{t('ui.addAsNewClauseAtTheEndGeneral')}</option>
                     {articulosDoc.map(art => (
                       <option key={art.id} value={art.id}>
-                        {art.prefijo || `Artículo ${art.numero}`} - {art.texto?.substring(0, 50)}...
+                        {art.prefijo || t('ui.article3', { v0: art.numero })} - {art.texto?.substring(0, 50)}...
                       </option>
                     ))}
                   </select>
@@ -2840,11 +2502,11 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   <div>
                     <label style={{ fontSize: '0.74rem', fontWeight: '800', color: '#ef4444', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <FileMinus size={13} />
-                      <span>{tipoEnmiendaDel === 'supresion' ? 'Texto a Suprimir' : 'Texto Original a Modificar'}</span>
+                      <span>{tipoEnmiendaDel === 'supresion' ? t('ui.textToDelete') : t('ui.originalTextToModify')}</span>
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="Fragmento o texto original que se propone sustituir o eliminar..."
+                      placeholder={t('ui.originalTextOrExcerptProposedForReplacementOrDeletion')}
                       value={textoOriginalDel}
                       onChange={e => setTextoOriginalDel(e.target.value)}
                       style={{
@@ -2867,11 +2529,11 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   <div>
                     <label style={{ fontSize: '0.74rem', fontWeight: '800', color: '#22c55e', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <FilePlus size={13} />
-                      <span>Texto Propuesto / Nueva Redacción</span>
+                      <span>{t('ui.proposedTextNewWording')}</span>
                     </label>
                     <textarea
                       rows={3}
-                      placeholder="Escribe la redacción propuesta..."
+                      placeholder={t('ui.writeTheProposedWording')}
                       required
                       value={textoPropuestoDel}
                       onChange={e => setTextoPropuestoDel(e.target.value)}
@@ -2912,7 +2574,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       gap: '0.3rem'
                     }}>
                       <Eye size={12} />
-                      <span>Previsualización del Cambio en el Documento</span>
+                      <span>{t('ui.previewDocumentChange')}</span>
                     </div>
 
                     <div style={{ fontSize: '0.82rem', lineHeight: 1.5 }}>
@@ -2933,13 +2595,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
                       {tipoEnmiendaDel === 'supresion' && (
                         <div style={{ textDecoration: 'line-through', color: '#ef4444' }}>
-                          {textoOriginalDel || '(Texto a suprimir)'}
+                          {textoOriginalDel || t('ui.textToDelete2')}
                         </div>
                       )}
 
                       {tipoEnmiendaDel === 'adicion' && (
                         <div style={{ color: '#22c55e', fontWeight: '700' }}>
-                          + {textoPropuestoDel || '(Nueva cláusula propuesta)'}
+                          + {textoPropuestoDel || t('ui.proposedNewClause')}
                         </div>
                       )}
                     </div>
@@ -2949,11 +2611,11 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 {/* 6. Motivación / Justificación */}
                 <div>
                   <label style={{ fontSize: '0.74rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Motivación Diplomática / Justificación (Opcional)
+                    {t('ui.diplomaticMotivationJustificationOptional')}
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: Fomenta la transferencia tecnológica y salvaguardas multilaterales"
+                    placeholder={t('ui.eGPromotesTechnologyTransferAndMultilateralSafeguards')}
                     value={justificacionDel}
                     onChange={e => setJustificacionDel(e.target.value)}
                     style={{
@@ -2990,7 +2652,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                   }}
                 >
-                  <Send size={15} /> Enviar Propuesta a la Mesa Directiva
+                  <Send size={15} /> {t('ui.sendProposalToTheChair')}
                 </button>
               </form>
             )}
@@ -3003,7 +2665,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 {/* 1. Propuestas de este Delegado */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span>Tus Propuestas Enviadas ({misEnmiendasEnviadas.length})</span>
+                    <span>{t('ui.yourSubmittedProposals')}{misEnmiendasEnviadas.length})</span>
                     {misEnmiendasEnviadas.length > 0 && (
                       <button
                         onClick={() => setMisEnmiendasEnviadas([])}
@@ -3015,7 +2677,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                           cursor: 'pointer'
                         }}
                       >
-                        Limpiar historial propio
+                        {t('ui.clearMyHistory')}
                       </button>
                     )}
                   </div>
@@ -3030,7 +2692,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       color: 'var(--muted-text)',
                       fontSize: '0.78rem'
                     }}>
-                      No has propuesto ninguna enmienda durante esta sesión todavía.
+                      {t('ui.youHaveNotProposedAnyAmendmentsDuringThisSessionYet')}
                     </div>
                   ) : (
                     misEnmiendasEnviadas.map(prop => (
@@ -3063,7 +2725,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               padding: '0.1rem 0.4rem',
                               borderRadius: '4px'
                             }}>
-                              Enviada a la Mesa
+                              {t('ui.sentToTheChair')}
                             </span>
                             <button
                               onClick={() => handleEliminarPropuestaEnviada(prop.id)}
@@ -3074,7 +2736,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                                 cursor: 'pointer',
                                 padding: '2px'
                               }}
-                              title="Quitar de mi lista"
+                              title={t('ui.removeFromMyList')}
                             >
                               <Trash2 size={12} />
                             </button>
@@ -3095,7 +2757,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
                         {prop.justificacion && (
                           <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontStyle: 'italic' }}>
-                            Motivo: {prop.justificacion}
+                            {t('ui.reason')} {prop.justificacion}
                           </div>
                         )}
 
@@ -3110,7 +2772,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 {/* 2. Enmiendas Oficiales de la Sesión */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase' }}>
-                    Enmiendas Registradas en la Sesión ({enmiendasGlobales.length})
+                    {t('ui.amendmentsRegisteredInTheSession')}{enmiendasGlobales.length})
                   </div>
 
                   {enmiendasGlobales.length === 0 ? (
@@ -3123,7 +2785,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       color: 'var(--muted-text)',
                       fontSize: '0.78rem'
                     }}>
-                      La Mesa Directiva no ha introducido enmiendas formales en debate todavía.
+                      {t('ui.theChairHasNotIntroducedAnyFormalAmendmentsForDebate')}
                     </div>
                   ) : (
                     enmiendasGlobales.map(e => (
@@ -3141,7 +2803,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: '0.76rem', fontWeight: '800', color: 'var(--text-color)' }}>
-                            {e.tipo?.toUpperCase()} sobre {e.articuloNumero || `Artículo`}
+                            {e.tipo?.toUpperCase()} {t('ui.on')} {e.articuloNumero || t('ui.article4')}
                           </span>
                           <span style={{
                             fontSize: '0.68rem',
@@ -3151,12 +2813,12 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                             backgroundColor: e.estado === 'aceptada' ? 'rgba(34, 197, 94, 0.2)' : e.estado === 'rechazada' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.2)',
                             color: e.estado === 'aceptada' ? '#22c55e' : e.estado === 'rechazada' ? '#ef4444' : '#eab308'
                           }}>
-                            {e.estado?.toUpperCase() || 'EN DEBATE'}
+                            {e.estado?.toUpperCase() || t('ui.inDebate')}
                           </span>
                         </div>
 
                         <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
-                          Proponente: <strong style={{ color: '#60a5fa' }}>{e.paisProponente || 'Delegación'}</strong>
+                          {t('ui.proponent')} <strong style={{ color: '#60a5fa' }}>{e.paisProponente || t('history.delegation')}</strong>
                         </div>
 
                         {e.textoOriginal && (
@@ -3241,7 +2903,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                               {badge.label}
                             </span>
                             <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                              De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Staff'}</strong>
+                              {t('ui.from')} <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || t('conferences.issuerStaff')}</strong>
                             </span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -3365,10 +3027,10 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                 <Vote size={16} style={{ color: 'var(--accent-color)' }} />
                 <div>
                   <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', letterSpacing: '-0.01em', color: 'var(--text-color)' }}>
-                    Proponer Moción de Debate
+                    {t('ui.proposeDebateMotion')}
                   </h4>
                   <span style={{ fontSize: '0.68rem', opacity: 0.6, fontWeight: '500' }}>
-                    Formulación y transmisión a la Mesa Directiva
+                    {t('ui.draftAndSendToTheChair')}
                   </span>
                 </div>
               </div>
@@ -3389,7 +3051,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   justifyContent: 'center',
                   transition: 'opacity 0.15s ease'
                 }}
-                title="Cerrar formulario"
+                title={t('ui.closeForm')}
               >
                 <X size={15} />
               </button>
@@ -3500,7 +3162,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
                     <CountryFlag bandera={miPaisObj?.bandera} nombre={clientCountry} size="sm" />
                     <span style={{ fontWeight: '700', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {clientCountry || 'Tu Delegación'}
+                      {clientCountry || t('ui.yourDelegation')}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -3516,7 +3178,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                       alignItems: 'center',
                       gap: '0.25rem'
                     }}>
-                      <UserCheck size={11} /> Tu Delegación
+                      <UserCheck size={11} /> {t('ui.yourDelegation')}
                     </span>
                   </div>
                 </div>
@@ -3559,7 +3221,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   gap: '0.35rem'
                 }}>
                   <label style={{ fontSize: '0.7rem', fontWeight: '700', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <Mic size={12} /> {t('motions.speakerTurn', 'Turno de la delegación')} ({clientCountry || 'Proponente'}):
+                    <Mic size={12} /> {t('motions.speakerTurn', 'Turno de la delegación')} ({clientCountry || t('ui.proponent3')}):
                   </label>
                   <div style={{ display: 'flex', gap: '0.4rem' }}>
                     <button
@@ -3628,9 +3290,9 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
                     {[
-                      { id: 'Estándar', label: 'Estándar' },
+                      { id: 'Estándar', label: t('accessibility.densityStandard') },
                       { id: 'Cadena / Ping-Pong', label: 'Ping-Pong' },
-                      { id: 'Moderada por el Proponente', label: 'Mod. País' }
+                      { id: 'Moderada por el Proponente', label: t('ui.countryMod') }
                     ].map(v => (
                       <button
                         key={v.id}
@@ -3905,7 +3567,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   fontSize: '0.72rem',
                   color: '#bae6fd'
                 }}>
-                  <span><BarChart2 size={13} style={{ display: 'inline', marginRight: '0.35rem', verticalAlign: '-1px' }} />Capacidad estimada:</span>
+                  <span><BarChart2 size={13} style={{ display: 'inline', marginRight: '0.35rem', verticalAlign: '-1px' }} />{t('ui.estimatedCapacity')}</span>
                   <strong style={{ fontSize: '0.76rem', color: '#38bdf8' }}>
                     ~{intervencionesEstimadasMocion} {t('motions.estimatedInterventions', 'intervenciones')}
                   </strong>
@@ -3958,7 +3620,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <Send size={14} /> Transmitir Moción a la Mesa
+                  <Send size={14} /> {t('ui.sendMotionToTheChair')}
                 </button>
               </div>
             </form>
@@ -3995,7 +3657,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', fontSize: '1.1rem', color: '#eab308' }}>
-                <HelpCircle size={18} /> Levantar Punto Parlamentario / POI
+                <HelpCircle size={18} /> {t('ui.raiseParliamentaryPointPoi')}
               </div>
               <button
                 onClick={() => setPedirPuntoOpen(false)}
@@ -4007,7 +3669,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
             <form onSubmit={handleEnviarPunto} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Tipo de Punto o POI</label>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>{t('ui.pointOrPoiType')}</label>
                 <select
                   value={tipoPunto}
                   onChange={e => setTipoPunto(e.target.value)}
@@ -4022,20 +3684,20 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                     fontWeight: '700'
                   }}
                 >
-                  <option value="Punto de Información (POI)">Punto de Información (POI) - Pregunta al orador en curso</option>
-                  <option value="Punto de Información a la Mesa">Punto de Información a la Mesa Directiva</option>
-                  <option value="Punto de Privilegio Personal">Punto de Privilegio Personal (Sonido, visibilidad, malestar)</option>
-                  <option value="Punto de Orden">Punto de Orden (Violación del reglamento)</option>
-                  <option value="Punto de Duda Parlamentaria">Punto de Duda Parlamentaria (Cuestión de procedimiento)</option>
+                  <option value="Punto de Información (POI)">{t('ui.pointOfInformationPoiQuestionToTheCurrentSpeaker')}</option>
+                  <option value="Punto de Información a la Mesa">{t('ui.pointOfInformationToTheChair')}</option>
+                  <option value="Punto de Privilegio Personal">{t('ui.pointOfPersonalPrivilegeSoundVisibilityDiscomfort')}</option>
+                  <option value="Punto de Orden">{t('ui.pointOfOrderViolationOfTheRules')}</option>
+                  <option value="Punto de Duda Parlamentaria">{t('ui.parliamentaryInquiryQuestionAboutProcedure')}</option>
                 </select>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>Motivo / Pregunta / Explicación a la Mesa</label>
+                <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>{t('ui.reasonQuestionExplanationToTheChair')}</label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="Detalla tu pregunta (POI) o el motivo de tu punto a la Mesa Directiva..."
+                  placeholder={t('ui.explainYourQuestionPoiOrReasonForRaisingAPoint')}
                   value={motivoPunto}
                   onChange={e => setMotivoPunto(e.target.value)}
                   style={{
@@ -4066,7 +3728,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   boxShadow: '0 4px 14px rgba(234, 179, 8, 0.3)'
                 }}
               >
-                Transmitir Punto / POI a la Presidencia
+                {t('ui.sendPointPoiToTheChair')}
               </button>
             </form>
           </div>

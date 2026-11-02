@@ -1,14 +1,28 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const DashboardSubheader = ({ nombreComite, agendaSesion, tipoSesion = 'formal', cambiarTipoSesion }) => {
+const DashboardSubheader = ({
+  nombreComite,
+  agendaSesion,
+  tipoSesion = 'formal',
+  cambiarTipoSesion,
+  roleBadge,
+  roomId
+}) => {
   const { t } = useTranslation();
   const committee = nombreComite || t('header.noCommittee', 'Sin comité');
-  const agenda = agendaSesion?.temaActual || t('header.noAgenda', 'Agenda no establecida');
+  const agenda = agendaSesion?.temaActual || (typeof agendaSesion === 'string' ? agendaSesion : null) || t('header.noAgenda', 'Agenda no establecida');
 
   return (
     <div className="dashboard-committee-context">
       <span className="dashboard-committee-name" title={committee}><span>{committee}</span></span>
+      {roleBadge && <span className="dashboard-role-badge"><span>{roleBadge}</span></span>}
+      {roomId && (
+        <span className="dashboard-room-badge" title={`${t('liveSession.roomCode', 'Sala')}: ${roomId}`}>
+          <span className="dashboard-room-dot" />
+          <span>{roomId}</span>
+        </span>
+      )}
       <span className="dashboard-agenda" title={agenda}><span>{agenda}</span></span>
       {cambiarTipoSesion && <div className="dashboard-session-states" role="group" aria-label={t('header.sessionState', 'Estado de sesión')}>
         {[

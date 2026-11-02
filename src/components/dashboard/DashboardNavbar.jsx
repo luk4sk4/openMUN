@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Radio, Moon, Sun, Maximize2, Eye, Search, Megaphone, LayoutGrid, ToggleLeft, ToggleRight, Menu } from 'lucide-react';
+import { Radio, Moon, Sun, Maximize2, Eye, Search, Megaphone, LayoutGrid, ToggleLeft, ToggleRight, Menu, Building2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import SessionMenuDropdown from './SessionMenuDropdown';
 import { TAB_CONFIG } from '../../utils/dashboardTabs';
 import DashboardSubheader from './DashboardSubheader';
+import conferenceService from '../../services/conferenceService';
+import useTabIndicator from '../../hooks/useTabIndicator';
 
 const DashboardNavbar = ({
   nombreComite,
@@ -55,41 +57,9 @@ const DashboardNavbar = ({
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const sidebarEdgeRef = useRef(null);
   const toggleBtnRef = useRef(null);
-  const tabsNavRef = useRef(null);
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
+  const { tabsNavRef, indicatorStyle } = useTabIndicator(activeTab, tabs);
 
-  // Sincronizar indicador animado de pestaña activa
-  useEffect(() => {
-    if (!tabsNavRef.current) return;
-    const updateIndicator = () => {
-      const navEl = tabsNavRef.current;
-      if (!navEl) return;
-      const activeButton = navEl.querySelector('button[aria-current="page"]');
-      if (activeButton) {
-        setIndicatorStyle({
-          left: activeButton.offsetLeft,
-          width: activeButton.offsetWidth,
-          opacity: 1
-        });
-      } else {
-        setIndicatorStyle(prev => (prev.opacity === 0 ? prev : { ...prev, opacity: 0 }));
-      }
-    };
 
-    updateIndicator();
-
-    let observer;
-    if (typeof ResizeObserver !== 'undefined' && tabsNavRef.current) {
-      observer = new ResizeObserver(() => {
-        updateIndicator();
-      });
-      observer.observe(tabsNavRef.current);
-    }
-
-    return () => {
-      if (observer) observer.disconnect();
-    };
-  }, [activeTab, tabs]);
 
   const isLiveActive = connectionStatus === 'host_active';
 
@@ -227,6 +197,22 @@ const DashboardNavbar = ({
             conectarGoogleDrive={conectarGoogleDrive} desconectarGoogleDrive={desconectarGoogleDrive}
             sincronizarDriveManual={sincronizarDriveManual} borrarDatosLocales={borrarDatosLocales} addToast={addToast}
           />
+          <button
+            onClick={() => {
+              setIsToolsOpen(false);
+              const activeConf = conferenceService.obtenerSesionActiva();
+              window.dispatchEvent(new CustomEvent('openmun_navigate_view', {
+                detail: {
+                  view: 'conference',
+                  confId: activeConf?.id || '',
+                  mode: 'explore'
+                }
+              }));
+            }}
+            title={t('header.conferencesTooltip', 'Ir a Conferencias')}
+          >
+            <Building2 size={16} /><span>{t('header.conferences', 'Conferencias')}</span>
+          </button>
           <div className="dashboard-utilities">
             <button onClick={toggleThemeMode} title={isLight ? t('header.darkMode', 'Cambiar a modo oscuro') : t('header.lightMode', 'Cambiar a modo claro')}>
               {isLight ? <Moon size={16} /> : <Sun size={16} />}

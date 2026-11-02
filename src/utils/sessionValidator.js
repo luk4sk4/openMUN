@@ -1,3 +1,4 @@
+import i18n from '../languages/index.js';
 import { normalizarSesionesDebate } from './debateSessions.js';
 /**
  * sessionValidator.js
@@ -138,7 +139,7 @@ export function validateSessionJSON(rawInput) {
       return {
         valid: false,
         errorType: 'EMPTY_CONTENT',
-        message: 'El archivo está vacío.'
+        message: i18n.t('ui.theFileIsEmpty')
       };
     }
     try {
@@ -147,7 +148,7 @@ export function validateSessionJSON(rawInput) {
       return {
         valid: false,
         errorType: 'SYNTAX_ERROR',
-        message: `Error de sintaxis JSON: ${syntaxErr.message}`
+        message: i18n.t('ui.jsonSyntaxError', { v0: syntaxErr.message })
       };
     }
   } else if (rawInput && typeof rawInput === 'object') {
@@ -156,7 +157,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'INVALID_TYPE',
-      message: 'El contenido no es un objeto JSON válido.'
+      message: i18n.t('ui.theContentIsNotAValidJsonObject')
     };
   }
 
@@ -165,7 +166,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'NOT_AN_OBJECT',
-      message: 'El archivo debe ser un objeto JSON con los datos de la sesión.'
+      message: i18n.t('ui.theFileMustBeAJsonObjectContainingSessionData')
     };
   }
 
@@ -178,7 +179,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'NOT_OPENMUN_SESSION',
-      message: 'El archivo corresponde a un formato no compatible (flujo de ComfyUI) y no a una sesión de OpenMUN.'
+      message: i18n.t('ui.theFileUsesAnUnsupportedFormatComfyuiWorkflowRatherThan')
     };
   }
 
@@ -254,7 +255,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'NOT_OPENMUN_SESSION',
-      message: 'El archivo no contiene una estructura reconocida de sesión de OpenMUN.'
+      message: i18n.t('toast.invalidSessionFormatDesc')
     };
   }
 
@@ -269,14 +270,14 @@ export function validateSessionJSON(rawInput) {
       return {
         valid: false,
         errorType: 'CORRUPT_PAISES',
-        message: 'El listado de países (paises) debe ser una lista/array.'
+        message: i18n.t('ui.theCountryListPaisesMustBeAnArray')
       };
     }
     // Asegurar que cada país tenga al menos un identificador y nombre válidos
     sanitized.paises = rawPaises.filter(p => p && typeof p === 'object').map((p, idx) => ({
       ...p,
       id: sanitizeString(p.id || `pais_${Date.now()}_${idx}`, 100),
-      nombre: sanitizeString(typeof p.nombre === 'string' ? p.nombre : (p.name || `Delegación ${idx + 1}`), 200),
+      nombre: sanitizeString(typeof p.nombre === 'string' ? p.nombre : (p.name || i18n.t('ui.delegation', { v0: idx + 1 })), 200),
       estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Presente', 50),
       bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 50),
       tieneVeto: Boolean(p.tieneVeto || p.veto),
@@ -289,7 +290,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'CORRUPT_ORADORES',
-      message: 'La lista de oradores (oradoresCola) debe ser una lista/array.'
+      message: i18n.t('ui.theSpeakersListOradorescolaMustBeAnArray')
     };
   }
 
@@ -299,7 +300,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'CORRUPT_CAUCUS_ORADORES',
-      message: 'La lista de oradores del caucus debe ser una lista/array.'
+      message: i18n.t('ui.theCaucusSpeakersListMustBeAnArray')
     };
   }
 
@@ -309,7 +310,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'CORRUPT_CAUCUS',
-      message: 'La configuración de caucus activo debe ser un objeto.'
+      message: i18n.t('ui.theActiveCaucusConfigurationMustBeAnObject')
     };
   }
 
@@ -319,7 +320,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'CORRUPT_VOTACION',
-      message: 'El estado de votación debe ser un objeto válido.'
+      message: i18n.t('ui.theVotingStateMustBeAValidObject')
     };
   }
 
@@ -329,7 +330,7 @@ export function validateSessionJSON(rawInput) {
     return {
       valid: false,
       errorType: 'CORRUPT_ENMIENDAS',
-      message: 'La estructura de enmiendas y proyecto de resolución debe ser un objeto válido.'
+      message: i18n.t('ui.theAmendmentAndDraftResolutionStructureMustBeAValid')
     };
   }
 
@@ -343,7 +344,7 @@ export function validateSessionJSON(rawInput) {
           return {
             valid: false,
             errorType: 'CORRUPT_CONFIG_LAYOUTS',
-            message: 'La configuración de layouts de la sesión está dañada.'
+            message: i18n.t('ui.theSessionLayoutConfigurationIsDamaged')
           };
         }
         if (parsedConfig.layouts || parsedConfig.theme || parsedConfig.accessibility) {
@@ -358,7 +359,7 @@ export function validateSessionJSON(rawInput) {
       return {
         valid: false,
         errorType: 'CORRUPT_CONFIG',
-        message: 'La configuración de interfaz (config) no pudo ser leída.'
+        message: i18n.t('ui.theInterfaceConfigurationConfigCouldNotBeRead')
       };
     }
   }
@@ -408,8 +409,8 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
     : {};
 
   // 2. Extraer nombre de comisión/comité
-  const rawNombre = inner.comision || inner.nombreComite || inner.nombre || inner.name || snapshot.openmun_comite || fallbackNombre || 'Comité MUN';
-  const cleanNombre = sanitizeString(typeof rawNombre === 'string' ? rawNombre.trim() : 'Comité MUN', 200);
+  const rawNombre = inner.comision || inner.nombreComite || inner.nombre || inner.name || snapshot.openmun_comite || fallbackNombre || i18n.t('ui.munCommittee');
+  const cleanNombre = sanitizeString(typeof rawNombre === 'string' ? rawNombre.trim() : i18n.t('ui.munCommittee'), 200);
 
   // 3. Extraer y normalizar lista de países / delegaciones
   let rawPaises = inner.paises || inner.delegaciones || inner.countries || snapshot.openmun_paises;
@@ -420,7 +421,7 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
 
   const paisesNormalizados = rawPaises.filter(p => p && typeof p === 'object').map((p, idx) => ({
     id: sanitizeString(p.id || `pais_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`, 100),
-    nombre: sanitizeString(typeof p.nombre === 'string' && p.nombre.trim() ? p.nombre.trim() : (p.name || `Delegación ${idx + 1}`), 200),
+    nombre: sanitizeString(typeof p.nombre === 'string' && p.nombre.trim() ? p.nombre.trim() : (p.name || i18n.t('ui.delegation', { v0: idx + 1 })), 200),
     bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 50),
     veto: Boolean(p.veto !== undefined ? p.veto : (p.tieneVeto !== undefined ? p.tieneVeto : false)),
     estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Ausente', 50)
@@ -499,7 +500,7 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
   let enmiendasSesion = null;
   if (rawEnmiendas && typeof rawEnmiendas === 'object' && !Array.isArray(rawEnmiendas)) {
     enmiendasSesion = {
-      tituloProyecto: rawEnmiendas.tituloProyecto || rawEnmiendas.titulo || 'Proyecto de Resolución A/RES/79/1',
+      tituloProyecto: rawEnmiendas.tituloProyecto || rawEnmiendas.titulo || i18n.t('ui.draftResolutionARes791'),
       textoResolucion: rawEnmiendas.textoResolucion || rawEnmiendas.texto || '',
       articulos: Array.isArray(rawEnmiendas.articulos) ? rawEnmiendas.articulos : [],
       enmiendas: Array.isArray(rawEnmiendas.enmiendas) ? rawEnmiendas.enmiendas : []

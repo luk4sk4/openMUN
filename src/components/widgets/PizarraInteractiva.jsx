@@ -487,10 +487,10 @@ const PizarraInteractiva = () => {
         width: '100%',
         height: '100%',
         backgroundColor: 'var(--panel-color)',
-        borderRadius: '12px',
+        borderRadius: 'var(--border-radius, 6px)',
         overflow: 'hidden',
-        border: '1px solid var(--border-color)',
-        boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+        border: 'none',
+        fontFamily: 'var(--font-family, Inter, system-ui, sans-serif)',
         position: 'relative',
         userSelect: 'none'
       }}
@@ -502,8 +502,8 @@ const PizarraInteractiva = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '0.5rem',
-          padding: '0.5rem 0.85rem',
+          gap: '0.4rem',
+          padding: '0.45rem 0.75rem',
           backgroundColor: 'var(--card-header-bg)',
           borderBottom: '1px solid var(--border-color)',
           zIndex: 10
@@ -513,20 +513,22 @@ const PizarraInteractiva = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
           <button
             onClick={() => setTool('pen')}
+            aria-pressed={tool === 'pen'}
             style={{
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
-              border: tool === 'pen' ? '1px solid var(--btn-bg)' : '1px solid var(--border-color)',
-              backgroundColor: tool === 'pen' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-              color: tool === 'pen' ? 'var(--btn-bg)' : 'var(--text-color)',
+              padding: '0.35rem 0.55rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tool === 'pen' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              backgroundColor: tool === 'pen' ? 'var(--accent-soft)' : 'var(--input-bg)',
+              color: tool === 'pen' ? 'var(--accent-color)' : 'var(--text-color)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
               fontSize: '0.78rem',
-              fontWeight: '600'
+              fontWeight: '600',
+              transition: 'all 0.12s ease'
             }}
-            title="Lápiz / Pincel"
+            title={t('ui.pencilBrush')}
           >
             <Pen size={14} />
             <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.pen', 'Lápiz')}</span>
@@ -534,20 +536,22 @@ const PizarraInteractiva = () => {
 
           <button
             onClick={() => setTool('highlighter')}
+            aria-pressed={tool === 'highlighter'}
             style={{
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
-              border: tool === 'highlighter' ? '1px solid #f59e0b' : '1px solid var(--border-color)',
-              backgroundColor: tool === 'highlighter' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
-              color: tool === 'highlighter' ? '#f59e0b' : 'var(--text-color)',
+              padding: '0.35rem 0.55rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tool === 'highlighter' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              backgroundColor: tool === 'highlighter' ? 'var(--accent-soft)' : 'var(--input-bg)',
+              color: tool === 'highlighter' ? 'var(--accent-color)' : 'var(--text-color)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
               fontSize: '0.78rem',
-              fontWeight: '600'
+              fontWeight: '600',
+              transition: 'all 0.12s ease'
             }}
-            title="Resaltador Semitransparente"
+            title={t('ui.translucentHighlighter')}
           >
             <Highlighter size={14} />
             <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.highlighter', 'Resaltador')}</span>
@@ -555,20 +559,22 @@ const PizarraInteractiva = () => {
 
           <button
             onClick={() => setTool('arrow')}
+            aria-pressed={tool === 'arrow'}
             style={{
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
-              border: tool === 'arrow' ? '1px solid #ec4899' : '1px solid var(--border-color)',
-              backgroundColor: tool === 'arrow' ? 'rgba(236, 72, 153, 0.2)' : 'transparent',
-              color: tool === 'arrow' ? '#ec4899' : 'var(--text-color)',
+              padding: '0.35rem 0.55rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tool === 'arrow' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              backgroundColor: tool === 'arrow' ? 'var(--accent-soft)' : 'var(--input-bg)',
+              color: tool === 'arrow' ? 'var(--accent-color)' : 'var(--text-color)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
               fontSize: '0.78rem',
-              fontWeight: '600'
+              fontWeight: '600',
+              transition: 'all 0.12s ease'
             }}
-            title="Flecha Táctica"
+            title={t('ui.tacticalArrow')}
           >
             <MoveRight size={14} />
             <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.arrow', 'Flecha')}</span>
@@ -576,20 +582,22 @@ const PizarraInteractiva = () => {
 
           <button
             onClick={() => setTool('circle')}
+            aria-pressed={tool === 'circle'}
             style={{
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
-              border: tool === 'circle' ? '1px solid #10b981' : '1px solid var(--border-color)',
-              backgroundColor: tool === 'circle' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-              color: tool === 'circle' ? '#10b981' : 'var(--text-color)',
+              padding: '0.35rem 0.55rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tool === 'circle' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              backgroundColor: tool === 'circle' ? 'var(--accent-soft)' : 'var(--input-bg)',
+              color: tool === 'circle' ? 'var(--accent-color)' : 'var(--text-color)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
               fontSize: '0.78rem',
-              fontWeight: '600'
+              fontWeight: '600',
+              transition: 'all 0.12s ease'
             }}
-            title="Zona Táctica / Círculo"
+            title={t('ui.tacticalZoneCircle')}
           >
             <Circle size={14} />
             <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.zone', 'Zona')}</span>
@@ -597,20 +605,22 @@ const PizarraInteractiva = () => {
 
           <button
             onClick={() => setTool('text')}
+            aria-pressed={tool === 'text'}
             style={{
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
-              border: tool === 'text' ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
-              backgroundColor: tool === 'text' ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-              color: tool === 'text' ? '#8b5cf6' : 'var(--text-color)',
+              padding: '0.35rem 0.55rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tool === 'text' ? 'var(--accent-color)' : 'var(--border-color)'}`,
+              backgroundColor: tool === 'text' ? 'var(--accent-soft)' : 'var(--input-bg)',
+              color: tool === 'text' ? 'var(--accent-color)' : 'var(--text-color)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
               fontSize: '0.78rem',
-              fontWeight: '600'
+              fontWeight: '600',
+              transition: 'all 0.12s ease'
             }}
-            title="Añadir Texto"
+            title={t('ui.addText')}
           >
             <Type size={14} />
             <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.text', 'Texto')}</span>
@@ -618,20 +628,22 @@ const PizarraInteractiva = () => {
 
           <button
             onClick={() => setTool('eraser')}
+            aria-pressed={tool === 'eraser'}
             style={{
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
-              border: tool === 'eraser' ? '1px solid #ef4444' : '1px solid var(--border-color)',
-              backgroundColor: tool === 'eraser' ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
-              color: tool === 'eraser' ? '#ef4444' : 'var(--text-color)',
+              padding: '0.35rem 0.55rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${tool === 'eraser' ? 'var(--danger-color)' : 'var(--border-color)'}`,
+              backgroundColor: tool === 'eraser' ? 'var(--danger-soft)' : 'var(--input-bg)',
+              color: tool === 'eraser' ? 'var(--danger-color)' : 'var(--text-color)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.3rem',
               fontSize: '0.78rem',
-              fontWeight: '600'
+              fontWeight: '600',
+              transition: 'all 0.12s ease'
             }}
-            title="Borrador"
+            title={t('whiteboard.eraser')}
           >
             <Eraser size={14} />
             <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.eraser', 'Borrador')}</span>
@@ -651,8 +663,8 @@ const PizarraInteractiva = () => {
                   height: '18px',
                   borderRadius: '50%',
                   backgroundColor: c,
-                  border: color === c ? '2px solid #ffffff' : '1px solid rgba(0,0,0,0.5)',
-                  boxShadow: color === c ? '0 0 6px rgba(255,255,255,0.6)' : 'none',
+                  border: color === c ? '2px solid var(--text-color)' : '1px solid var(--border-color)',
+                  boxShadow: color === c ? '0 0 0 1px var(--accent-color)' : 'none',
                   cursor: 'pointer',
                   padding: 0,
                   transform: color === c ? 'scale(1.2)' : 'scale(1)',
@@ -675,7 +687,7 @@ const PizarraInteractiva = () => {
                 cursor: 'pointer',
                 background: 'transparent'
               }}
-              title="Selector de color personalizado"
+              title={t('ui.customColorPicker')}
             />
           </div>
 
@@ -685,15 +697,17 @@ const PizarraInteractiva = () => {
               <button
                 key={b.size}
                 onClick={() => setBrushSize(b.size)}
+                aria-pressed={brushSize === b.size}
                 style={{
                   padding: '0.25rem 0.45rem',
                   fontSize: '0.7rem',
                   fontWeight: brushSize === b.size ? '700' : '500',
-                  borderRadius: '4px',
-                  border: brushSize === b.size ? '1px solid var(--btn-bg)' : '1px solid var(--border-color)',
-                  backgroundColor: brushSize === b.size ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                  color: brushSize === b.size ? 'var(--btn-bg)' : 'var(--muted-text)',
-                  cursor: 'pointer'
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: `1px solid ${brushSize === b.size ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                  backgroundColor: brushSize === b.size ? 'var(--accent-soft)' : 'var(--input-bg)',
+                  color: brushSize === b.size ? 'var(--accent-color)' : 'var(--muted-text)',
+                  cursor: 'pointer',
+                  transition: 'all 0.12s ease'
                 }}
                 title={`Grosor: ${b.label}`}
               >
@@ -717,9 +731,9 @@ const PizarraInteractiva = () => {
             }}
             style={{
               padding: '0.35rem 0.5rem',
-              backgroundColor: 'var(--panel-color)',
+              backgroundColor: 'var(--input-bg)',
               border: '1px solid var(--border-color)',
-              borderRadius: '6px',
+              borderRadius: 'var(--border-radius, 6px)',
               color: 'var(--text-color)',
               fontSize: '0.76rem',
               outline: 'none',
@@ -731,17 +745,17 @@ const PizarraInteractiva = () => {
                 {b.name}
               </option>
             ))}
-            {customBgUrl && <option value="custom">Imagen Subida</option>}
+            {customBgUrl && <option value="custom">{t('ui.uploadedImage')}</option>}
           </select>
 
           {/* Botón Subir Imagen */}
           <button
             onClick={() => fileInputRef.current?.click()}
             style={{
-              padding: '0.4rem 0.55rem',
-              borderRadius: '6px',
+              padding: '0.35rem 0.55rem',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--panel-color)',
+              backgroundColor: 'var(--input-bg)',
               color: 'var(--text-color)',
               cursor: 'pointer',
               display: 'flex',
@@ -750,7 +764,7 @@ const PizarraInteractiva = () => {
               fontSize: '0.76rem',
               fontWeight: '600'
             }}
-            title="Cargar mapa o imagen personalizada desde tu equipo"
+            title={t('ui.loadAMapOrCustomImageFromYourDevice')}
           >
             <Upload size={13} />
             <span>{t('common.upload', 'Subir')}</span>
@@ -768,15 +782,15 @@ const PizarraInteractiva = () => {
             onClick={handleUndo}
             disabled={historyStep < 0}
             style={{
-              padding: '0.4rem',
-              borderRadius: '6px',
+              padding: '0.35rem',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'transparent',
+              backgroundColor: 'var(--input-bg)',
               color: historyStep >= 0 ? 'var(--text-color)' : 'var(--muted-text)',
               cursor: historyStep >= 0 ? 'pointer' : 'not-allowed',
-              opacity: historyStep >= 0 ? 1 : 0.4
+              opacity: historyStep >= 0 ? 1 : 0.45
             }}
-            title="Deshacer (Undo)"
+            title={t('ui.undo')}
           >
             <RotateCcw size={14} />
           </button>
@@ -786,15 +800,15 @@ const PizarraInteractiva = () => {
             onClick={handleRedo}
             disabled={historyStep >= history.length - 1}
             style={{
-              padding: '0.4rem',
-              borderRadius: '6px',
+              padding: '0.35rem',
+              borderRadius: 'var(--border-radius, 6px)',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'transparent',
+              backgroundColor: 'var(--input-bg)',
               color: historyStep < history.length - 1 ? 'var(--text-color)' : 'var(--muted-text)',
               cursor: historyStep < history.length - 1 ? 'pointer' : 'not-allowed',
-              opacity: historyStep < history.length - 1 ? 1 : 0.4
+              opacity: historyStep < history.length - 1 ? 1 : 0.45
             }}
-            title="Rehacer (Redo)"
+            title={t('ui.redo')}
           >
             <RotateCw size={14} />
           </button>
@@ -803,14 +817,14 @@ const PizarraInteractiva = () => {
           <button
             onClick={handleClearDrawing}
             style={{
-              padding: '0.4rem',
-              borderRadius: '6px',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              color: '#ef4444',
+              padding: '0.35rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--danger-color)',
               cursor: 'pointer'
             }}
-            title="Limpiar todos los trazos (mantiene el fondo)"
+            title={t('ui.clearAllStrokesKeepBackground')}
           >
             <Trash2 size={14} />
           </button>
@@ -819,20 +833,21 @@ const PizarraInteractiva = () => {
           <button
             onClick={handleDownloadSnapshot}
             style={{
-              padding: '0.4rem 0.6rem',
-              borderRadius: '6px',
-              border: '1px solid #3b82f644',
-              backgroundColor: '#1d4ed8',
-              color: '#ffffff',
+              padding: '0.35rem 0.75rem',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid transparent',
+              backgroundColor: 'var(--btn-bg)',
+              color: 'var(--btn-text)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.25rem',
+              gap: '0.3rem',
               fontSize: '0.76rem',
-              fontWeight: '600',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
+              fontWeight: '650',
+              boxShadow: 'none',
+              transition: 'opacity 0.15s ease'
             }}
-            title="Descargar captura PNG con fondo y dibujos"
+            title={t('ui.downloadPngScreenshotWithBackgroundAndDrawings')}
           >
             <Download size={13} />
             <span>{t('common.save', 'Guardar')}</span>

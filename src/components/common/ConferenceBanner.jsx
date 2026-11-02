@@ -217,7 +217,7 @@ const ConferenceBanner = ({
           textTransform: 'uppercase',
           flexShrink: 0
         }}>
-          {aviso.emisor || 'Aviso Oficial'}
+          {aviso.emisor || t('ui.officialAnnouncement')}
         </span>
 
         {/* Badge de Destinatario si es dirigido */}
@@ -232,7 +232,7 @@ const ConferenceBanner = ({
             fontWeight: '800',
             flexShrink: 0
           }}>
-            Para: {metaDestino.shortLabel}
+            {t('ui.to')} {metaDestino.shortLabel}
           </span>
         )}
 
@@ -267,7 +267,7 @@ const ConferenceBanner = ({
               textDecoration: 'underline'
             }}
           >
-            Siguiente
+            {t('timers.nextLabel')}
           </button>
         )}
 

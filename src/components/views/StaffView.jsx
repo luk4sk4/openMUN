@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import i18n from '../../languages/index.js';
+import React, { useState, useEffect } from 'react';
 import { 
   Megaphone, 
   Send, 
   AlertCircle, 
   MessageSquare, 
-  LogOut, 
   Radio, 
   FileText, 
   Users, 
@@ -16,10 +16,7 @@ import {
   Download, 
   Trash2, 
   Check, 
-  Eye, 
   EyeOff, 
-  Sun, 
-  Moon, 
   Bell, 
   CheckSquare, 
   Square, 
@@ -30,7 +27,6 @@ import {
 
   Layers,
   ArrowRight,
-  ArrowLeft,
   ChevronDown,
   Building2,
   LayoutDashboard,
@@ -51,6 +47,7 @@ import { useTranslation } from 'react-i18next';
 import { useP2P } from '../../context/P2PContext';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { useToast } from '../../context/ToastContext';
 import AccessibilityModal from '../modals/AccessibilityModal';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
@@ -72,6 +69,7 @@ import {
 } from '../../utils/announcementHelpers';
 import MensajeriaComite from '../messaging/MensajeriaComite';
 import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
+import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 
 const StaffView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
@@ -81,6 +79,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
 
   // Hook para detectar overflow en la cabecera de Staff y compactar logo si es necesario
   const { containerRef: headerRef, isLogoCompact, isExtraCompact } = useTopBarOverflow();
+  const { addToast } = useToast();
 
   const {
     paises: sessionPaises,
@@ -118,22 +117,6 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
 
   // Estados y gestión de retorno / volver atrás
   const [volverMenuOpen, setVolverMenuOpen] = useState(false);
-  const volverMenuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (volverMenuRef.current && !volverMenuRef.current.contains(e.target)) {
-        setVolverMenuOpen(false);
-      }
-    };
-    if (volverMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [volverMenuOpen]);
-
   const confIdActiva = typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null;
   const isLocalTab = typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('local') === 'true' || Boolean(window.opener));
   const hasMultipleDestinations = Boolean(confIdActiva) || isLocalTab;
@@ -337,13 +320,12 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     };
   }, [confActiva?.id]);
 
-  const showToast = (msg) => {
-    setFeedbackToast(msg);
-    setTimeout(() => setFeedbackToast(null), 3000);
+  const showToast = (msg, type = 'success') => {
+    addToast({ message: msg, type });
   };
 
   const state = remoteSessionState || {};
-  const comisionNombre = sessionNombreComite || state.comision || state.nombreComite || 'Comité MUN';
+  const comisionNombre = sessionNombreComite || state.comision || state.nombreComite || i18n.t('ui.munCommittee');
   const oradoresGSL = (sessionOradoresCola && sessionOradoresCola.length > 0) ? sessionOradoresCola : (state.oradoresCola || []);
   const oradoresCaucus = (sessionOradoresCaucus && sessionOradoresCaucus.length > 0) ? sessionOradoresCaucus : (state.oradoresCaucus || []);
   const caucusActivo = (sessionCaucusActivo && sessionCaucusActivo.activo !== undefined) ? sessionCaucusActivo : (state.caucusActivo || {});
@@ -388,7 +370,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     if (confActiva?.id && roomId) {
       conferenceService.actualizarEstadoComite(confActiva.id, roomId, { tipo_sesion: nuevoTipo });
     }
-    showToast(`Estado del comité cambiado a ${nuevoTipo.toUpperCase()}`);
+    showToast(t('ui.committeeStatusChangedTo', { v0: nuevoTipo.toUpperCase() }));
   };
 
   const handleEmitirAviso = (e) => {
@@ -406,14 +388,14 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
 
     setTituloAviso('');
     setTextoAviso('');
-    showToast('Aviso emitido en tiempo real a las delegaciones del comité');
+    showToast(t('ui.announcementIssuedInRealTimeToCommitteeDelegations'));
   };
 
   const handleEnviarAvisoConferencia = async (e) => {
     e.preventDefault();
     if (!textoAvisoConf.trim()) return;
     if (!confActiva?.id) {
-      showToast('No hay conferencia activa vinculada');
+      showToast(t('ui.noActiveConferenceLinked'));
       return;
     }
     setEnviandoConf(true);
@@ -434,9 +416,9 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
 
       setTituloAvisoConf('');
       setTextoAvisoConf('');
-      showToast('Mensaje transmitido a la Base de Datos de la conferencia');
+      showToast(t('ui.messageSentToTheConferenceDatabase'));
     } catch (err) {
-      showToast('Error al enviar comunicado a la conferencia');
+      showToast(t('ui.errorSendingConferenceAnnouncement'));
     } finally {
       setEnviandoConf(false);
     }
@@ -448,7 +430,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
 
     sendNote(destinatarioNota, textoNota.trim(), tipoNota);
     setTextoNota('');
-    showToast(`Nota enviada a ${destinatarioNota}`);
+    showToast(t('ui.noteSentTo', { v0: destinatarioNota }));
   };
 
   const paisesDisponiblesGSL = paises.filter(p =>
@@ -464,63 +446,92 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
   const handleAñadirOradorGSL = (p) => {
     agregarOrador(p);
     setBusquedaGSL('');
-    showToast(`${p.nombre} añadido a la cola GSL`);
+    showToast(t('ui.addedToTheGslQueue', { v0: p.nombre }));
   };
 
   const handleRemoverOradorGSL = (idOrName, e) => {
     if (e) e.stopPropagation();
     removerOrador(idOrName);
-    showToast('Delegación removida de la cola GSL');
+    showToast(t('ui.delegationRemovedFromGslQueue'));
   };
 
   const handleVaciarGSL = () => {
     if (oradoresGSL.length === 0) return;
     vaciarOradoresGSL();
-    showToast('Cola GSL vaciada');
+    showToast(t('ui.gslQueueCleared'));
   };
 
   const handleAñadirOradorCaucus = (p) => {
     agregarOradorCaucus(p);
     setBusquedaCaucus('');
-    showToast(`${p.nombre} añadido a la cola del Caucus`);
+    showToast(t('ui.addedToTheCaucusQueue', { v0: p.nombre }));
   };
 
   const handleRemoverOradorCaucus = (idOrName, e) => {
     if (e) e.stopPropagation();
     removerOradorCaucus(idOrName);
-    showToast('Delegación removida de la cola del Caucus');
+    showToast(t('ui.delegationRemovedFromCaucusQueue'));
   };
 
   const handleAvanzarCaucus = () => {
     if (oradoresCaucus.length === 0) return;
     avanzarOradorCaucus();
-    showToast('Turno de caucus avanzado al siguiente orador');
+    showToast(t('ui.caucusTurnAdvancedToTheNextSpeaker'));
   };
 
   const handleVaciarCaucus = () => {
     if (oradoresCaucus.length === 0) return;
     vaciarOradoresDebate();
-    showToast('Cola del Caucus vaciada');
+    showToast(t('ui.caucusQueueCleared'));
   };
 
   const getPriorityBadge = (priority) => {
     switch (priority) {
       case 'urgente':
-        return { bg: 'rgba(239, 68, 68, 0.18)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444', label: 'URGENTE' };
+        return { bg: 'rgba(239, 68, 68, 0.18)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444', label: t('ui.urgent3') };
       case 'logistica':
-        return { bg: 'rgba(59, 130, 246, 0.18)', border: 'rgba(59, 130, 246, 0.4)', text: '#60a5fa', label: 'LOGÍSTICA' };
+        return { bg: 'rgba(59, 130, 246, 0.18)', border: 'rgba(59, 130, 246, 0.4)', text: '#60a5fa', label: t('ui.logistics') };
       case 'receso':
-        return { bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.4)', text: '#34d399', label: 'RECESO' };
+        return { bg: 'rgba(16, 185, 129, 0.18)', border: 'rgba(16, 185, 129, 0.4)', text: '#34d399', label: t('ui.recess') };
       case 'documento':
-        return { bg: 'rgba(168, 85, 247, 0.18)', border: 'rgba(168, 85, 247, 0.4)', text: '#c084fc', label: 'DOCUMENTACIÓN' };
+        return { bg: 'rgba(168, 85, 247, 0.18)', border: 'rgba(168, 85, 247, 0.4)', text: '#c084fc', label: t('ui.documentation') };
       case 'general':
       default:
         return { bg: 'rgba(245, 158, 11, 0.18)', border: 'rgba(245, 158, 11, 0.4)', text: '#fbbf24', label: 'GENERAL' };
     }
   };
 
+  const backOptions = [
+    ...(confIdActiva ? [{
+      label: t('views.staff.backToConference', 'Volver a Conferencia'),
+      icon: Building2,
+      color: 'var(--accent-color)',
+      onClick: () => handleNavigateBack('conference')
+    }] : []),
+    {
+      label: t('views.staff.backToDashboard', 'Volver a Modo Mesa (Chair)'),
+      icon: LayoutDashboard,
+      color: 'var(--accent-color)',
+      onClick: () => handleNavigateBack('chair')
+    },
+    ...(isLocalTab ? [{
+      label: t('views.staff.closeTab', 'Cerrar esta pestaña'),
+      icon: X,
+      color: 'var(--danger-color)',
+      danger: true,
+      onClick: () => handleNavigateBack('close')
+    }] : [])
+  ];
+
+  const staffTabs = [
+    { id: 'AVISOS_COMITE', label: t('views.staff.tabAnnouncements', 'Avisos Comité'), icon: Megaphone, badge: visibleAnnouncements.length },
+    { id: 'MENSAJERIA_COMITE', label: t('views.staff.tabMessaging', 'Mensajería Comité'), icon: MessageSquare, badge: notasStaff.length },
+    { id: 'COMUNICACION_CONF', label: t('views.staff.tabConference', 'Comunicación Conferencia'), icon: Globe, badge: avisosDBFiltrados.length },
+    { id: 'MONITOR_SALA', label: t('views.staff.tabMonitor', 'Monitor Sala'), icon: Radio }
+  ];
+
   return (
-    <div style={{
+    <div className="dashboard-shell" style={{
       minHeight: '100vh',
       backgroundColor: 'var(--bg-color)',
       color: 'var(--text-color)',
@@ -530,376 +541,32 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     }}>
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
 
-      {/* ── Cabecera de Staff ── */}
-      <header
-        ref={headerRef}
-        className="openmun-topbar"
-        style={{
-          padding: isExtraCompact ? '0.5rem 1rem' : '0.85rem 1.5rem',
-          backgroundColor: 'var(--header-bg)',
-          borderBottom: '1px solid var(--subborder-color)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          maxWidth: '100vw',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: isLogoCompact ? '0.5rem' : '0.9rem', minWidth: 0, flexShrink: 1 }}>
-          {/* Botón Volver Atrás con soporte de destinos múltiples */}
-          <div style={{ position: 'relative', flexShrink: 0 }} ref={volverMenuRef}>
-            <button
-              onClick={handleClickVolver}
-              className="openmun-topbar-btn"
-              style={{
-                backgroundColor: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid var(--subborder-color)',
-                borderRadius: '8px',
-                color: 'var(--text-color)',
-                padding: isExtraCompact ? '0.35rem 0.6rem' : '0.45rem 0.75rem',
-                fontSize: '0.82rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.15s ease'
-              }}
-              title={t('views.staff.back', 'Volver atrás')}
-            >
-              <ArrowLeft size={16} />
-              {!isExtraCompact && <span className="btn-text">{t('common.back', 'Volver')}</span>}
-              {hasMultipleDestinations && <ChevronDown size={13} style={{ opacity: 0.7 }} />}
-            </button>
-
-            {volverMenuOpen && (
-              <div style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                width: '230px',
-                backgroundColor: isLight ? 'rgba(255, 255, 255, 0.98)' : 'rgba(22, 27, 39, 0.96)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid var(--subborder-color)',
-                borderRadius: '10px',
-                boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 16px 36px rgba(0,0,0,0.5)',
-                padding: '0.4rem',
-                zIndex: 1000,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.25rem'
-              }}>
-                {confIdActiva && (
-                  <button
-                    onClick={() => handleNavigateBack('conference')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.55rem',
-                      padding: '0.5rem 0.65rem',
-                      borderRadius: '7px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      color: 'var(--text-color)',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      textAlign: 'left',
-                      transition: 'background-color 0.15s ease'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.15)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                  >
-                    <Building2 size={15} color="#8b5cf6" />
-                    <span>{t('views.staff.backToConference', 'Volver a Conferencia')}</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => handleNavigateBack('chair')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.55rem',
-                    padding: '0.5rem 0.65rem',
-                    borderRadius: '7px',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    color: 'var(--text-color)',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    textAlign: 'left',
-                    transition: 'background-color 0.15s ease'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.15)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                >
-                  <LayoutDashboard size={15} color="#3b82f6" />
-                  <span>{t('views.staff.backToDashboard', 'Volver a Modo Mesa (Chair)')}</span>
-                </button>
-                {isLocalTab && (
-                  <button
-                    onClick={() => handleNavigateBack('close')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.55rem',
-                      padding: '0.5rem 0.65rem',
-                      borderRadius: '7px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      color: '#ef4444',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      textAlign: 'left',
-                      transition: 'background-color 0.15s ease'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.15)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                  >
-                    <X size={15} color="#ef4444" />
-                    <span>{t('views.staff.closeTab', 'Cerrar esta pestaña')}</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <OpenMunLogo height={32} isLight={isLight} showText={!isLogoCompact} />
-          <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'nowrap' }}>
-              <span style={{ fontWeight: '800', fontSize: isExtraCompact ? '0.9rem' : '1.05rem', letterSpacing: '-0.01em', color: '#10b981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {t('views.staff.title', 'Consola de Staff y Logística')}
-              </span>
-              <span style={{
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                color: '#10b981',
-                padding: '0.15rem 0.5rem',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                flexShrink: 0
-              }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
-                Sala: {roomId}
-              </span>
-            </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {comisionNombre} · {t('views.staff.subtitle', 'Gestión de sala, avisos oficiales, pajes y asistencia operativa')}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          {/* Selector de Estado de Sesión en Vivo para Staff */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: isLight ? '#e2e8f0' : 'rgba(255,255,255,0.08)',
-            borderRadius: '8px',
-            padding: '2px',
-            gap: '2px'
-          }}>
-            {[
-              { id: 'formal', label: 'Formal', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.18)' },
-              { id: 'informal', label: 'Informal', color: '#eab308', bg: 'rgba(234, 179, 8, 0.18)' },
-              { id: 'receso', label: 'Receso', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.18)' },
-              { id: 'votacion', label: 'Votando', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.18)' }
-            ].map(s => {
-              const isActivo = (tipoSesion || state.tipoSesion || 'formal') === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => handleCambiarEstado(s.id)}
-                  style={{
-                    padding: '0.35rem 0.65rem',
-                    borderRadius: '6px',
-                    border: isActivo ? `1px solid ${s.color}` : '1px solid transparent',
-                    backgroundColor: isActivo ? (isLight ? '#ffffff' : s.bg) : 'transparent',
-                    color: isActivo ? s.color : 'var(--muted-text)',
-                    fontWeight: isActivo ? '800' : '600',
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    boxShadow: isActivo ? `0 0 8px ${s.color}33` : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={`Cambiar estado del comité a ${s.label}`}
-                >
-                  <span style={{
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    backgroundColor: s.color,
-                    boxShadow: isActivo ? `0 0 6px ${s.color}` : 'none'
-                  }} />
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() => setIsAccessModalOpen(true)}
-            className="openmun-topbar-btn"
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '8px',
-              color: 'var(--text-color)',
-              padding: '0.45rem 0.75rem',
-              fontSize: '0.8rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-          >
-            <Eye size={14} /> <span className="btn-text">{t('accessibility.title', 'Accesibilidad')}</span>
-          </button>
-
-          <button
-            onClick={toggleThemeMode}
-            className="openmun-topbar-btn"
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color)',
-              borderRadius: '8px',
-              color: 'var(--text-color)',
-              padding: '0.45rem 0.65rem',
-              fontSize: '0.8rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-            title={isLight ? t('header.darkMode', "Modo Oscuro") : t('header.lightMode', "Modo Claro")}
-          >
-            {isLight ? <Moon size={14} /> : <Sun size={14} />}
-          </button>
-
-          <LanguageSelector showIcon={false} />
-
-          <button
-            onClick={() => {
-              if (confirm(t('views.staff.confirmExit', '¿Deseas salir de la Consola de Staff?'))) {
-                handleNavigateBack(confIdActiva ? 'conference' : 'chair');
-              }
-            }}
-            className="openmun-topbar-btn"
-            style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              color: '#ef4444',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '8px',
-              padding: '0.45rem 0.85rem',
-              fontSize: '0.8rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
-            }}
-            title={t('common.exit', 'Salir')}
-          >
-            <LogOut size={14} /> <span className="btn-text">{t('common.exit', 'Salir')}</span>
-          </button>
-        </div>
-      </header>
+      <ConsoleNavbar
+        title={t('views.staff.title', 'Consola de Staff y Logística')}
+        roleBadge={t('views.staff.badge', 'Staff')}
+        roomId={roomId || 'Local'}
+        connectedPeersCount={connectedPeers?.length || 0}
+        nombreComite={comisionNombre}
+        agendaSesion={sessionAgendaSesion?.temaActual || remoteSessionState?.agendaSesion?.temaActual || t('views.staff.subtitle', 'Gestión de sala, avisos y asistencia operativa')}
+        tipoSesion={tipoSesion || state.tipoSesion || 'formal'}
+        cambiarTipoSesion={handleCambiarEstado}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        tabs={staffTabs}
+        isLight={isLight}
+        toggleThemeMode={toggleThemeMode}
+        setIsAccessOpen={setIsAccessModalOpen}
+        onBack={handleClickVolver}
+        hasBackDropdown={hasMultipleDestinations}
+        backDropdownOpen={volverMenuOpen}
+        setBackDropdownOpen={setVolverMenuOpen}
+        backOptions={backOptions}
+        onExit={() => handleNavigateBack(confIdActiva ? 'conference' : 'chair')}
+        exitConfirmMessage={t('views.staff.confirmExit', '¿Deseas salir de la Consola de Staff?')}
+      />
 
       {/* Banner de Avisos Oficiales de la Conferencia y Sala */}
       <ConferenceBanner isLight={isLight} role="staff" comiteId={currentComiteId} comiteNombre={currentComiteNombre} comites={comitesConf} />
-
-      {/* ── Barra de Pestañas de Navegación (4 Secciones) ── */}
-      <nav className="openmun-nav-tabs-container openmun-nav-tabs-list" style={{
-        display: 'flex',
-        gap: '0.4rem',
-        padding: '0.65rem 1.5rem',
-        backgroundColor: 'var(--card-header-bg)',
-        borderBottom: '1px solid var(--subborder-color)',
-        overflowX: 'auto'
-      }}>
-        {[
-          { id: 'AVISOS_COMITE', icon: Megaphone, label: 'Avisos Comité', badge: visibleAnnouncements.length },
-          { id: 'MENSAJERIA_COMITE', icon: MessageSquare, label: 'Mensajería Comité', badge: notasStaff.length },
-          { id: 'COMUNICACION_CONF', icon: Globe, label: 'Comunicación Conferencia', badge: avisosDBFiltrados.length },
-          { id: 'MONITOR_SALA', icon: Radio, label: 'Monitor Sala' }
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="openmun-nav-tab-btn"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                padding: '0.55rem 1.05rem',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: isActive ? 'var(--btn-bg)' : 'transparent',
-                color: isActive ? 'var(--btn-text)' : 'var(--muted-text)',
-                fontWeight: '700',
-                fontSize: '0.84rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                position: 'relative'
-              }}
-            >
-              <Icon size={16} />
-              <span>{tab.label}</span>
-              {tab.badge !== undefined && tab.badge > 0 && (
-                <span style={{
-                  backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : 'var(--subborder-color)',
-                  color: isActive ? '#ffffff' : 'var(--text-color)',
-                  fontSize: '0.7rem',
-                  fontWeight: '800',
-                  padding: '1px 6px',
-                  borderRadius: '10px'
-                }}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* ── Toast de Feedback ── */}
-      {feedbackToast && (
-        <div style={{
-          position: 'fixed',
-          top: '70px',
-          right: '24px',
-          backgroundColor: '#10b981',
-          color: '#ffffff',
-          padding: '0.65rem 1.15rem',
-          borderRadius: '10px',
-          fontWeight: '700',
-          fontSize: '0.85rem',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-          zIndex: 10000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          animation: 'fadeIn 0.2s ease-out'
-        }}>
-          <Check size={16} /> {feedbackToast}
-        </div>
-      )}
 
       {/* ── Contenido Principal según Pestaña ── */}
       <main className="openmun-main-content" style={{ flex: 1, padding: '1.5rem', maxWidth: '1300px', width: '100%', margin: '0 auto' }}>
@@ -927,7 +594,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                 </h3>
               </div>
               <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: '1.4' }}>
-                Los avisos emitidos aparecerán de inmediato en el titular y holder prioritario de todas las delegaciones conectadas a la sala.
+                {t('ui.announcementsAppearImmediatelyInTheHeadlineAndPriorityBannerOf')}
               </p>
 
               <form onSubmit={handleEmitirAviso} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -937,7 +604,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: Receso de 15 minutos / Entrega de Enmiendas"
+                    placeholder={t('ui.eG15MinuteRecessAmendmentSubmission')}
                     value={tituloAviso}
                     onChange={e => setTituloAviso(e.target.value)}
                     style={{
@@ -995,7 +662,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                   </label>
                   <textarea
                     rows={4}
-                    placeholder="Detalles sobre el aviso, hora límite, ubicación o instrucción de sala..."
+                    placeholder={t('ui.announcementDetailsDeadlineLocationOrRoomInstruction')}
                     value={textoAviso}
                     onChange={e => setTextoAviso(e.target.value)}
                     style={{
@@ -1052,7 +719,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
                 <Bell size={20} color="#10b981" />
                 <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800' }}>
-                  Avisos Activos en Sala ({visibleAnnouncements.length})
+                  {t('ui.activeRoomAnnouncements')}{visibleAnnouncements.length})
                 </h3>
               </div>
 
@@ -1073,7 +740,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                     {t('views.staff.noAnnouncements', 'No hay avisos emitidos en este momento.')}
                   </div>
                   <div style={{ fontSize: '0.78rem' }}>
-                    Usa el formulario lateral para emitir un aviso en tiempo real a las delegaciones del comité.
+                    {t('ui.useTheSideFormToSendARealTimeAnnouncement')}
                   </div>
                 </div>
               ) : (
@@ -1107,7 +774,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                               padding: '0.12rem 0.45rem',
                               borderRadius: '4px'
                             }}>
-                              ⚡ Sala Local
+                              {t('ui.localRoom')}
                             </span>
                             <span style={{
                               fontSize: '0.68rem',
@@ -1121,7 +788,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                               {badge.label}
                             </span>
                             <span style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                              De: <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || 'Staff'}</strong>
+                              {t('ui.from')} <strong style={{ color: 'var(--text-color)' }}>{ann.senderName || t('conferences.issuerStaff')}</strong>
                             </span>
                             <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
                               • {new Date(ann.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1252,7 +919,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#3b82f6',
+                    color: 'var(--accent-color)',
                     flexShrink: 0
                   }}>
                     <Mic size={18} />
@@ -1262,7 +929,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                       {t('timers.gslSpeakersList', 'Cola de la Lista de Oradores (GSL)')}
                     </h3>
                     <span style={{ fontSize: '0.76rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                      {oradoresGSL.length} {oradoresGSL.length === 1 ? 'delegación en turno' : 'delegaciones en turno'}
+                      {oradoresGSL.length} {oradoresGSL.length === 1 ? t('ui.delegationSpeaking') : t('ui.delegationsSpeaking')}
                     </span>
                   </div>
                 </div>
@@ -1286,7 +953,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                       gap: '0.35rem',
                       transition: 'all 0.15s ease'
                     }}
-                    title="Vaciar lista GSL"
+                    title={t('ui.clearGslList')}
                   >
                     <Trash2 size={13} /> {t('common.clearAll', 'Vaciar lista')}
                   </button>
@@ -1376,12 +1043,12 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                           <span style={{
                             fontSize: '0.74rem',
                             fontWeight: '800',
-                            color: '#3b82f6',
+                            color: 'var(--accent-color)',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.2rem'
                           }}>
-                            <Plus size={13} /> Añadir
+                            <Plus size={13} /> {t('sidebar.add')}
                           </span>
                         </div>
                       ))
@@ -1473,18 +1140,18 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                                 letterSpacing: '0.04em',
                                 marginTop: '1px'
                               }}>
-                                🎙️ EN TRIBUNA (ORADOR ACTUAL)
+                                {t('ui.atThePodiumCurrentSpeaker')}
                               </div>
                             )}
                             {esSiguiente && (
                               <div style={{
                                 fontSize: '0.72rem',
                                 fontWeight: '800',
-                                color: '#3b82f6',
+                                color: 'var(--accent-color)',
                                 letterSpacing: '0.04em',
                                 marginTop: '1px'
                               }}>
-                                SIGUIENTE ORADOR
+                                {t('ui.nextSpeaker')}
                               </div>
                             )}
                           </div>
@@ -1493,7 +1160,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                         <button
                           type="button"
                           onClick={(e) => handleRemoverOradorGSL(id, e)}
-                          title="Eliminar de la cola GSL"
+                          title={t('ui.removeFromGslQueue')}
                           style={{
                             background: 'none',
                             border: 'none',
@@ -1552,7 +1219,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                       {t('views.staff.caucusQueue', 'Cola de Oradores del Caucus')}
                     </h3>
                     <span style={{ fontSize: '0.76rem', color: 'var(--muted-text)', fontWeight: '600' }}>
-                      {oradoresCaucus.length} {oradoresCaucus.length === 1 ? 'orador en lista' : 'oradores en lista'}
+                      {oradoresCaucus.length} {oradoresCaucus.length === 1 ? t('ui.speakerOnList') : t('ui.speakersOnList')}
                     </span>
                   </div>
                 </div>
@@ -1567,7 +1234,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                           background: 'none',
                           border: '1px solid rgba(59, 130, 246, 0.35)',
                           backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                          color: '#3b82f6',
+                          color: 'var(--accent-color)',
                           borderRadius: '7px',
                           padding: '0.35rem 0.65rem',
                           fontSize: '0.76rem',
@@ -1578,7 +1245,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                           gap: '0.35rem',
                           transition: 'all 0.15s ease'
                         }}
-                        title="Avanzar al siguiente orador del caucus"
+                        title={t('ui.advanceToTheNextCaucusSpeaker')}
                       >
                         <SkipForward size={13} /> {t('views.staff.nextSpeaker', 'Sig. Orador')}
                       </button>
@@ -1600,7 +1267,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                           gap: '0.35rem',
                           transition: 'all 0.15s ease'
                         }}
-                        title="Vaciar cola de caucus"
+                        title={t('ui.clearCaucusQueue')}
                       >
                         <Trash2 size={13} /> {t('common.clearAll', 'Vaciar')}
                       </button>
@@ -1630,19 +1297,19 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                       color: '#ffffff',
                       letterSpacing: '0.04em'
                     }}>
-                      CAUCUS MODERADO ACTIVO
+                      {t('ui.moderatedCaucusActive')}
                     </span>
                     <span style={{ fontSize: '0.76rem', color: 'var(--muted-text)', fontWeight: '700' }}>
-                      {caucusActivo.tiempoTotal ? `${Math.round(caucusActivo.tiempoTotal / 60)} min total` : ''}
-                      {caucusActivo.tiempoOrador ? ` • ${caucusActivo.tiempoOrador}s / orador` : ''}
+                      {caucusActivo.tiempoTotal ? t('ui.minTotal', { v0: Math.round(caucusActivo.tiempoTotal / 60) }) : ''}
+                      {caucusActivo.tiempoOrador ? t('ui.sSpeaker', { v0: caucusActivo.tiempoOrador }) : ''}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.88rem', fontWeight: '800', color: 'var(--text-color)', marginTop: '2px' }}>
-                    Tema: {caucusActivo.tema || 'Sin tema especificado'}
+                    {t('ui.topic2')} {caucusActivo.tema || t('ui.noTopicSpecified')}
                   </div>
                   {caucusActivo.proponente && (
                     <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)' }}>
-                      Proponente: <strong style={{ color: 'var(--text-color)' }}>{caucusActivo.proponente}</strong>
+                      {t('ui.proponent')} <strong style={{ color: 'var(--text-color)' }}>{caucusActivo.proponente}</strong>
                     </div>
                   )}
                 </div>
@@ -1751,7 +1418,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                             alignItems: 'center',
                             gap: '0.2rem'
                           }}>
-                            <Plus size={13} /> Añadir
+                            <Plus size={13} /> {t('sidebar.add')}
                           </span>
                         </div>
                       ))
@@ -1847,7 +1514,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                                   color: '#f59e0b',
                                   border: '1px solid rgba(245, 158, 11, 0.35)'
                                 }}>
-                                  PROPONENTE
+                                  {t('ui.proponent2')}
                                 </span>
                               )}
                             </div>
@@ -1859,7 +1526,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                                 letterSpacing: '0.04em',
                                 marginTop: '1px'
                               }}>
-                                🎙️ EN TURNO DE CAUCUS
+                                {t('ui.caucusSpeakingTurn')}
                               </div>
                             )}
                             {esSiguiente && (
@@ -1870,7 +1537,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                                 letterSpacing: '0.04em',
                                 marginTop: '1px'
                               }}>
-                                SIGUIENTE ORADOR
+                                {t('ui.nextSpeaker')}
                               </div>
                             )}
                           </div>
@@ -1879,7 +1546,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                         <button
                           type="button"
                           onClick={(e) => handleRemoverOradorCaucus(id, e)}
-                          title="Eliminar de la cola del Caucus"
+                          title={t('ui.removeFromCaucusQueue')}
                           style={{
                             background: 'none',
                             border: 'none',
@@ -1943,12 +1610,12 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                       {t('views.staff.debatePhase', 'Fase del Debate')}
                     </div>
                     <div style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-color)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {caucusActivo.activo ? 'Caucus Moderado' : 'Lista General (GSL)'}
+                      {caucusActivo.activo ? t('motions.modCaucus') : t('ui.generalSpeakersListGsl')}
                     </div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {caucusActivo.activo
-                        ? (caucusActivo.tema ? `Tema: "${caucusActivo.tema}"` : 'Debate moderado activo')
-                        : (agendaSesion?.temaActual || agendaSesion?.topico || comisionNombre || 'Sesión en curso')}
+                        ? (caucusActivo.tema ? t('ui.topic4', { v0: caucusActivo.tema }) : t('ui.moderatedDebateActive'))
+                        : (agendaSesion?.temaActual || agendaSesion?.topico || comisionNombre || t('ui.sessionInProgress'))}
                     </div>
                   </div>
                 </div>
@@ -1996,7 +1663,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                       )}
                     </div>
                     <div style={{ fontSize: '0.76rem', color: oradorActual ? '#10b981' : 'var(--muted-text)', marginTop: '2px', fontWeight: '600' }}>
-                      {oradorActual ? (caucusActivo.activo ? 'En uso de la palabra (Caucus)' : 'En uso de la palabra (GSL)') : 'Esperando asignación'}
+                      {oradorActual ? (caucusActivo.activo ? t('ui.speakingCaucus') : t('ui.speakingGsl')) : t('ui.waitingForAssignment')}
                     </div>
                   </div>
                 </div>
@@ -2020,7 +1687,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#8b5cf6',
+                    color: 'var(--accent-color)',
                     flexShrink: 0
                   }}>
                     <Globe size={24} />
@@ -2051,10 +1718,10 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                 border: '1px solid var(--subborder-color)'
               }}>
                 {[
-                  { id: 'GSL', label: 'Cola GSL', icon: Mic, badge: oradoresGSL.length, color: '#3b82f6' },
-                  { id: 'CAUCUS', label: 'Cola Caucus', icon: Timer, badge: oradoresCaucus.length, color: '#f59e0b' },
-                  { id: 'MATRIZ', label: 'Matriz de Países', icon: Globe, badge: paises.length, color: '#10b981' },
-                  { id: 'AMBAS', label: 'Ambas Colas (GSL + Caucus)', icon: LayoutGrid, color: '#8b5cf6' }
+                  { id: 'GSL', label: t('views.staff.gslQueue'), icon: Mic, badge: oradoresGSL.length, color: 'var(--accent-color)' },
+                  { id: 'CAUCUS', label: t('ui.caucusQueue'), icon: Timer, badge: oradoresCaucus.length, color: '#f59e0b' },
+                  { id: 'MATRIZ', label: t('ui.countryMatrix'), icon: Globe, badge: paises.length, color: '#10b981' },
+                  { id: 'AMBAS', label: t('ui.bothQueuesGslCaucus'), icon: LayoutGrid, color: 'var(--accent-color)' }
                 ].map(opt => {
                   const Icon = opt.icon;
                   const isSelected = monitorSubTab === opt.id;

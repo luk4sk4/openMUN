@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo } from 'react';
 import { 
   Trophy, 
@@ -31,6 +32,7 @@ const GraficosParticipacion = ({
   mociones = [],
   registroIntervenciones = []
 }) => {
+  const { t } = useTranslation();
   const [metricaPodio, setMetricaPodio] = useState('tiempo'); // 'tiempo' | 'intervenciones' | 'preguntas'
 
   // Normalizar y enriquecer la lista de delegaciones con datos seguros
@@ -177,7 +179,7 @@ const GraficosParticipacion = ({
           </div>
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
-              Tiempo en sala
+              {t('ui.timeInSession')}
             </div>
             <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
               {formatMinutos(totalSegHablados)}
@@ -213,13 +215,13 @@ const GraficosParticipacion = ({
           </div>
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
-              Intervenciones
+              {t('ui.contributions')}
             </div>
             <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-              {totalDiscursos} discursos
+              {totalDiscursos} {t('ui.speeches')}
             </div>
             <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
-              {totalPreguntasGlobal} preguntas / POI
+              {totalPreguntasGlobal} {t('ui.questionsPoi')}
             </div>
           </div>
         </div>
@@ -249,13 +251,13 @@ const GraficosParticipacion = ({
           </div>
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
-              Participación sala
+              {t('ui.roomParticipation')}
             </div>
             <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
               {porcentajeParticipacion}%
             </div>
             <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
-              {delegacionesActivas.length} de {totalPaises} países
+              {delegacionesActivas.length} {t('ui.of')} {totalPaises} {t('ui.countries')}
             </div>
           </div>
         </div>
@@ -285,13 +287,13 @@ const GraficosParticipacion = ({
           </div>
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
-              Éxito mociones
+              {t('ui.motionSuccessRate')}
             </div>
             <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
               {tasaAprobacionMoc}%
             </div>
             <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
-              {mocAprobadas} aprobadas / {totalMoc} total
+              {mocAprobadas} {t('ui.approved')} {totalMoc} {t('ui.total')}
             </div>
           </div>
         </div>
@@ -312,7 +314,7 @@ const GraficosParticipacion = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.82rem', fontWeight: '650', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <TrendingUp size={15} style={{ color: 'var(--info-color)' }} />
-              Balance de debate: GSL vs Caucuses
+              {t('ui.debateBalanceGslVsCaucuses')}
             </span>
           </div>
 
@@ -345,29 +347,29 @@ const GraficosParticipacion = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.82rem', fontWeight: '650', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <FileCheck2 size={15} style={{ color: 'var(--success-color)' }} />
-              Resolución de mociones ({totalMoc})
+              {t('ui.motionOutcomes')}{totalMoc})
             </span>
             <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
-              {mocAprobadas} aprobadas • {mocRechazadas} rechazadas
+              {mocAprobadas} {t('ui.approved2')} {mocRechazadas} {t('ui.rejected')}
             </span>
           </div>
 
           {totalMoc === 0 ? (
             <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)', fontStyle: 'italic', padding: '0.2rem 0' }}>
-              No se han registrado mociones aún en este periodo.
+              {t('ui.noMotionsHaveBeenRecordedInThisPeriodYet')}
             </div>
           ) : (
             <>
               <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.72rem', flexWrap: 'wrap' }}>
                 <span style={{ color: 'var(--success-color)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem', fontVariantNumeric: 'tabular-nums' }}>
-                  <CheckCircle2 size={12} /> Aprobadas ({mocAprobadas})
+                  <CheckCircle2 size={12} /> {t('ui.approved3')}{mocAprobadas})
                 </span>
                 <span style={{ color: 'var(--danger-color)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem', fontVariantNumeric: 'tabular-nums' }}>
-                  <XCircle size={12} /> Rechazadas ({mocRechazadas})
+                  <XCircle size={12} /> {t('ui.rejected2')}{mocRechazadas})
                 </span>
                 {mocOtras > 0 && (
                   <span style={{ color: 'var(--warning-color)', fontWeight: '600', fontVariantNumeric: 'tabular-nums' }}>
-                    Otras / Pendientes ({mocOtras})
+                    {t('ui.otherPending')}{mocOtras})
                   </span>
                 )}
               </div>
@@ -399,13 +401,13 @@ const GraficosParticipacion = ({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '650', fontSize: '0.85rem', color: 'var(--text-color)' }}>
               <Trophy size={16} style={{ color: 'var(--warning-color)' }} />
-              <span>Ranking de delegaciones activas</span>
+              <span>{t('ui.activeDelegationRanking')}</span>
             </div>
 
             {/* Selector de Métrica para el Podio */}
             <div 
               role="group"
-              aria-label="Métrica de ranking"
+              aria-label={t('ui.rankingMetric')}
               style={{
                 display: 'flex',
                 backgroundColor: 'var(--input-bg)',
@@ -428,7 +430,7 @@ const GraficosParticipacion = ({
                   transition: 'all 0.15s ease'
                 }}
               >
-                Tiempo
+                {t('sidebar.widgets.cronometro_only_time.category')}
               </button>
               <button
                 onClick={() => setMetricaPodio('intervenciones')}
@@ -444,7 +446,7 @@ const GraficosParticipacion = ({
                   transition: 'all 0.15s ease'
                 }}
               >
-                Discursos
+                {t('ui.speeches2')}
               </button>
               <button
                 onClick={() => setMetricaPodio('preguntas')}
@@ -460,7 +462,7 @@ const GraficosParticipacion = ({
                   transition: 'all 0.15s ease'
                 }}
               >
-                Preguntas
+                {t('ui.questions')}
               </button>
             </div>
           </div>
@@ -496,7 +498,7 @@ const GraficosParticipacion = ({
 
           {listaActivaParaPodio.length === 0 && (
             <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.8rem' }}>
-              No hay datos registrados aún.
+              {t('ui.noDataRecordedYet')}
             </div>
           )}
         </div>
@@ -514,9 +516,9 @@ const GraficosParticipacion = ({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '650', fontSize: '0.85rem', color: 'var(--text-color)' }}>
               <UserX size={16} style={{ color: 'var(--muted-text)' }} />
-              <span>Delegaciones sin intervenciones ({delegacionesSilenciosas.length})</span>
+              <span>{t('ui.delegationsWithoutContributions')}{delegacionesSilenciosas.length})</span>
             </div>
-            <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>Sin actividad registrada</span>
+            <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>{t('ui.noActivityRecorded')}</span>
           </div>
 
           {delegacionesSilenciosas.length === 0 ? (
@@ -536,7 +538,7 @@ const GraficosParticipacion = ({
               border: '1px dashed var(--success-color)'
             }}>
               <CheckCircle2 size={20} />
-              <span>¡Excelente participación! Todas las delegaciones registradas han intervenido en la sesión.</span>
+              <span>{t('ui.excellentParticipationAllRegisteredDelegationsHaveSpokenInTheSession')}</span>
             </div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '2px' }}>

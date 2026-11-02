@@ -5,11 +5,10 @@ import CountryFlag from '../common/CountryFlag';
 import { playTimerAlarm } from '../../utils/audioAlerts';
 import './VotosConDerechos.css';
 
-const DURACIONES = [30, 45, 60, 90];
+const DURACIONES = [30, 45, 60, 90, 120];
 
 export function BotonesConDerechos({ tipoVotacion, onVote, voto, conDerechos }) {
   const { t } = useTranslation();
-  if (tipoVotacion !== 'substantive') return null;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
       {['favor', 'contra'].map(sentido => (
@@ -30,8 +29,6 @@ export function BotonesConDerechos({ tipoVotacion, onVote, voto, conDerechos }) 
 }
 
 export function ListaDerechos({ paises, sesion, votacionTerminada }) {
-  if (sesion?.tipoVotacion !== 'substantive') return null;
-
   const listaPaises = Array.isArray(paises) ? paises : [];
   const safeVotos = (sesion && sesion.votos && typeof sesion.votos === 'object') ? sesion.votos : {};
   const asistentes = listaPaises.filter(p => p && (p.estatus === 'Presente' || p.estatus === 'Presente y Votando'));

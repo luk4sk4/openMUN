@@ -1182,24 +1182,24 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   </button>
 
                   <button
-                    disabled={votacionSesion?.tipoVotacion === 'procedural'}
+                    disabled={miPaisObj?.estatus === 'Presente y Votando'}
                     onClick={() => handleEmitirVoto('abstencion')}
                     style={{
-                      backgroundColor: votacionSesion?.tipoVotacion === 'procedural'
+                      backgroundColor: miPaisObj?.estatus === 'Presente y Votando'
                         ? 'rgba(255,255,255,0.03)'
                         : (miVotoRegistrado === 'abstencion' ? '#eab308' : 'rgba(234, 179, 8, 0.15)'),
-                      color: votacionSesion?.tipoVotacion === 'procedural'
+                      color: miPaisObj?.estatus === 'Presente y Votando'
                         ? 'var(--muted-text)'
                         : (miVotoRegistrado === 'abstencion' ? '#ffffff' : '#fde047'),
-                      border: `1px solid ${votacionSesion?.tipoVotacion === 'procedural' ? 'var(--subborder-color)' : 'rgba(234, 179, 8, 0.4)'}`,
+                      border: `1px solid ${miPaisObj?.estatus === 'Presente y Votando' ? 'var(--subborder-color)' : 'rgba(234, 179, 8, 0.4)'}`,
                       borderRadius: '8px',
                       padding: '0.55rem 0.3rem',
                       fontWeight: '800',
                       fontSize: '0.78rem',
-                      cursor: votacionSesion?.tipoVotacion === 'procedural' ? 'not-allowed' : 'pointer',
-                      opacity: votacionSesion?.tipoVotacion === 'procedural' ? 0.4 : 1
+                      cursor: miPaisObj?.estatus === 'Presente y Votando' ? 'not-allowed' : 'pointer',
+                      opacity: miPaisObj?.estatus === 'Presente y Votando' ? 0.4 : 1
                     }}
-                    title={votacionSesion?.tipoVotacion === 'procedural' ? t('ui.abstentionsAreNotAllowedOnMotionsOrProceduralMatters') : ''}
+                    title={miPaisObj?.estatus === 'Presente y Votando' ? t('ui.presentAndVotingCannotAbstain2') : t('voting.abstention')}
                   >
                     {t('voting.abstention')}
                   </button>

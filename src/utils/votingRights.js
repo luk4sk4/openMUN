@@ -9,7 +9,6 @@ export function registrarVotoConDerechos(sesion, paisId, voto) {
   };
   const tipoVotacion = safeSesion.tipoVotacion || 'procedural';
   const conDerechos = voto === 'favor_derechos' || voto === 'contra_derechos';
-  if (conDerechos && tipoVotacion !== 'substantive') return safeSesion;
 
   const votoBase = conDerechos ? voto.replace('_derechos', '') : voto;
   const votos = { ...(safeSesion.votos || {}) };

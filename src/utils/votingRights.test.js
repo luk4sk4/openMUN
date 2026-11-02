@@ -16,5 +16,6 @@ for (const voto of ['favor', 'contra', 'abstencion', 'pasar', null]) {
   assert.equal(changed.votos.b, 'abstencion');
 }
 const procedural = { tipoVotacion: 'procedural', votos: {} };
-assert.equal(registrarVotoConDerechos(procedural, 'a', 'favor_derechos'), procedural);
-assert.equal(registrarVotoConDerechos(procedural, 'a', 'contra_derechos'), procedural);
+const procFavor = registrarVotoConDerechos(procedural, 'a', 'favor_derechos');
+assert.deepEqual(procFavor.votos, { a: 'favor' });
+assert.deepEqual(procFavor.derechos, { a: true });

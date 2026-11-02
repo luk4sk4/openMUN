@@ -1335,7 +1335,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
         </div>
       )}
 
-      <ListaDerechos paises={paises} sesion={votacionSesion} votacionTerminada={stats.finalizada} />
+      <ListaDerechos paises={paises} sesion={votacionSesion} votacionTerminada={stats.finalizada && !modoRollCall} />
 
       {/* ─── DOCK FLOTANTE DE ROLL CALL NOMINAL DENTRO DEL MAPA ─── */}
       {modoRollCall && (
@@ -1465,89 +1465,83 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   <span>{t('voting.inFavor', 'A Favor')}</span>
                 </button>
 
-                {/* 2. A Favor con Derechos (Solo en Sustantiva) */}
-                {tipoVotacion === 'substantive' && (
-                  <button
-                    type="button"
-                    onClick={() => registrarYAvanzarRollCall('favor_derechos')}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      backgroundColor: 'var(--success-soft)',
-                      color: 'var(--success-color)',
-                      fontWeight: '750',
-                      border: '1px solid var(--success-color)',
-                      borderRadius: 'var(--border-radius)',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                    title={t('voting.inFavorWithRights', 'A favor con derechos')}
-                  >
-                    <Scale size={12} />
-                    <span>{t('voting.inFavorWithRights', 'A favor con derechos')}</span>
-                  </button>
-                )}
+                {/* 2. A Favor con Derechos */}
+                <button
+                  type="button"
+                  onClick={() => registrarYAvanzarRollCall('favor_derechos')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    backgroundColor: 'var(--success-soft)',
+                    color: 'var(--success-color)',
+                    fontWeight: '750',
+                    border: '1px solid var(--success-color)',
+                    borderRadius: 'var(--border-radius)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={t('voting.inFavorWithRights', 'A favor con derechos')}
+                >
+                  <Scale size={12} />
+                  <span>{t('voting.inFavorWithRights', 'A favor con derechos')}</span>
+                </button>
 
-                {/* 3. Abstención solo en Sustantiva y si NO es Presente y Votando y NO en Ronda 2 */}
-                {tipoVotacion === 'substantive' && (
-                  <button
-                    type="button"
-                    onClick={() => registrarYAvanzarRollCall('abstencion')}
-                    disabled={paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      backgroundColor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'transparent' : 'var(--warning-solid)',
-                      color: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'var(--muted-text)' : 'var(--btn-text)',
-                      border: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? '1px solid var(--border-color)' : 'none',
-                      opacity: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 0.45 : 1,
-                      fontWeight: '750',
-                      borderRadius: 'var(--border-radius)',
-                      cursor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'not-allowed' : 'pointer',
-                      fontSize: '0.75rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                      transition: 'opacity 0.15s ease'
-                    }}
-                    title={
-                      rondaRollCall === 2
-                        ? t('ui.abstentionIsNotAllowedInTheSecondRound')
-                        : (paisActualRollCall.estatus === 'Presente y Votando' ? t('ui.presentAndVotingCannotAbstain') : t('voting.abstention'))
-                    }
-                  >
-                    <RotateCcw size={11} />
-                    <span>{t('voting.abstention', 'Abstención')}</span>
-                  </button>
-                )}
+                {/* 3. Abstención (si no es Presente y Votando y no en Ronda 2) */}
+                <button
+                  type="button"
+                  onClick={() => registrarYAvanzarRollCall('abstencion')}
+                  disabled={paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    backgroundColor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'transparent' : 'var(--warning-solid)',
+                    color: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'var(--muted-text)' : 'var(--btn-text)',
+                    border: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? '1px solid var(--border-color)' : 'none',
+                    opacity: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 0.45 : 1,
+                    fontWeight: '750',
+                    borderRadius: 'var(--border-radius)',
+                    cursor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'not-allowed' : 'pointer',
+                    fontSize: '0.75rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    transition: 'opacity 0.15s ease'
+                  }}
+                  title={
+                    rondaRollCall === 2
+                      ? t('ui.abstentionIsNotAllowedInTheSecondRound')
+                      : (paisActualRollCall.estatus === 'Presente y Votando' ? t('ui.presentAndVotingCannotAbstain') : t('voting.abstention'))
+                  }
+                >
+                  <RotateCcw size={11} />
+                  <span>{t('voting.abstention', 'Abstención')}</span>
+                </button>
 
-                {/* 4. En Contra con Derechos (Solo en Sustantiva) */}
-                {tipoVotacion === 'substantive' && (
-                  <button
-                    type="button"
-                    onClick={() => registrarYAvanzarRollCall('contra_derechos')}
-                    style={{
-                      padding: '0.35rem 0.75rem',
-                      backgroundColor: 'var(--danger-soft)',
-                      color: 'var(--danger-color)',
-                      fontWeight: '750',
-                      border: '1px solid var(--danger-color)',
-                      borderRadius: 'var(--border-radius)',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                    title={t('voting.againstWithRights', 'En contra con derechos')}
-                  >
-                    <Scale size={12} />
-                    <span>{t('voting.againstWithRights', 'En contra con derechos')}</span>
-                  </button>
-                )}
+                {/* 4. En Contra con Derechos */}
+                <button
+                  type="button"
+                  onClick={() => registrarYAvanzarRollCall('contra_derechos')}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    backgroundColor: 'var(--danger-soft)',
+                    color: 'var(--danger-color)',
+                    fontWeight: '750',
+                    border: '1px solid var(--danger-color)',
+                    borderRadius: 'var(--border-radius)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={t('voting.againstWithRights', 'En contra con derechos')}
+                >
+                  <Scale size={12} />
+                  <span>{t('voting.againstWithRights', 'En contra con derechos')}</span>
+                </button>
 
                 {/* 5. En Contra */}
                 <button
@@ -1650,7 +1644,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                 <span style={{ color: 'var(--danger-color)', backgroundColor: 'var(--danger-soft)', border: '1px solid var(--danger-color)', padding: '0.2rem 0.55rem', borderRadius: '4px' }}>
                   {t('voting.against', 'En Contra')}: {stats.contra}
                 </span>
-                {tipoVotacion === 'substantive' && (
+                {(tipoVotacion === 'substantive' || stats.abstencion > 0) && (
                   <span style={{ color: 'var(--warning-color)', backgroundColor: 'var(--warning-soft)', border: '1px solid var(--warning-color)', padding: '0.2rem 0.55rem', borderRadius: '4px' }}>
                     {t('voting.abstention', 'Abstención')}: {stats.abstencion}
                   </span>
@@ -2019,89 +2013,83 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                 <span>{t('voting.inFavor', 'A Favor')}</span>
               </button>
 
-              {/* 2. A Favor con Derechos (Solo en Sustantiva) */}
-              {tipoVotacion === 'substantive' && (
-                <button
-                  type="button"
-                  onClick={() => handleSetVote('favor_derechos')}
-                  style={{
-                    padding: '0.45rem 0.7rem',
-                    borderRadius: 'var(--border-radius)',
-                    border: '1px solid var(--success-color)',
-                    backgroundColor: ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' && votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id]) ? 'var(--success-soft)' : 'var(--input-bg, var(--panel-color))',
-                    color: 'var(--success-color)',
-                    fontSize: '0.78rem',
-                    fontWeight: '750',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={t('voting.inFavorWithRights', 'A favor con derechos')}
-                >
-                  <Scale size={13} />
-                  <span>{t('voting.inFavorWithRights', 'A favor con derechos')}</span>
-                </button>
-              )}
+              {/* 2. A Favor con Derechos */}
+              <button
+                type="button"
+                onClick={() => handleSetVote('favor_derechos')}
+                style={{
+                  padding: '0.45rem 0.7rem',
+                  borderRadius: 'var(--border-radius)',
+                  border: '1px solid var(--success-color)',
+                  backgroundColor: ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'favor' && votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id]) ? 'var(--success-soft)' : 'var(--input-bg, var(--panel-color))',
+                  color: 'var(--success-color)',
+                  fontSize: '0.78rem',
+                  fontWeight: '750',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  transition: 'all 0.15s ease'
+                }}
+                title={t('voting.inFavorWithRights', 'A favor con derechos')}
+              >
+                <Scale size={13} />
+                <span>{t('voting.inFavorWithRights', 'A favor con derechos')}</span>
+              </button>
 
-              {/* 3. Abstención solo en Sustantiva y si NO es Presente y Votando */}
-              {tipoVotacion === 'substantive' && (
-                <button
-                  type="button"
-                  disabled={selectedCountryForVote.countryObj.estatus === 'Presente y Votando'}
-                  onClick={() => handleSetVote('abstencion')}
-                  style={{
-                    padding: '0.45rem 0.7rem',
-                    borderRadius: 'var(--border-radius)',
-                    border: '1px solid var(--warning-color)',
-                    backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--warning-solid)' : 'var(--input-bg, var(--panel-color))',
-                    color: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 'var(--muted-text)' : ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--btn-text)' : 'var(--warning-color)'),
-                    fontSize: '0.78rem',
-                    fontWeight: '750',
-                    cursor: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 'not-allowed' : 'pointer',
-                    opacity: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 0.35 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={
-                    selectedCountryForVote.countryObj.estatus === 'Presente y Votando'
-                      ? t('ui.delegationsWithPresentAndVotingStatusCannotAbstain')
-                      : t('voting.abstention')
-                  }
-                >
-                  <RotateCcw size={13} />
-                  <span>{t('voting.abstention', 'Abstención')}</span>
-                </button>
-              )}
+              {/* 3. Abstención (si no es Presente y Votando) */}
+              <button
+                type="button"
+                disabled={selectedCountryForVote.countryObj.estatus === 'Presente y Votando'}
+                onClick={() => handleSetVote('abstencion')}
+                style={{
+                  padding: '0.45rem 0.7rem',
+                  borderRadius: 'var(--border-radius)',
+                  border: '1px solid var(--warning-color)',
+                  backgroundColor: (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--warning-solid)' : 'var(--input-bg, var(--panel-color))',
+                  color: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 'var(--muted-text)' : ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--btn-text)' : 'var(--warning-color)'),
+                  fontSize: '0.78rem',
+                  fontWeight: '750',
+                  cursor: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 'not-allowed' : 'pointer',
+                  opacity: selectedCountryForVote.countryObj.estatus === 'Presente y Votando' ? 0.35 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  transition: 'all 0.15s ease'
+                }}
+                title={
+                  selectedCountryForVote.countryObj.estatus === 'Presente y Votando'
+                    ? t('ui.delegationsWithPresentAndVotingStatusCannotAbstain')
+                    : t('voting.abstention')
+                }
+              >
+                <RotateCcw size={13} />
+                <span>{t('voting.abstention', 'Abstención')}</span>
+              </button>
 
-              {/* 4. En Contra con Derechos (Solo en Sustantiva) */}
-              {tipoVotacion === 'substantive' && (
-                <button
-                  type="button"
-                  onClick={() => handleSetVote('contra_derechos')}
-                  style={{
-                    padding: '0.45rem 0.7rem',
-                    borderRadius: 'var(--border-radius)',
-                    border: '1px solid var(--danger-color)',
-                    backgroundColor: ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' && votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id]) ? 'var(--danger-soft)' : 'var(--input-bg, var(--panel-color))',
-                    color: 'var(--danger-color)',
-                    fontSize: '0.78rem',
-                    fontWeight: '750',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                  title={t('voting.againstWithRights', 'En contra con derechos')}
-                >
-                  <Scale size={13} />
-                  <span>{t('voting.againstWithRights', 'En contra con derechos')}</span>
-                </button>
-              )}
+              {/* 4. En Contra con Derechos */}
+              <button
+                type="button"
+                onClick={() => handleSetVote('contra_derechos')}
+                style={{
+                  padding: '0.45rem 0.7rem',
+                  borderRadius: 'var(--border-radius)',
+                  border: '1px solid var(--danger-color)',
+                  backgroundColor: ((votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' && votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id]) ? 'var(--danger-soft)' : 'var(--input-bg, var(--panel-color))',
+                  color: 'var(--danger-color)',
+                  fontSize: '0.78rem',
+                  fontWeight: '750',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  transition: 'all 0.15s ease'
+                }}
+                title={t('voting.againstWithRights', 'En contra con derechos')}
+              >
+                <Scale size={13} />
+                <span>{t('voting.againstWithRights', 'En contra con derechos')}</span>
+              </button>
 
               {/* 5. En Contra */}
               <button

@@ -1,0 +1,10 @@
+.note-review-actions button,
+.note-approval-toggle input {
+  font: inherit;
+}
+
+.note-review-actions button:focus-visible,
+.note-approval-toggle input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}

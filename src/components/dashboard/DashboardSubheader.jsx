@@ -1,5 +1,4 @@
 import React from 'react';
-import { Landmark, Scroll } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const DashboardSubheader = ({ nombreComite, agendaSesion, tipoSesion = 'formal', cambiarTipoSesion }) => {
@@ -9,8 +8,8 @@ const DashboardSubheader = ({ nombreComite, agendaSesion, tipoSesion = 'formal',
 
   return (
     <div className="dashboard-committee-context">
-      <span className="dashboard-committee-name" title={committee}><Landmark size={13} /><span>{committee}</span></span>
-      <span className="dashboard-agenda" title={agenda}><Scroll size={13} /><span>{agenda}</span></span>
+      <span className="dashboard-committee-name" title={committee}><span>{committee}</span></span>
+      <span className="dashboard-agenda" title={agenda}><span>{agenda}</span></span>
       {cambiarTipoSesion && <div className="dashboard-session-states" role="group" aria-label={t('header.sessionState', 'Estado de sesión')}>
         {[
           ['formal', t('header.stateFormal', 'Formal')],

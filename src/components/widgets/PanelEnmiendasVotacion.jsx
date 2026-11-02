@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { BotonesConDerechos, ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
 import { playTimerAlarm } from '../../utils/audioAlerts';
@@ -294,29 +295,16 @@ const PanelEnmiendasVotacion = () => {
         gap: '0.5rem',
         flexShrink: 0
       }}>
-        <div style={{ minWidth: 0, flex: 1, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
-            backgroundColor: 'var(--accent-soft, rgba(239, 163, 127, 0.12))',
-            color: 'var(--accent-color, #efa37f)',
-            padding: '4px',
-            borderRadius: '5px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
+            fontSize: '0.8rem',
+            fontWeight: '750',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}>
-            <Vote size={15} />
+            {asunto || 'Debate y Votación de Enmienda'}
           </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{
-              fontSize: '0.8rem',
-              fontWeight: '750',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {asunto || 'Debate y Votación de Enmienda'}
-            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.66rem', color: 'var(--muted-text)' }}>
               <span>{tipoVotacion === 'substantive' ? 'Sustantiva' : 'Procedimental'}</span>
               {proponenteDetectado && (
@@ -328,7 +316,6 @@ const PanelEnmiendasVotacion = () => {
               )}
             </div>
           </div>
-        </div>
 
         {/* Selector de Vista: Unificada / Solo Cronómetro / Solo Votación */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px', backgroundColor: 'var(--input-bg, rgba(255,255,255,0.04))', padding: '2px', borderRadius: '5px', border: '1px solid var(--border-color, #4b4b4b)' }}>
@@ -986,6 +973,7 @@ const PanelEnmiendasVotacion = () => {
                       </span>
                     </div>
 
+                    <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={handleVotarRollCall} />
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.3rem' }}>
                       <button
                         onClick={() => handleVotarRollCall('favor')}
@@ -1079,7 +1067,8 @@ const PanelEnmiendasVotacion = () => {
                         <CountryFlag country={p} size="xs" />
                         <span style={{ fontWeight: '650', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nombre}</span>
                       </div>
-                      <div style={{ display: 'flex', gap: '2px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '2px' }}>
+                        <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={voto => registrarVotoPais(p.id, voto)} voto={v} conDerechos={votacionSesion?.derechos?.[p.id]} />
                         <button
                           onClick={() => registrarVotoPais(p.id, v === 'favor' ? null : 'favor')}
                           style={{
@@ -1175,6 +1164,8 @@ const PanelEnmiendasVotacion = () => {
       </div>
 
       {/* ── PIE DEL PANEL UNIFICADO (Resultados en Vivo) ── */}
+      <ListaDerechos paises={paises} sesion={votacionSesion} />
+
       <div style={{
         padding: '0.45rem 0.75rem',
         borderTop: '1px solid var(--subborder-color, #414141)',

@@ -29,6 +29,7 @@ import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import { getFlagEmoji } from '../../utils/flags';
 import { playChimeAlert } from '../../utils/audioAlerts';
+import './NoteModeration.css';
 
 /**
  * Metadata y configuración visual para cada categoría de nota
@@ -187,6 +188,9 @@ const MensajeriaComite = ({
   const notasRol = useMemo(() => {
     return notes.filter(n => {
       if (!n || !n.text) return false;
+      if (['pending', 'rejected'].includes(n.status) && !['staff', 'chair', 'secretariat'].includes(effectiveRole)) {
+        return effectiveRole === 'delegate' && effectiveCountry && n.from?.toLowerCase().trim() === effectiveCountry.toLowerCase().trim();
+      }
 
       // Host Chair y Secretaría ven todas las notas del comité
       if (effectiveRole === 'chair' || effectiveRole === 'secretariat') {
@@ -197,6 +201,7 @@ const MensajeriaComite = ({
       if (effectiveRole === 'staff') {
         const dest = (n.to || '').toUpperCase().trim();
         return (
+          n.status === 'pending' || n.status === 'rejected' || n.reviewedAt ||
           dest === 'STAFF' ||
           dest === 'CHAIR' ||
           dest === 'MESA' ||
@@ -288,7 +293,7 @@ const MensajeriaComite = ({
         try { playChimeAlert(0.35); } catch {}
       }
       setTextoNota('');
-      setFeedbackEnvio('Nota enviada con éxito');
+      setFeedbackEnvio(effectiveRole === 'delegate' && settings.requireStaffNoteApproval ? 'Nota pendiente de aprobación de staff' : 'Nota enviada con éxito');
       setTimeout(() => setFeedbackEnvio(null), 2500);
 
       if (typeof onNoteSent === 'function') {
@@ -912,6 +917,17 @@ const MensajeriaComite = ({
                         transition: 'all 0.15s ease'
                       }}
                     >
+                      {nota.status && (
+                        <div role="status" style={{ fontSize: '0.75rem', color: nota.status === 'pending' ? 'var(--warning-color)' : nota.status === 'rejected' ? 'var(--danger-color)' : 'var(--success-color)' }}>
+                          {nota.status === 'pending' ? 'Pendiente de aprobación de staff' : nota.status === 'rejected' ? 'Rechazada por staff; no entregada' : nota.status === 'approved' ? 'Aprobada por staff y entregada' : 'Entregada'}
+                        </div>
+                      )}
+                      {effectiveRole === 'staff' && nota.status === 'pending' && (
+                        <div className="note-review-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          <button type="button" onClick={() => p2p.reviewNote(nota.id, 'approved')} style={{ background: 'var(--btn-bg)', color: 'var(--btn-text)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius, 6px)', padding: '8px 12px', cursor: 'pointer' }}>Aprobar y entregar</button>
+                          <button type="button" onClick={() => p2p.reviewNote(nota.id, 'rejected')} style={{ background: 'transparent', color: 'var(--danger-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius, 6px)', padding: '8px 12px', cursor: 'pointer' }}>Rechazar</button>
+                        </div>
+                      )}
                       {/* Cabecera de la nota */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>

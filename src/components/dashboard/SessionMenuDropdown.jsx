@@ -10,8 +10,6 @@ import {
   FolderOpen,
   LogOut,
   ShieldCheck,
-  AlertTriangle,
-  Database,
   Save
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -23,17 +21,9 @@ const SessionMenuDropdown = ({
   sessionMenuOpen,
   setSessionMenuOpen,
   isLight,
-  isDriveLinked,
-  driveSyncStatus,
-  driveUser,
-  driveFileName,
   fileInputRef,
   setIsExportModalOpen,
-  setIsDriveModalOpen,
   setIsCloudModalOpen,
-  conectarGoogleDrive,
-  desconectarGoogleDrive,
-  sincronizarDriveManual,
   borrarDatosLocales,
   addToast
 }) => {
@@ -56,18 +46,18 @@ const SessionMenuDropdown = ({
   const [quickSaveName, setQuickSaveName] = useState('');
   const [cloudLoading, setCloudLoading] = useState(false);
 
-  // Cerrar al hacer clic fuera del menú
+  // Cerrar al pulsar tecla Escape
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target)) {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && sessionMenuOpen) {
         setSessionMenuOpen(false);
       }
     };
     if (sessionMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [sessionMenuOpen, setSessionMenuOpen]);
 
@@ -75,54 +65,53 @@ const SessionMenuDropdown = ({
     <div style={{ position: 'relative' }} ref={menuContainerRef}>
       {/* Botón Principal de Sesión */}
       <button
+        type="button"
         onClick={() => setSessionMenuOpen(prev => !prev)}
+        aria-haspopup="true"
+        aria-expanded={sessionMenuOpen}
+        aria-label={t('header.sessionMenuTooltip', 'Gestión de Sesión: Guardar en la nube, Importar y Exportar')}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '0.45rem',
           backgroundColor: sessionMenuOpen
-            ? (isLight ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.2)')
-            : (isDriveLinked ? 'rgba(66, 133, 244, 0.08)' : 'transparent'),
-          border: `1px solid ${sessionMenuOpen ? 'var(--btn-bg)' : isDriveLinked ? 'rgba(66, 133, 244, 0.4)' : 'var(--subborder-color)'}`,
-          borderRadius: '6px',
-          color: 'var(--text-color)',
+            ? 'var(--accent-soft)'
+            : (isCloudLinked ? 'var(--card-hover)' : 'transparent'),
+          border: `1px solid ${sessionMenuOpen ? 'var(--accent-color)' : (isCloudLinked ? 'var(--border-color)' : 'var(--subborder-color)')}`,
+          borderRadius: 'var(--border-radius, 6px)',
+          color: sessionMenuOpen ? 'var(--accent-color)' : 'var(--text-color)',
           padding: '0.4rem 0.65rem',
           fontSize: '0.78rem',
           fontWeight: '600',
           cursor: 'pointer',
-          transition: 'all 0.2s ease'
+          transition: 'all 0.15s ease'
         }}
-        title={t('header.sessionMenuTooltip', 'Gestión de Sesión: Importar, Exportar y Google Drive')}
+        title={t('header.sessionMenuTooltip', 'Gestión de Sesión: Guardar en la nube, Importar y Exportar')}
       >
-        <FolderArchive size={15} style={{ color: isDriveLinked ? '#2684fc' : 'currentColor' }} />
+        <FolderArchive
+          size={15}
+          style={{
+            color: sessionMenuOpen ? 'var(--accent-color)' : (isCloudLinked ? 'var(--accent-color)' : 'currentColor')
+          }}
+        />
         <span>{t('header.sessionMenu', 'Sesión')}</span>
 
-        {/* Indicador de estado de Google Drive */}
-        {driveSyncStatus === 'syncing' || driveSyncStatus === 'connecting' ? (
-          <RefreshCw size={11} className="spin-animation" style={{ color: '#2684fc' }} />
-        ) : isDriveLinked && driveSyncStatus === 'synced' ? (
+        {/* Indicador de estado de sincronización */}
+        {cloudSyncStatus === 'syncing' ? (
+          <RefreshCw size={11} className="spin-animation" style={{ color: 'var(--accent-color)' }} />
+        ) : isCloudLinked && cloudSyncStatus === 'synced' ? (
           <span style={{
             width: '6px',
             height: '6px',
             borderRadius: '50%',
-            backgroundColor: '#00ac47',
-            boxShadow: '0 0 5px #00ac47'
+            backgroundColor: 'var(--success-color)'
           }} />
-        ) : isDriveLinked && driveSyncStatus === 'conflict' ? (
+        ) : cloudSyncStatus === 'error' ? (
           <span style={{
             width: '6px',
             height: '6px',
             borderRadius: '50%',
-            backgroundColor: '#f59e0b',
-            boxShadow: '0 0 5px #f59e0b'
-          }} />
-        ) : isDriveLinked && driveSyncStatus === 'error' ? (
-          <span style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            backgroundColor: '#ea4335',
-            boxShadow: '0 0 5px #ea4335'
+            backgroundColor: 'var(--danger-color)'
           }} />
         ) : null}
 
@@ -130,721 +119,655 @@ const SessionMenuDropdown = ({
           size={13}
           style={{
             transform: sessionMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease',
+            transition: 'transform 0.15s ease',
             opacity: 0.7
           }}
         />
       </button>
 
-      {/* Menú Desplegable Unificado */}
+      {/* Overlay de Fondo Opaco + Menú Desplegable Rediseñado */}
       {sessionMenuOpen && (
-        <div
-          style={{
-            position: placement === 'sidebar' ? 'fixed' : 'absolute',
-            top: placement === 'sidebar' ? 'calc(var(--dashboard-tools-top, 64px) + 8px)' : 'calc(100% + 6px)',
-            left: undefined,
-            right: placement === 'sidebar' ? 'calc(var(--dashboard-sidebar-width) + 8px)' : 0,
-            width: placement === 'sidebar' ? 'min(275px, calc(100vw - var(--dashboard-sidebar-width) - 16px))' : '275px',
-            maxHeight: placement === 'sidebar' ? 'calc(100dvh - var(--dashboard-tools-top, 64px) - 24px)' : undefined,
-            overflowY: placement === 'sidebar' ? 'auto' : undefined,
-            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.98)' : 'rgba(22, 27, 39, 0.96)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: '10px',
-            boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.12)' : '0 16px 36px rgba(0,0,0,0.5)',
-            padding: '0.65rem',
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.45rem',
-            animation: 'fadeIn 0.15s ease'
-          }}
-        >
-          {/* SECCIÓN 1: ARCHIVOS LOCALES (JSON) */}
-          <div style={{
-            fontSize: '0.68rem',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            color: 'var(--muted-text)',
-            padding: '0.2rem 0.4rem 0.1rem'
-          }}>
-            {t('header.sessionSectionLocal', 'Archivos Locales (JSON)')}
-          </div>
-
-          {/* Botón Cargar Sesión */}
-          <button
-            onClick={() => {
-              setSessionMenuOpen(false);
-              fileInputRef.current?.click();
-            }}
+        <>
+          {/* Telón de fondo opacado (Backdrop) */}
+          <div
+            onClick={() => setSessionMenuOpen(false)}
+            aria-hidden="true"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              padding: '0.5rem 0.6rem',
-              borderRadius: '7px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: 'var(--text-color)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'background-color 0.15s ease'
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.45)',
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              zIndex: 9998,
+              animation: 'fadeIn 0.15s ease'
             }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.07)'; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-          >
-            <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              backgroundColor: 'rgba(59, 130, 246, 0.15)',
-              color: '#3b82f6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Upload size={15} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>
-                {t('header.importSession', 'Cargar Sesión (JSON)')}
-              </span>
-              <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-                {t('header.importSessionDesc', 'Restaurar datos desde archivo .json')}
-              </span>
-            </div>
-          </button>
+          />
 
-          {/* Botón Exportar Sesión */}
-          <button
-            onClick={() => {
-              setSessionMenuOpen(false);
-              setIsExportModalOpen(true);
-            }}
+          {/* Menú Desplegable Ampliado y Limpio */}
+          <div
+            role="menu"
+            aria-label={t('header.sessionMenu', 'Sesión')}
             style={{
+              position: placement === 'sidebar' ? 'fixed' : 'absolute',
+              top: placement === 'sidebar' ? 'calc(var(--dashboard-tools-top, 64px) + 8px)' : 'calc(100% + 8px)',
+              left: undefined,
+              right: placement === 'sidebar' ? 'calc(var(--dashboard-sidebar-width, 60px) + 12px)' : 0,
+              width: placement === 'sidebar'
+                ? 'min(360px, calc(100vw - var(--dashboard-sidebar-width, 60px) - 24px))'
+                : 'min(360px, calc(100vw - 24px))',
+              maxHeight: placement === 'sidebar'
+                ? 'calc(100dvh - var(--dashboard-tools-top, 64px) - 24px)'
+                : 'calc(100dvh - 80px)',
+              overflowY: 'auto',
+              backgroundColor: 'var(--panel-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius, 8px)',
+              boxShadow: isLight
+                ? '0 10px 32px rgba(0,0,0,0.14), 0 2px 6px rgba(0,0,0,0.06)'
+                : '0 16px 42px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.3)',
+              padding: '0.8rem',
+              zIndex: 9999,
               display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              padding: '0.5rem 0.6rem',
-              borderRadius: '7px',
-              border: 'none',
-              backgroundColor: 'transparent',
+              flexDirection: 'column',
+              gap: '0.35rem',
               color: 'var(--text-color)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'background-color 0.15s ease'
+              fontFamily: 'var(--font-family)',
+              animation: 'fadeIn 0.15s ease'
             }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.07)'; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
+            {/* SECCIÓN 1: ARCHIVOS LOCALES (JSON) */}
             <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-              color: '#10b981',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
+              fontSize: '0.74rem',
+              fontWeight: '750',
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+              color: 'var(--muted-text)',
+              padding: '0.35rem 0.65rem 0.15rem'
             }}>
-              <Download size={15} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>
-                {t('header.exportSession', 'Exportar sesión')}
-              </span>
-              <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-                {t('header.exportSessionDesc', 'Guardar copia de seguridad en JSON')}
-              </span>
-            </div>
-          </button>
-
-          {/* Botón Eliminar Sesión / Borrar Datos Locales */}
-          <button
-            onClick={() => {
-              setSessionMenuOpen(false);
-              addToast({
-                type: 'confirm',
-                isLarge: true,
-                title: t('toast.confirmClearSessionTitle', '¿Eliminar sesión y datos locales?'),
-                message: t('toast.confirmClearSessionDesc', 'Esta acción restablecerá el comité actual, la conferencia conectada, lista de oradores, votaciones y datos guardados en el navegador. No se puede deshacer si no tienes una copia de seguridad.'),
-                confirmText: t('toast.confirmClearSessionBtn', 'Eliminar sesión'),
-                cancelText: t('toast.cancelBtn', 'Cancelar'),
-                onConfirm: () => {
-                  borrarDatosLocales();
-                  addToast({
-                    type: 'success',
-                    title: t('toast.sessionClearedTitle', '¡Sesión eliminada!'),
-                    message: t('toast.sessionClearedDesc', 'Se ha restablecido la sesión local y la información de la conferencia por completo.'),
-                    duration: 3500
-                  });
-                }
-              });
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              padding: '0.5rem 0.6rem',
-              borderRadius: '7px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: 'var(--text-color)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'background-color 0.15s ease'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = isLight ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.12)'; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-          >
-            <div style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              color: '#ef4444',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Trash2 size={15} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#ef4444' }}>
-                {t('header.clearLocalData', 'Eliminar sesión')}
-              </span>
-              <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
-                {t('header.clearLocalDataDesc', 'Restablecer comités, oradores y conferencia')}
-              </span>
-            </div>
-          </button>
-
-          {/* Separador */}
-          <div style={{ height: '1px', backgroundColor: 'var(--subborder-color)', margin: '0.2rem 0' }} />
-
-          {/* SECCIÓN: NUBE DE CONFERENCIA (SUPABASE) */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.1rem 0.4rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Database size={13} style={{ color: '#3ecf8e', flexShrink: 0 }} />
-              <span style={{
-                fontSize: '0.68rem',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--muted-text)'
-              }}>
-                Nube / Supabase
-              </span>
+              {t('header.sessionSectionLocal', 'Archivos Locales (JSON)')}
             </div>
 
-            <span style={{
-              fontSize: '0.65rem',
-              fontWeight: '700',
-              padding: '1px 6px',
-              borderRadius: '4px',
-              backgroundColor: !isCloudLinked
-                ? (isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)')
-                : cloudSyncStatus === 'syncing'
-                  ? 'rgba(59, 130, 246, 0.15)'
-                  : cloudSyncStatus === 'error'
-                    ? 'rgba(239, 68, 68, 0.15)'
-                    : 'rgba(62, 207, 142, 0.15)',
-              color: !isCloudLinked
-                ? 'var(--muted-text)'
-                : cloudSyncStatus === 'syncing'
-                  ? '#3b82f6'
-                  : cloudSyncStatus === 'error'
-                    ? '#ef4444'
-                    : '#3ecf8e'
-            }}>
-              {!isCloudLinked
-                ? 'Offline'
-                : cloudSyncStatus === 'syncing'
-                  ? 'Guardando...'
-                  : cloudSyncStatus === 'error'
-                    ? 'Error'
-                    : 'Sincronizado'}
-            </span>
-          </div>
-
-          {!isCloudLinked ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <button
-                onClick={() => {
-                  setSessionMenuOpen(false);
-                  if (setIsCloudModalOpen) setIsCloudModalOpen(true);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.5rem 0.6rem',
-                  borderRadius: '7px',
-                  border: '1px solid rgba(62, 207, 142, 0.35)',
-                  backgroundColor: 'rgba(62, 207, 142, 0.08)',
-                  color: '#3ecf8e',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(62, 207, 142, 0.16)'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(62, 207, 142, 0.08)'; }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                  <Database size={16} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '700' }}>
-                      Guardar en la nube (Supabase)
-                    </span>
-                    <span style={{ fontSize: '0.66rem', opacity: 0.85 }}>
-                      Abrir gestor para vincular o guardar comités
-                    </span>
-                  </div>
-                </div>
-                <FolderOpen size={15} />
-              </button>
-            </div>
-          ) : (
-            /* Vista cuando la conferencia ya está vinculada */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <div style={{
-                backgroundColor: 'rgba(62, 207, 142, 0.08)',
-                padding: '0.4rem 0.6rem',
-                borderRadius: '6px',
-                border: '1px solid rgba(62, 207, 142, 0.25)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#3ecf8e' }}>
-                    {cloudAccount?.name || 'Conferencia Conectada'}
-                  </div>
-                  <span style={{ fontSize: '0.62rem', backgroundColor: 'rgba(62, 207, 142, 0.2)', color: '#3ecf8e', padding: '1px 5px', borderRadius: '3px', fontWeight: '700' }}>
-                    NUBE ACTIVA
-                  </span>
-                </div>
-                {cloudActiveComiteName && (
-                  <div style={{ fontSize: '0.66rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
-                    Comité cargado: <strong>{cloudActiveComiteName}</strong>
-                  </div>
-                )}
-                {cloudLastSync && (
-                  <div style={{ fontSize: '0.64rem', color: 'var(--muted-text)', marginTop: '0.2rem', opacity: 0.85 }}>
-                    Último guardado: {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                  </div>
-                )}
-              </div>
-
-              {/* Botón: Abrir Gestor / Cargar Comités */}
-              <button
-                onClick={() => {
-                  setSessionMenuOpen(false);
-                  if (setIsCloudModalOpen) setIsCloudModalOpen(true);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  background: 'rgba(62, 207, 142, 0.1)',
-                  border: '1px solid rgba(62, 207, 142, 0.3)',
-                  borderRadius: '5px',
-                  color: '#3ecf8e',
-                  padding: '5px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
-              >
-                <FolderOpen size={13} />
-                <span>Explorar / Cargar Comités ({cloudComitesList.length})</span>
-              </button>
-
-              {/* Guardado rápido de comité actual */}
-              {!quickSaveOpen ? (
-                <button
-                  onClick={() => {
-                    setQuickSaveName(nombreComite || 'Comité Principal');
-                    setQuickSaveOpen(true);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    background: 'var(--card-hover, rgba(255,255,255,0.05))',
-                    border: '1px solid var(--subborder-color)',
-                    borderRadius: '5px',
-                    color: 'var(--text-color)',
-                    padding: '5px 8px',
-                    fontSize: '0.74rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    textAlign: 'left'
-                  }}
-                >
-                  <Save size={13} />
-                  <span>Guardar sesión actual en la nube</span>
-                </button>
-              ) : (
-                <div style={{
-                  padding: '0.5rem',
-                  borderRadius: '6px',
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(62, 207, 142, 0.3)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.35rem'
-                }}>
-                  <div style={{ fontSize: '0.68rem', fontWeight: '600', color: 'var(--muted-text)' }}>
-                    Nombre del Comité a guardar:
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.3rem' }}>
-                    <input
-                      type="text"
-                      value={quickSaveName}
-                      onChange={(e) => setQuickSaveName(e.target.value)}
-                      placeholder="Ej: DISEC..."
-                      style={{
-                        flex: 1,
-                        padding: '4px 6px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--subborder-color)',
-                        backgroundColor: 'var(--input-bg, rgba(255,255,255,0.05))',
-                        color: 'var(--text-color)',
-                        fontSize: '0.72rem'
-                      }}
-                    />
-                    <button
-                      onClick={async () => {
-                        if (!quickSaveName.trim()) return;
-                        setCloudLoading(true);
-                        try {
-                          await guardarComiteCloud(quickSaveName.trim());
-                          if (addToast) addToast(`Comité "${quickSaveName.trim()}" guardado en la nube`, 'success');
-                          setQuickSaveOpen(false);
-                        } catch (err) {
-                          if (addToast) addToast(err.message || 'Error al guardar', 'error');
-                        } finally {
-                          setCloudLoading(false);
-                        }
-                      }}
-                      disabled={cloudLoading}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        backgroundColor: '#3ecf8e',
-                        color: '#000',
-                        border: 'none',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {cloudLoading ? '...' : 'Guardar'}
-                    </button>
-                    <button
-                      onClick={() => setQuickSaveOpen(false)}
-                      style={{
-                        padding: '4px 6px',
-                        borderRadius: '4px',
-                        backgroundColor: 'transparent',
-                        color: 'var(--muted-text)',
-                        border: '1px solid var(--subborder-color)',
-                        fontSize: '0.72rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Botón: Desconectar */}
-              <button
-                onClick={() => {
-                  desconectarCloud();
-                  setSessionMenuOpen(false);
-                  if (addToast) addToast('Conferencia desconectada de la nube', 'info');
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  background: 'transparent',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '5px',
-                  color: '#ef4444',
-                  padding: '5px 8px',
-                  fontSize: '0.74rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
-              >
-                <LogOut size={12} />
-                <span>Desconectar Nube</span>
-              </button>
-            </div>
-          )}
-
-          {/* Separador */}
-          <div style={{ height: '1px', backgroundColor: 'var(--subborder-color)', margin: '0.2rem 0' }} />
-
-          {/* SECCIÓN 2: GOOGLE DRIVE */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.1rem 0.4rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <svg width="13" height="13" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
-                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47" />
-                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335" />
-                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d" />
-                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc" />
-                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00" />
-              </svg>
-              <span style={{
-                fontSize: '0.68rem',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--muted-text)'
-              }}>
-                Google Drive
-              </span>
-            </div>
-
-            <span style={{
-              fontSize: '0.65rem',
-              fontWeight: '700',
-              padding: '1px 6px',
-              borderRadius: '4px',
-              backgroundColor: !isDriveLinked
-                ? (isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)')
-                : driveSyncStatus === 'synced'
-                  ? 'rgba(0, 172, 71, 0.15)'
-                  : driveSyncStatus === 'syncing'
-                    ? 'rgba(38, 132, 252, 0.15)'
-                    : driveSyncStatus === 'conflict'
-                      ? 'rgba(245, 158, 11, 0.15)'
-                      : 'rgba(234, 67, 53, 0.15)',
-              color: !isDriveLinked
-                ? 'var(--muted-text)'
-                : driveSyncStatus === 'synced'
-                  ? '#00ac47'
-                  : driveSyncStatus === 'syncing'
-                    ? '#2684fc'
-                    : driveSyncStatus === 'conflict'
-                      ? '#f59e0b'
-                      : '#ea4335'
-            }}>
-              {!isDriveLinked
-                ? 'Offline'
-                : driveSyncStatus === 'synced'
-                  ? 'Sincronizado'
-                  : driveSyncStatus === 'syncing'
-                    ? 'Guardando...'
-                    : driveSyncStatus === 'conflict'
-                      ? 'Conflicto'
-                      : 'Error'}
-            </span>
-          </div>
-
-          {!isDriveLinked ? (
+            {/* Botón Cargar Sesión */}
             <button
+              type="button"
+              role="menuitem"
               onClick={() => {
                 setSessionMenuOpen(false);
-                conectarGoogleDrive().then(ok => {
-                  if (ok) setIsDriveModalOpen(true);
+                fileInputRef.current?.click();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.85rem',
+                padding: '0.65rem 0.75rem',
+                borderRadius: 'var(--border-radius, 6px)',
+                border: '1px solid transparent',
+                backgroundColor: 'transparent',
+                color: 'var(--text-color)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: 'var(--border-radius, 6px)',
+                backgroundColor: 'var(--accent-soft)',
+                color: 'var(--accent-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Upload size={18} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-color)', lineHeight: 1.25 }}>
+                  {t('header.importSession', 'Cargar Sesión (JSON)')}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: 1.3, marginTop: '3px' }}>
+                  {t('header.importSessionDesc', 'Restaurar datos desde archivo .json')}
+                </span>
+              </div>
+            </button>
+
+            {/* Botón Exportar Sesión */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setSessionMenuOpen(false);
+                setIsExportModalOpen(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.85rem',
+                padding: '0.65rem 0.75rem',
+                borderRadius: 'var(--border-radius, 6px)',
+                border: '1px solid transparent',
+                backgroundColor: 'transparent',
+                color: 'var(--text-color)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: 'var(--border-radius, 6px)',
+                backgroundColor: 'var(--accent-soft)',
+                color: 'var(--accent-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Download size={18} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-color)', lineHeight: 1.25 }}>
+                  {t('header.exportSession', 'Exportar sesión')}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: 1.3, marginTop: '3px' }}>
+                  {t('header.exportSessionDesc', 'Guardar copia de seguridad en JSON')}
+                </span>
+              </div>
+            </button>
+
+            {/* Botón Eliminar Sesión */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setSessionMenuOpen(false);
+                addToast({
+                  type: 'confirm',
+                  isLarge: true,
+                  title: t('toast.confirmClearSessionTitle', '¿Eliminar sesión y datos locales?'),
+                  message: t('toast.confirmClearSessionDesc', 'Esta acción restablecerá el comité actual, la conferencia conectada, lista de oradores, votaciones y datos guardados en el navegador. No se puede deshacer si no tienes una copia de seguridad.'),
+                  confirmText: t('toast.confirmClearSessionBtn', 'Eliminar sesión'),
+                  cancelText: t('toast.cancelBtn', 'Cancelar'),
+                  onConfirm: () => {
+                    borrarDatosLocales();
+                    addToast({
+                      type: 'success',
+                      title: t('toast.sessionClearedTitle', '¡Sesión eliminada!'),
+                      message: t('toast.sessionClearedDesc', 'Se ha restablecido la sesión local y la información de la conferencia por completo.'),
+                      duration: 3500
+                    });
+                  }
                 });
               }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.6rem',
-                padding: '0.5rem 0.6rem',
-                borderRadius: '7px',
-                border: '1px solid rgba(66, 133, 244, 0.3)',
-                backgroundColor: 'rgba(66, 133, 244, 0.08)',
-                color: '#2684fc',
+                gap: '0.85rem',
+                padding: '0.65rem 0.75rem',
+                borderRadius: 'var(--border-radius, 6px)',
+                border: '1px solid transparent',
+                backgroundColor: 'transparent',
+                color: 'var(--text-color)',
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'all 0.15s ease'
+                width: '100%',
+                transition: 'background-color 0.15s ease'
               }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(66, 133, 244, 0.16)'; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(66, 133, 244, 0.08)'; }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = 'var(--danger-soft)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
-              <Cloud size={16} />
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: '700' }}>
-                    {t('header.driveConnect', 'Conectar con Google Drive')}
-                  </span>
-                  <span
-                    title="Función en desarrollo / Coming soon"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      fontSize: '0.62rem',
-                      fontWeight: '700',
-                      padding: '0.15rem 0.35rem',
-                      borderRadius: '4px',
-                      backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                      color: '#ef4444',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      letterSpacing: '0.02em',
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    <AlertTriangle size={10} />
-                    Coming soon
-                  </span>
-                </div>
-                <span style={{ fontSize: '0.66rem', opacity: 0.8 }}>
-                  Copia y sincronización en la nube
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: 'var(--border-radius, 6px)',
+                backgroundColor: 'var(--danger-soft)',
+                color: 'var(--danger-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Trash2 size={18} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--danger-color)', lineHeight: 1.25 }}>
+                  {t('header.clearLocalData', 'Eliminar sesión')}
+                </span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: 1.3, marginTop: '3px' }}>
+                  {t('header.clearLocalDataDesc', 'Restablecer comités, oradores y conferencia')}
                 </span>
               </div>
             </button>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              {driveUser && (
-                <div style={{
-                  backgroundColor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.03)',
-                  padding: '0.35rem 0.5rem',
-                  borderRadius: '6px',
-                  border: '1px solid var(--subborder-color)'
-                }}>
-                  <div style={{ fontSize: '0.74rem', fontWeight: '700', color: 'var(--text-color)' }}>
-                    {driveUser.name || 'Google Drive'}
-                  </div>
-                  {driveUser.email && (
-                    <div style={{ fontSize: '0.66rem', color: 'var(--muted-text)', wordBreak: 'break-all' }}>
-                      {driveUser.email}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '0.66rem', color: 'var(--muted-text)', marginTop: '0.15rem' }}>
-                    Archivo: <strong>{driveFileName || 'sesion_activa.json'}</strong>
-                  </div>
-                </div>
-              )}
 
-              <button
-                onClick={() => {
-                  setSessionMenuOpen(false);
-                  setIsDriveModalOpen(true);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  background: 'rgba(38, 132, 252, 0.1)',
-                  border: '1px solid rgba(38, 132, 252, 0.3)',
-                  borderRadius: '5px',
-                  color: '#2684fc',
-                  padding: '5px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
-              >
-                <FolderOpen size={13} />
-                <span>{t('header.driveExplore', 'Explorar / Gestionar Sesiones')}</span>
-              </button>
+            {/* Separador */}
+            <div style={{ height: '1px', backgroundColor: 'var(--subborder-color)', margin: '0.35rem 0.2rem' }} />
 
-              <button
-                onClick={async () => {
-                  await sincronizarDriveManual();
-                  setSessionMenuOpen(false);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  background: 'var(--card-hover, rgba(255,255,255,0.05))',
-                  border: '1px solid var(--subborder-color)',
-                  borderRadius: '5px',
-                  color: 'var(--text-color)',
-                  padding: '5px 8px',
-                  fontSize: '0.74rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
-              >
-                <RefreshCw size={12} className={driveSyncStatus === 'syncing' ? 'spin-animation' : ''} />
-                <span>{t('header.driveSyncNow', 'Sincronizar ahora')}</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  desconectarGoogleDrive();
-                  setSessionMenuOpen(false);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  background: 'transparent',
-                  border: '1px solid rgba(234, 67, 53, 0.3)',
-                  borderRadius: '5px',
-                  color: '#ea4335',
-                  padding: '5px 8px',
-                  fontSize: '0.74rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
-              >
-                <LogOut size={12} />
-                <span>{t('header.driveDisconnect', 'Desconectar Google Drive')}</span>
-              </button>
-            </div>
-          )}
-
-          <div style={{ height: '1px', backgroundColor: 'var(--subborder-color)', margin: '0.4rem 0' }} />
-
-          <button
-            onClick={() => {
-              setSessionMenuOpen(false);
-              navigateTo('/privacy');
-            }}
-            style={{
+            {/* SECCIÓN 2: NUBE */}
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              background: 'transparent',
-              border: 'none',
-              borderRadius: '5px',
-              color: 'var(--muted-text)',
-              padding: '5px 8px',
-              fontSize: '0.74rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              textAlign: 'left',
-              width: '100%',
-              transition: 'color 0.15s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-text)'}
-          >
-            <ShieldCheck size={12} color="#10b981" />
-            <span>{t('legalBanner.privacyLink', 'Política de Privacidad')}</span>
-          </button>
-        </div>
+              justifyContent: 'space-between',
+              padding: '0.35rem 0.65rem 0.15rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Cloud
+                  size={15}
+                  style={{
+                    color: isCloudLinked ? 'var(--accent-color)' : 'var(--muted-text)',
+                    flexShrink: 0
+                  }}
+                />
+                <span style={{
+                  fontSize: '0.74rem',
+                  fontWeight: '750',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.07em',
+                  color: 'var(--muted-text)'
+                }}>
+                  {t('header.sessionSectionCloud', 'Nube')}
+                </span>
+              </div>
+
+              {isCloudLinked && (
+                <span style={{
+                  fontSize: '0.68rem',
+                  fontWeight: '700',
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  border: `1px solid ${
+                    cloudSyncStatus === 'syncing'
+                      ? 'var(--info-color)'
+                      : cloudSyncStatus === 'error'
+                        ? 'var(--danger-color)'
+                        : 'var(--success-color)'
+                  }`,
+                  backgroundColor:
+                    cloudSyncStatus === 'syncing'
+                      ? 'var(--info-soft)'
+                      : cloudSyncStatus === 'error'
+                        ? 'var(--danger-soft)'
+                        : 'var(--success-soft)',
+                  color:
+                    cloudSyncStatus === 'syncing'
+                      ? 'var(--info-color)'
+                      : cloudSyncStatus === 'error'
+                        ? 'var(--danger-color)'
+                        : 'var(--success-color)'
+                }}>
+                  {cloudSyncStatus === 'syncing'
+                    ? 'Guardando...'
+                    : cloudSyncStatus === 'error'
+                      ? 'Error'
+                      : 'Sincronizado'}
+                </span>
+              )}
+            </div>
+
+            {!isCloudLinked ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setSessionMenuOpen(false);
+                  if (setIsCloudModalOpen) setIsCloudModalOpen(true);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.85rem',
+                  padding: '0.65rem 0.75rem',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid transparent',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-color)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%',
+                  transition: 'background-color 0.15s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  backgroundColor: 'var(--accent-soft)',
+                  color: 'var(--accent-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Cloud size={18} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-color)', lineHeight: 1.25 }}>
+                    {t('header.saveInCloud', 'Guardar en la nube')}
+                  </span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--muted-text)', lineHeight: 1.3, marginTop: '3px' }}>
+                    {t('header.saveInCloudDesc', 'Vincular o sincronizar comités')}
+                  </span>
+                </div>
+                <FolderOpen size={16} style={{ color: 'var(--muted-text)', flexShrink: 0, opacity: 0.7 }} />
+              </button>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', padding: '0.2rem 0' }}>
+                <div style={{
+                  backgroundColor: 'var(--input-bg)',
+                  padding: '0.65rem 0.75rem',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--subborder-color)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.3rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
+                    <div style={{
+                      fontSize: '0.84rem',
+                      fontWeight: '600',
+                      color: 'var(--text-color)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      <span style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--success-color)',
+                        display: 'inline-block',
+                        flexShrink: 0
+                      }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {cloudAccount?.name || 'Conferencia conectada'}
+                      </span>
+                    </div>
+                    <span style={{
+                      fontSize: '0.66rem',
+                      backgroundColor: 'var(--success-soft)',
+                      color: 'var(--success-color)',
+                      border: '1px solid var(--success-color)',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      fontWeight: '700',
+                      flexShrink: 0
+                    }}>
+                      ACTIVA
+                    </span>
+                  </div>
+
+                  {cloudActiveComiteName && (
+                    <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      Comité: <strong style={{ color: 'var(--text-color)' }}>{cloudActiveComiteName}</strong>
+                    </div>
+                  )}
+
+                  {cloudLastSync && (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
+                      Último guardado: {cloudLastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Explorar comités */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setSessionMenuOpen(false);
+                    if (setIsCloudModalOpen) setIsCloudModalOpen(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--subborder-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    color: 'var(--text-color)',
+                    padding: '8px 12px',
+                    fontSize: '0.82rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+                    e.currentTarget.style.borderColor = 'var(--accent-color)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.borderColor = 'var(--subborder-color)';
+                  }}
+                >
+                  <FolderOpen size={15} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                  <span>Explorar comités ({cloudComitesList.length})</span>
+                </button>
+
+                {/* Guardado rápido de comité actual */}
+                {!quickSaveOpen ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setQuickSaveName(nombreComite || 'Comité Principal');
+                      setQuickSaveOpen(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.6rem',
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--subborder-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      color: 'var(--text-color)',
+                      padding: '8px 12px',
+                      fontSize: '0.82rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      width: '100%',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <Save size={15} style={{ color: 'var(--muted-text)', flexShrink: 0 }} />
+                    <span>Guardar sesión actual en la nube</span>
+                  </button>
+                ) : (
+                  <div style={{
+                    padding: '0.6rem',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    backgroundColor: 'var(--card-hover)',
+                    border: '1px solid var(--subborder-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.4rem'
+                  }}>
+                    <div style={{ fontSize: '0.74rem', fontWeight: '600', color: 'var(--muted-text)' }}>
+                      Nombre del Comité a guardar:
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <input
+                        type="text"
+                        value={quickSaveName}
+                        onChange={(e) => setQuickSaveName(e.target.value)}
+                        placeholder="Ej: DISEC..."
+                        style={{
+                          flex: 1,
+                          padding: '6px 8px',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-color)',
+                          fontSize: '0.8rem',
+                          outline: 'none'
+                        }}
+                        onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent-color)'; }}
+                        onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!quickSaveName.trim()) return;
+                          setCloudLoading(true);
+                          try {
+                            await guardarComiteCloud(quickSaveName.trim());
+                            if (addToast) addToast(`Comité "${quickSaveName.trim()}" guardado en la nube`, 'success');
+                            setQuickSaveOpen(false);
+                          } catch (err) {
+                            if (addToast) addToast(err.message || 'Error al guardar', 'error');
+                          } finally {
+                            setCloudLoading(false);
+                          }
+                        }}
+                        disabled={cloudLoading}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--btn-bg)',
+                          color: 'var(--btn-text)',
+                          border: 'none',
+                          fontSize: '0.8rem',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {cloudLoading ? '...' : 'Guardar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuickSaveOpen(false)}
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'transparent',
+                          color: 'var(--muted-text)',
+                          border: '1px solid var(--subborder-color)',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Desconectar */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    desconectarCloud();
+                    setSessionMenuOpen(false);
+                    if (addToast) addToast('Conferencia desconectada de la nube', 'info');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid transparent',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    color: 'var(--danger-color)',
+                    padding: '7px 10px',
+                    fontSize: '0.8rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = 'var(--danger-soft)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <LogOut size={14} style={{ flexShrink: 0 }} />
+                  <span>Desconectar Nube</span>
+                </button>
+              </div>
+            )}
+
+            {/* Separador */}
+            <div style={{ height: '1px', backgroundColor: 'var(--subborder-color)', margin: '0.35rem 0.2rem' }} />
+
+            {/* Enlace Política de Privacidad */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setSessionMenuOpen(false);
+                navigateTo('/privacy');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 'var(--border-radius, 6px)',
+                color: 'var(--muted-text)',
+                padding: '0.5rem 0.75rem',
+                fontSize: '0.78rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+                e.currentTarget.style.color = 'var(--text-color)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--muted-text)';
+              }}
+            >
+              <ShieldCheck size={15} style={{ color: 'var(--muted-text)', flexShrink: 0 }} />
+              <span>{t('legalBanner.privacyLink', 'Política de Privacidad')}</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

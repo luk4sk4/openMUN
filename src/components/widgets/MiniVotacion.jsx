@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { BotonesConDerechos, ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
 
@@ -858,6 +859,7 @@ const MiniVotacion = () => {
                   )}
                 </div>
 
+                <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={handleVotarRollCall} />
                 {/* Fila de 4 Botones Rápidos (Favor, Contra, Abs, Pasar) */}
                 <div style={{
                   display: 'grid',
@@ -984,7 +986,8 @@ const MiniVotacion = () => {
                     {p.veto && <span style={{ fontSize: '0.55rem', color: '#ef4444', fontWeight: '800' }}>[P5]</span>}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.12rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.12rem' }}>
+                    <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={v => registrarVotoPais(p.id, v)} voto={votoActual} conDerechos={votacionSesion?.derechos?.[p.id]} />
                     <button
                       onClick={() => registrarVotoPais(p.id, votoActual === 'favor' ? null : 'favor')}
                       style={{
@@ -1039,6 +1042,8 @@ const MiniVotacion = () => {
           </div>
         )}
       </div>
+
+      <ListaDerechos paises={paises} sesion={votacionSesion} />
 
       {/* ── FOOTER RESULTADOS EN VIVO (Estilo Debate Agenda) ── */}
       <div style={{

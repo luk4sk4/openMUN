@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, FileJson, Check } from 'lucide-react';
+import { X, Download, FileJson } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../context/SessionContext';
 
@@ -30,7 +30,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
         backdropFilter: 'blur(3px)',
         zIndex: 9999,
         display: 'flex',
@@ -41,15 +41,18 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
         style={{
           backgroundColor: 'var(--panel-color)',
           border: '1px solid var(--border-color)',
-          borderRadius: '10px',
+          borderRadius: 'var(--border-radius, 6px)',
           width: '100%',
           maxWidth: '460px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 16px 36px rgba(0, 0, 0, 0.4)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
           color: 'var(--text-color)',
           fontFamily: 'var(--font-family)',
           overflow: 'hidden'
@@ -59,7 +62,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
         {/* Cabecera */}
         <div
           style={{
-            padding: '1rem 1.25rem',
+            padding: '0.85rem 1.15rem',
             borderBottom: '1px solid var(--subborder-color)',
             display: 'flex',
             alignItems: 'center',
@@ -68,21 +71,42 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <FileJson size={18} style={{ color: 'var(--accent-color)' }} />
-            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700' }}>
+            <FileJson size={17} style={{ color: 'var(--accent-color)' }} />
+            <h3
+              id="export-modal-title"
+              style={{
+                margin: 0,
+                fontSize: '0.95rem',
+                fontWeight: '650',
+                color: 'var(--text-color)'
+              }}
+            >
               Exportar Sesión a JSON
             </h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            aria-label="Cerrar modal"
+            aria-label="Cerrar diálogo"
             style={{
               background: 'transparent',
               border: 'none',
               color: 'var(--muted-text)',
               cursor: 'pointer',
-              padding: '6px',
-              borderRadius: 'var(--border-radius, 6px)'
+              padding: '4px',
+              borderRadius: 'var(--border-radius, 6px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = 'var(--card-hover)';
+              e.currentTarget.style.color = 'var(--text-color)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--muted-text)';
             }}
           >
             <X size={16} />
@@ -90,7 +114,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleExport} style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleExport} style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--muted-text)', marginBottom: '0.4rem', fontWeight: '500' }}>
               Nombre del archivo a exportar:
@@ -107,11 +131,14 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
                   border: '1px solid var(--border-color)',
                   borderRadius: 'var(--border-radius, 6px)',
                   color: 'var(--text-color)',
-                  padding: '8px 12px',
+                  padding: '7px 10px',
                   fontSize: '0.82rem',
                   outline: 'none',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.15s ease'
                 }}
+                onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent-color)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
                 autoFocus
               />
             </div>
@@ -120,7 +147,7 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.2rem' }}>
             <button
               type="button"
               onClick={onClose}
@@ -132,8 +159,11 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
                 padding: '6px 14px',
                 fontSize: '0.8rem',
                 cursor: 'pointer',
-                fontWeight: '500'
+                fontWeight: '500',
+                transition: 'all 0.15s ease'
               }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--card-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
               Cancelar
             </button>
@@ -152,7 +182,8 @@ const ExportSessionModal = ({ isOpen, onClose }) => {
                 fontSize: '0.8rem',
                 fontWeight: '600',
                 cursor: fileName.trim() ? 'pointer' : 'not-allowed',
-                opacity: fileName.trim() ? 1 : 0.45
+                opacity: fileName.trim() ? 1 : 0.45,
+                transition: 'opacity 0.15s ease'
               }}
             >
               <Download size={14} />

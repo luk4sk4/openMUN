@@ -34,8 +34,8 @@ export default function KineticGrid(props: KineticGridProps) {
     const {
         background = "#000000",
         dotColor = "#FFFFFF",
-        lineColor = "#2563EB",
-        trailColor = "#2664EB",
+        lineColor = "#efa37f",
+        trailColor = "#efa37f",
         spacing = 50,
         radius = 200,
         strength = 4,
@@ -413,9 +413,9 @@ export default function KineticGrid(props: KineticGridProps) {
 const COMPONENT_DEFAULTS = {
     background: "#000000",
     dotColor: "#FFFFFF",
-    lineColor: "#80ACFF",
+    lineColor: "#efa37f",
     trail: true,
-    trailColor: "#2664EB",
+    trailColor: "#efa37f",
     spacing: 30,
     radius: 400,
     strength: 4,

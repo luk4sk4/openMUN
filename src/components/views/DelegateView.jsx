@@ -53,6 +53,7 @@ import {
   Hourglass,
   BarChart2
 } from 'lucide-react';
+import { BotonesConDerechos } from '../widgets/VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
 import { getFlagEmoji } from '../../utils/flags';
@@ -1447,11 +1448,13 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   {miVotoRegistrado && (
                     <span style={{ fontSize: '0.74rem', fontWeight: '800', color: '#22c55e', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                       <Check size={13} /> Voto Emitido: {
+                        miVotoRegistrado === 'favor_derechos' ? t('voting.inFavorWithRights') :
+                        miVotoRegistrado === 'contra_derechos' ? t('voting.againstWithRights') :
                         miVotoRegistrado === 'favor' ? 'A Favor' :
                         miVotoRegistrado === 'contra' ? 'En Contra' :
                         miVotoRegistrado === 'abstencion' ? 'Abstención' :
                         miVotoRegistrado === 'pasar' ? 'Pase' : miVotoRegistrado
-                      }
+                      }{votacionSesion.derechos?.[miPaisObj?.id || clientCountry] && ' · ' + t('voting.withRights')}
                     </span>
                   )}
                 </div>
@@ -1466,6 +1469,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
                   </div>
                 )}
 
+                <BotonesConDerechos tipoVotacion={votacionSesion.tipoVotacion} onVote={handleEmitirVoto} voto={miVotoRegistrado?.replace('_derechos', '')} conDerechos={votacionSesion.derechos?.[miPaisObj?.id || clientCountry] || miVotoRegistrado?.endsWith('_derechos')} />
                 <div className="openmun-grid-4col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
                   <button
                     onClick={() => handleEmitirVoto('favor')}

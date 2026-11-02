@@ -85,6 +85,10 @@ div.agenda-heading { flex-direction: row; justify-content: space-between; }
   border-color: var(--accent-color) !important;
   font-weight: 750;
 }
+body.light-theme .agenda-btn-active.is-active,
+:root[data-theme='light'] .agenda-btn-active.is-active {
+  color: #ffffff !important;
+}
 
 /* Botón de debate en la fila */
 .agenda-btn-debate {
@@ -120,14 +124,14 @@ div.agenda-heading { flex-direction: row; justify-content: space-between; }
   gap: 4px;
 }
 .agenda-badge.agenda-approved {
-  background: rgba(164, 212, 179, 0.15);
+  background: var(--success-soft);
   color: var(--success-color);
-  border: 1px solid rgba(164, 212, 179, 0.3);
+  border: 1px solid var(--success-color);
 }
 .agenda-badge.agenda-rejected {
-  background: rgba(237, 170, 161, 0.15);
+  background: var(--danger-soft);
   color: var(--danger-color);
-  border: 1px solid rgba(237, 170, 161, 0.3);
+  border: 1px solid var(--danger-color);
 }
 
 .agenda-muted { color: var(--muted-text); line-height: 1.5; margin: 0; }

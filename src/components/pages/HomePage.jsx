@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import {
   Play,
   Radio,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import OpenMunLogo from '../common/OpenMunLogo';
 import YoutubeIcon from '../common/YoutubeIcon';
+import GavelAnimation from '../common/GavelAnimation';
 import { useTranslation } from 'react-i18next';
 import { lazyWithRetry } from '../../utils/lazyWithRetry';
 const CreateConferenceModal = lazyWithRetry(() => import('../modals/CreateConferenceModal'), 'CreateConferenceModal');
@@ -91,6 +92,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
   const { t } = useTranslation();
   const [isCreateConfModalOpen, setIsCreateConfModalOpen] = useState(false);
   const [isHowToUseModalOpen, setIsHowToUseModalOpen] = useState(false);
+  const [showGavel, setShowGavel] = useState(false);
 
   // Copiar email
   const [copiado, setCopiado] = useState(false);
@@ -121,9 +123,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
     return ['Todas', ...new Set(FAQ_ITEMS.map((item) => item.categoria))];
   }, []);
 
-  // Tokens de diseño del sistema OpenMUN
-  const cardBg = isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(28, 30, 36, 0.92)';
-  const innerBg = isLight ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.04)';
+  // Tokens de diseño del sistema OpenMUN (fondos sólidos no transparentes para botones y controles)
+  const controlBg = isLight ? '#ffffff' : '#363636';
+  const controlBgHover = isLight ? '#f7f6f4' : '#3f3f3f';
   const borderColor = 'var(--border-color)';
   const subBorderColor = 'var(--subborder-color)';
   const textPrimary = 'var(--text-color)';
@@ -154,8 +156,8 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
         <KineticGrid
           background="transparent"
           dotColor={isLight ? "rgba(0, 0, 0, 0.22)" : "rgba(255, 255, 255, 0.25)"}
-          lineColor={isLight ? "rgba(37, 99, 235, 0.28)" : "rgba(59, 130, 246, 0.35)"}
-          trailColor="#3b82f6"
+          lineColor={isLight ? "rgba(184, 84, 52, 0.32)" : "rgba(239, 163, 127, 0.38)"}
+          trailColor={isLight ? "#b85434" : "#efa37f"}
           spacing={42}
           radius={300}
           strength={6}
@@ -163,31 +165,26 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
         />
       </div>
 
-      {/* Contenedor Principal */}
+      {/* Contenedor Principal Integrado en el Fondo */}
       <div style={{
         position: 'relative',
         zIndex: 1,
-        maxWidth: '1100px',
+        maxWidth: '1080px',
         margin: '0 auto',
-        padding: '1.25rem 1rem 3rem 1rem',
+        padding: '1.5rem 1.25rem 4rem 1.25rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '2rem'
+        gap: '3.5rem'
       }}>
 
-        {/* ── 1. HERO SECTION (Logo a la izq con descripción, botones a la der, enlaces debajo) ── */}
+        {/* ── 1. HERO SECTION (Integrada directamente en el fondo) ── */}
         <section style={{
-          backgroundColor: cardBg,
-          backdropFilter: 'blur(12px)',
-          border: `1px solid ${borderColor}`,
-          borderRadius: '16px',
-          padding: '2.5rem 2rem 2rem 2rem',
-          boxShadow: isLight ? '0 4px 24px rgba(0, 0, 0, 0.05)' : '0 10px 30px rgba(0, 0, 0, 0.3)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '2rem'
+          gap: '2.5rem',
+          paddingTop: '0.75rem'
         }}>
-          {/* Bloque Superior: Logo + descripción (izq) y Botones (der) */}
+          {/* Bloque Superior: Logo + descripción (izq) y Botones de acción (der) */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
@@ -205,28 +202,29 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
 
               <div>
                 <h1 style={{
-                  fontSize: 'clamp(1.5rem, 2.6vw, 2.05rem)',
+                  fontSize: 'clamp(1.65rem, 2.8vw, 2.2rem)',
                   fontWeight: '800',
-                  lineHeight: '1.25',
-                  margin: '0.4rem 0 0.75rem 0',
-                  letterSpacing: '-0.02em',
+                  lineHeight: '1.22',
+                  margin: '0.4rem 0 0.85rem 0',
+                  letterSpacing: '-0.025em',
                   color: textPrimary
                 }}>
                   {t('home.heroTitle', 'La plataforma abierta y definitiva para Modelos de Naciones Unidas')}
                 </h1>
 
                 <p style={{
-                  fontSize: '0.94rem',
-                  lineHeight: '1.6',
+                  fontSize: '0.96rem',
+                  lineHeight: '1.65',
                   color: textMuted,
-                  margin: 0
+                  margin: 0,
+                  maxWidth: '560px'
                 }}>
                   {t('home.heroPurpose', 'Plataforma educativa web diseñada para estudiantes, docentes y comités que participan en simulaciones de Modelos de Naciones Unidas (MUN). Modera debates diplomáticos, gestiona oradores, cronómetros y votaciones en tiempo real de forma inmediata y sin barreras.')}
                 </p>
               </div>
             </div>
 
-            {/* Columna Derecha: Botones estilizados directamente ejecutables */}
+            {/* Columna Derecha: Botones ejecutables */}
             <div style={{
               display: 'flex',
               flexDirection: 'column',
@@ -238,11 +236,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 onClick={onNavigateToComienzo}
                 style={{
                   width: '100%',
-                  padding: '0.9rem 1.25rem',
+                  padding: '0.95rem 1.25rem',
                   backgroundColor: 'var(--btn-bg)',
                   color: 'var(--btn-text)',
                   border: '1px solid var(--btn-bg)',
-                  borderRadius: 'var(--border-radius, 8px)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -254,10 +252,10 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <span style={{ fontSize: '0.96rem', fontWeight: '700' }}>
+                  <span style={{ fontSize: '0.98rem', fontWeight: '700' }}>
                     {t('home.chairCardTitle', 'Iniciar Mesa de Presidencia')}
                   </span>
-                  <span style={{ fontSize: '0.78rem', opacity: 0.9, fontWeight: '400' }}>
+                  <span style={{ fontSize: '0.78rem', opacity: 0.92, fontWeight: '400' }}>
                     {t('home.chairCardDescShort', 'Panel de moderación, oradores, caucuses y votaciones')}
                   </span>
                 </div>
@@ -270,11 +268,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   onClick={onNavigateToJoin}
                   style={{
                     width: '100%',
-                    padding: '0.8rem 1.15rem',
-                    backgroundColor: innerBg,
+                    padding: '0.82rem 1.15rem',
+                    backgroundColor: controlBg,
                     color: textPrimary,
                     border: `1px solid ${borderColor}`,
-                    borderRadius: 'var(--border-radius, 8px)',
+                    borderRadius: 'var(--border-radius, 6px)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -283,11 +281,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                     textAlign: 'left'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = subBorderColor;
+                    e.currentTarget.style.backgroundColor = controlBgHover;
                     e.currentTarget.style.borderColor = accentColor;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = innerBg;
+                    e.currentTarget.style.backgroundColor = controlBg;
                     e.currentTarget.style.borderColor = borderColor;
                   }}
                 >
@@ -308,11 +306,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 onClick={() => setIsCreateConfModalOpen(true)}
                 style={{
                   width: '100%',
-                  padding: '0.8rem 1.15rem',
-                  backgroundColor: innerBg,
+                  padding: '0.82rem 1.15rem',
+                  backgroundColor: controlBg,
                   color: textPrimary,
                   border: `1px solid ${borderColor}`,
-                  borderRadius: 'var(--border-radius, 8px)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -321,11 +319,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   textAlign: 'left'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = subBorderColor;
+                  e.currentTarget.style.backgroundColor = controlBgHover;
                   e.currentTarget.style.borderColor = accentColor;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = innerBg;
+                  e.currentTarget.style.backgroundColor = controlBg;
                   e.currentTarget.style.borderColor = borderColor;
                 }}
               >
@@ -349,11 +347,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 }}
                 style={{
                   width: '100%',
-                  padding: '0.8rem 1.15rem',
-                  backgroundColor: innerBg,
+                  padding: '0.82rem 1.15rem',
+                  backgroundColor: controlBg,
                   color: textPrimary,
                   border: `1px solid ${borderColor}`,
-                  borderRadius: 'var(--border-radius, 8px)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -362,11 +360,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   textAlign: 'left'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = subBorderColor;
+                  e.currentTarget.style.backgroundColor = controlBgHover;
                   e.currentTarget.style.borderColor = accentColor;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = innerBg;
+                  e.currentTarget.style.backgroundColor = controlBg;
                   e.currentTarget.style.borderColor = borderColor;
                 }}
               >
@@ -387,10 +385,10 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 style={{
                   width: '100%',
                   padding: '0.65rem 1.15rem',
-                  backgroundColor: 'transparent',
+                  backgroundColor: controlBg,
                   color: accentColor,
                   border: `1px dashed ${borderColor}`,
-                  borderRadius: 'var(--border-radius, 8px)',
+                  borderRadius: 'var(--border-radius, 6px)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -401,16 +399,24 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--accent-soft)';
+                  e.currentTarget.style.backgroundColor = controlBgHover;
                   e.currentTarget.style.borderColor = accentColor;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.backgroundColor = controlBg;
                   e.currentTarget.style.borderColor = borderColor;
                 }}
               >
                 <HelpCircle size={15} />
                 <span>{t('home.howToUseOpenMun', '¿Cómo usar OpenMUN?')}</span>
+              </button>
+              <button
+                type="button"
+                className="gavel-demo-button"
+                disabled={showGavel}
+                onClick={() => setShowGavel(true)}
+              >
+                {t('home.testGavel', 'Probar mazo (temporal)')}
               </button>
             </div>
           </div>
@@ -422,7 +428,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             gap: '0.75rem',
             alignItems: 'center',
             justifyContent: 'center',
-            paddingTop: '1.25rem',
+            paddingTop: '1.5rem',
             borderTop: `1px solid ${subBorderColor}`
           }}>
             {/* Donaciones */}
@@ -435,9 +441,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 alignItems: 'center',
                 gap: '0.45rem',
                 padding: '0.55rem 1rem',
-                borderRadius: 'var(--border-radius, 8px)',
+                borderRadius: 'var(--border-radius, 6px)',
                 border: `1px solid ${borderColor}`,
-                backgroundColor: innerBg,
+                backgroundColor: controlBg,
                 color: textPrimary,
                 fontSize: '0.84rem',
                 fontWeight: '600',
@@ -445,11 +451,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 transition: 'background-color 0.15s ease, border-color 0.15s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = subBorderColor;
+                e.currentTarget.style.backgroundColor = controlBgHover;
                 e.currentTarget.style.borderColor = accentColor;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = innerBg;
+                e.currentTarget.style.backgroundColor = controlBg;
                 e.currentTarget.style.borderColor = borderColor;
               }}
             >
@@ -467,9 +473,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 alignItems: 'center',
                 gap: '0.45rem',
                 padding: '0.55rem 1rem',
-                borderRadius: 'var(--border-radius, 8px)',
+                borderRadius: 'var(--border-radius, 6px)',
                 border: `1px solid ${borderColor}`,
-                backgroundColor: innerBg,
+                backgroundColor: controlBg,
                 color: textPrimary,
                 fontSize: '0.84rem',
                 fontWeight: '600',
@@ -477,11 +483,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 transition: 'background-color 0.15s ease, border-color 0.15s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = subBorderColor;
+                e.currentTarget.style.backgroundColor = controlBgHover;
                 e.currentTarget.style.borderColor = accentColor;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = innerBg;
+                e.currentTarget.style.backgroundColor = controlBg;
                 e.currentTarget.style.borderColor = borderColor;
               }}
             >
@@ -500,9 +506,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 alignItems: 'center',
                 gap: '0.45rem',
                 padding: '0.55rem 1rem',
-                borderRadius: 'var(--border-radius, 8px)',
+                borderRadius: 'var(--border-radius, 6px)',
                 border: `1px solid ${borderColor}`,
-                backgroundColor: innerBg,
+                backgroundColor: controlBg,
                 color: textPrimary,
                 fontSize: '0.84rem',
                 fontWeight: '600',
@@ -510,11 +516,11 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 transition: 'background-color 0.15s ease, border-color 0.15s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = subBorderColor;
+                e.currentTarget.style.backgroundColor = controlBgHover;
                 e.currentTarget.style.borderColor = accentColor;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = innerBg;
+                e.currentTarget.style.backgroundColor = controlBg;
                 e.currentTarget.style.borderColor = borderColor;
               }}
             >
@@ -525,118 +531,102 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           </div>
         </section>
 
-        {/* ── 2. PROPÓSITO EDUCATIVO DE OPENMUN ── */}
+        {/* ── 2. PROPÓSITO EDUCATIVO DE OPENMUN (Columnas editoriales sin tarjeta) ── */}
         <section style={{
-          backgroundColor: cardBg,
-          backdropFilter: 'blur(12px)',
-          border: `1px solid ${borderColor}`,
-          borderRadius: '16px',
-          padding: '2.25rem 2rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.25rem'
+          gap: '2rem'
         }}>
           <div style={{ textAlign: 'center', maxWidth: '750px', margin: '0 auto' }}>
             <h2 style={{
               fontSize: '1.5rem',
               fontWeight: '800',
-              margin: '0 0 0.35rem 0',
+              margin: '0 0 0.4rem 0',
               color: textPrimary,
               letterSpacing: '-0.02em'
             }}>
               {t('home.purposeSectionTitle', 'Propósito Educativo de OpenMUN')}
             </h2>
-            <p style={{ fontSize: '0.9rem', color: textMuted, margin: 0, lineHeight: '1.6' }}>
+            <p style={{ fontSize: '0.92rem', color: textMuted, margin: 0, lineHeight: '1.6' }}>
               {t('home.purposeSectionSubtitle', 'Fomentando el debate diplomático, la oratoria y la resolución constructiva de controversias internacionales en colegios y universidades.')}
             </p>
           </div>
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '1rem'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '2rem'
           }}>
-            {/* Card 1: Qué es MUN */}
+            {/* Columna 1: Qué es MUN */}
             <div style={{
-              padding: '1.25rem',
-              borderRadius: 'var(--border-radius, 8px)',
-              backgroundColor: innerBg,
-              border: `1px solid ${subBorderColor}`,
+              paddingTop: '1.25rem',
+              borderTop: `2px solid ${subBorderColor}`,
               display: 'flex',
               flexDirection: 'column',
               gap: '0.65rem'
             }}>
-              <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+              <h3 style={{ fontSize: '1.02rem', fontWeight: '700', margin: 0, color: textPrimary }}>
                 {t('home.purposeMunTitle', '¿Qué es un Modelo de Naciones Unidas (MUN)?')}
               </h3>
-              <p style={{ fontSize: '0.86rem', color: textMuted, lineHeight: '1.55', margin: 0 }}>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
                 {t('home.purposeMunDesc', 'Un Modelo de Naciones Unidas es una actividad pedagógica donde estudiantes asumen el papel de diplomáticos de Estados Miembros de la ONU para debatir problemas globales reales, redactar resoluciones y negociar acuerdos siguiendo procedimientos parlamentarios formales.')}
               </p>
             </div>
 
-            {/* Card 2: Cómo ayuda OpenMUN */}
+            {/* Columna 2: Cómo ayuda OpenMUN */}
             <div style={{
-              padding: '1.25rem',
-              borderRadius: 'var(--border-radius, 8px)',
-              backgroundColor: innerBg,
-              border: `1px solid ${subBorderColor}`,
+              paddingTop: '1.25rem',
+              borderTop: `2px solid ${subBorderColor}`,
               display: 'flex',
               flexDirection: 'column',
               gap: '0.65rem'
             }}>
-              <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+              <h3 style={{ fontSize: '1.02rem', fontWeight: '700', margin: 0, color: textPrimary }}>
                 {t('home.purposeRoleTitle', '¿Cómo ayuda OpenMUN a la educación?')}
               </h3>
-              <p style={{ fontSize: '0.86rem', color: textMuted, lineHeight: '1.55', margin: 0 }}>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
                 {t('home.purposeRoleDesc', 'OpenMUN digitaliza y simplifica las herramientas de moderación. Permite a las Mesas calcular quórums, gestionar listas de oradores (GSL), cronometrar discursos y registrar votaciones en tiempo real, transmitiendo a delegados y proyectores sin costes ni servidores.')}
               </p>
             </div>
 
-            {/* Card 3: 100% Libre */}
+            {/* Columna 3: 100% Libre */}
             <div style={{
-              padding: '1.25rem',
-              borderRadius: 'var(--border-radius, 8px)',
-              backgroundColor: innerBg,
-              border: `1px solid ${subBorderColor}`,
+              paddingTop: '1.25rem',
+              borderTop: `2px solid ${subBorderColor}`,
               display: 'flex',
               flexDirection: 'column',
               gap: '0.65rem'
             }}>
-              <h3 style={{ fontSize: '0.98rem', fontWeight: '700', margin: 0, color: textPrimary }}>
+              <h3 style={{ fontSize: '1.02rem', fontWeight: '700', margin: 0, color: textPrimary }}>
                 {t('home.purposeOpenTitle', '100% Gratuito y Libre (AGPLv3)')}
               </h3>
-              <p style={{ fontSize: '0.86rem', color: textMuted, lineHeight: '1.55', margin: 0 }}>
+              <p style={{ fontSize: '0.88rem', color: textMuted, lineHeight: '1.6', margin: 0 }}>
                 {t('home.purposeOpenDesc', 'OpenMUN es software libre accesible para cualquier institución educativa del mundo. Sin muros de pago, sin suscripciones, sin publicidad y sin recopilación de datos invasiva.')}
               </p>
             </div>
           </div>
         </section>
 
-        {/* ── 3. PREGUNTAS FRECUENTES (FAQ) ── */}
+        {/* ── 3. PREGUNTAS FRECUENTES (FAQ) (Integradas en el fondo) ── */}
         <section style={{
-          backgroundColor: cardBg,
-          backdropFilter: 'blur(12px)',
-          border: `1px solid ${borderColor}`,
-          borderRadius: '16px',
-          padding: '2rem 1.75rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.25rem'
+          gap: '1.75rem'
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <HelpCircle size={18} style={{ color: accentColor }} />
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: 0, color: textPrimary }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <HelpCircle size={20} style={{ color: accentColor }} />
+              <h2 style={{ fontSize: '1.35rem', fontWeight: '800', margin: 0, color: textPrimary, letterSpacing: '-0.02em' }}>
                 {t('home.faqTitle', 'Preguntas Frecuentes')}
               </h2>
             </div>
-            <p style={{ fontSize: '0.88rem', color: textMuted, margin: 0 }}>
+            <p style={{ fontSize: '0.9rem', color: textMuted, margin: 0 }}>
               {t('home.faqSubtitle', 'Respuestas a las dudas habituales sobre el funcionamiento y privacidad de OpenMUN.')}
             </p>
           </div>
 
           {/* Buscador y Filtros */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             <div style={{ position: 'relative', width: '100%' }}>
               <Search
                 size={16}
@@ -656,10 +646,10 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 onChange={(e) => setBusquedaFaq(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.65rem 0.85rem 0.65rem 2.4rem',
-                  borderRadius: 'var(--border-radius, 8px)',
+                  padding: '0.7rem 0.85rem 0.7rem 2.4rem',
+                  borderRadius: 'var(--border-radius, 6px)',
                   border: `1px solid ${borderColor}`,
-                  backgroundColor: innerBg,
+                  backgroundColor: controlBg,
                   color: textPrimary,
                   fontSize: '0.88rem',
                   outline: 'none',
@@ -696,12 +686,12 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                     key={cat}
                     onClick={() => setCategoriaFaq(cat)}
                     style={{
-                      padding: '0.35rem 0.75rem',
+                      padding: '0.4rem 0.8rem',
                       borderRadius: 'var(--border-radius, 6px)',
                       fontSize: '0.78rem',
                       fontWeight: activa ? '700' : '500',
-                      border: `1px solid ${activa ? accentColor : borderColor}`,
-                      backgroundColor: activa ? 'var(--btn-bg)' : innerBg,
+                      border: `1px solid ${activa ? 'var(--btn-bg)' : borderColor}`,
+                      backgroundColor: activa ? 'var(--btn-bg)' : controlBg,
                       color: activa ? 'var(--btn-text)' : textPrimary,
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
@@ -714,10 +704,10 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             </div>
           </div>
 
-          {/* Lista de Acordeones */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {/* Lista de Acordeones continuos */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {faqsFiltrados.length === 0 ? (
-              <div style={{ padding: '1.5rem', textAlign: 'center', color: textMuted, fontSize: '0.88rem' }}>
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: textMuted, fontSize: '0.9rem' }}>
                 {t('home.faqNoResults', 'No se encontraron resultados para')} "<strong>{busquedaFaq}</strong>".
               </div>
             ) : (
@@ -730,10 +720,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   <div
                     key={faq.id}
                     style={{
-                      backgroundColor: innerBg,
-                      border: `1px solid ${estaAbierto ? accentColor : subBorderColor}`,
-                      borderRadius: 'var(--border-radius, 8px)',
-                      overflow: 'hidden',
+                      borderBottom: `1px solid ${subBorderColor}`,
                       transition: 'border-color 0.15s ease'
                     }}
                   >
@@ -741,7 +728,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                       onClick={() => setFaqAbierto(estaAbierto ? null : faq.id)}
                       style={{
                         width: '100%',
-                        padding: '0.85rem 1rem',
+                        padding: '1rem 0.25rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -753,37 +740,40 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                         color: textPrimary
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                         <span style={{
                           padding: '0.15rem 0.45rem',
                           borderRadius: '4px',
-                          backgroundColor: cardBg,
                           border: `1px solid ${subBorderColor}`,
+                          backgroundColor: controlBg,
                           color: textMuted,
                           fontSize: '0.7rem',
                           fontWeight: '700'
                         }}>
                           {catLabel}
                         </span>
-                        <span style={{ fontSize: '0.92rem', fontWeight: '600' }}>
+                        <span style={{
+                          fontSize: '0.94rem',
+                          fontWeight: '600',
+                          color: estaAbierto ? accentColor : textPrimary,
+                          transition: 'color 0.15s ease'
+                        }}>
                           {pregunta}
                         </span>
                       </div>
                       {estaAbierto ? (
-                        <ChevronUp size={18} style={{ color: accentColor }} />
+                        <ChevronUp size={18} style={{ color: accentColor, flexShrink: 0 }} />
                       ) : (
-                        <ChevronDown size={18} style={{ color: textMuted }} />
+                        <ChevronDown size={18} style={{ color: textMuted, flexShrink: 0 }} />
                       )}
                     </button>
 
                     {estaAbierto && (
                       <div style={{
-                        padding: '0 1rem 0.9rem 1rem',
-                        fontSize: '0.86rem',
-                        lineHeight: '1.55',
-                        color: textMuted,
-                        borderTop: `1px solid ${subBorderColor}`,
-                        paddingTop: '0.75rem'
+                        padding: '0 0.25rem 1.1rem 0.25rem',
+                        fontSize: '0.88rem',
+                        lineHeight: '1.6',
+                        color: textMuted
                       }}>
                         {respuesta}
                       </div>
@@ -795,36 +785,32 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           </div>
         </section>
 
-        {/* ── 4. SUGERENCIAS Y COMUNIDAD ── */}
+        {/* ── 4. SUGERENCIAS Y COMUNIDAD (Integrada en el fondo) ── */}
         <section style={{
-          backgroundColor: cardBg,
-          backdropFilter: 'blur(12px)',
-          border: `1px solid ${borderColor}`,
-          borderRadius: '16px',
-          padding: '1.75rem 1.5rem',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center',
-          gap: '1rem'
+          gap: '1.25rem',
+          padding: '1rem 0'
         }}>
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.35rem 0', color: textPrimary }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', margin: '0 0 0.35rem 0', color: textPrimary, letterSpacing: '-0.02em' }}>
               {t('home.communityTitle', 'Sugerencias y Comunidad')}
             </h3>
-            <p style={{ fontSize: '0.88rem', color: textMuted, margin: 0, maxWidth: '620px', lineHeight: '1.5' }}>
+            <p style={{ fontSize: '0.9rem', color: textMuted, margin: 0, maxWidth: '620px', lineHeight: '1.6' }}>
               {t('home.communityDesc', 'OpenMUN se mantiene en constante evolución. Si deseas reportar un error o sugerir una mejora, contáctanos directamente.')}
             </p>
           </div>
 
           <div style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: '0.75rem',
-            backgroundColor: innerBg,
-            border: `1px solid ${subBorderColor}`,
-            borderRadius: 'var(--border-radius, 8px)',
-            padding: '0.6rem 1rem',
+            backgroundColor: controlBg,
+            border: `1px solid ${borderColor}`,
+            borderRadius: 'var(--border-radius, 6px)',
+            padding: '0.55rem 0.9rem',
             flexWrap: 'wrap',
             justifyContent: 'center'
           }}>
@@ -868,7 +854,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   padding: '0.38rem 0.75rem',
                   borderRadius: 'var(--border-radius, 6px)',
                   border: `1px solid ${borderColor}`,
-                  backgroundColor: cardBg,
+                  backgroundColor: controlBg,
                   color: textPrimary,
                   fontSize: '0.8rem',
                   fontWeight: '600',
@@ -971,6 +957,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
       </div>
 
       {/* Modal Crear Conferencia */}
+      {showGavel && <GavelAnimation onComplete={() => setShowGavel(false)} />}
       <Suspense fallback={null}>
         <CreateConferenceModal
           isOpen={isCreateConfModalOpen}

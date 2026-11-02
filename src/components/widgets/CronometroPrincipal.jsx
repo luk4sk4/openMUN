@@ -1,3 +1,4 @@
+import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Plus, Minus, Square, Download, Clock, CheckCircle2, ArrowRightLeft, Shield, HelpCircle, SkipForward, AlertTriangle, ChevronUp, ChevronDown, PictureInPicture2, Search, X, Users } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
@@ -13,7 +14,7 @@ const CronometroPrincipal = () => {
   const [tiempoInicial, setTiempoInicial] = useState(60);
   const [inputSegundos, setInputSegundos] = useState(60);
   const [segundosRestantes, setSegundosRestantes] = useState(60);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
   const [mensajeGuardado, setMensajeGuardado] = useState(false);
   const [modalYieldOpen, setModalYieldOpen] = useState(false);
   const [delegacionDropdownOpen, setDelegacionDropdownOpen] = useState(false);

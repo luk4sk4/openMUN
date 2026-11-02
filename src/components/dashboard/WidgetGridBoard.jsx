@@ -52,14 +52,14 @@ const WidgetGridBoard = ({
     const panels = FIXED_LAYOUTS[activeTab] || [];
     const rows = Math.max(1, ...panels.map(panel => panel.row + panel.rowSpan));
     return <main className="dashboard-fixed-view">
-      <div className={`dashboard-fixed-grid dashboard-fixed-grid--${activeTab.toLowerCase()}`} style={{ '--fixed-rows': rows, '--fixed-panel-count': panels.length }}>
+      <div key={activeTab} className={`dashboard-fixed-grid dashboard-fixed-grid--${activeTab.toLowerCase()} dashboard-tab-pane-transition`} style={{ '--fixed-rows': rows, '--fixed-panel-count': panels.length }}>
         {panels.map(widget => <WidgetCard key={widget.i} widget={widget} fixedLayout isLight={isLight} />)}
       </div>
     </main>;
   }
 
   return (
-    <main style={{
+    <main key={activeTab} className="dashboard-tab-pane-transition" style={{
       flex: 1,
       padding: '1rem',
       userSelect: activeInteraction ? 'none' : 'auto',

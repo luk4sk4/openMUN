@@ -1,3 +1,4 @@
+import { normalizarSesionesDebate } from './debateSessions.js';
 /**
  * sessionValidator.js
  * Validador robusto de archivos de sesión JSON para OpenMUN.
@@ -439,6 +440,9 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
     temasPropuestos: Array.isArray(rawAgenda.temasPropuestos) ? rawAgenda.temasPropuestos : (Array.isArray(rawAgenda.temas) ? rawAgenda.temas : []),
     ordenDia: Array.isArray(rawAgenda.ordenDia) ? rawAgenda.ordenDia : (Array.isArray(rawAgenda.agenda) ? rawAgenda.agenda : [])
   };
+
+  agendaNormalizada.sesionesDebate = normalizarSesionesDebate(rawAgenda.sesionesDebate);
+  agendaNormalizada.ultimaActividadDebate = Number.isSafeInteger(rawAgenda.ultimaActividadDebate) && rawAgenda.ultimaActividadDebate > 0 ? rawAgenda.ultimaActividadDebate : null;
 
   // 5. Oradores y Listas
   let rawOradores = inner.oradoresCola || inner.oradoresGSL || snapshot.openmun_oradores;

@@ -9,7 +9,7 @@
     "primaryColor": "#b45432",
     "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
     "borderRadius": "6px",
-    "paletteVersion": 3
+    "paletteVersion": 6
   },
   "accessibility": {
     "dyslexiaMode": false,

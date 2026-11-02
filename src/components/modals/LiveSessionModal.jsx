@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../messaging/NoteModeration.css';
 import { 
   X, 
   Radio, 
@@ -1226,6 +1227,14 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                       style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-color)' }}
                     />
                   </div>
+
+                  <label className="note-approval-toggle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px 16px', border: '1px solid var(--subborder-color)', borderRadius: 'var(--border-radius, 6px)' }}>
+                    <span>
+                      <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700 }}>Requerir aprobación de staff para las notas de delegados</span>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted-text)' }}>Staff debe aprobar cada nota antes de entregarla. Sin staff, las notas quedarán pendientes. Desactivar esta opción no libera las ya pendientes.</span>
+                    </span>
+                    <input type="checkbox" checked={!!roomSettings.requireStaffNoteApproval} onChange={e => updateRoomSettings({ requireStaffNoteApproval: e.target.checked })} style={{ width: '18px', height: '18px', flexShrink: 0, accentColor: 'var(--accent-color)' }} />
+                  </label>
 
                   {/* Toggle Notas a la Mesa */}
                   <div style={{

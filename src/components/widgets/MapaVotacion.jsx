@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../context/SessionContext';
+import { BotonesConDerechos, ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { emojiToIso, normalizarBandera, DICCIONARIO_PAISES_ISO } from '../../utils/flags';
 import worldSvgRaw from '../../assets/world.svg?raw';
@@ -591,19 +592,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
       >
         {/* Título & Asunto editable */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: '200px', flex: '1 1 auto' }}>
-          <div
-            style={{
-              padding: '6px',
-              borderRadius: 'var(--border-radius)',
-              backgroundColor: 'var(--accent-soft)',
-              border: '1px solid var(--accent-color)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <Globe size={18} color="var(--accent-color)" />
-          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.86rem', fontWeight: '800', color: 'var(--text-color)', letterSpacing: '-0.01em' }}>
@@ -676,7 +664,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   }}
                   title="Derecho a Veto del Consejo de Seguridad activo"
                 >
-                  <Crown size={12} color={vetoOrange} fill={vetoOrange} />
                   <span>{t('voting.vetoP5', 'Veto P5')}</span>
                 </span>
               )}
@@ -913,7 +900,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
             }}
             title="Resaltar países del Consejo de Seguridad con derecho a Veto (P5)"
           >
-            <Crown size={13} color={filtroVista === 'P5' ? vetoOrange : 'var(--muted-text)'} fill={filtroVista === 'P5' ? vetoOrange : 'none'} />
             <span>P5</span>
           </button>
 
@@ -990,17 +976,12 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
         >
           {/* Cabecera del Panel de Ajustes */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--subborder-color)', paddingBottom: '0.6rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-              <div style={{ padding: '6px', borderRadius: 'var(--border-radius)', backgroundColor: 'var(--accent-soft)', display: 'flex' }}>
-                <Settings size={17} color="var(--accent-color)" />
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-color)' }}>
+                {t('voting.settingsTitle', 'Ajustes de la Votación')}
               </div>
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-color)' }}>
-                  {t('voting.settingsTitle', 'Ajustes de la Votación')}
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
-                  {t('voting.settingsSubtitle', 'Configuración en tiempo real sincronizada con el comité')}
-                </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
+                {t('voting.settingsSubtitle', 'Configuración en tiempo real sincronizada con el comité')}
               </div>
             </div>
             <button
@@ -1255,6 +1236,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
         </div>
       )}
 
+      <ListaDerechos paises={paises} sesion={votacionSesion} />
+
       {/* ─── DOCK FLOTANTE DE ROLL CALL NOMINAL DENTRO DEL MAPA ─── */}
       {modoRollCall && (
         <div
@@ -1281,7 +1264,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
           {/* Encabezado del Roll Call */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--subborder-color)', paddingBottom: '0.45rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Vote size={16} color={rollCallFinalizado ? (stats.vetoEjercido ? 'var(--danger-color)' : (stats.superado ? 'var(--success-color)' : 'var(--danger-color)')) : (rondaRollCall === 2 ? 'var(--warning-color)' : 'var(--accent-color)')} />
               <span style={{
                 fontWeight: '750',
                 fontSize: '0.85rem',
@@ -1336,7 +1318,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               </div>
 
               {/* Botones de Voto Roll Call */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.45rem' }}>
                 {indiceRollCall > 0 && (
                   <button
                     type="button"
@@ -1360,6 +1342,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   </button>
                 )}
 
+                <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={registrarYAvanzarRollCall} />
                 <button
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor')}
@@ -1845,6 +1828,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               </strong>
             </div>
 
+            <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={handleSetVote} voto={votos[selectedCountryForVote.countryObj.id]} conDerechos={votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id]} />
             {/* Botones de Votación Rápida */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               <button

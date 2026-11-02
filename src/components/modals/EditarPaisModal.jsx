@@ -2,24 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Upload,
-  ClipboardPaste,
-  Crown,
   Trash2,
-  Check,
   Search,
   Globe2,
-  Image as ImageIcon,
   RotateCcw,
-
   CheckCircle2
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
-import { useAccessibility } from '../../context/AccessibilityContext';
 import {
   procesarImagenBandera,
-  normalizarBandera,
-  DICCIONARIO_PAISES_ISO
+  normalizarBandera
 } from '../../utils/flags';
 
 const PAISES_POPULARES_ISO = [
@@ -47,13 +40,10 @@ const PAISES_POPULARES_ISO = [
 
 const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const { t } = useTranslation();
-  const { isLight } = useAccessibility();
   const [nombre, setNombre] = useState('');
   const [bandera, setBandera] = useState('');
   const [veto, setVeto] = useState(false);
-  const [estatus, setEstatus] = useState('Presente');
   const [urlInput, setUrlInput] = useState('');
-  const [busquedaBandera, setBusquedaBandera] = useState('');
   const [filtroIso, setFiltroIso] = useState('');
   const [mostrarBuscadorIso, setMostrarBuscadorIso] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -68,9 +58,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
       setNombre(pais.nombre || '');
       setBandera(pais.bandera || 'un');
       setVeto(pais.veto || false);
-      setEstatus(pais.estatus || 'Presente');
       setUrlInput('');
-      setBusquedaBandera('');
       setFiltroIso('');
       setMostrarBuscadorIso(false);
       setMensajeFeedback('');
@@ -177,440 +165,482 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   );
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.75)',
-      backdropFilter: 'blur(4px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999,
-      padding: '1rem'
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        backdropFilter: 'blur(3px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '1rem'
+      }}
+      onClick={onClose}
+    >
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-country-title"
+        onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: 'var(--panel-color)',
           border: '1px solid var(--border-color)',
-          borderRadius: '10px',
+          borderRadius: 'var(--border-radius, 6px)',
           width: '100%',
           maxWidth: '480px',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: isLight 
-            ? '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
-            : '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+          color: 'var(--text-color)',
+          fontFamily: 'var(--font-family)',
           display: 'flex',
           flexDirection: 'column'
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.2rem', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--card-header-bg)' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Crown size={16} color="#3b82f6" />
+        {/* Cabecera */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.85rem 1.15rem',
+            borderBottom: '1px solid var(--subborder-color)',
+            backgroundColor: 'var(--card-header-bg)'
+          }}
+        >
+          <h3
+            id="edit-country-title"
+            style={{
+              margin: 0,
+              fontSize: '0.95rem',
+              fontWeight: '650',
+              color: 'var(--text-color)'
+            }}
+          >
             {t('editCountry.title', 'Editar Delegación')}
           </h3>
           <button
-              onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--muted-text)',
-                cursor: 'pointer',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '4px'
-              }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          {/* Form Body */}
-          <form onSubmit={handleGuardar} style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            
-            {/* Nombre de la delegación */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '600', color: 'var(--muted-text)', marginBottom: '0.35rem' }}>
-                {t('editCountry.name', 'Nombre del País')}
-              </label>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <input
-                  type="text"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  placeholder="Ej. Francia, Cruz Roja, República de..."
-                  style={{
-                    flex: 1,
-                    padding: '0.55rem 0.75rem',
-                    backgroundColor: isLight ? '#ffffff' : 'rgba(255,255,255,0.05)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    color: 'var(--text-color)',
-                    fontSize: '0.9rem',
-                    fontWeight: '600'
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleAutoDetectar}
-                  title="Autodetectar bandera según nombre"
-                  style={{
-                    padding: '0.55rem 0.75rem',
-                    backgroundColor: 'var(--card-header-bg)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    color: 'var(--text-color)',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.3rem'
-                  }}
-                >
-                  <Search size={14} />
-                  Auto
-                </button>
-              </div>
-            </div>
-
-            {/* Sección de Bandera e Imagen */}
-            <div style={{
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              padding: '0.85rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <ImageIcon size={14} color="#3b82f6" />
-                  {t('editCountry.flag', 'Bandera')}
-                </label>
-                {mensajeFeedback && (
-                  <span style={{ fontSize: '0.72rem', color: '#22c55e', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <CheckCircle2 size={13} />
-                    {mensajeFeedback}
-                  </span>
-                )}
-              </div>
-
-              {/* Vista previa y zona interactiva Drop / Paste */}
-              <div
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.85rem',
-                  padding: '0.75rem',
-                  backgroundColor: isDragging ? 'rgba(59, 130, 246, 0.12)' : (isLight ? '#ffffff' : 'rgba(0,0,0,0.2)'),
-                  border: isDragging ? '2px dashed #3b82f6' : '1px dashed var(--border-color)',
-                  borderRadius: '6px',
-                  marginBottom: '0.75rem'
-                }}
-              >
-                <CountryFlag bandera={bandera} nombre={nombre} size="xl" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }} />
-                
-                <div style={{ flex: 1, fontSize: '0.74rem', color: 'var(--muted-text)' }}>
-                  <div style={{ fontWeight: '600', color: 'var(--text-color)', marginBottom: '0.2rem' }}>
-                    {t('editCountry.uploadOrPaste', 'Sube un archivo o haz')} <strong style={{ color: '#3b82f6' }}>Ctrl + V</strong>
-                  </div>
-                  <div>{t('editCountry.dragDropHint', 'Arrastra cualquier imagen PNG, JPG o SVG aquí, o copia y pega directamente de internet.')}</div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    padding: '0.45rem 0.7rem',
-                    backgroundColor: '#3b82f6',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '5px',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem'
-                  }}
-                >
-                  <Upload size={13} />
-                  {t('common.search', 'Examinar')}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleSubirArchivo}
-                  style={{ display: 'none' }}
-                />
-              </div>
-
-              {/* Opciones adicionales: Pegar URL o buscar predefinida */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                {/* Pegar URL */}
-                <div style={{ display: 'flex', gap: '0.35rem' }}>
-                  <input
-                    type="text"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder={t('editCountry.urlPlaceholder', 'O pega una URL de imagen (https://...)')}
-                    style={{
-                      flex: 1,
-                      padding: '0.4rem 0.6rem',
-                      backgroundColor: isLight ? '#ffffff' : 'rgba(255,255,255,0.05)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '5px',
-                      color: 'var(--text-color)',
-                      fontSize: '0.76rem'
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAplicarUrl}
-                    style={{
-                      padding: '0.4rem 0.65rem',
-                      backgroundColor: isLight ? '#e2e8f0' : 'var(--border-color)',
-                      color: 'var(--text-color)',
-                      border: 'none',
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                      fontSize: '0.74rem',
-                      fontWeight: '600'
-                    }}
-                  >
-                    {t('common.apply', 'Aplicar')}
-                  </button>
-                </div>
-
-                {/* Botones de acción secundaria */}
-                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => setMostrarBuscadorIso(!mostrarBuscadorIso)}
-                    style={{
-                      flex: 1,
-                      padding: '0.35rem 0.5rem',
-                      backgroundColor: mostrarBuscadorIso ? (isLight ? '#ede9fe' : 'rgba(168, 85, 247, 0.15)') : 'transparent',
-                      border: `1px solid ${mostrarBuscadorIso ? '#8b5cf6' : 'var(--border-color)'}`,
-                      borderRadius: '5px',
-                      color: mostrarBuscadorIso ? '#7c3aed' : 'var(--muted-text)',
-                      cursor: 'pointer',
-                      fontSize: '0.72rem',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.3rem'
-                    }}
-                  >
-                    <Globe2 size={13} />
-                    {mostrarBuscadorIso ? t('editCountry.hideCatalog', 'Ocultar catálogo oficial') : t('editCountry.showCatalog', 'Elegir del catálogo oficial')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setBandera('un'); setUrlInput(''); }}
-                    title="Restablecer a bandera de ONU"
-                    style={{
-                      padding: '0.35rem 0.5rem',
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '5px',
-                      color: 'var(--muted-text)',
-                      cursor: 'pointer',
-                      fontSize: '0.72rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem'
-                    }}
-                  >
-                    <RotateCcw size={12} />
-                    ONU
-                  </button>
-                </div>
-
-                {/* Buscador y Catálogo de Banderas Oficiales ISO */}
-                {mostrarBuscadorIso && (
-                  <div style={{
-                    marginTop: '0.5rem',
-                    padding: '0.6rem',
-                    backgroundColor: isLight ? '#f8fafc' : 'rgba(0,0,0,0.25)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.45rem'
-                  }}>
-                    <div style={{ position: 'relative' }}>
-                      <Search size={12} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-text)' }} />
-                      <input
-                        type="text"
-                        placeholder="Filtrar por país..."
-                        value={filtroIso}
-                        onChange={(e) => setFiltroIso(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.3rem 0.5rem 0.3rem 1.6rem',
-                          fontSize: '0.72rem',
-                          backgroundColor: isLight ? '#ffffff' : 'rgba(255,255,255,0.05)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '4px',
-                          color: 'var(--text-color)',
-                          outline: 'none'
-                        }}
-                      />
-                    </div>
-                    <div style={{
-                      maxHeight: '130px',
-                      overflowY: 'auto',
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
-                      gap: '0.3rem'
-                    }}>
-                      {listaIsoFiltrada.map(p => (
-                        <button
-                          key={p.iso}
-                          type="button"
-                          onClick={() => {
-                            setBandera(p.iso);
-                            setMensajeFeedback(`Bandera seleccionada: ${p.nombre}`);
-                            setTimeout(() => setMensajeFeedback(''), 2500);
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            padding: '0.3rem 0.4rem',
-                            borderRadius: '4px',
-                            border: bandera === p.iso ? '1px solid #3b82f6' : '1px solid var(--border-color)',
-                            backgroundColor: bandera === p.iso 
-                              ? (isLight ? '#eff6ff' : 'rgba(59, 130, 246, 0.15)') 
-                              : (isLight ? '#ffffff' : 'rgba(255,255,255,0.03)'),
-                            color: 'var(--text-color)',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            fontSize: '0.68rem',
-                            fontWeight: bandera === p.iso ? '700' : '400'
-                          }}
-                        >
-                          <CountryFlag bandera={p.iso} size="xs" />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Checkbox de Derecho a Veto */}
-            <div style={{
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar diálogo"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--muted-text)',
+              cursor: 'pointer',
+              padding: '4px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.75rem',
-              backgroundColor: 'var(--card-header-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Crown size={16} color={veto ? '#eab308' : '#71717a'} />
-                <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-color)' }}>
-                    {t('editCountry.vetoPower', 'Derecho a Veto (P5 / Permanente)')}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--muted-text)' }}>
-                    {t('editCountry.vetoPowerDesc', 'Habilita el poder de veto en votaciones sustantivas')}
-                  </div>
-                </div>
-              </div>
+              justifyContent: 'center',
+              borderRadius: 'var(--border-radius, 6px)'
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Cuerpo del Formulario */}
+        <form onSubmit={handleGuardar} style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          
+          {/* Nombre de la delegación */}
+          <div>
+            <label
+              htmlFor="edit-country-name-input"
+              style={{
+                display: 'block',
+                fontSize: '0.78rem',
+                fontWeight: '600',
+                color: 'var(--muted-text)',
+                marginBottom: '0.35rem'
+              }}
+            >
+              {t('editCountry.name', 'Nombre del País')}
+            </label>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
               <input
-                type="checkbox"
-                checked={veto}
-                onChange={(e) => setVeto(e.target.checked)}
+                id="edit-country-name-input"
+                type="text"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Ej. Francia, Cruz Roja, República de..."
                 style={{
-                  width: '18px',
-                  height: '18px',
-                  cursor: 'pointer',
-                  accentColor: '#eab308'
+                  flex: 1,
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: 'var(--input-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  color: 'var(--text-color)',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  outline: 'none'
                 }}
+              />
+              <button
+                type="button"
+                onClick={handleAutoDetectar}
+                title="Autodetectar bandera según nombre"
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  color: 'var(--text-color)',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem'
+                }}
+              >
+                <Search size={14} style={{ color: 'var(--muted-text)' }} />
+                Auto
+              </button>
+            </div>
+          </div>
+
+          {/* Sección de Bandera e Imagen */}
+          <div style={{
+            backgroundColor: 'var(--card-header-bg)',
+            border: '1px solid var(--subborder-color)',
+            borderRadius: 'var(--border-radius, 6px)',
+            padding: '0.85rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--muted-text)' }}>
+                {t('editCountry.flag', 'Bandera')}
+              </label>
+              {mensajeFeedback && (
+                <span style={{ fontSize: '0.72rem', color: 'var(--success-color)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <CheckCircle2 size={13} />
+                  {mensajeFeedback}
+                </span>
+              )}
+            </div>
+
+            {/* Vista previa y zona interactiva Drop / Paste */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.85rem',
+                padding: '0.75rem',
+                backgroundColor: isDragging ? 'var(--accent-soft)' : 'var(--input-bg)',
+                border: isDragging ? '1px dashed var(--accent-color)' : '1px dashed var(--subborder-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                marginBottom: '0.75rem',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <CountryFlag bandera={bandera} nombre={nombre} size="xl" style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.2)', borderRadius: '3px' }} />
+              
+              <div style={{ flex: 1, fontSize: '0.74rem', color: 'var(--muted-text)' }}>
+                <div style={{ fontWeight: '600', color: 'var(--text-color)', marginBottom: '0.2rem' }}>
+                  {t('editCountry.uploadOrPaste', 'Sube un archivo o haz')} <strong style={{ color: 'var(--accent-color)' }}>Ctrl + V</strong>
+                </div>
+                <div style={{ lineHeight: 1.4 }}>{t('editCountry.dragDropHint', 'Arrastra cualquier imagen PNG, JPG o SVG aquí, o copia y pega directamente de internet.')}</div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  padding: '0.45rem 0.75rem',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <Upload size={13} style={{ color: 'var(--muted-text)' }} />
+                {t('common.search', 'Examinar')}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleSubirArchivo}
+                style={{ display: 'none' }}
               />
             </div>
 
-            {/* Botones de acción */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-              {onEliminar ? (
+            {/* Opciones adicionales: Pegar URL o buscar predefinida */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              {/* Pegar URL */}
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <input
+                  type="text"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder={t('editCountry.urlPlaceholder', 'O pega una URL de imagen (https://...)')}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem 0.6rem',
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    color: 'var(--text-color)',
+                    fontSize: '0.76rem',
+                    outline: 'none'
+                  }}
+                />
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm(t('editCountry.confirmDelete', `¿Eliminar definitivamente la delegación de "${nombre}" del comité?`))) {
-                      onEliminar(pais.id);
-                      onClose();
-                    }
-                  }}
+                  onClick={handleAplicarUrl}
                   style={{
-                    padding: '0.5rem 0.8rem',
-                    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                    color: '#ef4444',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '0.78rem',
-                    fontWeight: '600',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.35rem'
-                  }}
-                >
-                  <Trash2 size={14} />
-                  {t('common.delete', 'Eliminar')}
-                </button>
-              ) : <div />}
-
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  style={{
-                    padding: '0.5rem 0.9rem',
+                    padding: '0.4rem 0.65rem',
                     backgroundColor: 'transparent',
                     color: 'var(--text-color)',
                     border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
+                    borderRadius: 'var(--border-radius, 6px)',
                     cursor: 'pointer',
-                    fontSize: '0.78rem',
+                    fontSize: '0.74rem',
                     fontWeight: '600'
                   }}
                 >
-                  {t('common.cancel', 'Cancelar')}
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '0.5rem 1.1rem',
-                    backgroundColor: '#22c55e',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '0.78rem',
-                    fontWeight: '700',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    boxShadow: '0 2px 4px rgba(34, 197, 94, 0.25)'
-                  }}
-                >
-                  <Check size={15} />
-                  {t('common.save', 'Guardar')}
+                  {t('common.apply', 'Aplicar')}
                 </button>
               </div>
+
+              {/* Botones de acción secundaria */}
+              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setMostrarBuscadorIso(!mostrarBuscadorIso)}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem 0.5rem',
+                    backgroundColor: mostrarBuscadorIso ? 'var(--accent-soft)' : 'transparent',
+                    border: `1px solid ${mostrarBuscadorIso ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                    borderRadius: 'var(--border-radius, 6px)',
+                    color: mostrarBuscadorIso ? 'var(--accent-color)' : 'var(--muted-text)',
+                    cursor: 'pointer',
+                    fontSize: '0.74rem',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <Globe2 size={13} />
+                  {mostrarBuscadorIso ? t('editCountry.hideCatalog', 'Ocultar catálogo oficial') : t('editCountry.showCatalog', 'Elegir del catálogo oficial')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setBandera('un'); setUrlInput(''); }}
+                  title="Restablecer a bandera de ONU"
+                  style={{
+                    padding: '0.4rem 0.55rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    color: 'var(--muted-text)',
+                    cursor: 'pointer',
+                    fontSize: '0.74rem',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}
+                >
+                  <RotateCcw size={12} />
+                  ONU
+                </button>
+              </div>
+
+              {/* Buscador y Catálogo de Banderas Oficiales ISO */}
+              {mostrarBuscadorIso && (
+                <div style={{
+                  marginTop: '0.5rem',
+                  padding: '0.6rem',
+                  backgroundColor: 'var(--input-bg)',
+                  border: '1px solid var(--subborder-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.45rem'
+                }}>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={12} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-text)' }} />
+                    <input
+                      type="text"
+                      placeholder="Filtrar por país..."
+                      value={filtroIso}
+                      onChange={(e) => setFiltroIso(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.35rem 0.5rem 0.35rem 1.6rem',
+                        fontSize: '0.72rem',
+                        backgroundColor: 'var(--panel-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        color: 'var(--text-color)',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  <div style={{
+                    maxHeight: '130px',
+                    overflowY: 'auto',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+                    gap: '0.3rem'
+                  }}>
+                    {listaIsoFiltrada.map(p => (
+                      <button
+                        key={p.iso}
+                        type="button"
+                        onClick={() => {
+                          setBandera(p.iso);
+                          setMensajeFeedback(`Bandera seleccionada: ${p.nombre}`);
+                          setTimeout(() => setMensajeFeedback(''), 2500);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: '0.3rem 0.4rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          border: bandera === p.iso ? '1px solid var(--accent-color)' : '1px solid var(--subborder-color)',
+                          backgroundColor: bandera === p.iso ? 'var(--accent-soft)' : 'transparent',
+                          color: 'var(--text-color)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          fontSize: '0.68rem',
+                          fontWeight: bandera === p.iso ? '700' : '400'
+                        }}
+                      >
+                        <CountryFlag bandera={p.iso} size="xs" />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Checkbox de Derecho a Veto */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.75rem 0.85rem',
+            backgroundColor: 'var(--card-header-bg)',
+            border: '1px solid var(--subborder-color)',
+            borderRadius: 'var(--border-radius, 6px)'
+          }}>
+            <div>
+              <div style={{ fontSize: '0.8rem', fontWeight: '650', color: 'var(--text-color)' }}>
+                {t('editCountry.vetoPower', 'Derecho a Veto (P5 / Permanente)')}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '0.15rem' }}>
+                {t('editCountry.vetoPowerDesc', 'Habilita el poder de veto en votaciones sustantivas')}
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={veto}
+              onChange={(e) => setVeto(e.target.checked)}
+              aria-label={t('editCountry.vetoPower', 'Derecho a Veto (P5 / Permanente)')}
+              style={{
+                width: '18px',
+                height: '18px',
+                cursor: 'pointer',
+                accentColor: 'var(--btn-bg)'
+              }}
+            />
+          </div>
+
+          {/* Botones de acción */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '0.5rem',
+            paddingTop: '0.75rem',
+            borderTop: '1px solid var(--subborder-color)'
+          }}>
+            {onEliminar ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(t('editCountry.confirmDelete', `¿Eliminar definitivamente la delegación de "${nombre}" del comité?`))) {
+                    onEliminar(pais.id);
+                    onClose();
+                  }
+                }}
+                style={{
+                  padding: '0.5rem 0.85rem',
+                  backgroundColor: 'var(--danger-soft)',
+                  color: 'var(--danger-color)',
+                  border: '1px solid var(--danger-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <Trash2 size={14} />
+                {t('common.delete', 'Eliminar')}
+              </button>
+            ) : <div />}
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  padding: '0.5rem 0.95rem',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: '500'
+                }}
+              >
+                {t('common.cancel', 'Cancelar')}
+              </button>
+              <button
+                type="submit"
+                style={{
+                  padding: '0.5rem 1.15rem',
+                  backgroundColor: 'var(--btn-bg)',
+                  color: 'var(--btn-text)',
+                  border: 'none',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {t('common.save', 'Guardar')}
+              </button>
+            </div>
+          </div>
 
         </form>
       </div>

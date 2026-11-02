@@ -412,7 +412,7 @@ const MatrizPaises = () => {
                 fontSize: '0.8rem',
                 borderRadius: '6px',
                 border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--card-header-bg)',
+                backgroundColor: 'var(--input-bg)',
                 color: 'var(--text-color)'
               }}
             />
@@ -426,7 +426,7 @@ const MatrizPaises = () => {
               fontSize: '0.78rem',
               borderRadius: '6px',
               border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--card-header-bg)',
+              backgroundColor: 'var(--input-bg)',
               color: 'var(--text-color)',
               cursor: 'pointer'
             }}
@@ -448,7 +448,7 @@ const MatrizPaises = () => {
               alignItems: 'center',
               gap: '0.3rem',
               padding: '0.4rem 0.65rem',
-              backgroundColor: 'var(--card-header-bg)',
+              backgroundColor: 'var(--input-bg)',
               border: '1px solid var(--border-color)',
               borderRadius: '6px',
               color: 'var(--text-color)',
@@ -469,7 +469,7 @@ const MatrizPaises = () => {
               alignItems: 'center',
               gap: '0.3rem',
               padding: '0.4rem 0.65rem',
-              backgroundColor: 'var(--card-header-bg)',
+              backgroundColor: 'var(--input-bg)',
               border: '1px solid var(--border-color)',
               borderRadius: '6px',
               color: 'var(--danger-color)',
@@ -497,7 +497,7 @@ const MatrizPaises = () => {
               fontSize: '0.78rem',
               fontWeight: '700',
               cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
             }}
           >
             <Play size={13} fill="#ffffff" />

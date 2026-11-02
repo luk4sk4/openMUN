@@ -109,11 +109,12 @@ export const P2PProvider = ({ children }) => {
   }, [enmiendasPropuestas]);
 
   useEffect(() => {
-    localStorage.setItem('openmun_notes', JSON.stringify(notes));
+    // Las vistas de participantes no deben sustituir el histórico completo de la Mesa en otra pestaña.
+    if (role === 'chair' || role === 'none') localStorage.setItem('openmun_notes', JSON.stringify(notes));
     if (peerService) {
       peerService.latestNotes = notes;
     }
-  }, [notes]);
+  }, [notes, role]);
 
   useEffect(() => {
     localStorage.setItem('openmun_announcements', JSON.stringify(announcements));
@@ -374,8 +375,8 @@ export const P2PProvider = ({ children }) => {
       // Recepción de Notas con de-duplicación estricta
       if (event === 'note_for_chair') {
         setNotes(prev => {
-          if (prev.some(n => n.id === data.id || (n.from === data.from && n.to === data.to && n.text === data.text && Math.abs((n.timestamp || 0) - (data.timestamp || 0)) < 3000))) {
-            return prev;
+          if (prev.some(n => n.id === data.id)) {
+            return prev.map(n => n.id === data.id ? { ...n, ...data } : n);
           }
           return [data, ...prev];
         });
@@ -519,8 +520,8 @@ export const P2PProvider = ({ children }) => {
           addNotification(msgText || (success ? 'Solicitud procesada' : 'No se pudo procesar'), success ? 'success' : 'warning');
         } else if (message.type === MSG_TYPES.NOTE_RECEIVED) {
           setNotes(prev => {
-            if (prev.some(n => n.id === message.payload.id || (n.from === message.payload.from && n.to === message.payload.to && n.text === message.payload.text && Math.abs((n.timestamp || 0) - (message.payload.timestamp || 0)) < 3000))) {
-              return prev;
+            if (prev.some(n => n.id === message.payload.id)) {
+              return prev.map(n => n.id === message.payload.id ? { ...n, ...message.payload } : n);
             }
             return [message.payload, ...prev];
           });
@@ -797,6 +798,7 @@ export const P2PProvider = ({ children }) => {
         to,
         text,
         type,
+        status: role === 'delegate' && roomSettings.requireStaffNoteApproval ? 'pending' : 'delivered',
         timestamp: Date.now(),
         isOutgoing: true
       };
@@ -806,7 +808,9 @@ export const P2PProvider = ({ children }) => {
       });
     }
     return ok;
-  }, [clientCountry, role]);
+  }, [clientCountry, role, roomSettings.requireStaffNoteApproval]);
+
+  const reviewNote = useCallback((id, status) => peerService.reviewNoteAsClient(id, status), []);
 
   const broadcastAnnouncement = useCallback((annData) => {
     const ann = {
@@ -1030,6 +1034,7 @@ export const P2PProvider = ({ children }) => {
     selectCountry,
     resetCountrySelection,
     sendNote,
+    reviewNote,
     requestSpeaking,
     kickPeer,
     broadcastCurrentState,
@@ -1086,6 +1091,7 @@ export const P2PProvider = ({ children }) => {
     selectCountry,
     resetCountrySelection,
     sendNote,
+    reviewNote,
     requestSpeaking,
     kickPeer,
     broadcastCurrentState,

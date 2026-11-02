@@ -1,0 +1,56 @@
+.speaker-notes {
+  color: var(--text-color);
+  font-family: var(--font-family);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.speaker-notes-current, .speaker-notes-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.speaker-notes-secondary { color: var(--muted-text); }
+.speaker-notes form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.speaker-notes textarea, .speaker-notes button {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius, 6px);
+  padding: 8px 12px;
+  font: inherit;
+}
+.speaker-notes textarea {
+  background: var(--input-bg);
+  color: var(--text-color);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+.speaker-notes button {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+}
+.speaker-notes :disabled { opacity: .45; cursor: not-allowed; }
+.speaker-notes :is(textarea, button, summary):focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+.speaker-notes-error { color: var(--danger-color); }
+.speaker-notes details { margin-top: 12px; }
+.speaker-notes summary { cursor: pointer; }
+.speaker-notes-history { max-height: 260px; overflow-y: auto; }
+.speaker-notes article {
+  border-top: 1px solid var(--subborder-color);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.speaker-notes-text { white-space: pre-wrap; }

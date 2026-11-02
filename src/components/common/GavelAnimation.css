@@ -1,0 +1,75 @@
+.gavel-demo-button {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--panel-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font: inherit;
+  cursor: pointer;
+}
+
+.gavel-demo-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+.gavel-demo-button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.gavel-animation {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+  color: var(--text-color);
+  animation: gavel-appearance 1.6s linear both;
+}
+
+.gavel-animation__scene {
+  width: min(80vw, 60vh, 440px);
+  height: auto;
+  overflow: visible;
+}
+
+.gavel-animation__hammer {
+  transform-origin: 300px 193px;
+  animation: gavel-strike 1.6s linear both;
+}
+
+.gavel-animation__impact {
+  transform-origin: 130px 248px;
+  animation: gavel-impact 1.6s ease-out both;
+}
+
+@keyframes gavel-appearance {
+  0% { opacity: 0; }
+  16%, 80% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+@keyframes gavel-strike {
+  0% { transform: translate(64px, -96px) rotate(25deg); }
+  24% { transform: translate(0, 0) rotate(25deg); animation-timing-function: ease-out; }
+  38% { transform: rotate(55deg); animation-timing-function: ease-in; }
+  52% { transform: rotate(0); animation-timing-function: ease-out; }
+  62% { transform: rotate(12deg); animation-timing-function: ease-in; }
+  72%, 100% { transform: rotate(0); }
+}
+
+@keyframes gavel-impact {
+  0%, 51% { opacity: 0; transform: scale(.6); }
+  52% { opacity: 1; transform: scale(.6); }
+  76%, 100% { opacity: 0; transform: scale(1.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gavel-animation { animation-duration: .3s; }
+  .gavel-animation__hammer { animation: none; }
+  .gavel-animation__impact { display: none; }
+}

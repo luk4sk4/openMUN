@@ -14,6 +14,7 @@ const DashboardNavbar = ({
   cambiarTipoSesion,
   isModular,
   toggleModulation,
+  isSidebarOpen,
   setIsSidebarOpen,
   activeTab,
   setActiveTab,
@@ -54,6 +55,41 @@ const DashboardNavbar = ({
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const sidebarEdgeRef = useRef(null);
   const toggleBtnRef = useRef(null);
+  const tabsNavRef = useRef(null);
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+  // Sincronizar indicador animado de pestaña activa
+  useEffect(() => {
+    if (!tabsNavRef.current) return;
+    const updateIndicator = () => {
+      const navEl = tabsNavRef.current;
+      if (!navEl) return;
+      const activeButton = navEl.querySelector('button[aria-current="page"]');
+      if (activeButton) {
+        setIndicatorStyle({
+          left: activeButton.offsetLeft,
+          width: activeButton.offsetWidth,
+          opacity: 1
+        });
+      } else {
+        setIndicatorStyle(prev => (prev.opacity === 0 ? prev : { ...prev, opacity: 0 }));
+      }
+    };
+
+    updateIndicator();
+
+    let observer;
+    if (typeof ResizeObserver !== 'undefined' && tabsNavRef.current) {
+      observer = new ResizeObserver(() => {
+        updateIndicator();
+      });
+      observer.observe(tabsNavRef.current);
+    }
+
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  }, [activeTab, tabs]);
 
   const isLiveActive = connectionStatus === 'host_active';
 
@@ -97,7 +133,11 @@ const DashboardNavbar = ({
           <OpenMunLogo height={28} isLight={isLight} />
         </button>
         <div className="dashboard-nav-row">
-          <nav className="dashboard-tabs-scroll" aria-label={t('header.navigation', 'Navegación del comité')}>
+          <nav
+            ref={tabsNavRef}
+            className="dashboard-tabs-scroll"
+            aria-label={t('header.navigation', 'Navegación del comité')}
+          >
             {tabs.map(tab => {
               const TabIcon = TAB_CONFIG[tab]?.Icon;
               const label = t(TAB_CONFIG[tab]?.labelKey, TAB_CONFIG[tab]?.label || tab);
@@ -105,9 +145,33 @@ const DashboardNavbar = ({
                 {TabIcon && <TabIcon size={16} />}<span>{label}</span>
               </button>;
             })}
+            <span
+              className="dashboard-tab-indicator"
+              style={{
+                transform: `translateX(${indicatorStyle.left}px)`,
+                width: `${indicatorStyle.width}px`,
+                opacity: indicatorStyle.opacity
+              }}
+              aria-hidden="true"
+            />
           </nav>
           <div className="dashboard-toolbar-right">
-            <button className="dashboard-modulation" role="switch" aria-checked={isModular} onClick={toggleModulation}
+            {isModular && (
+            <button
+              type="button"
+              className={`dashboard-sidebar-toggle dashboard-widgets-toggle${isSidebarOpen ? ' is-active' : ''}`}
+              onClick={() => {
+                setIsToolsOpen(false);
+                setIsSidebarOpen(prev => !prev);
+              }}
+              aria-label={t('header.widgetsTooltip', 'Abrir Gestor de Widgets')}
+              aria-expanded={isSidebarOpen}
+              title={t('header.widgetsTooltip', 'Abrir Gestor de Widgets')}
+            >
+              <LayoutGrid size={18} />
+            </button>
+          )}
+          <button className="dashboard-modulation" role="switch" aria-checked={isModular} onClick={toggleModulation}
               title={isModular ? t('header.fixedMode', 'Volver a la vista fija') : t('header.modularMode', 'Personalizar los módulos')}>
               {isModular ? <ToggleRight size={23} /> : <ToggleLeft size={23} />}<span>{t('header.modulation', 'Modulación')}</span>
             </button>

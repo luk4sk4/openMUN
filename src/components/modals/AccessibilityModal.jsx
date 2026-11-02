@@ -169,8 +169,8 @@ const AccessibilityModal = ({
           color: 'var(--text-color)',
           borderRadius: '10px',
           width: '100%',
-          maxWidth: '480px',
-          maxHeight: 'min(90vh, 640px)',
+          maxWidth: '760px',
+          maxHeight: 'min(92vh, 720px)',
           boxShadow: '0 16px 36px rgba(0,0,0,0.45)',
           display: 'flex',
           flexDirection: 'column',
@@ -184,7 +184,7 @@ const AccessibilityModal = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '1rem 1.25rem',
+          padding: '0.9rem 1.25rem',
           borderBottom: '1px solid var(--subborder-color)',
           flexShrink: 0
         }}>
@@ -232,279 +232,286 @@ const AccessibilityModal = ({
           </button>
         </div>
 
-        {/* Cuerpo scrolleable */}
+        {/* Cuerpo del modal (2 columnas en pantallas normales para evitar scroll) */}
         <div style={{
           flex: 1,
           minHeight: 0,
           overflowY: 'auto',
           padding: '1rem 1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.85rem'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '0.85rem',
+          alignItems: 'start'
         }}>
 
-          {/* Idioma de la Aplicación */}
-          <div style={{
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: 'var(--border-radius, 6px)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '1rem'
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                <Globe size={16} style={{ color: 'var(--accent-color)' }} />
-                {t('accessibility.languageSelect', 'Idioma de la Aplicación')}
+          {/* Columna 1: Interfaz, Tema y Densidad */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {/* Idioma de la Aplicación */}
+            <div style={{
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '0.75rem'
+            }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.88rem', color: 'var(--text-color)' }}>
+                  <Globe size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                  <span>{t('accessibility.languageSelect', 'Idioma de la Aplicación')}</span>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', marginTop: '0.2rem', lineHeight: '1.3' }}>
+                  {t('accessibility.languageSelectDesc', 'Selecciona el idioma principal de la interfaz')}
+                </div>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
-                {t('accessibility.languageSelectDesc', 'Selecciona el idioma principal de la interfaz')}
+              <LanguageSelector showIcon={false} />
+            </div>
+
+            {/* Tema Visual (Claro / Oscuro) */}
+            <div style={{
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)'
+            }}>
+              <div style={{ marginBottom: '0.55rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.88rem', color: 'var(--text-color)' }}>
+                  {isLight ? <Sun size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} /> : <Moon size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />}
+                  <span>{t('accessibility.themeMode', 'Tema Visual (Claro / Oscuro)')}</span>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', marginTop: '0.2rem', lineHeight: '1.3' }}>
+                  {t('accessibility.themeModeDesc', 'Cambia el esquema de color general')}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => handleThemeModeChange('dark')}
+                  aria-pressed={!isLight}
+                  style={{
+                    flex: 1,
+                    padding: '0.45rem 0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: !isLight ? 'var(--accent-soft)' : 'var(--bg-color)',
+                    color: !isLight ? 'var(--accent-color)' : 'var(--text-color)',
+                    border: `1px solid ${!isLight ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                    borderRadius: 'var(--border-radius, 6px)',
+                    cursor: 'pointer',
+                    fontWeight: !isLight ? '650' : '500',
+                    fontSize: '0.84rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Moon size={15} /> {t('accessibility.dark', 'Oscuro')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleThemeModeChange('light')}
+                  aria-pressed={isLight}
+                  style={{
+                    flex: 1,
+                    padding: '0.45rem 0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    backgroundColor: isLight ? 'var(--accent-soft)' : 'var(--bg-color)',
+                    color: isLight ? 'var(--accent-color)' : 'var(--text-color)',
+                    border: `1px solid ${isLight ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                    borderRadius: 'var(--border-radius, 6px)',
+                    cursor: 'pointer',
+                    fontWeight: isLight ? '650' : '500',
+                    fontSize: '0.84rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Sun size={15} /> {t('accessibility.light', 'Claro')}
+                </button>
               </div>
             </div>
-            <LanguageSelector showIcon={false} />
+
+            {/* Densidad de Interfaz (Compacta / Estándar / Proyector) */}
+            <div style={{
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)'
+            }}>
+              <div style={{ marginBottom: '0.55rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.88rem', color: 'var(--text-color)' }}>
+                  <LayoutGrid size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                  <span>{t('accessibility.densityMode', 'Densidad de Interfaz')}</span>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', marginTop: '0.2rem', lineHeight: '1.3' }}>
+                  {t('accessibility.densityModeDesc', 'Ajusta el espaciado para laptops, monitores o proyectores')}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.45rem' }}>
+                {[
+                  { id: 'compact', label: t('accessibility.densityCompact', 'Compacta'), icon: Minimize2, title: 'Menor espaciado para portátiles o pantallas pequeñas' },
+                  { id: 'standard', label: t('accessibility.densityStandard', 'Estándar'), icon: LayoutGrid, title: 'Espaciado estándar equilibrado' },
+                  { id: 'projector', label: t('accessibility.densityProjector', 'Proyector'), icon: Monitor, title: 'Textos y elementos destacados para proyector o pantalla grande' }
+                ].map(({ id, label, icon: IconComponent, title }) => {
+                  const isSelected = densityMode === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleDensityModeChange(id)}
+                      aria-pressed={isSelected}
+                      title={title}
+                      style={{
+                        flex: 1,
+                        padding: '0.45rem 0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        backgroundColor: isSelected ? 'var(--accent-soft)' : 'var(--bg-color)',
+                        color: isSelected ? 'var(--accent-color)' : 'var(--text-color)',
+                        border: `1px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                        borderRadius: 'var(--border-radius, 6px)',
+                        cursor: 'pointer',
+                        fontWeight: isSelected ? '650' : '500',
+                        fontSize: '0.8rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <IconComponent size={14} /> {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Tema Visual (Claro / Oscuro) */}
-          <div style={{
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: 'var(--border-radius, 6px)'
-          }}>
-            <div style={{ marginBottom: '0.65rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                {isLight ? <Sun size={16} style={{ color: 'var(--accent-color)' }} /> : <Moon size={16} style={{ color: 'var(--accent-color)' }} />}
-                {t('accessibility.themeMode', 'Tema Visual (Claro / Oscuro)')}
+          {/* Columna 2: Accesibilidad Visual, Lectura y Opciones */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {/* Modo Dislexia */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              gap: '0.75rem'
+            }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.88rem', color: 'var(--text-color)' }}>
+                  <Type size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                  <span>{t('accessibility.dyslexiaMode', 'Modo Dislexia')}</span>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', marginTop: '0.2rem', lineHeight: '1.3' }}>
+                  {t('accessibility.dyslexiaDesc', 'Fuente optimizada con mayor legibilidad')}
+                </div>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
-                {t('accessibility.themeModeDesc', 'Cambia el esquema de color general')}
+              <ToggleSwitch
+                checked={!!accConfig.dyslexiaMode}
+                onChange={handleToggleDyslexia}
+                ariaLabel={t('accessibility.dyslexiaMode', 'Modo Dislexia')}
+                activeColor="var(--btn-bg)"
+              />
+            </div>
+
+            {/* Tamaño de Letra */}
+            <div style={{
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.88rem', color: 'var(--text-color)' }}>
+                  <Type size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                  <span>{t('accessibility.fontSize', 'Tamaño de Letra')}</span>
+                </div>
+                <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--accent-color)', fontVariantNumeric: 'tabular-nums' }}>
+                  {(accConfig.fontSizeScale || 1).toFixed(2)}x
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.8"
+                max="1.5"
+                step="0.05"
+                value={accConfig.fontSizeScale || 1}
+                onChange={handleFontSizeChange}
+                style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--btn-bg)' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--muted-text)', marginTop: '0.25rem', fontVariantNumeric: 'tabular-nums' }}>
+                <span>{t('accessibility.fontSmall', 'Pequeña (0.8x)')}</span>
+                <span>{t('accessibility.fontNormal', 'Normal (1.0x)')}</span>
+                <span>{t('accessibility.fontLarge', 'Grande (1.5x)')}</span>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => handleThemeModeChange('dark')}
-                aria-pressed={!isLight}
+
+            {/* Filtro de Daltonismo */}
+            <div style={{
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.88rem', color: 'var(--text-color)', marginBottom: '0.45rem' }}>
+                <Eye size={16} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
+                <span>{t('accessibility.colorblind', 'Filtro de Daltonismo')}</span>
+              </div>
+              <select
+                value={accConfig.colorblindMode || 'none'}
+                onChange={handleColorblindChange}
                 style={{
-                  flex: 1,
-                  padding: '0.45rem 0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: !isLight ? 'var(--accent-soft)' : 'var(--bg-color)',
-                  color: !isLight ? 'var(--accent-color)' : 'var(--text-color)',
-                  border: `1px solid ${!isLight ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                  width: '100%',
+                  padding: '0.45rem 0.65rem',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-color)',
+                  border: '1px solid var(--border-color)',
                   borderRadius: 'var(--border-radius, 6px)',
                   cursor: 'pointer',
-                  fontWeight: !isLight ? '650' : '500',
-                  fontSize: '0.84rem',
-                  transition: 'all 0.15s ease'
+                  fontSize: '0.84rem'
                 }}
               >
-                <Moon size={15} /> {t('accessibility.dark', 'Oscuro')}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleThemeModeChange('light')}
-                aria-pressed={isLight}
-                style={{
-                  flex: 1,
-                  padding: '0.45rem 0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  backgroundColor: isLight ? 'var(--accent-soft)' : 'var(--bg-color)',
-                  color: isLight ? 'var(--accent-color)' : 'var(--text-color)',
-                  border: `1px solid ${isLight ? 'var(--accent-color)' : 'var(--border-color)'}`,
-                  borderRadius: 'var(--border-radius, 6px)',
-                  cursor: 'pointer',
-                  fontWeight: isLight ? '650' : '500',
-                  fontSize: '0.84rem',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <Sun size={15} /> {t('accessibility.light', 'Claro')}
-              </button>
+                <option value="none">{t('accessibility.colorblindNone', 'Ninguno (Normal)')}</option>
+                <option value="protanopia">{t('accessibility.colorblindProtanopia', 'Protanopía (Rojo-Verde)')}</option>
+                <option value="deuteranopia">{t('accessibility.colorblindDeuteranopia', 'Deuteranopía (Verde-Rojo)')}</option>
+                <option value="tritanopia">{t('accessibility.colorblindTritanopia', 'Tritanopía (Azul-Amarillo)')}</option>
+                <option value="achromatopsia">{t('accessibility.colorblindAchromatopsia', 'Acromatopsia (Escala de grises)')}</option>
+              </select>
             </div>
-          </div>
 
-          {/* Densidad de Interfaz (Compacta / Estándar / Proyector) */}
-          <div style={{
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: 'var(--border-radius, 6px)'
-          }}>
-            <div style={{ marginBottom: '0.65rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                <LayoutGrid size={16} style={{ color: 'var(--accent-color)' }} />
-                {t('accessibility.densityMode', 'Densidad de Interfaz')}
+            {/* Banner Permanente de Alerta de Crisis */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '0.75rem 1rem',
+              backgroundColor: 'var(--card-header-bg)',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              gap: '0.75rem'
+            }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.88rem', color: 'var(--text-color)' }}>
+                  <Flame size={16} style={{ color: 'var(--danger-color)', flexShrink: 0 }} />
+                  <span>{t('accessibility.crisisBanner', 'Banner Permanente de Crisis')}</span>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted-text)', marginTop: '0.2rem', lineHeight: '1.3' }}>
+                  {t('accessibility.crisisBannerDesc', 'Muestra la alerta activa en la parte superior de todas las pantallas del Chair')}
+                </div>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
-                {t('accessibility.densityModeDesc', 'Ajusta el espaciado para laptops, monitores o proyectores')}
-              </div>
+              <ToggleSwitch
+                checked={bannerCrisisHabilitado}
+                onChange={handleToggleBannerCrisis}
+                ariaLabel={t('accessibility.crisisBanner', 'Banner Permanente de Crisis')}
+                activeColor="var(--danger-color)"
+              />
             </div>
-            <div style={{ display: 'flex', gap: '0.45rem' }}>
-              {[
-                { id: 'compact', label: t('accessibility.densityCompact', 'Compacta'), icon: Minimize2, title: 'Menor espaciado para portátiles o pantallas pequeñas' },
-                { id: 'standard', label: t('accessibility.densityStandard', 'Estándar'), icon: LayoutGrid, title: 'Espaciado estándar equilibrado' },
-                { id: 'projector', label: t('accessibility.densityProjector', 'Proyector'), icon: Monitor, title: 'Textos y elementos destacados para proyector o pantalla grande' }
-              ].map(({ id, label, icon: IconComponent, title }) => {
-                const isSelected = densityMode === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => handleDensityModeChange(id)}
-                    aria-pressed={isSelected}
-                    title={title}
-                    style={{
-                      flex: 1,
-                      padding: '0.45rem 0.5rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem',
-                      backgroundColor: isSelected ? 'var(--accent-soft)' : 'var(--bg-color)',
-                      color: isSelected ? 'var(--accent-color)' : 'var(--text-color)',
-                      border: `1px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'}`,
-                      borderRadius: 'var(--border-radius, 6px)',
-                      cursor: 'pointer',
-                      fontWeight: isSelected ? '650' : '500',
-                      fontSize: '0.8rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <IconComponent size={14} /> {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Modo Dislexia */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: 'var(--border-radius, 6px)',
-            gap: '1rem'
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                <Type size={16} style={{ color: 'var(--accent-color)' }} />
-                {t('accessibility.dyslexiaMode', 'Modo Dislexia')}
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
-                {t('accessibility.dyslexiaDesc', 'Fuente optimizada con mayor legibilidad')}
-              </div>
-            </div>
-            <ToggleSwitch
-              checked={!!accConfig.dyslexiaMode}
-              onChange={handleToggleDyslexia}
-              ariaLabel={t('accessibility.dyslexiaMode', 'Modo Dislexia')}
-              activeColor="var(--btn-bg)"
-            />
-          </div>
-
-          {/* Tamaño de Letra */}
-          <div style={{
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: 'var(--border-radius, 6px)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                <Type size={16} style={{ color: 'var(--accent-color)' }} />
-                <span>{t('accessibility.fontSize', 'Tamaño de Letra')}</span>
-              </div>
-              <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--accent-color)', fontVariantNumeric: 'tabular-nums' }}>
-                {(accConfig.fontSizeScale || 1).toFixed(2)}x
-              </span>
-            </div>
-            <input
-              type="range"
-              min="0.8"
-              max="1.5"
-              step="0.05"
-              value={accConfig.fontSizeScale || 1}
-              onChange={handleFontSizeChange}
-              style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--btn-bg)' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--muted-text)', marginTop: '0.25rem', fontVariantNumeric: 'tabular-nums' }}>
-              <span>{t('accessibility.fontSmall', 'Pequeña (0.8x)')}</span>
-              <span>{t('accessibility.fontNormal', 'Normal (1.0x)')}</span>
-              <span>{t('accessibility.fontLarge', 'Grande (1.5x)')}</span>
-            </div>
-          </div>
-
-          {/* Filtro de Daltonismo */}
-          <div style={{
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: 'var(--border-radius, 6px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-color)', marginBottom: '0.45rem' }}>
-              <Eye size={16} style={{ color: 'var(--accent-color)' }} />
-              {t('accessibility.colorblind', 'Filtro de Daltonismo')}
-            </div>
-            <select
-              value={accConfig.colorblindMode || 'none'}
-              onChange={handleColorblindChange}
-              style={{
-                width: '100%',
-                padding: '0.45rem 0.65rem',
-                backgroundColor: 'var(--bg-color)',
-                color: 'var(--text-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--border-radius, 6px)',
-                cursor: 'pointer',
-                fontSize: '0.84rem'
-              }}
-            >
-              <option value="none">{t('accessibility.colorblindNone', 'Ninguno (Normal)')}</option>
-              <option value="protanopia">{t('accessibility.colorblindProtanopia', 'Protanopía (Rojo-Verde)')}</option>
-              <option value="deuteranopia">{t('accessibility.colorblindDeuteranopia', 'Deuteranopía (Verde-Rojo)')}</option>
-              <option value="tritanopia">{t('accessibility.colorblindTritanopia', 'Tritanopía (Azul-Amarillo)')}</option>
-              <option value="achromatopsia">{t('accessibility.colorblindAchromatopsia', 'Acromatopsia (Escala de grises)')}</option>
-            </select>
-          </div>
-
-          {/* Banner Permanente de Alerta de Crisis */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--card-header-bg)',
-            border: '1px solid var(--subborder-color)',
-            borderRadius: 'var(--border-radius, 6px)',
-            gap: '1rem'
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-color)' }}>
-                <Flame size={16} style={{ color: 'var(--danger-color)' }} />
-                {t('accessibility.crisisBanner', 'Banner Permanente de Crisis')}
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '0.2rem' }}>
-                {t('accessibility.crisisBannerDesc', 'Muestra la alerta activa en la parte superior de todas las pantallas del Chair')}
-              </div>
-            </div>
-            <ToggleSwitch
-              checked={bannerCrisisHabilitado}
-              onChange={handleToggleBannerCrisis}
-              ariaLabel={t('accessibility.crisisBanner', 'Banner Permanente de Crisis')}
-              activeColor="var(--danger-color)"
-            />
           </div>
 
         </div>

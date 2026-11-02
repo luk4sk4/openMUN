@@ -313,6 +313,7 @@ const Dashboard = () => {
             cambiarTipoSesion={session.cambiarTipoSesion}
             isModular={isModular}
             toggleModulation={toggleModulation}
+            isSidebarOpen={isSidebarOpen}
             setIsSidebarOpen={setIsSidebarOpen}
             activeTab={activeTab}
             setActiveTab={setActiveTab}

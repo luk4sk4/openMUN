@@ -1,3 +1,4 @@
+import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Plus, Clock, ShieldAlert, Edit, Check, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
@@ -9,7 +10,7 @@ const CronometroOnlyTime = () => {
 
   const [tiempoTotalSeg, setTiempoTotalSeg] = useState(caucusActivo?.tiempoTotal || 600); // 10 min
   const [tiempoTotalInicial, setTiempoTotalInicial] = useState(caucusActivo?.tiempoTotal || 600);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
   const [editando, setEditando] = useState(false);
 
   const [inputMin, setInputMin] = useState(10);

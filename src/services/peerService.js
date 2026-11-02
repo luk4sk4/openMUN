@@ -79,6 +79,13 @@ export function sanitizeStateForBroadcast(state) {
   // 5. Omitir logs históricos gigantes innecesarios para clientes
   delete sanitized.registroIntervenciones;
   delete sanitized.historicoMociones;
+  delete sanitized.notes;
+  delete sanitized.openmun_notes;
+  if (sanitized.snapshot && typeof sanitized.snapshot === 'object') {
+    sanitized.snapshot = { ...sanitized.snapshot };
+    delete sanitized.snapshot.notes;
+    delete sanitized.snapshot.openmun_notes;
+  }
 
   return sanitized;
 }
@@ -91,6 +98,7 @@ export const DEFAULT_ROOM_SETTINGS = {
   speakerRequestMode: 'approval', // 'direct' | 'approval' | 'disabled'
   caucusRequestMode: 'approval',  // 'direct' | 'approval' | 'disabled'
   allowDelegateNotes: true,
+  requireStaffNoteApproval: false,
   allowChairNotes: true,
   allowMotions: true,
   allowLiveVoting: true
@@ -115,6 +123,7 @@ export const MSG_TYPES = {
   SPEAKING_REQUESTS_UPDATED: 'SPEAKING_REQUESTS_UPDATED',
   SEND_NOTE: 'SEND_NOTE',
   NOTE_RECEIVED: 'NOTE_RECEIVED',
+  REVIEW_NOTE: 'REVIEW_NOTE',
   CRISIS_ALERT: 'CRISIS_ALERT',
   BROADCAST_ANNOUNCEMENT: 'BROADCAST_ANNOUNCEMENT',
   DELETE_ANNOUNCEMENT: 'DELETE_ANNOUNCEMENT',
@@ -194,13 +203,17 @@ class NetworkService {
   // Filtrar histórico de notas según el rol y país del receptor
   getNotesForRole(role, country) {
     if (!Array.isArray(this.latestNotes)) return [];
+    const visible = this.latestNotes.filter(n => !['pending', 'rejected'].includes(n.status) ||
+      ['staff', 'chair', 'secretariat'].includes(role) ||
+      (role === 'delegate' && country && n.from?.toLowerCase().trim() === country.toLowerCase().trim()));
     if (role === 'secretariat' || role === 'chair') {
-      return this.latestNotes;
+      return visible;
     }
     if (role === 'staff') {
-      return this.latestNotes.filter(n => {
+      return visible.filter(n => {
         const dest = (n.to || '').toUpperCase().trim();
         return (
+          n.status === 'pending' || n.status === 'rejected' || n.reviewedAt ||
           dest === 'STAFF' ||
           dest === 'CHAIR' ||
           dest === 'MESA' ||
@@ -217,20 +230,20 @@ class NetworkService {
       });
     }
     if (role === 'backroom') {
-      return this.latestNotes.filter(n =>
+      return visible.filter(n =>
         n.to?.toUpperCase() === 'BACKROOM' ||
         n.fromRole === 'backroom' ||
         n.from?.toUpperCase() === 'BACKROOM' ||
-        n.to?.toUpperCase() === 'TODOS' ||
+        ['TODOS', 'ALL'].includes(n.to?.toUpperCase()) ||
         n.type === 'crisis'
       );
     }
     if (role === 'delegate' && country) {
       const cleanCountry = country.toLowerCase().trim();
-      return this.latestNotes.filter(n =>
+      return visible.filter(n =>
         (n.to && n.to.toLowerCase().trim() === cleanCountry) ||
         (n.from && n.from.toLowerCase().trim() === cleanCountry) ||
-        n.to?.toUpperCase() === 'TODOS'
+        ['TODOS', 'ALL'].includes(n.to?.toUpperCase())
       );
     }
     return [];
@@ -305,6 +318,10 @@ class NetworkService {
     }
 
     return new Promise((resolve, reject) => {
+      const registrationTimeout = setTimeout(() => {
+        this.destroy();
+        reject(new Error('La Mesa no recibió confirmación. Actualiza también el servidor para usar la aprobación de notas.'));
+      }, 15000);
       try {
         this.socket = io(SOCKET_SERVER_URL, {
           transports: ['websocket', 'polling'],
@@ -318,9 +335,18 @@ class NetworkService {
         this.socket.on('connect', () => {
           this.socketId = this.socket.id;
           // Unirse a la sala del comité en el servidor central
-          this.socket.emit('unirse-comite', this.roomId);
-          this.emit('host_ready', { roomId: this.roomId, roomSettings: this.roomSettings });
-          resolve(this.roomId);
+          this.socket.emit('unirse-comite', { sala: this.roomId, isHost: true }, (result) => {
+            clearTimeout(registrationTimeout);
+            if (!result?.ok) {
+              const error = new Error(result?.error || 'No se pudo registrar la Mesa');
+              this.emit('error', { error: error.message });
+              this.destroy();
+              reject(error);
+              return;
+            }
+            this.emit('host_ready', { roomId: this.roomId, roomSettings: this.roomSettings });
+            resolve(this.roomId);
+          });
         });
 
         // Escuchar datos entrantes desde el servidor central Socket.io
@@ -384,7 +410,7 @@ class NetworkService {
             window.dispatchEvent(new Event('online'));
           }
           if (this.roomId) {
-            this.socket.emit('unirse-comite', this.roomId);
+            this.socket.emit('unirse-comite', { sala: this.roomId, isHost: true });
             // Re-enviar el estado actual para resincronizar a los participantes
             if (this.latestSessionState) {
               this.broadcastStateToClients(this.latestSessionState);
@@ -406,6 +432,7 @@ class NetworkService {
 
       } catch (err) {
         console.error('Error al inicializar Socket.io Host:', err);
+        clearTimeout(registrationTimeout);
         reject(err);
       }
     });
@@ -502,7 +529,7 @@ class NetworkService {
 
           // Manejo de respuesta de Autenticación
           if (data.type === MSG_TYPES.AUTH_RESULT) {
-            if (!isResolved) {
+            if (!isResolved || data.payload?.success) {
               if (data.payload?.success) {
                 isResolved = true;
                 clearTimeout(connectTimeout);
@@ -548,9 +575,7 @@ class NetworkService {
           // Mantener sincronizado el array latestNotes del cliente si llega una nota
           if (data.type === MSG_TYPES.NOTE_RECEIVED && data.payload) {
             if (!this.latestNotes) this.latestNotes = [];
-            if (!this.latestNotes.some(n => n.id === data.payload.id)) {
-              this.latestNotes = [data.payload, ...this.latestNotes];
-            }
+            this.latestNotes = [data.payload, ...this.latestNotes.filter(n => n.id !== data.payload.id)];
           }
 
           // Distribución general de mensajes
@@ -780,7 +805,7 @@ class NetworkService {
               roomSettings: this.roomSettings,
               speakingRequests: this.latestSpeakingRequests || [],
               enmiendasPropuestas: this.latestEnmiendasPropuestas || [],
-              sessionState: this.latestSessionState || null,
+              sessionState: sanitizeStateForBroadcast(this.latestSessionState) || null,
               notes: roleNotes,
               announcements: this.latestAnnouncements || [],
               connectedPeers: currentPeerList,
@@ -823,7 +848,7 @@ class NetworkService {
             roomSettings: this.roomSettings,
             speakingRequests: this.latestSpeakingRequests || [],
             enmiendasPropuestas: this.latestEnmiendasPropuestas || [],
-            sessionState: this.latestSessionState || null,
+            sessionState: sanitizeStateForBroadcast(this.latestSessionState) || null,
             notes: this.latestNotes || [],
             announcements: this.latestAnnouncements || [],
             connectedPeers: currentPeerList
@@ -927,10 +952,10 @@ class NetworkService {
       return;
     }
 
-    // Obtener metadatos del remitente respetando senderMeta explícito si viene en el mensaje
-    const senderMeta = (message.senderMeta?.country || message.senderMeta?.role)
-      ? message.senderMeta
-      : (isLocal ? { role: 'secretariat', country: 'Secretaría Local' } : (this.peerMetadata.get(senderSocketId) || message.senderMeta));
+    // Los clientes remotos usan el rol registrado al autenticarse, nunca el declarado en cada mensaje.
+    const senderMeta = isLocal
+      ? (message.senderMeta || { role: 'secretariat', country: 'Secretaría Local' })
+      : this.peerMetadata.get(senderSocketId);
     if (!isLocal && !senderMeta) {
       return;
     }
@@ -1097,10 +1122,21 @@ class NetworkService {
       return;
     }
 
+    if (message.type === MSG_TYPES.REVIEW_NOTE) {
+      if (senderMeta.role !== 'staff') return;
+      const note = this.latestNotes.find(n => n.id === message.payload?.id);
+      const status = message.payload?.status;
+      if (!note || note.status !== 'pending' || !['approved', 'rejected'].includes(status)) return;
+      const reviewed = { ...note, status, reviewedBy: isLocal ? 'local-staff' : senderSocketId, reviewedAt: Date.now() };
+      this.latestNotes = this.latestNotes.map(n => n.id === reviewed.id ? reviewed : n);
+      this.publishNote(reviewed);
+      return;
+    }
+
     // 7. Enrutamiento de Notas (Pajes / Mensajería)
     if (message.type === MSG_TYPES.SEND_NOTE) {
       if (senderMeta.role === 'delegate') {
-        const target = message.payload?.to;
+        const target = String(message.payload?.to || '').trim().toUpperCase();
         if (target === 'CHAIR' && !this.roomSettings.allowChairNotes) return;
         if (target !== 'CHAIR' && target !== 'BACKROOM' && !this.roomSettings.allowDelegateNotes) return;
       }
@@ -1186,7 +1222,8 @@ class NetworkService {
   // Enrutador de Notas según Matriz de Privacidad
   routeNoteMessage(senderMeta, message) {
     const note = message.payload;
-    if (!note || !note.to) return;
+    if (!note || typeof note.to !== 'string' || typeof note.text !== 'string' || !note.text.trim()) return;
+    if (this.latestNotes.some(n => n.id === note.id)) return;
 
     let fromRole = senderMeta?.role || 'delegate';
     let fromName = senderMeta?.country || fromRole;
@@ -1203,38 +1240,38 @@ class NetworkService {
     }
 
     const formattedNote = {
-      ...note,
+      to: note.to.trim(),
+      text: note.text.trim(),
+      type: note.type || 'general',
+      status: fromRole === 'delegate' && this.roomSettings.requireStaffNoteApproval ? 'pending' : 'delivered',
       id: note.id || `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       from: fromName,
       fromRole: fromRole,
-      timestamp: note.timestamp || Date.now()
+      timestamp: Date.now()
     };
 
-    // Guardar en el histórico del Host
-    if (!this.latestNotes) this.latestNotes = [];
-    if (!this.latestNotes.some(n => n.id === formattedNote.id)) {
-      this.latestNotes = [formattedNote, ...this.latestNotes];
-      try {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('openmun_notes', JSON.stringify(this.latestNotes));
-        }
-      } catch (e) {}
+    this.latestNotes = [formattedNote, ...this.latestNotes];
+
+    this.publishNote(formattedNote);
+  }
+
+  publishNote(note) {
+    try {
+      localStorage.setItem('openmun_notes', JSON.stringify(this.latestNotes));
+    } catch (e) { }
+    // Las notas pendientes nunca se transmiten al destinatario ni al resto de la sala.
+    for (const [peerId, meta] of this.peerMetadata) {
+      if (!meta.isLocal && this.getNotesForRole(meta.role, meta.country).some(n => n.id === note.id)) {
+        this.emitSocketMessage({ type: MSG_TYPES.NOTE_RECEIVED, targetSocketId: peerId, payload: note });
+      }
     }
-
-    // Transmitir la nota a la sala Socket.io
-    this.emitSocketMessage({
-      type: MSG_TYPES.NOTE_RECEIVED,
-      payload: formattedNote
-    });
-
-    // Enviar a Secretaría Local (BroadcastChannel)
     this.broadcastLocal({
       type: MSG_TYPES.NOTE_RECEIVED,
-      payload: formattedNote
+      payload: note
     });
 
     // Notificar al propio Chair
-    this.emit('note_for_chair', formattedNote);
+    this.emit('note_for_chair', note);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -1432,27 +1469,38 @@ class NetworkService {
   }
 
   async broadcastLocal(data) {
-    if (this.broadcastChannel) {
-      try {
-        const payload = await compressData(data);
-        this.broadcastChannel.postMessage(payload);
-      } catch (e) { }
+    const channel = this.broadcastChannel;
+    if (channel) {
+      this.localSendQueue = (this.localSendQueue || Promise.resolve()).then(async () => {
+        try {
+          const payload = await compressData(data);
+          if (this.broadcastChannel === channel) channel.postMessage(payload);
+        } catch (e) { }
+      });
+      return this.localSendQueue;
     }
   }
 
   // Helper para emitir al servidor central Socket.io con compresión automática
   async emitSocketMessage(data) {
-    if (this.socket && this.socket.connected && this.roomId) {
-      try {
-        const payload = await compressData(data);
-        this.socket.emit('enviar-datos', {
-          sala: this.roomId,
-          json: payload
-        });
-        return true;
-      } catch (err) {
-        console.warn('Error emitiendo por Socket.io:', err);
-      }
+    const socket = this.socket;
+    const roomId = this.roomId;
+    if (socket && socket.connected && roomId) {
+      this.socketSendQueue = (this.socketSendQueue || Promise.resolve()).then(async () => {
+        try {
+          const payload = await compressData(data);
+          if (this.socket !== socket || this.roomId !== roomId || !socket.connected) return false;
+          socket.emit('enviar-datos', {
+            sala: roomId,
+            json: payload
+          });
+          return true;
+        } catch (err) {
+          console.warn('Error emitiendo por Socket.io:', err);
+        }
+        return false;
+      });
+      return this.socketSendQueue;
     }
     return false;
   }
@@ -1484,6 +1532,11 @@ class NetworkService {
     }
 
     return sent;
+  }
+
+  reviewNoteAsClient(id, status) {
+    if (this.role !== 'staff' || !['approved', 'rejected'].includes(status)) return false;
+    return this.sendToServer(MSG_TYPES.REVIEW_NOTE, { id, status });
   }
 
   sendNoteAsClient(to, text, type = 'general', customId = null) {

@@ -1,3 +1,4 @@
+import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Clock,
@@ -28,7 +29,7 @@ const CronometroEnmiendas = () => {
   // Estados del temporizador
   const [tiempoInicial, setTiempoInicial] = useState(60); // en segundos
   const [segundosRestantes, setSegundosRestantes] = useState(60);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
   const [paisSeleccionado, setPaisSeleccionado] = useState('');
   const [sonidoHabilitado, setSonidoHabilitado] = useState(true);
   const [intervencionGuardadaFeedback, setIntervencionGuardadaFeedback] = useState(false);

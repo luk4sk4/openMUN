@@ -1,3 +1,6 @@
+import { normalizarSesionesDebate, necesitaConfirmarSesion, fechaRegistro } from '../utils/debateSessions';
+import NewDebateSessionModal from '../components/modals/NewDebateSessionModal';
+import { registrarVotoConDerechos } from '../utils/votingRights';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { googleDriveService } from '../services/googleDriveService';
 import { conferenceService } from '../services/conferenceService';
@@ -21,6 +24,8 @@ const PAISES_INICIALES = [];
 const SESSION_SYNC_CHANNEL_NAME = 'openmun_session_sync';
 
 export const SessionProvider = ({ children }) => {
+  const [confirmarSesion, setConfirmarSesion] = useState(false);
+  const confirmarSesionRef = useRef(null);
   const tabInstanceId = useRef(`tab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`).current;
   const broadcastChannelRef = useRef(null);
 
@@ -235,6 +240,49 @@ export const SessionProvider = ({ children }) => {
       }));
     }
   }, [tabInstanceId]);
+
+  const actualizarSesionesDebate = useCallback((sesiones, ultimaActividad, emitir = true) => {
+    const agenda = {
+      ...stateRef.current.agendaSesion,
+      sesionesDebate: normalizarSesionesDebate(sesiones),
+      ultimaActividadDebate: Number.isSafeInteger(ultimaActividad) && ultimaActividad > 0 ? ultimaActividad : null
+    };
+    stateRef.current.agendaSesion = agenda;
+    setAgendaSesionState(agenda);
+    if (emitir) emitirAccion('actualizarSesionesDebate', { sesiones: agenda.sesionesDebate, ultimaActividad: agenda.ultimaActividadDebate });
+  }, [emitirAccion]);
+
+  const registrarActividadDebate = useCallback(() => {
+    const agenda = stateRef.current.agendaSesion;
+    if (agenda.sesionesDebate?.length) actualizarSesionesDebate(agenda.sesionesDebate, Date.now());
+  }, [actualizarSesionesDebate]);
+
+  const iniciarActividadDebate = useCallback(async () => {
+    if (confirmarSesionRef.current) return confirmarSesionRef.current.promise;
+    const agenda = stateRef.current.agendaSesion;
+    const sesiones = normalizarSesionesDebate(agenda.sesionesDebate);
+    const ultimaActividad = agenda.ultimaActividadDebate ?? stateRef.current.registroIntervenciones.reduce(
+      (ultima, i) => Math.max(ultima, fechaRegistro(i) || 0), 0);
+    let nueva = sesiones.length === 0;
+    if (ultimaActividad > 0 && necesitaConfirmarSesion(ultimaActividad)) {
+      let resolve;
+      const promise = new Promise(done => { resolve = done; });
+      confirmarSesionRef.current = { promise, resolve };
+      setConfirmarSesion(true);
+      nueva = await promise;
+      confirmarSesionRef.current = null;
+      setConfirmarSesion(false);
+    }
+    const ahora = Date.now();
+    if (nueva || sesiones.length === 0) {
+      // Legacy records stay unassigned unless the chair explicitly continues them.
+      const inicio = !nueva && ultimaActividad > 0
+        ? stateRef.current.registroIntervenciones.reduce((inicio, i) => Math.min(inicio, fechaRegistro(i) || inicio), ahora)
+        : ahora;
+      sesiones.push(inicio);
+    }
+    actualizarSesionesDebate(sesiones, ahora);
+  }, [actualizarSesionesDebate]);
 
   // CARGAR / REEMPLAZAR ESTADO COMPLETO Y AISLADO DE UN COMITÉ ESPECÍFICO
   const establecerEstadoComiteCompleto = useCallback((datosComite, defaultNombre = '') => {
@@ -471,13 +519,8 @@ export const SessionProvider = ({ children }) => {
         }
       }
 
-      const copyVotos = { ...prev.votos };
-      if (normalizedVoto === null || normalizedVoto === undefined) {
-        delete copyVotos[targetId];
-      } else {
-        copyVotos[targetId] = normalizedVoto;
-      }
-      return { ...prev, votos: copyVotos };
+      if ((voto === 'favor_derechos' || voto === 'contra_derechos') && (!paisObj || paisObj.estatus === 'Ausente')) return prev;
+      return registrarVotoConDerechos(prev, targetId, normalizedVoto);
     });
 
     if (emitir) {
@@ -488,7 +531,8 @@ export const SessionProvider = ({ children }) => {
   const configurarVotacion = useCallback((ajustes, emitir = true) => {
     setVotacionSesionState(prev => ({
       ...prev,
-      ...ajustes
+      ...ajustes,
+      derechos: ajustes.tipoVotacion === 'procedural' || ajustes.votos ? {} : (ajustes.derechos ?? prev.derechos)
     }));
     if (emitir) {
       emitirAccion('configurarVotacion', { ajustes });
@@ -498,7 +542,8 @@ export const SessionProvider = ({ children }) => {
   const resetearVotacion = useCallback((emitir = true) => {
     setVotacionSesionState(prev => ({
       ...prev,
-      votos: {}
+      votos: {},
+      derechos: {}
     }));
     if (emitir) {
       emitirAccion('resetearVotacion', {});
@@ -806,13 +851,14 @@ export const SessionProvider = ({ children }) => {
 
   // Agenda & Comité
   const establecerAgenda = useCallback((temaActual, temasPropuestos = [], emitir = true) => {
-    setAgendaSesionState({
+    setAgendaSesionState(prev => ({
+      ...prev,
       establecida: true,
       temaActual,
       temasPropuestos: temasPropuestos.length > 0 ? temasPropuestos : temaActual ? [
         { id: 't1', titulo: temaActual, estado: 'En Discusión' }
       ] : []
-    });
+    }));
     if (emitir) {
       emitirAccion('establecerAgenda', { temaActual, temasPropuestos });
     }
@@ -1189,6 +1235,9 @@ export const SessionProvider = ({ children }) => {
       case 'setCaucusActivo':
         setCaucusActivo(payload.caucus, false);
         break;
+      case 'actualizarSesionesDebate':
+        actualizarSesionesDebate(payload.sesiones, payload.ultimaActividad, false);
+        break;
       case 'establecerAgenda':
         establecerAgenda(payload.temaActual, payload.temasPropuestos, false);
         break;
@@ -1246,7 +1295,7 @@ export const SessionProvider = ({ children }) => {
     agregarOrador, removerOrador, moverOrador, vaciarOradoresGSL, ordenarOradoresGSLAlfabetico,
     reordenarOradoresGSL, cederTiempo, agregarOradorCaucus, removerOradorCaucus, avanzarOradorCaucus,
     vaciarOradoresDebate, ordenarOradoresDebateAlfabetico, reordenarOradoresDebate, moverOradorCaucus,
-    setCaucusActivo, establecerAgenda, cambiarTemaActual, setNombreComite, agregarMocion, activarMocion,
+    setCaucusActivo, establecerAgenda, actualizarSesionesDebate, cambiarTemaActual, setNombreComite, agregarMocion, activarMocion,
     votarMocion, eliminarMocion, reordenarMociones, ordenarMocionesDisruptividad, registrarIntervencion,
     actualizarRelojGSL, setEnmiendasSesion, guardarResolucionEnmiendas, agregarEnmiendaResolucion,
     resolverEnmiendaResolucion, eliminarEnmiendaResolucion
@@ -2220,6 +2269,8 @@ export const SessionProvider = ({ children }) => {
     moverOradorCaucus,
     registroIntervenciones,
     registrarIntervencion,
+    iniciarActividadDebate,
+    registrarActividadDebate,
     descargarSesionJSON,
     cargarSesionJSON,
     borrarDatosLocales,
@@ -2314,6 +2365,8 @@ export const SessionProvider = ({ children }) => {
     moverOradorCaucus,
     registroIntervenciones,
     registrarIntervencion,
+    iniciarActividadDebate,
+    registrarActividadDebate,
     descargarSesionJSON,
     cargarSesionJSON,
     borrarDatosLocales,
@@ -2382,6 +2435,10 @@ export const SessionProvider = ({ children }) => {
   return (
     <SessionContext.Provider value={contextValue}>
       {children}
+      <NewDebateSessionModal
+        isOpen={confirmarSesion}
+        onDecision={nueva => confirmarSesionRef.current?.resolve(nueva)}
+      />
     </SessionContext.Provider>
   );
 };

@@ -4,18 +4,12 @@ import {
   Clock, 
   Mic, 
   MessageSquare, 
-  AlertCircle, 
   TrendingUp, 
- 
   UserCheck, 
   UserX, 
-  Award,
-  HelpCircle,
-  FileCheck2,
-  BarChart3,
-  Flame,
-  CheckCircle2,
-  XCircle
+  FileCheck2, 
+  CheckCircle2, 
+  XCircle 
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 
@@ -134,20 +128,15 @@ const GraficosParticipacion = ({
     return { totalMoc: total, mocAprobadas: aprob, mocRechazadas: rech, mocOtras: otras, tasaAprobacionMoc: tasa };
   }, [mociones]);
 
-  // Valores máximos para las barras de progreso relativas
-  const maxTiempo = Math.max(1, ...delegacionesNormalizadas.map(d => d.tiempoHabladoTotal));
-  const maxIntervenciones = Math.max(1, ...delegacionesNormalizadas.map(d => d.cantidadIntervenciones));
-  const maxPreguntas = Math.max(1, ...delegacionesNormalizadas.map(d => d.totalPreguntas));
-
   const getMaximoSegunMetrica = () => {
-    if (metricaPodio === 'intervenciones') return maxIntervenciones;
-    if (metricaPodio === 'preguntas') return maxPreguntas;
-    return maxTiempo;
+    if (metricaPodio === 'intervenciones') return Math.max(1, ...delegacionesNormalizadas.map(d => d.cantidadIntervenciones));
+    if (metricaPodio === 'preguntas') return Math.max(1, ...delegacionesNormalizadas.map(d => d.totalPreguntas));
+    return Math.max(1, ...delegacionesNormalizadas.map(d => d.tiempoHabladoTotal));
   };
 
   const getValorSegunMetrica = (del) => {
     if (metricaPodio === 'intervenciones') return `${del.cantidadIntervenciones} discursos`;
-    if (metricaPodio === 'preguntas') return `${del.totalPreguntas} preguntas/POI`;
+    if (metricaPodio === 'preguntas') return `${del.totalPreguntas} preguntas / POI`;
     return `${formatMinutos(del.tiempoHabladoTotal)} (${del.cantidadIntervenciones} int.)`;
   };
 
@@ -160,26 +149,42 @@ const GraficosParticipacion = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }} className="anim-fade-scale">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       {/* ── FILA 1: TARJETAS KPI DE RENDIMIENTO ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.6rem' }}>
         {/* Tiempo en Sala */}
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          padding: '0.75rem 0.9rem',
+          borderRadius: 'var(--border-radius)',
+          padding: '0.65rem 0.85rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.7rem'
         }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Clock size={20} />
+          <div style={{ 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: 'var(--border-radius)', 
+            backgroundColor: 'var(--info-soft)', 
+            color: 'var(--info-color)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            flexShrink: 0 
+          }}>
+            <Clock size={18} />
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.03em' }}>Tiempo en Sala</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-color)', whiteSpace: 'nowrap' }}>{formatMinutos(totalSegHablados)}</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)' }}>{formatMinutosExactos(totalSegHablados)}</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
+              Tiempo en sala
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+              {formatMinutos(totalSegHablados)}
+            </div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+              {formatMinutosExactos(totalSegHablados)}
+            </div>
           </div>
         </div>
 
@@ -187,19 +192,35 @@ const GraficosParticipacion = ({
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          padding: '0.75rem 0.9rem',
+          borderRadius: 'var(--border-radius)',
+          padding: '0.65rem 0.85rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.7rem'
         }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Mic size={20} />
+          <div style={{ 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: 'var(--border-radius)', 
+            backgroundColor: 'var(--success-soft)', 
+            color: 'var(--success-color)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            flexShrink: 0 
+          }}>
+            <Mic size={18} />
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.03em' }}>Intervenciones</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-color)', whiteSpace: 'nowrap' }}>{totalDiscursos} discursos</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)' }}>{totalPreguntasGlobal} preguntas / POI</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
+              Intervenciones
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+              {totalDiscursos} discursos
+            </div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+              {totalPreguntasGlobal} preguntas / POI
+            </div>
           </div>
         </div>
 
@@ -207,19 +228,35 @@ const GraficosParticipacion = ({
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          padding: '0.75rem 0.9rem',
+          borderRadius: 'var(--border-radius)',
+          padding: '0.65rem 0.85rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.7rem'
         }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <UserCheck size={20} />
+          <div style={{ 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: 'var(--border-radius)', 
+            backgroundColor: 'var(--accent-soft)', 
+            color: 'var(--accent-color)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            flexShrink: 0 
+          }}>
+            <UserCheck size={18} />
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.03em' }}>Participación Sala</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-color)', whiteSpace: 'nowrap' }}>{porcentajeParticipacion}%</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)' }}>{delegacionesActivas.length} de {totalPaises} países</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
+              Participación sala
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+              {porcentajeParticipacion}%
+            </div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+              {delegacionesActivas.length} de {totalPaises} países
+            </div>
           </div>
         </div>
 
@@ -227,19 +264,35 @@ const GraficosParticipacion = ({
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          padding: '0.75rem 0.9rem',
+          borderRadius: 'var(--border-radius)',
+          padding: '0.65rem 0.85rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.7rem'
         }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: 'rgba(234, 88, 12, 0.15)', color: '#fb923c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <MessageSquare size={20} />
+          <div style={{ 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: 'var(--border-radius)', 
+            backgroundColor: 'var(--warning-soft)', 
+            color: 'var(--warning-color)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            flexShrink: 0 
+          }}>
+            <MessageSquare size={18} />
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.03em' }}>Éxito Mociones</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-color)', whiteSpace: 'nowrap' }}>{tasaAprobacionMoc}%</div>
-            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)' }}>{mocAprobadas} aprobadas / {totalMoc} total</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--muted-text)', textTransform: 'uppercase', fontWeight: '650', letterSpacing: '0.04em' }}>
+              Éxito mociones
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '650', color: 'var(--text-color)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+              {tasaAprobacionMoc}%
+            </div>
+            <div style={{ fontSize: '0.65rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
+              {mocAprobadas} aprobadas / {totalMoc} total
+            </div>
           </div>
         </div>
       </div>
@@ -250,28 +303,32 @@ const GraficosParticipacion = ({
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
+          borderRadius: 'var(--border-radius)',
           padding: '0.85rem 1rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.55rem'
+          gap: '0.6rem'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <TrendingUp size={15} color="#3b82f6" />
-              Balance de Debate: GSL vs Caucuses
+            <span style={{ fontSize: '0.82rem', fontWeight: '650', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <TrendingUp size={15} style={{ color: 'var(--info-color)' }} />
+              Balance de debate: GSL vs Caucuses
             </span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem' }}>
-            <span style={{ color: '#60a5fa', fontWeight: '700' }}>GSL: {totalSegHablados > 0 ? pctGsl : 0}% ({formatMinutos(totalGslSeg)})</span>
-            <span style={{ color: '#c084fc', fontWeight: '700' }}>Caucuses: {totalSegHablados > 0 ? pctCaucus : 0}% ({formatMinutos(totalCaucusSeg)})</span>
+            <span style={{ color: 'var(--info-color)', fontWeight: '600', fontVariantNumeric: 'tabular-nums' }}>
+              GSL: {totalSegHablados > 0 ? pctGsl : 0}% ({formatMinutos(totalGslSeg)})
+            </span>
+            <span style={{ color: 'var(--accent-color)', fontWeight: '600', fontVariantNumeric: 'tabular-nums' }}>
+              Caucuses: {totalSegHablados > 0 ? pctCaucus : 0}% ({formatMinutos(totalCaucusSeg)})
+            </span>
           </div>
 
           {/* Barra de progreso bicolor */}
-          <div style={{ height: '10px', width: '100%', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden', display: 'flex' }}>
-            <div style={{ width: `${totalSegHablados > 0 ? pctGsl : 0}%`, backgroundColor: '#3b82f6', transition: 'width 0.5s ease' }} title={`GSL: ${pctGsl}%`} />
-            <div style={{ width: `${totalSegHablados > 0 ? pctCaucus : 0}%`, backgroundColor: '#a855f7', transition: 'width 0.5s ease' }} title={`Caucuses: ${pctCaucus}%`} />
+          <div style={{ height: '8px', width: '100%', borderRadius: '4px', backgroundColor: 'var(--subborder-color)', overflow: 'hidden', display: 'flex' }}>
+            <div style={{ width: `${totalSegHablados > 0 ? pctGsl : 0}%`, backgroundColor: 'var(--info-color)', transition: 'width 0.4s ease' }} title={`GSL: ${pctGsl}%`} />
+            <div style={{ width: `${totalSegHablados > 0 ? pctCaucus : 0}%`, backgroundColor: 'var(--accent-color)', transition: 'width 0.4s ease' }} title={`Caucuses: ${pctCaucus}%`} />
           </div>
         </div>
 
@@ -279,18 +336,18 @@ const GraficosParticipacion = ({
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
+          borderRadius: 'var(--border-radius)',
           padding: '0.85rem 1rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.55rem'
+          gap: '0.6rem'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <FileCheck2 size={15} color="#4ade80" />
-              Resolución de Mociones ({totalMoc})
+            <span style={{ fontSize: '0.82rem', fontWeight: '650', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <FileCheck2 size={15} style={{ color: 'var(--success-color)' }} />
+              Resolución de mociones ({totalMoc})
             </span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
               {mocAprobadas} aprobadas • {mocRechazadas} rechazadas
             </span>
           </div>
@@ -302,24 +359,24 @@ const GraficosParticipacion = ({
           ) : (
             <>
               <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.72rem', flexWrap: 'wrap' }}>
-                <span style={{ color: '#4ade80', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span style={{ color: 'var(--success-color)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem', fontVariantNumeric: 'tabular-nums' }}>
                   <CheckCircle2 size={12} /> Aprobadas ({mocAprobadas})
                 </span>
-                <span style={{ color: '#f87171', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span style={{ color: 'var(--danger-color)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem', fontVariantNumeric: 'tabular-nums' }}>
                   <XCircle size={12} /> Rechazadas ({mocRechazadas})
                 </span>
                 {mocOtras > 0 && (
-                  <span style={{ color: '#fb923c', fontWeight: '700' }}>
+                  <span style={{ color: 'var(--warning-color)', fontWeight: '600', fontVariantNumeric: 'tabular-nums' }}>
                     Otras / Pendientes ({mocOtras})
                   </span>
                 )}
               </div>
 
               {/* Barra segmentada de mociones */}
-              <div style={{ height: '10px', width: '100%', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden', display: 'flex' }}>
-                <div style={{ width: `${(mocAprobadas / totalMoc) * 100}%`, backgroundColor: '#22c55e', transition: 'width 0.4s ease' }} title={`Aprobadas: ${mocAprobadas}`} />
-                <div style={{ width: `${(mocRechazadas / totalMoc) * 100}%`, backgroundColor: '#ef4444', transition: 'width 0.4s ease' }} title={`Rechazadas: ${mocRechazadas}`} />
-                <div style={{ width: `${(mocOtras / totalMoc) * 100}%`, backgroundColor: '#f97316', transition: 'width 0.4s ease' }} title={`Otras: ${mocOtras}`} />
+              <div style={{ height: '8px', width: '100%', borderRadius: '4px', backgroundColor: 'var(--subborder-color)', overflow: 'hidden', display: 'flex' }}>
+                <div style={{ width: `${(mocAprobadas / totalMoc) * 100}%`, backgroundColor: 'var(--success-color)', transition: 'width 0.4s ease' }} title={`Aprobadas: ${mocAprobadas}`} />
+                <div style={{ width: `${(mocRechazadas / totalMoc) * 100}%`, backgroundColor: 'var(--danger-color)', transition: 'width 0.4s ease' }} title={`Rechazadas: ${mocRechazadas}`} />
+                <div style={{ width: `${(mocOtras / totalMoc) * 100}%`, backgroundColor: 'var(--warning-color)', transition: 'width 0.4s ease' }} title={`Otras: ${mocOtras}`} />
               </div>
             </>
           )}
@@ -332,38 +389,43 @@ const GraficosParticipacion = ({
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          padding: '0.9rem',
+          borderRadius: 'var(--border-radius)',
+          padding: '0.85rem 1rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.6rem'
+          gap: '0.65rem'
         }}>
           {/* Header del Podio con Selector de Métrica */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', fontSize: '0.85rem', color: '#facc15' }}>
-              <Trophy size={16} />
-              <span>Ranking de Delegaciones Activas</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '650', fontSize: '0.85rem', color: 'var(--text-color)' }}>
+              <Trophy size={16} style={{ color: 'var(--warning-color)' }} />
+              <span>Ranking de delegaciones activas</span>
             </div>
 
             {/* Selector de Métrica para el Podio */}
-            <div style={{
-              display: 'flex',
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '5px',
-              padding: '1px'
-            }}>
+            <div 
+              role="group"
+              aria-label="Métrica de ranking"
+              style={{
+                display: 'flex',
+                backgroundColor: 'var(--input-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius)',
+                padding: '2px'
+              }}
+            >
               <button
                 onClick={() => setMetricaPodio('tiempo')}
                 style={{
-                  padding: '2px 6px',
-                  fontSize: '0.68rem',
-                  fontWeight: metricaPodio === 'tiempo' ? '800' : '500',
-                  border: 'none',
-                  borderRadius: '3px',
-                  backgroundColor: metricaPodio === 'tiempo' ? 'var(--btn-bg)' : 'transparent',
-                  color: metricaPodio === 'tiempo' ? 'var(--btn-text)' : 'var(--muted-text)',
-                  cursor: 'pointer'
+                  padding: '2px 7px',
+                  fontSize: '0.7rem',
+                  fontWeight: metricaPodio === 'tiempo' ? '650' : '500',
+                  border: metricaPodio === 'tiempo' ? '1px solid var(--accent-color)' : '1px solid transparent',
+                  borderRadius: 'calc(var(--border-radius) - 2px)',
+                  backgroundColor: metricaPodio === 'tiempo' ? 'var(--accent-soft)' : 'transparent',
+                  color: metricaPodio === 'tiempo' ? 'var(--accent-color)' : 'var(--muted-text)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 Tiempo
@@ -371,14 +433,15 @@ const GraficosParticipacion = ({
               <button
                 onClick={() => setMetricaPodio('intervenciones')}
                 style={{
-                  padding: '2px 6px',
-                  fontSize: '0.68rem',
-                  fontWeight: metricaPodio === 'intervenciones' ? '800' : '500',
-                  border: 'none',
-                  borderRadius: '3px',
-                  backgroundColor: metricaPodio === 'intervenciones' ? 'var(--btn-bg)' : 'transparent',
-                  color: metricaPodio === 'intervenciones' ? 'var(--btn-text)' : 'var(--muted-text)',
-                  cursor: 'pointer'
+                  padding: '2px 7px',
+                  fontSize: '0.7rem',
+                  fontWeight: metricaPodio === 'intervenciones' ? '650' : '500',
+                  border: metricaPodio === 'intervenciones' ? '1px solid var(--accent-color)' : '1px solid transparent',
+                  borderRadius: 'calc(var(--border-radius) - 2px)',
+                  backgroundColor: metricaPodio === 'intervenciones' ? 'var(--accent-soft)' : 'transparent',
+                  color: metricaPodio === 'intervenciones' ? 'var(--accent-color)' : 'var(--muted-text)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 Discursos
@@ -386,14 +449,15 @@ const GraficosParticipacion = ({
               <button
                 onClick={() => setMetricaPodio('preguntas')}
                 style={{
-                  padding: '2px 6px',
-                  fontSize: '0.68rem',
-                  fontWeight: metricaPodio === 'preguntas' ? '800' : '500',
-                  border: 'none',
-                  borderRadius: '3px',
-                  backgroundColor: metricaPodio === 'preguntas' ? 'var(--btn-bg)' : 'transparent',
-                  color: metricaPodio === 'preguntas' ? 'var(--btn-text)' : 'var(--muted-text)',
-                  cursor: 'pointer'
+                  padding: '2px 7px',
+                  fontSize: '0.7rem',
+                  fontWeight: metricaPodio === 'preguntas' ? '650' : '500',
+                  border: metricaPodio === 'preguntas' ? '1px solid var(--accent-color)' : '1px solid transparent',
+                  borderRadius: 'calc(var(--border-radius) - 2px)',
+                  backgroundColor: metricaPodio === 'preguntas' ? 'var(--accent-soft)' : 'transparent',
+                  color: metricaPodio === 'preguntas' ? 'var(--accent-color)' : 'var(--muted-text)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 Preguntas
@@ -405,24 +469,26 @@ const GraficosParticipacion = ({
           {listaActivaParaPodio.slice(0, 8).map((del, idx) => {
             const pct = getPorcentajeSegunMetrica(del);
             const medalla = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
-            const colorBarra = idx === 0 ? '#facc15' : (idx === 1 ? '#94a3b8' : (idx === 2 ? '#d97706' : '#3b82f6'));
+            const colorBarra = idx === 0 
+              ? 'var(--warning-color)' 
+              : (idx === 1 ? 'var(--muted-text)' : (idx === 2 ? 'var(--accent-color)' : 'var(--info-color)'));
 
             return (
               <div key={del.id || idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden' }}>
-                    <span style={{ fontSize: '0.82rem', width: '22px', flexShrink: 0 }}>{medalla}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', overflow: 'hidden' }}>
+                    <span style={{ fontSize: '0.82rem', width: '22px', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{medalla}</span>
                     <CountryFlag bandera={del.bandera} nombre={del.nombre} size="sm" />
-                    <span style={{ fontWeight: '700', color: 'var(--text-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontWeight: '600', color: 'var(--text-color)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {del.nombre}
                     </span>
                   </div>
-                  <span style={{ fontWeight: '700', color: 'var(--muted-text)', fontSize: '0.74rem', whiteSpace: 'nowrap', marginLeft: '0.5rem' }}>
+                  <span style={{ fontWeight: '600', color: 'var(--muted-text)', fontSize: '0.72rem', whiteSpace: 'nowrap', marginLeft: '0.5rem', fontVariantNumeric: 'tabular-nums' }}>
                     {getValorSegunMetrica(del)}
                   </span>
                 </div>
-                <div style={{ height: '6px', width: '100%', borderRadius: '9999px', backgroundColor: 'rgba(255, 255, 255, 0.06)', overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', backgroundColor: colorBarra, borderRadius: '9999px', transition: 'width 0.4s ease' }} />
+                <div style={{ height: '5px', width: '100%', borderRadius: '3px', backgroundColor: 'var(--subborder-color)', overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', backgroundColor: colorBarra, borderRadius: '3px', transition: 'width 0.4s ease' }} />
                 </div>
               </div>
             );
@@ -439,16 +505,16 @@ const GraficosParticipacion = ({
         <div style={{
           backgroundColor: 'var(--card-header-bg)',
           border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          padding: '0.9rem',
+          borderRadius: 'var(--border-radius)',
+          padding: '0.85rem 1rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.6rem'
+          gap: '0.65rem'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', fontSize: '0.85rem', color: '#f87171' }}>
-              <UserX size={16} />
-              <span>Delegaciones Silenciosas ({delegacionesSilenciosas.length})</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '650', fontSize: '0.85rem', color: 'var(--text-color)' }}>
+              <UserX size={16} style={{ color: 'var(--muted-text)' }} />
+              <span>Delegaciones sin intervenciones ({delegacionesSilenciosas.length})</span>
             </div>
             <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>Sin actividad registrada</span>
           </div>
@@ -457,17 +523,17 @@ const GraficosParticipacion = ({
             <div style={{ 
               textAlign: 'center', 
               padding: '2rem 1rem', 
-              color: '#4ade80', 
+              color: 'var(--success-color)', 
               fontSize: '0.82rem', 
-              fontWeight: '700', 
+              fontWeight: '600', 
               display: 'flex', 
-              flexDirection: 'column',
+              flexDirection: 'column', 
               alignItems: 'center', 
               justifyContent: 'center', 
               gap: '0.5rem',
-              backgroundColor: 'rgba(34, 197, 94, 0.05)',
-              borderRadius: '6px',
-              border: '1px dashed rgba(34, 197, 94, 0.3)'
+              backgroundColor: 'var(--success-soft)',
+              borderRadius: 'var(--border-radius)',
+              border: '1px dashed var(--success-color)'
             }}>
               <CheckCircle2 size={20} />
               <span>¡Excelente participación! Todas las delegaciones registradas han intervenido en la sesión.</span>
@@ -481,10 +547,10 @@ const GraficosParticipacion = ({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.35rem',
-                    padding: '0.25rem 0.55rem',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                    borderRadius: '5px',
+                    padding: '0.25rem 0.5rem',
+                    backgroundColor: 'var(--input-bg)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius)',
                     fontSize: '0.74rem',
                     color: 'var(--text-color)'
                   }}
@@ -502,4 +568,3 @@ const GraficosParticipacion = ({
 };
 
 export default GraficosParticipacion;
-

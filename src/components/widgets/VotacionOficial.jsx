@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
+import { BotonesConDerechos, ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
 
@@ -270,7 +271,6 @@ const VotacionOficial = () => {
         {/* Fila 1: Asunto del Proyecto/Moción + Toggle Veto P5 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, minWidth: 0 }}>
-            <Vote size={15} style={{ color: 'var(--accent-color)', opacity: 0.85, flexShrink: 0 }} />
             <input
               type="text"
               value={asunto}
@@ -314,7 +314,6 @@ const VotacionOficial = () => {
             }}
             title="Activar/desactivar evaluación de Veto P5"
           >
-            <Crown size={13} color={aplicarVeto ? vetoOrange : 'var(--muted-text)'} fill={aplicarVeto ? vetoOrange : 'none'} />
             <span>{t('voting.vetoP5', 'Veto P5')}: {aplicarVeto ? t('common.activeOn', 'ON') : t('common.inactiveOff', 'OFF')}</span>
           </button>
         </div>
@@ -546,7 +545,6 @@ const VotacionOficial = () => {
           {/* Banner de Ronda */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--subborder-color)', paddingBottom: '0.35rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Vote size={14} color={rondaRollCall === 2 ? vetoOrange : 'var(--accent-color)'} />
               <span style={{ fontWeight: '750', fontSize: '0.8rem', color: rondaRollCall === 2 ? vetoOrange : 'var(--accent-color)' }}>
                 {rondaRollCall === 1 ? t('voting.rollCallRound1', 'PRIMERA RONDA - VOTACIÓN NOMINAL') : t('voting.rollCallRound2', 'SEGUNDA RONDA - DELEGACIONES QUE PASARON')}
               </span>
@@ -572,7 +570,8 @@ const VotacionOficial = () => {
               </div>
 
               {/* Botones de Voto Roll Call */}
-              <div style={{ display: 'flex', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={registrarYAvanzarRollCall} />
                 <button
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor')}
@@ -671,6 +670,8 @@ const VotacionOficial = () => {
           )}
         </div>
       )}
+
+      <ListaDerechos paises={paises} sesion={votacionSesion} />
 
       {/* ── Contadores Compactos (Una Sola Fila Esbelta) ── */}
       <div style={{
@@ -899,7 +900,7 @@ const VotacionOficial = () => {
               {esAusente ? (
                 <span style={{ fontSize: '0.72rem', color: 'var(--danger-color)', fontStyle: 'italic' }}>{t('countries.absent', 'Ausente')}</span>
               ) : (
-                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.35rem', alignItems: 'center', flexShrink: 1 }}>
                   {/* Badge Prominente de Estado de Voto */}
                   {votoActual === 'favor' && (
                     <span style={{
@@ -955,6 +956,7 @@ const VotacionOficial = () => {
                     </span>
                   )}
 
+                  <BotonesConDerechos tipoVotacion={tipoVotacion} onVote={v => registrarVotoPais(p.id, v)} voto={votoActual} conDerechos={votacionSesion?.derechos?.[p.id]} />
                   {/* Botón A FAVOR */}
                   <button
                     type="button"

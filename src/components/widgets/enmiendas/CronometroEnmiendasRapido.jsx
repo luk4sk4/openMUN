@@ -1,3 +1,4 @@
+import { useDebateRunning } from '../../../hooks/useDebateRunning';
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import {
   Clock,
@@ -28,7 +29,7 @@ const CronometroEnmiendasRapido = memo(({
   const [cronometroPais, setCronometroPais] = useState('');
   const [cronometroSegundos, setCronometroSegundos] = useState(60);
   const [cronometroInicial, setCronometroInicial] = useState(60);
-  const [cronometroCorriendo, setCronometroCorriendo] = useState(false);
+  const [cronometroCorriendo, setCronometroCorriendo] = useDebateRunning();
   const [sonidoHabilitado, setSonidoHabilitado] = useState(true);
   const [intervencionGuardadaFeedback, setIntervencionGuardadaFeedback] = useState(false);
   const [colapsado, setColapsado] = useState(false);

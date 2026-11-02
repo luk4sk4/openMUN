@@ -1,3 +1,4 @@
+import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, SkipForward, Clock, ChevronUp, ChevronDown, PictureInPicture2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
@@ -24,7 +25,7 @@ const CronometroDual = ({ modoInicial = null }) => {
   const [tiempoTotalInicial, setTiempoTotalInicial] = useState(caucusActivo?.tiempoTotal || 600);
   const [tiempoOradorSeg, setTiempoOradorSeg] = useState(caucusActivo?.tiempoOrador || 45);
   const [limiteOradorSeg, setLimiteOradorSeg] = useState(caucusActivo?.tiempoOrador || 45);
-  const [corriendo, setCorriendo] = useState(false);
+  const [corriendo, setCorriendo] = useDebateRunning();
   const [mensajeGuardado, setMensajeGuardado] = useState(false);
 
   const timerRef = useRef(null);

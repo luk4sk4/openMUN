@@ -4,6 +4,7 @@ const cors = require('cors');
 const { Server } = require('socket.io');
 const { instrument } = require('@socket.io/admin-ui');
 const db = require('./db.js');
+const { createNoteRelay } = require('./noteRelay.cjs');
 const app = express();
 const server = http.createServer(app);
 const nodemailer = require('nodemailer');
@@ -64,6 +65,7 @@ if (process.env.SOCKET_ADMIN_PASSWORD_HASH) {
 	});
 }
 const salasConTemporizador = new Set();
+const noteRelay = createNoteRelay(io);
 // ==========================================
 // CONSULTAS PREPARADAS SQLITE
 // ==========================================
@@ -921,17 +923,32 @@ io.on('connection', (socket) => {
 		const confNorm = confId.toString().trim().toLowerCase();
 		socket.join(confNorm);
 	});
-	socket.on('unirse-comite', (sala) => {
+	socket.on('unirse-comite', (request, acknowledge) => {
+		const sala = typeof request === 'object' ? request?.sala : request;
 		if (!sala) return;
 		const salaNorm = sala.toString().trim();
+		if (request?.isHost && !noteRelay.registerHost(socket, salaNorm)) {
+			if (typeof acknowledge === 'function') acknowledge({ ok: false, error: 'Esta sala ya tiene una Mesa conectada' });
+			return;
+		}
 		socket.join(salaNorm);
+		if (typeof acknowledge === 'function') acknowledge({ ok: true });
 		try {
 			const comiteGuardado = qGetComite.get(salaNorm.toLowerCase());
 			if (comiteGuardado && comiteGuardado.datos_json) {
 				const datos = typeof comiteGuardado.datos_json === 'string'
 					? JSON.parse(comiteGuardado.datos_json)
 					: comiteGuardado.datos_json;
-				socket.emit('cargar-estado-inicial', datos);
+				// Los históricos de notas se entregan mediante AUTH_RESULT, filtrados por rol.
+				const publicData = { ...datos };
+				delete publicData.notes;
+				delete publicData.openmun_notes;
+				if (publicData.snapshot && typeof publicData.snapshot === 'object') {
+					publicData.snapshot = { ...publicData.snapshot };
+					delete publicData.snapshot.openmun_notes;
+					delete publicData.snapshot.notes;
+				}
+				socket.emit('cargar-estado-inicial', request?.isHost ? datos : publicData);
 			}
 		} catch (e) {
 			console.error('Error recuperando estado de SQLite en socket:', e.message);
@@ -941,6 +958,7 @@ io.on('connection', (socket) => {
                         setTimeout(() => {
                                 io.to(salaNorm).emit('cierre-forzado', 'La sala ha excedido el límite de 12 horas.');
                                 io.in(salaNorm).socketsLeave(salaNorm);
+                                noteRelay.expire(salaNorm);
                                 salasConTemporizador.delete(salaNorm);
                         }, 12 * 60 * 60 * 1000);
                 }
@@ -948,7 +966,7 @@ io.on('connection', (socket) => {
         socket.on('enviar-datos', (data) => {
                 if (!data || !data.sala) return;
                 const salaNorm = data.sala.toString().trim();
-                socket.to(salaNorm).emit('nuevos-datos', data.json);
+                if (!noteRelay.forward(socket, salaNorm, data.json)) return;
                 try {
                         if (data.json && typeof data.json === 'object' && !data.json.type && !data.json._c) {
                                 const jsonStr = JSON.stringify(data.json);
@@ -966,6 +984,7 @@ io.on('connection', (socket) => {
                 } catch (err) { }
         });
         socket.on('disconnecting', () => {
+                noteRelay.release(socket);
                 for (const sala of socket.rooms) {
                         if (sala !== socket.id) {
                                 socket.to(sala).emit('nuevos-datos', {

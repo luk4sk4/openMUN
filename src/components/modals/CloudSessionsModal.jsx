@@ -88,8 +88,8 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
       );
       setPassword('');
     } catch (err) {
-      console.error('Error al autenticar en Supabase:', err);
-      showNotification(err.message || 'Error al conectar con Supabase', 'error');
+      console.error('Error al autenticar en la nube:', err);
+      showNotification(err.message || 'Error al conectar con la nube', 'error');
     } finally {
       setLoading(false);
     }
@@ -167,7 +167,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
   const handleEliminar = (comite) => {
     setConfirmConfig({
       title: '¿Eliminar Comité de la Nube?',
-      message: '¿Estás seguro de que deseas eliminar permanentemente este comité de tu conferencia en Supabase?',
+      message: '¿Estás seguro de que deseas eliminar permanentemente este comité de tu conferencia en la nube?',
       highlightText: comite.name,
       submessage: 'Esta acción no se puede deshacer.',
       confirmText: 'Eliminar Comité',
@@ -265,20 +265,7 @@ const CloudSessionsModal = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                Respaldo en la Nube (Supabase)
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    backgroundColor: 'var(--accent-soft)',
-                    color: 'var(--accent-color)',
-                    border: '1px solid var(--accent-color)',
-                    padding: '1px 6px',
-                    borderRadius: 'var(--border-radius, 6px)',
-                    fontWeight: '600'
-                  }}
-                >
-                  PostgreSQL
-                </span>
+                Respaldo en la Nube
               </h3>
               <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
                 {isCloudLinked && cloudAccount

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Cookie, ShieldCheck, X, Check, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { navigateTo, getNormalizedRoute } from '../../utils/router';
+import './LegalBanner.css';
 
 const LEGAL_STORAGE_KEY = 'openmun_legal_accepted_v1';
 
 export default function LegalBanner({ isLight = false }) {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
-  const [hoveredBtn, setHoveredBtn] = useState(null);
 
   useEffect(() => {
     try {
@@ -42,139 +42,46 @@ export default function LegalBanner({ isLight = false }) {
   if (currentRoute === 'privacy' || currentRoute === 'terms') return null;
   if (!isVisible) return null;
 
-  // Visual Theme Colors
-  const containerBg = isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.96)';
-  const borderColor = isLight ? 'rgba(203, 213, 225, 0.9)' : 'rgba(51, 65, 85, 0.8)';
-  const shadowColor = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.7)';
-  const titleColor = isLight ? '#0f172a' : '#f8fafc';
-  const descColor = isLight ? '#475569' : '#cbd5e1';
-  const subBorderColor = isLight ? '#e2e8f0' : 'rgba(255, 255, 255, 0.12)';
-  const btnSecondaryBg = isLight ? '#f1f5f9' : '#1e293b';
-  const btnSecondaryBorder = isLight ? '#cbd5e1' : '#334155';
-  const btnSecondaryText = isLight ? '#334155' : '#e2e8f0';
-
   return (
-    <div
+    <aside
       role="dialog"
-      aria-label="Aviso Legal y Privacidad"
-      style={{
-        position: 'fixed',
-        bottom: '20px',
-        right: '20px',
-        maxWidth: '520px',
-        width: 'calc(100% - 40px)',
-        zIndex: 9999,
-        animation: 'slideUp 0.35s ease-out'
-      }}
+      aria-modal="false"
+      aria-labelledby="legal-banner-title"
+      aria-describedby="legal-banner-desc"
+      className="openmun-legal-banner"
     >
-      <div
-        style={{
-          padding: '1.25rem 1.5rem',
-          borderRadius: '16px',
-          backgroundColor: containerBg,
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          border: `1px solid ${borderColor}`,
-          boxShadow: `0 20px 40px -10px ${shadowColor}`,
-          position: 'relative',
-          overflow: 'hidden',
-          fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
-        }}
-      >
-        {/* Glow ambient accent */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '-30px',
-            left: '-30px',
-            width: '120px',
-            height: '120px',
-            backgroundColor: 'rgba(16, 185, 129, 0.15)',
-            borderRadius: '50%',
-            filter: 'blur(30px)',
-            pointerEvents: 'none'
-          }}
-        />
-
+      <div className="openmun-legal-card">
         {/* Header Row */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.75rem', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div
-              style={{
-                padding: '0.5rem',
-                borderRadius: '12px',
-                backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                color: '#10b981',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
-              <Cookie size={20} />
+        <div className="openmun-legal-header">
+          <div className="openmun-legal-title-group">
+            <div className="openmun-legal-icon-box" aria-hidden="true">
+              <Cookie size={18} />
             </div>
 
             <div>
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  padding: '0.15rem 0.5rem',
-                  borderRadius: '9999px',
-                  backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                  color: '#10b981',
-                  border: '1px solid rgba(16, 185, 129, 0.35)',
-                  fontSize: '0.68rem',
-                  fontWeight: '800',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  marginBottom: '0.25rem'
-                }}
-              >
-                <Check size={12} strokeWidth={3} />
+              <div className="openmun-legal-badge">
+                <Check size={12} strokeWidth={2.5} aria-hidden="true" />
                 <span>{t('legalBanner.noCookiesBadge', '¡SIN COOKIES!')}</span>
               </div>
-              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: titleColor, letterSpacing: '-0.01em' }}>
+              <h4 id="legal-banner-title" className="openmun-legal-title">
                 {t('legalBanner.title', 'Aviso de Privacidad y Transparencia')}
               </h4>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={handleAccept}
             title={t('common.close', 'Cerrar')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: isLight ? '#64748b' : '#94a3b8',
-              cursor: 'pointer',
-              padding: '0.35rem',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background-color 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isLight ? '#e2e8f0' : '#334155'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            aria-label={t('common.close', 'Cerrar')}
+            className="openmun-legal-close-btn"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {/* Body Description */}
-        <p
-          style={{
-            margin: '0 0 1rem 0',
-            fontSize: '0.85rem',
-            lineHeight: '1.55',
-            color: descColor,
-            position: 'relative',
-            zIndex: 1
-          }}
-        >
+        <p id="legal-banner-desc" className="openmun-legal-desc">
           {t(
             'legalBanner.description',
             'En OpenMUN priorizamos tu privacidad: esta web NO utiliza cookies de seguimiento ni de terceros. Solamente almacenamos la sesión de tu Modelo de Naciones Unidas de forma local en tu propio navegador (LocalStorage).'
@@ -182,45 +89,17 @@ export default function LegalBanner({ isLight = false }) {
         </p>
 
         {/* Action Buttons Row */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.75rem',
-            paddingTop: '0.85rem',
-            borderTop: `1px solid ${subBorderColor}`,
-            position: 'relative',
-            zIndex: 1
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="openmun-legal-footer">
+          <div className="openmun-legal-links">
             <a
               href="/privacy"
               onClick={(e) => {
                 e.preventDefault();
                 handleOpenPrivacy();
               }}
-              onMouseEnter={() => setHoveredBtn('privacy')}
-              onMouseLeave={() => setHoveredBtn(null)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.45rem 0.85rem',
-                borderRadius: '8px',
-                border: `1px solid ${btnSecondaryBorder}`,
-                backgroundColor: hoveredBtn === 'privacy' ? (isLight ? '#e2e8f0' : '#334155') : btnSecondaryBg,
-                color: btnSecondaryText,
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                transition: 'all 0.2s ease'
-              }}
+              className="openmun-legal-link-btn"
             >
-              <ShieldCheck size={14} style={{ color: '#10b981' }} />
+              <ShieldCheck size={14} className="openmun-legal-link-icon" aria-hidden="true" />
               <span>{t('legalBanner.privacyLink', 'Política de Privacidad')}</span>
             </a>
 
@@ -230,56 +109,23 @@ export default function LegalBanner({ isLight = false }) {
                 e.preventDefault();
                 handleOpenTerms();
               }}
-              onMouseEnter={() => setHoveredBtn('terms')}
-              onMouseLeave={() => setHoveredBtn(null)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.45rem 0.85rem',
-                borderRadius: '8px',
-                border: `1px solid ${btnSecondaryBorder}`,
-                backgroundColor: hoveredBtn === 'terms' ? (isLight ? '#e2e8f0' : '#334155') : btnSecondaryBg,
-                color: btnSecondaryText,
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                transition: 'all 0.2s ease'
-              }}
+              className="openmun-legal-link-btn"
             >
-              <FileText size={14} style={{ color: '#3b82f6' }} />
+              <FileText size={14} className="openmun-legal-link-icon" aria-hidden="true" />
               <span>{t('legalBanner.termsLink', 'Términos y Condiciones')}</span>
             </a>
           </div>
 
           <button
+            type="button"
             onClick={handleAccept}
-            onMouseEnter={() => setHoveredBtn('accept')}
-            onMouseLeave={() => setHoveredBtn(null)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.35rem',
-              padding: '0.5rem 1.25rem',
-              borderRadius: '10px',
-              border: 'none',
-              backgroundColor: hoveredBtn === 'accept' ? '#059669' : '#10b981',
-              color: '#ffffff',
-              fontSize: '0.85rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
-              transform: hoveredBtn === 'accept' ? 'translateY(-1px)' : 'none',
-              transition: 'all 0.2s ease'
-            }}
+            className="openmun-legal-accept-btn"
           >
-            <Check size={16} strokeWidth={2.5} />
+            <Check size={15} strokeWidth={2.5} aria-hidden="true" />
             <span>{t('legalBanner.accept', 'Entendido')}</span>
           </button>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

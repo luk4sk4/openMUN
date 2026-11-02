@@ -52,18 +52,18 @@ Usar las variables existentes. Los valores siguientes corresponden a los temas p
 
 | Función | Variable | Oscuro | Claro |
 | --- | --- | --- | --- |
-| Fondo de trabajo | `--bg-color` | `#2c2c2c` | `#f7f2eb` |
-| Superficie de panel o diálogo | `--panel-color` / `--panel-bg` | `#363636` | `#fffefd` |
-| Cabecera global | `--header-bg` | `#2c2c2c` | `#f7f2eb` |
-| Cabecera de tarjeta | `--card-header-bg` | `#303030` | `#f3f3f1` |
-| Texto principal | `--text-color` | `#f7f2eb` | `#242424` |
-| Texto secundario | `--muted-text` | `#b9b9b9` | `#626262` |
-| Borde de control | `--border-color` | `#4b4b4b` | `#dedcd8` |
-| Separador discreto | `--subborder-color` | `#414141` | `#e9e7e3` |
-| Acción principal, fondo | `--btn-bg` | `#b45432` | `#b45432` |
+| Fondo de trabajo | `--bg-color` | `#2c2c2c` | `#ffffff` |
+| Superficie de panel o diálogo | `--panel-color` / `--panel-bg` | `#363636` | `#ffffff` |
+| Cabecera global | `--header-bg` | `#2c2c2c` | `#ffffff` |
+| Cabecera de tarjeta | `--card-header-bg` | `#303030` | `#f5f4f0` |
+| Texto principal | `--text-color` | `#f7f2eb` | `#202020` |
+| Texto secundario | `--muted-text` | `#b9b9b9` | `#66625d` |
+| Borde de control | `--border-color` | `#4b4b4b` | `#dcd8d1` |
+| Separador discreto | `--subborder-color` | `#414141` | `#e6e3dc` |
+| Acción principal, fondo | `--btn-bg` | `#b45432` | `#b85434` |
 | Acción principal, texto | `--btn-text` | `#ffffff` | `#ffffff` |
-| Acento de texto y selección | `--accent-color` | `#efa37f` | `#ac482a` |
-| Selección suave | `--accent-soft` | `rgba(239,163,127,.08)` | `rgba(180,84,50,.06)` |
+| Acento de texto y selección | `--accent-color` | `#efa37f` | `#a84728` |
+| Selección suave | `--accent-soft` | `rgba(239,163,127,.08)` | `rgba(184,84,52,.07)` |
 | Campo de entrada | `--input-bg` | `rgba(255,255,255,.05)` | `#ffffff` |
 
 El acento de texto y el fondo de botón son tokens distintos: usar cada uno en su función. Los widgets actuales redefinen localmente las superficies de panel y cabecera para que compartan el fondo del espacio de trabajo.
@@ -72,10 +72,10 @@ El acento de texto y el fondo de botón son tokens distintos: usar cada uno en s
 
 | Significado | Variable | Oscuro | Claro | Ejemplo |
 | --- | --- | --- | --- | --- |
-| Correcto o aprobado | `--success-color` | `#a4d4b3` | `#386447` | Presente, aprobado |
-| Información | `--info-color` | `#a6b8c9` | `#50677f` | Presente y votando |
-| Error o rechazo | `--danger-color` | `#edaaa1` | `#974b43` | Ausente, rechazado |
-| Atención | `--warning-color` | `#cbb58d` | `#80673b` | Mayoría requerida |
+| Correcto o aprobado | `--success-color` | `#a4d4b3` | `#245e39` | Presente, aprobado |
+| Información | `--info-color` | `#a6b8c9` | `#335f85` | Presente y votando |
+| Error o rechazo | `--danger-color` | `#edaaa1` | `#a33d34` | Ausente, rechazado |
+| Atención | `--warning-color` | `#cbb58d` | `#7a591e` | Mayoría requerida |
 
 Para fondos y botones de estado existen las variantes `--*-soft` y `--*-solid`. Acompañar siempre el color con una etiqueta, una cifra o un icono comprensible. En resúmenes, preferir un punto de color junto a la etiqueta y mantener la cifra en el color principal.
 

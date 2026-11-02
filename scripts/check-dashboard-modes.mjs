@@ -49,10 +49,10 @@ try {
   assert.equal(migrated.theme.backgroundColor, '#2c2c2c');
   assert.deepEqual(migrated.layouts.GSL, customLayout);
   assert.notDeepEqual(FIXED_LAYOUTS.GSL, customLayout);
-  assert.equal(sanitizeConfig({ accessibility: { themeMode: 'light' } }).theme.backgroundColor, '#f7f2eb');
+  assert.equal(sanitizeConfig({ accessibility: { themeMode: 'light' } }).theme.backgroundColor, '#ffffff');
   assert.equal(sanitizeConfig({ theme: { ...defaultDark, primaryColor: '#123456' } }).theme.primaryColor, '#123456');
   assert.equal(getThemeCssVars(defaultDark, { themeMode: 'dark' })['--bg-color'], '#2c2c2c');
-  assert.equal(getThemeCssVars(defaultLight, { themeMode: 'light' })['--bg-color'], '#f7f2eb');
+  assert.equal(getThemeCssVars(defaultLight, { themeMode: 'light' })['--bg-color'], '#ffffff');
   const luminance = hex => {
     const rgb = hex.slice(1).match(/../g).map(value => parseInt(value, 16) / 255)
       .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);

@@ -30,21 +30,39 @@ export function BotonesConDerechos({ tipoVotacion, onVote, voto, conDerechos }) 
 }
 
 export function ListaDerechos({ paises, sesion, votacionTerminada }) {
-  const { t } = useTranslation();
   if (sesion?.tipoVotacion !== 'substantive') return null;
 
   const listaPaises = Array.isArray(paises) ? paises : [];
-  const delegaciones = listaPaises.filter(
-    p => p.estatus !== 'Ausente' && sesion.derechos?.[p.id] && ['favor', 'contra'].includes(sesion.votos?.[p.id])
+  const safeVotos = (sesion && sesion.votos && typeof sesion.votos === 'object') ? sesion.votos : {};
+  const asistentes = listaPaises.filter(p => p && (p.estatus === 'Presente' || p.estatus === 'Presente y Votando'));
+  const votosValidos = asistentes.filter(p => ['favor', 'contra', 'abstencion'].includes(safeVotos[p.id])).length;
+
+  const estaTerminada = votacionTerminada !== undefined
+    ? Boolean(votacionTerminada)
+    : (asistentes.length > 0 && votosValidos >= asistentes.length);
+
+  // La fundamentación de voto con derechos SOLO debe mostrarse una vez concluida la votación
+  if (!estaTerminada) return null;
+
+  const delegaciones = asistentes.filter(
+    p => sesion?.derechos?.[p.id] && ['favor', 'contra'].includes(safeVotos[p.id])
   );
 
   if (!delegaciones.length) return null;
 
-  const totalAsistentes = listaPaises.filter(p => p.estatus !== 'Ausente').length;
-  const votosValidos = Object.keys(sesion.votos || {}).filter(id => listaPaises.some(p => p.id === id && p.estatus !== 'Ausente')).length;
-  const terminada = votacionTerminada ?? (totalAsistentes > 0 && votosValidos >= totalAsistentes);
+  return (
+    <ListaDerechosContent
+      paises={listaPaises}
+      delegaciones={delegaciones}
+      sesion={sesion}
+    />
+  );
+}
 
-  const [iniciarForzado, setIniciarForzado] = useState(false);
+function ListaDerechosContent({ delegaciones, sesion }) {
+  const { t } = useTranslation();
+  const safeVotos = (sesion && sesion.votos && typeof sesion.votos === 'object') ? sesion.votos : {};
+
   const [duracionTotal, setDuracionTotal] = useState(60);
   const [reloj, setReloj] = useState({ restante: 60, fin: null });
   const [ahora, setAhora] = useState(Date.now());
@@ -146,29 +164,6 @@ export function ListaDerechos({ paises, sesion, votacionTerminada }) {
   const progresoPct = Math.max(0, Math.min(100, (restante / duracionTotal) * 100));
   const todosConcluidos = delegaciones.length > 0 && delegaciones.every(d => turnosRealizados.includes(d.id));
 
-  // Si la votación aún no ha finalizado y no se ha forzado el panel
-  if (!terminada && !iniciarForzado) {
-    return (
-      <div className="rights-waiting-banner">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-          <Scale size={13} style={{ color: 'var(--accent-color)' }} />
-          <span>
-            <strong>{delegaciones.length}</strong> {t('voting.rightsPendingNotice', 'delegación(es) con derecho a explicar voto (se habilitará al finalizar la votación).')}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIniciarForzado(true)}
-          className="rights-btn-start-now"
-          title={t('voting.startRightsNow', 'Iniciar ahora')}
-        >
-          <Play size={11} fill="currentColor" />
-          <span>{t('voting.startRightsNow', 'Iniciar ahora')}</span>
-        </button>
-      </div>
-    );
-  }
-
   const mm = String(Math.floor(restante / 60)).padStart(2, '0');
   const ss = String(restante % 60).padStart(2, '0');
   const relojClase = restante <= 10 && restante > 0 ? 'warning' : (restante === 0 ? 'danger' : '');
@@ -214,8 +209,8 @@ export function ListaDerechos({ paises, sesion, votacionTerminada }) {
               </div>
             </div>
 
-            <span className={`rights-side-badge ${sesion.votos?.[paisActivo.id] === 'favor' ? 'favor' : 'contra'}`}>
-              {sesion.votos?.[paisActivo.id] === 'favor'
+            <span className={`rights-side-badge ${safeVotos[paisActivo.id] === 'favor' ? 'favor' : 'contra'}`}>
+              {safeVotos[paisActivo.id] === 'favor'
                 ? `✓ ${t('voting.inFavorWithRights', 'A favor con derechos')}`
                 : `✕ ${t('voting.againstWithRights', 'En contra con derechos')}`}
             </span>
@@ -316,7 +311,7 @@ export function ListaDerechos({ paises, sesion, votacionTerminada }) {
           {delegaciones.map(del => {
             const activo = del.id === turnoActivoId && !todosConcluidos;
             const concluido = turnosRealizados.includes(del.id);
-            const sentido = sesion.votos?.[del.id];
+            const sentido = safeVotos[del.id];
 
             return (
               <button

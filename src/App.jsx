@@ -3,6 +3,7 @@ import React, { useEffect, Suspense } from 'react';
 import { SessionProvider } from './context/SessionContext';
 import { P2PProvider, useP2P } from './context/P2PContext';
 import { AccessibilityProvider, useAccessibility } from './context/AccessibilityContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { ToastProvider } from './context/ToastContext';
 import NetworkCrashMonitor from './components/common/NetworkCrashMonitor';
 import LegalBanner from './components/common/LegalBanner';
@@ -241,13 +242,15 @@ function App() {
   return (
     <RootErrorBoundary>
       <AccessibilityProvider>
-        <ToastProvider>
-          <SessionProvider>
-            <P2PProvider>
-              <AppContent />
-            </P2PProvider>
-          </SessionProvider>
-        </ToastProvider>
+        <ConfirmProvider>
+          <ToastProvider>
+            <SessionProvider>
+              <P2PProvider>
+                <AppContent />
+              </P2PProvider>
+            </SessionProvider>
+          </ToastProvider>
+        </ConfirmProvider>
       </AccessibilityProvider>
     </RootErrorBoundary>
   );

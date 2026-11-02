@@ -105,6 +105,7 @@ export const P2PProvider = ({ children }) => {
   });
   const [remoteSessionState, setRemoteSessionState] = useState(null);
   const [isLiveModalOpen, setIsLiveModalOpen] = useState(false);
+  const [liveModalTab, setLiveModalTab] = useState('SALA');
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -987,7 +988,12 @@ export const P2PProvider = ({ children }) => {
     });
   }, [connectionStatus]);
 
-  const openLiveModal = useCallback(() => setIsLiveModalOpen(true), []);
+  const openLiveModal = useCallback((tab = 'SALA') => {
+    if (tab && typeof tab === 'string') {
+      setLiveModalTab(tab);
+    }
+    setIsLiveModalOpen(true);
+  }, []);
   const closeLiveModal = useCallback(() => setIsLiveModalOpen(false), []);
 
   const contextValue = useMemo(() => ({
@@ -1031,6 +1037,8 @@ export const P2PProvider = ({ children }) => {
     castVote,
     remoteSessionState,
     isLiveModalOpen,
+    liveModalTab,
+    setLiveModalTab,
     openLiveModal,
     closeLiveModal,
     startHosting,
@@ -1088,6 +1096,8 @@ export const P2PProvider = ({ children }) => {
     castVote,
     remoteSessionState,
     isLiveModalOpen,
+    liveModalTab,
+    setLiveModalTab,
     openLiveModal,
     closeLiveModal,
     startHosting,

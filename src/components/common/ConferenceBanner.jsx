@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Megaphone, AlertCircle, Info, AlertTriangle, X, Radio, EyeOff, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import conferenceService from '../../services/conferenceService';
 import {
   formatearMensajeAviso,
@@ -19,6 +20,7 @@ const ConferenceBanner = ({
   comites: propComites = null
 }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [avisos, setAvisos] = useState(() => (conferenceService.obtenerAvisosEnMemoria ? conferenceService.obtenerAvisosEnMemoria() : []));
   const [comites, setComites] = useState(propComites || []);
   const [avisoActualIndex, setAvisoActualIndex] = useState(0);
@@ -132,9 +134,13 @@ const ConferenceBanner = ({
 
   const handleBorrar = async () => {
     if (!aviso) return;
-    const confirmacion = window.confirm(
-      t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?')
-    );
+    const confirmacion = await confirm({
+      title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+      message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?'),
+      confirmText: t('common.delete', 'Eliminar'),
+      cancelText: t('common.cancel', 'Cancelar'),
+      type: 'danger'
+    });
     if (!confirmacion) return;
 
     try {
@@ -142,7 +148,7 @@ const ConferenceBanner = ({
       await conferenceService.desactivarAviso(aviso.id, confData?.id);
       setAvisos(prev => prev.filter(a => String(a.id) !== String(aviso.id)));
     } catch (err) {
-      alert(t('common.error', 'Error al borrar aviso: ') + err.message);
+      confirm.alert(t('common.error', 'Error al borrar aviso: ') + err.message);
     }
   };
 

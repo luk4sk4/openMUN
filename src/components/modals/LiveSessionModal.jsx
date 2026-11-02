@@ -41,13 +41,15 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import CountryFlag from '../common/CountryFlag';
 import { useP2P } from '../../context/P2PContext';
 import { useSession } from '../../context/SessionContext';
 import MensajeriaComite from '../messaging/MensajeriaComite';
 
-const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
+const LiveSessionModal = ({ isOpen, onClose, isLight, initialTab }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const {
     connectionStatus,
     roomId,
@@ -69,7 +71,8 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
     rejectSpeakingRequest,
     enmiendasPropuestas = [],
     eliminarEnmiendaPropuesta,
-    unreadNotesCount = 0
+    unreadNotesCount = 0,
+    liveModalTab
   } = useP2P();
   const { agregarEnmiendaResolucion } = useSession();
   const totalSolicitudes = (speakingRequests?.length || 0) + (enmiendasPropuestas?.length || 0);
@@ -78,7 +81,16 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
   const [mostrarPassSecreto, setMostrarPassSecreto] = useState(false);
   const [mostrarPassBackroom, setMostrarPassBackroom] = useState(false);
   const [mostrarPassStaff, setMostrarPassStaff] = useState(false);
-  const [tabActiva, setTabActiva] = useState('SALA'); // 'SALA' | 'AJUSTES' | 'CONEXIONES' | 'SOLICITUDES'
+  const [tabActiva, setTabActiva] = useState(initialTab || liveModalTab || 'SALA'); // 'SALA' | 'AJUSTES' | 'CONEXIONES' | 'SOLICITUDES'
+
+  useEffect(() => {
+    if (isOpen) {
+      const targetTab = initialTab || liveModalTab;
+      if (targetTab) {
+        setTabActiva(targetTab);
+      }
+    }
+  }, [isOpen, initialTab, liveModalTab]);
   const [filtroConexiones, setFiltroConexiones] = useState('');
   const [mostrarInfoDonacion, setMostrarInfoDonacion] = useState(false);
   const [mostrarQRFullscreen, setMostrarQRFullscreen] = useState(false);
@@ -1591,8 +1603,15 @@ const LiveSessionModal = ({ isOpen, onClose, isLight }) => {
                         </span>
 
                         <button
-                          onClick={() => {
-                            if (confirm(t('ui.disconnect2', { v0: peer.country || peer.peerId }))) {
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: t('ui.disconnect', 'Desconectar'),
+                              message: t('ui.disconnect2', { v0: peer.country || peer.peerId }),
+                              confirmText: t('ui.disconnect', 'Desconectar'),
+                              cancelText: t('common.cancel', 'Cancelar'),
+                              type: 'danger'
+                            });
+                            if (ok) {
                               kickPeer(peer.peerId);
                             }
                           }}

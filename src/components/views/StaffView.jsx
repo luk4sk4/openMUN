@@ -48,6 +48,7 @@ import { useP2P } from '../../context/P2PContext';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import AccessibilityModal from '../modals/AccessibilityModal';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
@@ -73,6 +74,7 @@ import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 
 const StaffView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { isLight: contextIsLight, toggleThemeMode } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
@@ -798,8 +800,15 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             {esPropio && (
                               <button
-                                onClick={() => {
-                                  if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                                onClick={async () => {
+                                  const ok = await confirm({
+                                    title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+                                    message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'),
+                                    confirmText: t('common.delete', 'Eliminar'),
+                                    cancelText: t('common.cancel', 'Cancelar'),
+                                    type: 'danger'
+                                  });
+                                  if (ok) {
                                     deleteAnnouncement(ann.id);
                                   }
                                 }}

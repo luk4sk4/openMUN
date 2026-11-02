@@ -68,6 +68,21 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
     setIsSubmitting(false);
   };
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mode');
+        url.searchParams.delete('room');
+        url.searchParams.delete('role');
+        window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : '') + url.hash);
+      } catch (e) {}
+    }
+    if (onBackToChair) {
+      onBackToChair();
+    }
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -85,12 +100,14 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
 
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
         <ConsoleNavbar
-          title={t('views.join.title', 'Unirse a una sesión')}
+          title=""
+          showBrand={false}
+          backIconOnly={true}
           showContext={false}
           isLight={isLight}
           toggleThemeMode={toggleThemeMode}
           setIsAccessOpen={setIsAccessModalOpen}
-          onBack={onBackToChair}
+          onBack={handleBack}
         />
       </div>
 

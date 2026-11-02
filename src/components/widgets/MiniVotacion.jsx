@@ -1044,7 +1044,7 @@ const MiniVotacion = () => {
         )}
       </div>
 
-      <ListaDerechos paises={paises} sesion={votacionSesion} />
+      <ListaDerechos paises={paises} sesion={votacionSesion} votacionTerminada={votacionTerminada} />
 
       {/* ── FOOTER RESULTADOS EN VIVO (Estilo Debate Agenda) ── */}
       <div style={{

@@ -54,6 +54,7 @@ import {
 import { BotonesConDerechos } from '../widgets/VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import { getFlagEmoji } from '../../utils/flags';
 import { useP2P } from '../../context/P2PContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
@@ -72,6 +73,7 @@ const parsearResolucionTexto = parsearResolucion;
 
 const DelegateView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { isLight: contextIsLight, toggleThemeMode } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
@@ -533,8 +535,15 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
       toggleThemeMode={toggleThemeMode}
       setIsAccessOpen={setIsAccessModalOpen}
       sidebarActions={clientCountry && (
-        <button type="button" onClick={() => {
-          if (window.confirm(t('views.delegate.confirmChangeCountry', '¿Deseas cambiar tu delegación asignada?'))) resetCountrySelection();
+        <button type="button" onClick={async () => {
+          const ok = await confirm({
+            title: t('views.delegate.changeCountry', 'Cambiar delegación'),
+            message: t('views.delegate.confirmChangeCountry', '¿Deseas cambiar tu delegación asignada?'),
+            confirmText: t('common.confirm', 'Aceptar'),
+            cancelText: t('common.cancel', 'Cancelar'),
+            type: 'warning'
+          });
+          if (ok) resetCountrySelection();
         }} title={t('views.delegate.changeCountry', 'Cambiar delegación')}>
           <RefreshCw size={16} /><span>{t('views.delegate.changeCountry', 'Cambiar delegación')}</span>
         </button>
@@ -1025,8 +1034,15 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
                           {esPropio && (
                             <button
-                              onClick={() => {
-                                if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+                                  message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'),
+                                  confirmText: t('common.delete', 'Eliminar'),
+                                  cancelText: t('common.cancel', 'Cancelar'),
+                                  type: 'danger'
+                                });
+                                if (ok) {
                                   deleteAnnouncement?.(ann.id);
                                 }
                               }}
@@ -2913,8 +2929,15 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
 
                             {esPropio && (
                               <button
-                                onClick={() => {
-                                  if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                                onClick={async () => {
+                                  const ok = await confirm({
+                                    title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+                                    message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'),
+                                    confirmText: t('common.delete', 'Eliminar'),
+                                    cancelText: t('common.cancel', 'Cancelar'),
+                                    type: 'danger'
+                                  });
+                                  if (ok) {
                                     deleteAnnouncement?.(ann.id);
                                   }
                                 }}

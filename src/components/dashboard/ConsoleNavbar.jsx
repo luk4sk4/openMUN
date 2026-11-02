@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useId } from 'react';
 import { ArrowLeft, Menu, Moon, Sun, Maximize2, Eye, LogOut, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import DashboardSubheader from './DashboardSubheader';
@@ -10,6 +11,8 @@ import useFullscreen from '../../hooks/useFullscreen';
 const ConsoleNavbar = ({
   title,
   showContext = true,
+  showBrand = true,
+  backIconOnly = false,
   roleBadge,
   roomId,
   connectedPeersCount,
@@ -34,6 +37,7 @@ const ConsoleNavbar = ({
   exitConfirmMessage
 }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const sidebarEdgeRef = useRef(null);
   const toggleBtnRef = useRef(null);
@@ -94,11 +98,18 @@ const ConsoleNavbar = ({
     };
   }, [backDropdownOpen, setBackDropdownOpen]);
 
-  const handleExitClick = () => {
+  const handleExitClick = async () => {
     setIsToolsOpen(false);
     if (!onExit) return;
     if (exitConfirmMessage) {
-      if (window.confirm(exitConfirmMessage)) {
+      const confirmed = await confirm({
+        title: t('common.exit', 'Salir'),
+        message: exitConfirmMessage,
+        confirmText: t('common.exit', 'Salir'),
+        cancelText: t('common.cancel', 'Cancelar'),
+        type: 'warning'
+      });
+      if (confirmed) {
         onExit();
       }
     } else {
@@ -108,20 +119,22 @@ const ConsoleNavbar = ({
 
   return (
     <>
-      <header className="dashboard-navigation">
+      <header className={`dashboard-navigation${tabs.length === 0 && !title ? " is-compact" : ""}`}>
+
         <div className="dashboard-toolbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             {onBack && (
               <div style={{ position: 'relative' }} ref={backBtnRef}>
                 <button
                   type="button"
-                  className="dashboard-back-btn"
+                  className={`dashboard-back-btn${backIconOnly ? ' is-icon-only' : ''}`}
                   onClick={onBack}
                   aria-expanded={hasBackDropdown ? backDropdownOpen : undefined}
                   title={t('common.back', 'Volver')}
+                  aria-label={t('common.back', 'Volver')}
                 >
-                  <ArrowLeft size={15} />
-                  <span>{t('common.back', 'Volver')}</span>
+                  <ArrowLeft size={16} />
+                  {!backIconOnly && <span>{t('common.back', 'Volver')}</span>}
                   {hasBackDropdown && <ChevronDown size={13} style={{ opacity: 0.7 }} />}
                 </button>
 
@@ -177,13 +190,15 @@ const ConsoleNavbar = ({
                 )}
               </div>
             )}
-            <div className="dashboard-brand" style={{ cursor: 'default' }}>
-              <OpenMunLogo height={28} isLight={isLight} />
-            </div>
+            {showBrand && (
+              <div className="dashboard-brand" style={{ cursor: 'default' }}>
+                <OpenMunLogo height={28} isLight={isLight} />
+              </div>
+            )}
           </div>
 
           <div className="dashboard-nav-row">
-            {tabs.length === 0 && <span className="dashboard-nav-title">{title}</span>}
+            {tabs.length === 0 && Boolean(title) && <span className="dashboard-nav-title">{title}</span>}
             <nav
               hidden={tabs.length === 0}
               ref={tabsNavRef}

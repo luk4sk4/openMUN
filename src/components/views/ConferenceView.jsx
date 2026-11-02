@@ -21,6 +21,8 @@ import {
   Clock,
   ExternalLink,
   Layers,
+  ChevronDown,
+  ChevronUp,
 
   RefreshCw,
   Sliders,
@@ -41,6 +43,7 @@ import {
   Unlock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import OpenMunLogo from '../common/OpenMunLogo';
 import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 import AccessibilityModal from '../modals/AccessibilityModal';
@@ -64,6 +67,7 @@ import MatrizPaises from '../widgets/MatrizPaises';
 
 const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, isLight: propIsLight }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { isLight: contextIsLight, toggleThemeMode, isAccessOpen, setIsAccessOpen } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const { setViewMode } = useP2P();
@@ -144,6 +148,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const [mostrarConfPinActual, setMostrarConfPinActual] = useState(false);
   const [guardandoConfSettings, setGuardandoConfSettings] = useState(false);
   const [confSettingsFeedback, setConfSettingsFeedback] = useState(null);
+  const [secretariaSubTab, setSecretariaSubTab] = useState('COMITES'); // 'COMITES' | 'AVISOS' | 'CONFIG' | 'BACKUP'
 
   const [importandoJSON, setImportandoJSON] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -554,7 +559,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       : comiteFiltro
       ? i18n.t('ui.permanentlyDeleteAllCompletedTasksForThisCommittee')
       : i18n.t('ui.permanentlyDeleteAllCompletedTasksForTheConference');
-    if (!window.confirm(msg)) return;
+    const ok = await confirm({
+      title: t('common.areYouSure', '¿Estás seguro?'),
+      message: msg,
+      confirmText: t('common.delete', 'Eliminar'),
+      cancelText: t('common.cancel', 'Cancelar'),
+      type: 'danger'
+    });
+    if (!ok) return;
 
     setChecklistStaff(prev => (prev || []).filter(i => {
       const isDone = Boolean(i.completado || i.done);
@@ -1229,15 +1241,19 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
   // Borrar aviso en Base de Datos (toda la conferencia)
   const handleBorrarAviso = async (avisoId) => {
-    const ok = window.confirm(
-      t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?')
-    );
+    const ok = await confirm({
+      title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+      message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?'),
+      confirmText: t('common.delete', 'Eliminar'),
+      cancelText: t('common.cancel', 'Cancelar'),
+      type: 'danger'
+    });
     if (!ok) return;
     try {
       await conferenceService.desactivarAviso(avisoId, conferencia?.id);
       setAvisosActivos(prev => prev.filter(a => a.id !== avisoId));
     } catch (err) {
-      alert(t('ui.errorDeletingAnnouncement') + err.message);
+      confirm.alert(t('ui.errorDeletingAnnouncement') + err.message);
     }
   };
 
@@ -1250,7 +1266,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   // Eliminar comité
   const handleEliminarComite = async (comiteId) => {
     if (!comiteId) return;
-    if (!window.confirm(t('ui.deleteThisCommitteeFromTheConferenceThisActionCannotBe'))) return;
+    const ok = await confirm({
+      title: t('ui.deleteCommittee', 'Eliminar comité'),
+      message: t('ui.deleteThisCommitteeFromTheConferenceThisActionCannotBe'),
+      confirmText: t('common.delete', 'Eliminar'),
+      cancelText: t('common.cancel', 'Cancelar'),
+      type: 'danger'
+    });
+    if (!ok) return;
     try {
       await conferenceService.eliminarComite(comiteId, conferencia?.id);
       
@@ -3049,40 +3072,46 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 borderRadius: 'var(--border-radius, 6px)',
                 padding: '2rem',
                 textAlign: 'center',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+                boxShadow: 'none'
               }}>
                 <div style={{
-                  width: '54px',
-                  height: '54px',
+                  width: '52px',
+                  height: '52px',
                   borderRadius: 'var(--border-radius, 6px)',
                   backgroundColor: 'var(--accent-soft)',
                   color: 'var(--accent-color)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  margin: '0 auto 1rem auto'
+                  margin: '0 auto 1.25rem auto'
                 }}>
-                  <Shield size={28} />
+                  <Shield size={26} />
                 </div>
 
-                <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: '0 0 0.4rem 0' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: '800', margin: '0 0 0.4rem 0', color: 'var(--text-color)' }}>
                   {t('ui.organizerAccess')}
                 </h2>
-                <p style={{ fontSize: '0.85rem', color: textMuted, margin: '0 0 1.25rem 0' }}>
+                <p style={{ fontSize: '0.85rem', color: textMuted, margin: '0 0 1.5rem 0', lineHeight: '1.4' }}>
                   {t('ui.enterTheOrganizerPinSetWhenCreatingTheConference')}
                 </p>
 
                 {errorMsg && (
                   <div style={{
-                    padding: '0.65rem',
+                    padding: '0.65rem 0.85rem',
                     borderRadius: 'var(--border-radius, 6px)',
-                    backgroundColor: isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)',
-                    color: isLight ? '#b91c1c' : '#fca5a5',
+                    backgroundColor: 'var(--danger-soft)',
+                    border: '1px solid var(--danger-color)',
+                    color: 'var(--danger-color)',
                     fontSize: '0.82rem',
-                    marginBottom: '1rem',
-                    fontWeight: '600'
+                    marginBottom: '1.25rem',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem'
                   }}>
-                    {errorMsg}
+                    <AlertTriangle size={15} />
+                    <span>{errorMsg}</span>
                   </div>
                 )}
 
@@ -3101,8 +3130,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         border: `1px solid ${borderCol}`,
                         backgroundColor: headerBg,
                         color: 'var(--text-color)',
-                        fontSize: '0.9rem'
+                        fontSize: '0.9rem',
+                        outline: 'none'
                       }}
+                      onFocus={(e) => { e.target.style.borderColor = 'var(--accent-color)'; }}
+                      onBlur={(e) => { e.target.style.borderColor = borderCol; }}
                     />
                     <button
                       type="button"
@@ -3115,7 +3147,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         background: 'transparent',
                         border: 'none',
                         color: textMuted,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center'
                       }}
                     >
                       {mostrarAdminPin ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -3126,45 +3161,41 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     type="submit"
                     disabled={loading}
                     style={{
-                      padding: '0.75rem',
+                      padding: '0.75rem 1rem',
                       borderRadius: 'var(--border-radius, 6px)',
-                      backgroundColor: '#8b5cf6',
-                      color: '#ffffff',
+                      backgroundColor: 'var(--btn-bg)',
+                      color: 'var(--btn-text, #ffffff)',
                       border: 'none',
-                      fontWeight: '800',
+                      fontWeight: '650',
                       fontSize: '0.9rem',
-                      cursor: 'pointer',
+                      cursor: loading ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.45rem'
+                      gap: '0.5rem',
+                      opacity: loading ? 0.7 : 1,
+                      transition: 'all 0.15s ease'
                     }}
                   >
-                    <Shield size={16} /> {t('ui.enterOrganizersPanel')}
+                    <Shield size={16} /> {loading ? t('ui.verifying', 'Verificando...') : t('ui.enterOrganizersPanel')}
                   </button>
                 </form>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                {/* BARRA SUPERIOR DE RESPALDOS JSON (EXPORTAR / IMPORTAR 3 TABLAS DE BD) */}
-                <div
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  style={{
-                    backgroundColor: bgCard,
-                    border: `1px dashed ${isDraggingFile ? 'var(--accent-color)' : borderCol}`,
-                    borderRadius: 'var(--border-radius, 6px)',
-                    padding: '1.25rem 1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '1rem',
-                    boxShadow: 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
+                {/* BARRA SUPERIOR DE CONTEXTO Y BLOQUEO DE SECRETARÍA */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                  padding: '0.85rem 1.25rem',
+                  backgroundColor: bgCard,
+                  border: `1px solid ${borderCol}`,
+                  borderRadius: 'var(--border-radius, 6px)'
+                }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{
                       width: '36px',
@@ -3174,42 +3205,1065 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       color: 'var(--accent-color)',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      flexShrink: 0
                     }}>
-                      <Database size={22} />
+                      <Shield size={20} />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
-                        {t('ui.conferenceBackup3DatabaseTables')}
-                      </h3>
-                      <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>
-                        {t('ui.exportOrImportByDroppingOrSelectingTheJsonFile')}
+                      <h2 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
+                        {t('ui.organizerAccess')}
+                      </h2>
+                      <p style={{ fontSize: '0.8rem', color: textMuted, margin: 0 }}>
+                        {conferencia.nombre || t('ui.conference', 'Conferencia')} • {conferencia.requierePin ? t('ui.delegatesWithPin') : t('ui.publicAccess')}
                       </p>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={handleExportarConferenciaJSON}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: t('ui.lockPanel', 'Bloquear panel'),
+                        message: t('ui.lockTheOrganizersPanelThePinWillBeRequiredNext'),
+                        confirmText: t('ui.lock', 'Bloquear'),
+                        cancelText: t('common.cancel', 'Cancelar'),
+                        type: 'warning'
+                      });
+                      if (ok) {
+                        setIsAdminAuthenticated(false);
+                        setAdminPinInput('');
+                        setConfPinAdminActual('');
+                        if (conferencia?.id) {
+                          try {
+                            localStorage.removeItem(`openmun_conf_admin_pin_${conferencia.id.toLowerCase()}`);
+                          } catch (e) {}
+                        }
+                      }
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      backgroundColor: 'transparent',
+                      border: `1px solid ${borderCol}`,
+                      color: 'var(--muted-text)',
+                      fontSize: '0.82rem',
+                      fontWeight: '650',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = 'var(--danger-color)';
+                      e.currentTarget.style.borderColor = 'var(--danger-color)';
+                      e.currentTarget.style.backgroundColor = 'var(--danger-soft)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'var(--muted-text)';
+                      e.currentTarget.style.borderColor = borderCol;
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                    title={t('ui.lockTheOrganizersPanelAndRequireThePinAgain')}
+                  >
+                    <Lock size={14} /> {t('ui.lock')}
+                  </button>
+                </div>
+
+                {/* BARRA DE SUB-PESTAÑAS DE SECRETARÍA */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  borderBottom: `1px solid ${borderCol}`,
+                  paddingBottom: '0.5rem',
+                  overflowX: 'auto',
+                  scrollbarWidth: 'none'
+                }}>
+                  {[
+                    { id: 'COMITES', label: t('ui.committees', 'Comités y Salas'), icon: Layers, badge: listaComitesConsolidada.length },
+                    { id: 'AVISOS', label: t('avisos.navTitle', 'Centro de Avisos'), icon: Megaphone, badge: avisosActivos.length },
+                    { id: 'CONFIG', label: t('ui.generalSettings', 'Configuración General'), icon: Settings },
+                    { id: 'BACKUP', label: t('ui.backupTab', 'Copia de Seguridad'), icon: Database }
+                  ].map((tab) => {
+                    const isActive = secretariaSubTab === tab.id;
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSecretariaSubTab(tab.id)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          padding: '0.55rem 0.95rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: isActive ? 'var(--accent-soft)' : 'transparent',
+                          color: isActive ? 'var(--accent-color)' : textMuted,
+                          border: isActive ? '1px solid var(--accent-color)' : `1px solid transparent`,
+                          fontSize: '0.85rem',
+                          fontWeight: isActive ? '700' : '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <Icon size={16} />
+                        <span>{tab.label}</span>
+                        {typeof tab.badge === 'number' && (
+                          <span style={{
+                            padding: '0.1rem 0.45rem',
+                            borderRadius: '10px',
+                            fontSize: '0.72rem',
+                            fontWeight: '700',
+                            backgroundColor: isActive ? 'var(--btn-bg)' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
+                            color: isActive ? '#ffffff' : textMuted
+                          }}>
+                            {tab.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* SUB-PESTAÑA 1: GESTIÓN DE COMITÉS */}
+                {secretariaSubTab === 'COMITES' && (
+                  <div style={{
+                    backgroundColor: bgCard,
+                    border: `1px solid ${borderCol}`,
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '1.5rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Layers size={20} color="var(--accent-color)" /> {t('ui.committeeManagementWidgetSettings')}
+                        </h3>
+                        <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
+                          {t('ui.addOrDeleteCommitteesAndConfigureEachCommitteeSCountry')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Formulario Añadir Comité / Importar Comité Individual */}
+                    <input
+                      type="file"
+                      ref={singleComiteFileInputRef}
+                      accept=".json,application/json"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) procesarArchivoConferenciaJSON(f, true);
+                      }}
+                    />
+
+                    <div
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const files = e.dataTransfer?.files;
+                        if (files && files.length > 0) {
+                          procesarArchivoConferenciaJSON(files[0], true);
+                        }
+                      }}
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.65rem 1.15rem',
+                        marginBottom: '1.5rem',
+                        padding: '1.1rem',
+                        backgroundColor: headerBg,
                         borderRadius: 'var(--border-radius, 6px)',
-                        backgroundColor: 'var(--btn-bg)',
-                        color: 'var(--btn-text, #ffffff)',
-                        border: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: '650',
-                        cursor: 'pointer',
-                        boxShadow: 'none',
-                        transition: 'transform 0.15s ease'
+                        border: `1px solid ${borderCol}`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.75rem',
+                        transition: 'border-color 0.2s ease'
                       }}
                     >
-                      <Download size={16} /> {t('ui.exportJsonFile3Tables')}
-                    </button>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-color)' }}>
+                          {t('ui.addANewCommitteeManuallyOrImportFromAJson')}
+                        </span>
+                        <span style={{ fontSize: '0.74rem', color: textMuted }}>
+                          {t('ui.youCanImportThe')} <code>{t('ui.activeSessionJson')}</code> {t('ui.exportedFromACommittee')}
+                        </span>
+                      </div>
+
+                      <form onSubmit={handleCrearComite} style={{
+                        display: 'flex',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
+                        alignItems: 'center'
+                      }}>
+                        <input
+                          type="text"
+                          required
+                          value={nuevoNombreComite}
+                          onChange={(e) => setNuevoNombreComite(e.target.value)}
+                          placeholder={t('ui.newCommitteeNameEGUnhcr')}
+                          style={{
+                            flex: 2,
+                            minWidth: '200px',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            border: `1px solid ${borderCol}`,
+                            backgroundColor: bgCard,
+                            color: 'var(--text-color)',
+                            fontSize: '0.88rem'
+                          }}
+                        />
+                        <input
+                          type="text"
+                          value={nuevoPinMesa}
+                          onChange={(e) => setNuevoPinMesa(e.target.value)}
+                          placeholder={t('ui.chairPinOptional')}
+                          style={{
+                            flex: 1,
+                            minWidth: '160px',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            border: `1px solid ${borderCol}`,
+                            backgroundColor: bgCard,
+                            color: 'var(--text-color)',
+                            fontSize: '0.88rem'
+                          }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={creandoComite}
+                          style={{
+                            padding: '0.65rem 1.15rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'var(--btn-bg)',
+                            color: 'var(--btn-text, #ffffff)',
+                            border: 'none',
+                            fontWeight: '650',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            boxShadow: 'none'
+                          }}
+                        >
+                          <Plus size={16} /> {creandoComite ? t('ui.creating') : t('ui.createCommittee')}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={importandoJSON}
+                          onClick={() => singleComiteFileInputRef.current?.click()}
+                          style={{
+                            padding: '0.65rem 1.15rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'transparent',
+                            border: `1px solid ${borderCol}`,
+                            color: 'var(--text-color)',
+                            fontWeight: '650',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.45rem',
+                            boxShadow: 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                          title={t('ui.importAnIndividualCommitteeFromAJsonFileActiveSession')}
+                        >
+                          <Upload size={16} /> {t('ui.importCommitteeJson')}
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Lista de comités con botón para configurar widgets */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {listaComitesConsolidada.map((comite) => {
+                        const badge = getStatusBadge(comite.tipo_sesion);
+                        return (
+                          <div
+                            key={comite.id}
+                            style={{
+                              padding: '1rem 1.25rem',
+                              borderRadius: 'var(--border-radius, 6px)',
+                              border: `1px solid ${borderCol}`,
+                              backgroundColor: headerBg,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              flexWrap: 'wrap',
+                              gap: '1rem'
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
+                                <strong style={{ fontSize: '1rem', color: 'var(--text-color)' }}>{comite.nombre}</strong>
+                                <span style={{
+                                  padding: '0.15rem 0.45rem',
+                                  borderRadius: '4px',
+                                  backgroundColor: badge.bg,
+                                  color: badge.color,
+                                  fontSize: '0.7rem',
+                                  fontWeight: '800'
+                                }}>
+                                  {badge.label}
+                                </span>
+                                <code style={{ fontSize: '0.75rem', color: textMuted }}>ID: {comite.id}</code>
+                              </div>
+                              {comite.topico_actual && (
+                                <span style={{ fontSize: '0.8rem', color: textMuted }}>
+                                  {t('ui.topic2')} {comite.topico_actual}
+                                </span>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <button
+                                onClick={() => handleAbrirEditorComite(comite)}
+                                style={{
+                                  padding: '0.5rem 0.95rem',
+                                  borderRadius: 'var(--border-radius, 6px)',
+                                  backgroundColor: 'var(--btn-bg)',
+                                  color: 'var(--btn-text, #ffffff)',
+                                  border: 'none',
+                                  fontSize: '0.82rem',
+                                  fontWeight: '650',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  boxShadow: 'none'
+                                }}
+                              >
+                                <Settings size={14} /> {t('ui.manageCommitteeAgendaCountriesMatrix')}
+                              </button>
+
+                              <button
+                                onClick={() => handleEliminarComite(comite.id)}
+                                style={{
+                                  padding: '0.5rem',
+                                  borderRadius: 'var(--border-radius, 6px)',
+                                  backgroundColor: 'var(--danger-soft)',
+                                  border: '1px solid var(--danger-color)',
+                                  color: 'var(--danger-color)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                                title={t('ui.deleteCommittee')}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-PESTAÑA 2: CENTRO DE AVISOS */}
+                {secretariaSubTab === 'AVISOS' && (
+                  <div style={{
+                    backgroundColor: bgCard,
+                    border: `1px solid ${borderCol}`,
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '1.5rem'
+                  }}>
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Megaphone size={20} color="var(--accent-color)" /> {t('avisos.navTitle')}
+                      </h3>
+                      <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
+                        {t('ui.sendAnnouncementsToTheEntireConferenceStaffOrSpecificRooms')}
+                      </p>
+                    </div>
+
+                    {avisoFeedback && (
+                      <div style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)',
+                        border: '1px solid rgba(34, 197, 94, 0.4)',
+                        color: isLight ? '#15803d' : '#4ade80',
+                        fontSize: '0.85rem',
+                        fontWeight: '700',
+                        marginBottom: '1rem'
+                      }}>
+                        {avisoFeedback}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleEmitirAviso} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('messaging.recipient')}</label>
+                          <select
+                            value={avisoDestino}
+                            onChange={(e) => setAvisoDestino(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem',
+                              borderRadius: 'var(--border-radius, 6px)',
+                              border: `1px solid ${borderCol}`,
+                              backgroundColor: headerBg,
+                              color: 'var(--text-color)',
+                              fontSize: '0.85rem'
+                            }}
+                          >
+                            <optgroup label={t('avisos.generalChannels')}>
+                              <option value="">{t('conferences.targetGlobal')}</option>
+                              <option value="STAFF_ALL">{t('ui.allConferenceStaff')}</option>
+                              <option value="CHAIRS_ALL">{t('ui.allChairs')}</option>
+                            </optgroup>
+                            <optgroup label={t('ui.committeeChairs')}>
+                              {listaComitesConsolidada.map(c => (
+                                <option key={`SEC_CHAIR_${c.id}`} value={`CHAIR_${c.id}`}>{t('ui.chairOf')} {c.nombre || c.id}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label={t('ui.assignedRoomStaff2')}>
+                              {listaComitesConsolidada.map(c => (
+                                <option key={`SEC_STAFF_${c.id}`} value={`STAFF_COMITE_${c.id}`}>{t('ui.staffOf')} {c.nombre || c.id}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label={t('ui.entireRoomChairDelegates')}>
+                              {listaComitesConsolidada.map(c => (
+                                <option key={`SEC_ALL_${c.id}`} value={c.id}>{t('ui.roomOf')} {c.nombre || c.id}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('conferences.issuer')}</label>
+                          <select
+                            value={avisoEmisor}
+                            onChange={(e) => setAvisoEmisor(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem',
+                              borderRadius: 'var(--border-radius, 6px)',
+                              border: `1px solid ${borderCol}`,
+                              backgroundColor: headerBg,
+                              color: 'var(--text-color)',
+                              fontSize: '0.85rem'
+                            }}
+                          >
+                            <option value="organizacion">{t('ui.secretariatOrganizers')}</option>
+                            <option value="staff">{t('ui.roomStaff')}</option>
+                            <option value="logistica">{t('conferences.issuerLogistics')}</option>
+                            <option value="mesa">{t('conferences.issuerChair')}</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('ui.priority')}</label>
+                          <select
+                            value={avisoTipo}
+                            onChange={(e) => setAvisoTipo(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem',
+                              borderRadius: 'var(--border-radius, 6px)',
+                              border: `1px solid ${borderCol}`,
+                              backgroundColor: headerBg,
+                              color: 'var(--text-color)',
+                              fontSize: '0.85rem'
+                            }}
+                          >
+                            <option value="info">{t('ui.information')}</option>
+                            <option value="urgente">{t('ui.urgent')}</option>
+                            <option value="alerta">{t('ui.alertLogistics')}</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('avisos.noticeMessage')}</label>
+                        <textarea
+                          required
+                          rows={2}
+                          value={avisoMensaje}
+                          onChange={(e) => setAvisoMensaje(e.target.value)}
+                          placeholder={t('ui.writeTheAnnouncementToDisplayOnProjectorsAndScreens')}
+                          style={{
+                            width: '100%',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            border: `1px solid ${borderCol}`,
+                            backgroundColor: headerBg,
+                            color: 'var(--text-color)',
+                            fontSize: '0.88rem',
+                            resize: 'vertical'
+                          }}
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={enviandoAviso}
+                        style={{
+                          alignSelf: 'flex-start',
+                          padding: '0.65rem 1.25rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--btn-bg)',
+                          color: 'var(--btn-text, #ffffff)',
+                          border: 'none',
+                          fontWeight: '650',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem'
+                        }}
+                      >
+                        <Send size={15} /> {enviandoAviso ? t('ui.issuing') : t('ui.issueAnnouncement')}
+                      </button>
+                    </form>
+
+                    {/* Avisos Activos */}
+                    <div>
+                      <h4 style={{ fontSize: '0.95rem', fontWeight: '800', marginBottom: '0.65rem' }}>
+                        {t('ui.activeAnnouncementsInTheSystem')}{avisosActivos.length})
+                      </h4>
+
+                      {avisosActivos.length === 0 ? (
+                        <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>{t('ui.noActiveAnnouncementsAtThisTime')}</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {avisosActivos.map((av) => (
+                            <div
+                              key={av.id}
+                              style={{
+                                padding: '0.85rem 1.1rem',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                backgroundColor: headerBg,
+                                border: `1px solid ${borderCol}`,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.45rem'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    padding: '0.15rem 0.45rem',
+                                    borderRadius: '4px',
+                                    backgroundColor: av.tipo === 'urgente' ? '#ef4444' : (av.tipo === 'alerta' ? '#f59e0b' : '#3b82f6'),
+                                    color: '#ffffff',
+                                    fontSize: '0.68rem',
+                                    fontWeight: '800',
+                                    textTransform: 'uppercase'
+                                  }}>
+                                    {av.emisor}
+                                  </span>
+                                  <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '600' }}>
+                                    {t('ui.destination')} <strong style={{ color: 'var(--text-color)' }}>{getNombreDestino(av.comite_id)}</strong>
+                                  </span>
+                                  {av.creado_en && (
+                                    <span style={{ fontSize: '0.7rem', color: textMuted }}>
+                                      • {av.creado_en}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <button
+                                    onClick={() => handleBorrarAviso(av.id)}
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.1)',
+                                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                                      color: '#ef4444',
+                                      fontSize: '0.73rem',
+                                      fontWeight: '800',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                      padding: '0.2rem 0.45rem',
+                                      borderRadius: '5px'
+                                    }}
+                                    title={t('avisos.deleteNoticeTooltip', 'Borrar aviso para toda la conferencia')}
+                                  >
+                                    <Trash2 size={12} /> {t('avisos.deleteNotice', 'Borrar')}
+                                  </button>
+                                  <button
+                                    onClick={() => handleIgnorarAviso(av.id)}
+                                    style={{
+                                      background: 'transparent',
+                                      border: '1px solid var(--subborder-color)',
+                                      color: 'var(--muted-text)',
+                                      fontSize: '0.73rem',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                      padding: '0.2rem 0.45rem',
+                                      borderRadius: '5px'
+                                    }}
+                                    title={t('avisos.ignoreTooltip', 'Ignorar este aviso (ocultarlo de tu vista)')}
+                                  >
+                                    <EyeOff size={12} /> {t('avisos.ignore', 'Ignorar')}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ fontSize: '0.86rem', color: 'var(--text-color)', lineHeight: '1.4' }}>
+                                {formatearMensajeAviso(av.mensaje)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-PESTAÑA 3: CONFIGURACIÓN GENERAL */}
+                {secretariaSubTab === 'CONFIG' && (
+                  <div style={{
+                    backgroundColor: bgCard,
+                    border: `1px solid ${borderCol}`,
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '1.5rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Settings size={20} color="var(--accent-color)" /> {t('ui.generalConferenceSettingsDatabase')}
+                        </h3>
+                        <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
+                          {t('ui.manageCentralDataContactEmailDelegatePinAndSecretariatCredentials')}
+                        </p>
+                      </div>
+
+                      {/* Badges de estado actual */}
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {conferencia.email_admin ? (
+                          <span style={{
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'var(--accent-soft)',
+                            border: '1px solid var(--subborder-color)',
+                            color: 'var(--accent-color)',
+                            fontSize: '0.8rem',
+                            fontWeight: '700',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem'
+                          }}>
+                            <Mail size={14} /> {t('ui.email')} <strong>{conferencia.email_admin}</strong>
+                          </span>
+                        ) : (
+                          <span style={{
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'var(--warning-soft)',
+                            border: '1px solid var(--subborder-color)',
+                            color: 'var(--warning-color)',
+                            fontSize: '0.8rem',
+                            fontWeight: '700',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem'
+                          }}>
+                            <AlertTriangle size={14} /> {t('ui.noEmailRegistered')}
+                          </span>
+                        )}
+
+                        {conferencia.requierePin ? (
+                          <span style={{
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'var(--info-soft)',
+                            border: '1px solid var(--subborder-color)',
+                            color: 'var(--info-color)',
+                            fontSize: '0.8rem',
+                            fontWeight: '700',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem'
+                          }}>
+                            <Lock size={14} /> {t('ui.delegatesWithPin')}
+                          </span>
+                        ) : (
+                          <span style={{
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'var(--success-soft)',
+                            border: '1px solid var(--subborder-color)',
+                            color: 'var(--success-color)',
+                            fontSize: '0.8rem',
+                            fontWeight: '700',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem'
+                          }}>
+                            <Globe size={14} /> {t('ui.publicAccess')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {confSettingsFeedback && (
+                      <div style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: confSettingsFeedback.type === 'success' ? 'var(--success-soft)' : 'var(--danger-soft)',
+                        border: `1px solid ${confSettingsFeedback.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)'}`,
+                        color: confSettingsFeedback.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
+                        fontSize: '0.85rem',
+                        fontWeight: '700',
+                        marginBottom: '1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        {confSettingsFeedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                        {confSettingsFeedback.text}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleGuardarConfiguracionConferencia} style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1.25rem'
+                    }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                        gap: '1.25rem'
+                      }}>
+                        {/* 1. Nombre de la Conferencia */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                            {t('conferences.confName')}
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type="text"
+                              value={confNombreInput}
+                              onChange={(e) => setConfNombreInput(e.target.value)}
+                              placeholder={t('conferences.confNamePlaceholder')}
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem 0.85rem 0.65rem 2.4rem',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                border: `1px solid ${borderCol}`,
+                                backgroundColor: headerBg,
+                                color: 'var(--text-color)',
+                                fontSize: '0.9rem'
+                              }}
+                            />
+                            <Building2
+                              size={16}
+                              style={{
+                                position: 'absolute',
+                                left: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: textMuted
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* 2. Correo de Secretaría */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                            {t('ui.secretariatEmailAddressAdmin')}
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type="email"
+                              value={confEmailAdminInput}
+                              onChange={(e) => setConfEmailAdminInput(e.target.value)}
+                              placeholder={t('ui.eGSecretaryGeneralHmunOrg')}
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem 0.85rem 0.65rem 2.4rem',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                border: `1px solid ${borderCol}`,
+                                backgroundColor: headerBg,
+                                color: 'var(--text-color)',
+                                fontSize: '0.9rem'
+                              }}
+                            />
+                            <Mail
+                              size={16}
+                              style={{
+                                position: 'absolute',
+                                left: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: textMuted
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* 3. PIN de Acceso General / Delegados */}
+                        <div style={{
+                          padding: '0.85rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: headerBg,
+                          border: `1px solid ${borderCol}`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '700' }}>
+                            <input
+                              type="checkbox"
+                              checked={cambiarPinAcceso}
+                              onChange={(e) => setCambiarPinAcceso(e.target.checked)}
+                            />
+                            {t('ui.protectDelegateAccessWithAPin')}
+                          </label>
+
+                          {cambiarPinAcceso && (
+                            <div style={{ position: 'relative' }}>
+                              <input
+                                type={mostrarConfPinAcceso ? 'text' : 'password'}
+                                value={confPinAccesoInput}
+                                onChange={(e) => setConfPinAccesoInput(e.target.value)}
+                                placeholder={t('ui.newDelegateAccessPin')}
+                                style={{
+                                  width: '100%',
+                                  padding: '0.55rem 2.5rem 0.55rem 0.75rem',
+                                  borderRadius: 'var(--border-radius, 6px)',
+                                  border: `1px solid ${borderCol}`,
+                                  backgroundColor: bgCard,
+                                  color: 'var(--text-color)',
+                                  fontSize: '0.85rem'
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setMostrarConfPinAcceso(!mostrarConfPinAcceso)}
+                                style={{
+                                  position: 'absolute',
+                                  right: '8px',
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: textMuted,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {mostrarConfPinAcceso ? <EyeOff size={15} /> : <Eye size={15} />}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 4. Cambiar Contraseña / PIN de Secretaría (Admin) */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
+                            {t('ui.changeSecretariatPinPassword')}
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type={mostrarConfNuevoPin ? 'text' : 'password'}
+                              value={confNuevoPinAdmin}
+                              onChange={(e) => setConfNuevoPinAdmin(e.target.value)}
+                              placeholder={t('ui.leaveBlankToKeepUnchanged')}
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem 2.5rem 0.65rem 2.4rem',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                border: `1px solid ${borderCol}`,
+                                backgroundColor: headerBg,
+                                color: 'var(--text-color)',
+                                fontSize: '0.9rem'
+                              }}
+                            />
+                            <Key
+                              size={16}
+                              style={{
+                                position: 'absolute',
+                                left: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: textMuted
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setMostrarConfNuevoPin(!mostrarConfNuevoPin)}
+                              style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'transparent',
+                                border: 'none',
+                                color: textMuted,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {mostrarConfNuevoPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </div>
+                          <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
+                            {t('ui.onlyEnterAValueToAssignANewSecretariatAccess')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Bloque de Autorización con PIN Actual y Botón Guardar */}
+                      <div style={{
+                        padding: '1rem',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: 'var(--accent-soft)',
+                        border: '1px solid var(--subborder-color)',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '1rem',
+                        marginTop: '0.5rem'
+                      }}>
+                        <div style={{ flex: 1, minWidth: '240px' }}>
+                          <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem', color: 'var(--text-color)' }}>
+                            {t('ui.currentSecretariatPinRequiredAuthorization')}
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type={mostrarConfPinActual ? 'text' : 'password'}
+                              required
+                              value={confPinAdminActual}
+                              onChange={(e) => setConfPinAdminActual(e.target.value)}
+                              placeholder={t('ui.currentSecretariatPin')}
+                              style={{
+                                width: '100%',
+                                padding: '0.6rem 2.5rem 0.6rem 2.2rem',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                border: `1px solid ${borderCol}`,
+                                backgroundColor: bgCard,
+                                color: 'var(--text-color)',
+                                fontSize: '0.9rem'
+                              }}
+                            />
+                            <Shield
+                              size={15}
+                              style={{
+                                position: 'absolute',
+                                left: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: 'var(--accent-color)'
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setMostrarConfPinActual(!mostrarConfPinActual)}
+                              style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'transparent',
+                                border: 'none',
+                                color: textMuted,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {mostrarConfPinActual ? <EyeOff size={15} /> : <Eye size={15} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={guardandoConfSettings}
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            backgroundColor: 'var(--btn-bg)',
+                            color: 'var(--btn-text, #ffffff)',
+                            border: 'none',
+                            fontWeight: '650',
+                            fontSize: '0.85rem',
+                            cursor: guardandoConfSettings ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            boxShadow: 'none',
+                            opacity: guardandoConfSettings ? 0.7 : 1,
+                            alignSelf: 'flex-end'
+                          }}
+                        >
+                          <Check size={18} />
+                          {guardandoConfSettings ? t('ui.savingToDatabase') : t('ui.saveSettingsToDatabase')}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* SUB-PESTAÑA 4: COPIA DE SEGURIDAD */}
+                {secretariaSubTab === 'BACKUP' && (
+                  <div style={{
+                    backgroundColor: bgCard,
+                    border: `1px solid ${borderCol}`,
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.5rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--accent-soft)',
+                          color: 'var(--accent-color)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          <Database size={22} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: 0, color: 'var(--text-color)' }}>
+                            {t('ui.conferenceBackup3DatabaseTables')}
+                          </h3>
+                          <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
+                            {t('ui.exportOrImportByDroppingOrSelectingTheJsonFile')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleExportarConferenciaJSON}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.65rem 1.25rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          backgroundColor: 'var(--btn-bg)',
+                          color: 'var(--btn-text, #ffffff)',
+                          border: 'none',
+                          fontSize: '0.88rem',
+                          fontWeight: '650',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Download size={16} /> {t('ui.exportJsonFile3Tables')}
+                      </button>
+                    </div>
 
                     <input
                       type="file"
@@ -3219,964 +4273,48 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       onChange={handleImportarConferenciaJSON}
                     />
 
-                    <button
-                      type="button"
-                      disabled={importandoJSON}
+                    <div
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
                       onClick={() => fileInputRef.current?.click()}
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.65rem 1.15rem',
+                        border: `1.5px dashed ${isDraggingFile ? 'var(--accent-color)' : borderCol}`,
                         borderRadius: 'var(--border-radius, 6px)',
-                        backgroundColor: isLight ? '#ffffff' : bgCard,
-                        border: `1px solid ${borderCol}`,
-                        color: 'var(--text-color)',
-                        fontSize: '0.88rem',
-                        fontWeight: '800',
-                        cursor: importandoJSON ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-                        opacity: importandoJSON ? 0.6 : 1
-                      }}
-                    >
-                      <Upload size={16} color="var(--accent-color)" />
-                      {importandoJSON ? t('ui.importingJson') : t('ui.importJsonFile')}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(t('ui.lockTheOrganizersPanelThePinWillBeRequiredNext'))) {
-                          setIsAdminAuthenticated(false);
-                          setAdminPinInput('');
-                          setConfPinAdminActual('');
-                          if (conferencia?.id) {
-                            try {
-                              localStorage.removeItem(`openmun_conf_admin_pin_${conferencia.id.toLowerCase()}`);
-                            } catch (e) {}
-                          }
-                        }
-                      }}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.45rem',
-                        padding: '0.65rem 1rem',
-                        borderRadius: 'var(--border-radius, 6px)',
-                        backgroundColor: 'var(--danger-soft)',
-                        border: '1px solid var(--danger-color)',
-                        color: 'var(--danger-color)',
-                        fontSize: '0.82rem',
-                        fontWeight: '650',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                      title={t('ui.lockTheOrganizersPanelAndRequireThePinAgain')}
-                    >
-                      <Lock size={15} /> {t('ui.lock')}
-                    </button>
-                  </div>
-                </div>
-
-                {/* 1. SECCIÓN: CONFIGURACIÓN INTEGRAL DE CONFERENCIA Y SECRETARÍA (PATCH /api/conferencias/:id) */}
-                <div style={{
-                  backgroundColor: bgCard,
-                  border: `1px solid ${borderCol}`,
-                  borderRadius: 'var(--border-radius, 6px)',
-                  padding: '1.5rem'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Settings size={20} color="var(--accent-color)" /> {t('ui.generalConferenceSettingsDatabase')}
-                      </h3>
-                      <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                        {t('ui.manageCentralDataContactEmailDelegatePinAndSecretariatCredentials')}
-                      </p>
-                    </div>
-
-                    {/* Badges de estado actual */}
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {conferencia.email_admin ? (
-                        <span style={{
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          backgroundColor: 'var(--accent-soft)',
-                          border: '1px solid var(--subborder-color)',
-                          color: 'var(--accent-color)',
-                          fontSize: '0.8rem',
-                          fontWeight: '700',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem'
-                        }}>
-                          <Mail size={14} /> {t('ui.email')} <strong>{conferencia.email_admin}</strong>
-                        </span>
-                      ) : (
-                        <span style={{
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          backgroundColor: 'var(--warning-soft)',
-                          border: '1px solid var(--subborder-color)',
-                          color: 'var(--warning-color)',
-                          fontSize: '0.8rem',
-                          fontWeight: '700',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem'
-                        }}>
-                          <AlertTriangle size={14} /> {t('ui.noEmailRegistered')}
-                        </span>
-                      )}
-
-                      {conferencia.requierePin ? (
-                        <span style={{
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          backgroundColor: 'var(--info-soft)',
-                          border: '1px solid var(--subborder-color)',
-                          color: 'var(--info-color)',
-                          fontSize: '0.8rem',
-                          fontWeight: '700',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem'
-                        }}>
-                          <Lock size={14} /> {t('ui.delegatesWithPin')}
-                        </span>
-                      ) : (
-                        <span style={{
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          backgroundColor: 'var(--success-soft)',
-                          border: '1px solid var(--subborder-color)',
-                          color: 'var(--success-color)',
-                          fontSize: '0.8rem',
-                          fontWeight: '700',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem'
-                        }}>
-                          <Globe size={14} /> {t('ui.publicAccess')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {confSettingsFeedback && (
-                    <div style={{
-                      padding: '0.75rem 1rem',
-                      borderRadius: 'var(--border-radius, 6px)',
-                      backgroundColor: confSettingsFeedback.type === 'success'
-                        ? (isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)')
-                        : (isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.2)'),
-                      border: `1px solid ${confSettingsFeedback.type === 'success' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
-                      color: confSettingsFeedback.type === 'success' ? (isLight ? '#15803d' : '#4ade80') : (isLight ? '#b91c1c' : '#fca5a5'),
-                      fontSize: '0.85rem',
-                      fontWeight: '700',
-                      marginBottom: '1.25rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}>
-                      {confSettingsFeedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                      {confSettingsFeedback.text}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleGuardarConfiguracionConferencia} style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1.25rem'
-                  }}>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                      gap: '1.25rem'
-                    }}>
-                      {/* 1. Nombre de la Conferencia */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                          {t('conferences.confName')}
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            type="text"
-                            value={confNombreInput}
-                            onChange={(e) => setConfNombreInput(e.target.value)}
-                            placeholder={t('conferences.confNamePlaceholder')}
-                            style={{
-                              width: '100%',
-                              padding: '0.65rem 0.85rem 0.65rem 2.4rem',
-                              borderRadius: 'var(--border-radius, 6px)',
-                              border: `1px solid ${borderCol}`,
-                              backgroundColor: headerBg,
-                              color: 'var(--text-color)',
-                              fontSize: '0.9rem'
-                            }}
-                          />
-                          <Building2
-                            size={16}
-                            style={{
-                              position: 'absolute',
-                              left: '12px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              color: textMuted
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* 2. Correo de Secretaría */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                          {t('ui.secretariatEmailAddressAdmin')}
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            type="email"
-                            value={confEmailAdminInput}
-                            onChange={(e) => setConfEmailAdminInput(e.target.value)}
-                            placeholder={t('ui.eGSecretaryGeneralHmunOrg')}
-                            style={{
-                              width: '100%',
-                              padding: '0.65rem 0.85rem 0.65rem 2.4rem',
-                              borderRadius: 'var(--border-radius, 6px)',
-                              border: `1px solid ${borderCol}`,
-                              backgroundColor: headerBg,
-                              color: 'var(--text-color)',
-                              fontSize: '0.9rem'
-                            }}
-                          />
-                          <Mail
-                            size={16}
-                            style={{
-                              position: 'absolute',
-                              left: '12px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              color: textMuted
-                            }}
-                          />
-                        </div>
-                        <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
-                          {conferencia.email_admin
-                            ? `Correo actual en BD: ${conferencia.email_admin}`
-                            : t('ui.enterAnEmailToRegisterItInTheDatabase')}
-                        </span>
-                      </div>
-
-                      {/* 3. PIN de Acceso General / Delegados */}
-                      <div style={{
-                        padding: '0.85rem',
-                        borderRadius: 'var(--border-radius, 6px)',
+                        padding: '2.5rem 1.5rem',
+                        textAlign: 'center',
                         backgroundColor: headerBg,
-                        border: `1px solid ${borderCol}`,
                         display: 'flex',
                         flexDirection: 'column',
+                        alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.5rem'
+                        gap: '0.75rem',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.15s ease'
+                      }}
+                    >
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        backgroundColor: 'var(--accent-soft)',
+                        color: 'var(--accent-color)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '700' }}>
-                          <input
-                            type="checkbox"
-                            checked={cambiarPinAcceso}
-                            onChange={(e) => setCambiarPinAcceso(e.target.checked)}
-                          />
-                          {t('ui.protectDelegateAccessWithAPin')}
-                        </label>
-
-                        {cambiarPinAcceso && (
-                          <div style={{ position: 'relative' }}>
-                            <input
-                              type={mostrarConfPinAcceso ? 'text' : 'password'}
-                              value={confPinAccesoInput}
-                              onChange={(e) => setConfPinAccesoInput(e.target.value)}
-                              placeholder={t('ui.newDelegateAccessPin')}
-                              style={{
-                                width: '100%',
-                                padding: '0.55rem 2.5rem 0.55rem 0.75rem',
-                                borderRadius: '6px',
-                                border: `1px solid ${borderCol}`,
-                                backgroundColor: bgCard,
-                                color: 'var(--text-color)',
-                                fontSize: '0.85rem'
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setMostrarConfPinAcceso(!mostrarConfPinAcceso)}
-                              style={{
-                                position: 'absolute',
-                                right: '8px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'transparent',
-                                border: 'none',
-                                color: textMuted,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {mostrarConfPinAcceso ? <EyeOff size={15} /> : <Eye size={15} />}
-                            </button>
-                          </div>
-                        )}
+                        <Upload size={24} />
                       </div>
-
-                      {/* 4. Cambiar Contraseña / PIN de Secretaría (Admin) */}
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem' }}>
-                          {t('ui.changeSecretariatPinPassword')}
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            type={mostrarConfNuevoPin ? 'text' : 'password'}
-                            value={confNuevoPinAdmin}
-                            onChange={(e) => setConfNuevoPinAdmin(e.target.value)}
-                            placeholder={t('ui.leaveBlankToKeepUnchanged')}
-                            style={{
-                              width: '100%',
-                              padding: '0.65rem 2.5rem 0.65rem 2.4rem',
-                              borderRadius: 'var(--border-radius, 6px)',
-                              border: `1px solid ${borderCol}`,
-                              backgroundColor: headerBg,
-                              color: 'var(--text-color)',
-                              fontSize: '0.9rem'
-                            }}
-                          />
-                          <Key
-                            size={16}
-                            style={{
-                              position: 'absolute',
-                              left: '12px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              color: textMuted
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setMostrarConfNuevoPin(!mostrarConfNuevoPin)}
-                            style={{
-                              position: 'absolute',
-                              right: '10px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              background: 'transparent',
-                              border: 'none',
-                              color: textMuted,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {mostrarConfNuevoPin ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
-                        </div>
-                        <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
-                          {t('ui.onlyEnterAValueToAssignANewSecretariatAccess')}
+                        <strong style={{ fontSize: '0.95rem', color: 'var(--text-color)', display: 'block', marginBottom: '0.2rem' }}>
+                          {importandoJSON ? t('ui.importingJson') : t('ui.importJsonFile')}
+                        </strong>
+                        <span style={{ fontSize: '0.82rem', color: textMuted }}>
+                          Arrastra aquí el archivo JSON de respaldo o haz clic para seleccionarlo de tu dispositivo
                         </span>
                       </div>
                     </div>
-
-                    {/* Bloque de Autorización con PIN Actual y Botón Guardar */}
-                    <div style={{
-                      padding: '1rem',
-                      borderRadius: 'var(--border-radius, 6px)',
-                      backgroundColor: isLight ? 'rgba(139, 92, 246, 0.05)' : 'rgba(139, 92, 246, 0.1)',
-                      border: '1px solid rgba(139, 92, 246, 0.25)',
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '1rem',
-                      marginTop: '0.5rem'
-                    }}>
-                      <div style={{ flex: 1, minWidth: '240px' }}>
-                        <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem', color: 'var(--text-color)' }}>
-                          {t('ui.currentSecretariatPinRequiredAuthorization')}
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            type={mostrarConfPinActual ? 'text' : 'password'}
-                            required
-                            value={confPinAdminActual}
-                            onChange={(e) => setConfPinAdminActual(e.target.value)}
-                            placeholder={t('ui.currentSecretariatPin')}
-                            style={{
-                              width: '100%',
-                              padding: '0.6rem 2.5rem 0.6rem 2.2rem',
-                              borderRadius: 'var(--border-radius, 6px)',
-                              border: `1px solid ${borderCol}`,
-                              backgroundColor: bgCard,
-                              color: 'var(--text-color)',
-                              fontSize: '0.9rem'
-                            }}
-                          />
-                          <Shield
-                            size={15}
-                            style={{
-                              position: 'absolute',
-                              left: '10px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              color: 'var(--accent-color)'
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setMostrarConfPinActual(!mostrarConfPinActual)}
-                            style={{
-                              position: 'absolute',
-                              right: '10px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              background: 'transparent',
-                              border: 'none',
-                              color: textMuted,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {mostrarConfPinActual ? <EyeOff size={15} /> : <Eye size={15} />}
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={guardandoConfSettings}
-                        style={{
-                          padding: '0.75rem 1.5rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          backgroundColor: 'var(--btn-bg)',
-                          color: 'var(--btn-text, #ffffff)',
-                          border: 'none',
-                          fontWeight: '650',
-                          fontSize: '0.85rem',
-                          cursor: guardandoConfSettings ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem',
-                          boxShadow: 'none',
-                          opacity: guardandoConfSettings ? 0.7 : 1,
-                          alignSelf: 'flex-end'
-                        }}
-                      >
-                        <Check size={18} />
-                        {guardandoConfSettings ? t('ui.savingToDatabase') : t('ui.saveSettingsToDatabase')}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* 2. SECCIÓN: GESTIÓN Y CONFIGURACIÓN DE COMITÉS (AGENDA, PAÍSES, MATRIZ) */}
-                <div style={{
-                  backgroundColor: bgCard,
-                  border: `1px solid ${borderCol}`,
-                  borderRadius: 'var(--border-radius, 6px)',
-                  padding: '1.5rem'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Layers size={20} color="var(--accent-color)" /> {t('ui.committeeManagementWidgetSettings')}
-                      </h3>
-                      <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                        {t('ui.addOrDeleteCommitteesAndConfigureEachCommitteeSCountry')}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleExportarConferenciaJSON}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.45rem',
-                        padding: '0.5rem 0.95rem',
-                        borderRadius: 'var(--border-radius, 6px)',
-                        backgroundColor: isLight ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.2)',
-                        border: '1px solid rgba(34, 197, 94, 0.4)',
-                        color: isLight ? '#15803d' : '#4ade80',
-                        fontSize: '0.82rem',
-                        fontWeight: '800',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Download size={14} /> {t('ui.exportCompleteJson')}
-                    </button>
                   </div>
-
-                  {/* Formulario Añadir Comité / Importar Comité Individual */}
-                  <input
-                    type="file"
-                    ref={singleComiteFileInputRef}
-                    accept=".json,application/json"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) procesarArchivoConferenciaJSON(f, true);
-                    }}
-                  />
-
-                  <div
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const files = e.dataTransfer?.files;
-                      if (files && files.length > 0) {
-                        procesarArchivoConferenciaJSON(files[0], true);
-                      }
-                    }}
-                    style={{
-                      marginBottom: '1.5rem',
-                      padding: '1.1rem',
-                      backgroundColor: headerBg,
-                      borderRadius: 'var(--border-radius, 6px)',
-                      border: `1.5px dashed ${borderCol}`,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                      transition: 'border-color 0.2s ease'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-color)' }}>
-                        {t('ui.addANewCommitteeManuallyOrImportFromAJson')}
-                      </span>
-                      <span style={{ fontSize: '0.74rem', color: textMuted }}>
-                        {t('ui.youCanImportThe')} <code>{t('ui.activeSessionJson')}</code> {t('ui.exportedFromACommittee')}
-                      </span>
-                    </div>
-
-                    <form onSubmit={handleCrearComite} style={{
-                      display: 'flex',
-                      gap: '0.75rem',
-                      flexWrap: 'wrap',
-                      alignItems: 'center'
-                    }}>
-                      <input
-                        type="text"
-                        required
-                        value={nuevoNombreComite}
-                        onChange={(e) => setNuevoNombreComite(e.target.value)}
-                        placeholder={t('ui.newCommitteeNameEGUnhcr')}
-                        style={{
-                          flex: 2,
-                          minWidth: '200px',
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          border: `1px solid ${borderCol}`,
-                          backgroundColor: bgCard,
-                          color: 'var(--text-color)',
-                          fontSize: '0.88rem'
-                        }}
-                      />
-                      <input
-                        type="text"
-                        value={nuevoPinMesa}
-                        onChange={(e) => setNuevoPinMesa(e.target.value)}
-                        placeholder={t('ui.chairPinOptional')}
-                        style={{
-                          flex: 1,
-                          minWidth: '160px',
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          border: `1px solid ${borderCol}`,
-                          backgroundColor: bgCard,
-                          color: 'var(--text-color)',
-                          fontSize: '0.88rem'
-                        }}
-                      />
-                      <button
-                        type="submit"
-                        disabled={creandoComite}
-                        style={{
-                          padding: '0.65rem 1.15rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          backgroundColor: 'var(--btn-bg)',
-                          color: 'var(--btn-text, #ffffff)',
-                          border: 'none',
-                          fontWeight: '650',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          boxShadow: 'none'
-                        }}
-                      >
-                        <Plus size={16} /> {creandoComite ? t('ui.creating') : t('ui.createCommittee')}
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={importandoJSON}
-                        onClick={() => singleComiteFileInputRef.current?.click()}
-                        style={{
-                          padding: '0.65rem 1.15rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          backgroundColor: 'transparent',
-                          border: `1px dashed ${borderCol}`,
-                          color: 'var(--text-color)',
-                          fontWeight: '650',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.45rem',
-                          boxShadow: 'none',
-                          transition: 'all 0.15s ease'
-                        }}
-                        title={t('ui.importAnIndividualCommitteeFromAJsonFileActiveSession')}
-                      >
-                        <Upload size={16} /> {t('ui.importCommitteeJson')}
-                      </button>
-                    </form>
-                  </div>
-
-                  {/* Lista de comités con botón para configurar widgets */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {listaComitesConsolidada.map((comite) => {
-                      const badge = getStatusBadge(comite.tipo_sesion);
-                      return (
-                        <div
-                          key={comite.id}
-                          style={{
-                            padding: '1rem 1.25rem',
-                            borderRadius: 'var(--border-radius, 6px)',
-                            border: `1px solid ${borderCol}`,
-                            backgroundColor: headerBg,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            flexWrap: 'wrap',
-                            gap: '1rem'
-                          }}
-                        >
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
-                              <strong style={{ fontSize: '1rem', color: 'var(--text-color)' }}>{comite.nombre}</strong>
-                              <span style={{
-                                padding: '0.15rem 0.45rem',
-                                borderRadius: '4px',
-                                backgroundColor: badge.bg,
-                                color: badge.color,
-                                fontSize: '0.7rem',
-                                fontWeight: '800'
-                              }}>
-                                {badge.label}
-                              </span>
-                              <code style={{ fontSize: '0.75rem', color: textMuted }}>ID: {comite.id}</code>
-                            </div>
-                            {comite.topico_actual && (
-                              <span style={{ fontSize: '0.8rem', color: textMuted }}>
-                                {t('ui.topic2')} {comite.topico_actual}
-                              </span>
-                            )}
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <button
-                              onClick={() => handleAbrirEditorComite(comite)}
-                              style={{
-                                padding: '0.5rem 0.95rem',
-                                borderRadius: 'var(--border-radius, 6px)',
-                                backgroundColor: 'var(--btn-bg)',
-                                color: 'var(--btn-text, #ffffff)',
-                                border: 'none',
-                                fontSize: '0.82rem',
-                                fontWeight: '650',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                boxShadow: 'none'
-                              }}
-                            >
-                              <Settings size={14} /> {t('ui.manageCommitteeAgendaCountriesMatrix')}
-                            </button>
-
-                            <button
-                              onClick={() => handleEliminarComite(comite.id)}
-                              style={{
-                                padding: '0.5rem',
-                                borderRadius: 'var(--border-radius, 6px)',
-                                backgroundColor: isLight ? '#fee2e2' : 'rgba(239, 68, 68, 0.15)',
-                                border: '1px solid rgba(239, 68, 68, 0.3)',
-                                color: '#ef4444',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                              title={t('ui.deleteCommittee')}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. SECCIÓN: CENTRO DE EMISIÓN DE AVISOS (BASE DE DATOS) */}
-                <div style={{
-                  backgroundColor: bgCard,
-                  border: `1px solid ${borderCol}`,
-                  borderRadius: 'var(--border-radius, 6px)',
-                  padding: '1.5rem'
-                }}>
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', margin: '0 0 0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Megaphone size={20} color="var(--accent-color)" /> {t('avisos.navTitle')}
-                    </h3>
-                    <p style={{ fontSize: '0.85rem', color: textMuted, margin: 0 }}>
-                      {t('ui.sendAnnouncementsToTheEntireConferenceStaffOrSpecificRooms')}
-                    </p>
-                  </div>
-
-                  {avisoFeedback && (
-                    <div style={{
-                      padding: '0.75rem 1rem',
-                      borderRadius: 'var(--border-radius, 6px)',
-                      backgroundColor: isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)',
-                      border: '1px solid rgba(34, 197, 94, 0.4)',
-                      color: isLight ? '#15803d' : '#4ade80',
-                      fontSize: '0.85rem',
-                      fontWeight: '700',
-                      marginBottom: '1rem'
-                    }}>
-                      {avisoFeedback}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleEmitirAviso} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('messaging.recipient')}</label>
-                        <select
-                          value={avisoDestino}
-                          onChange={(e) => setAvisoDestino(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.55rem',
-                            borderRadius: 'var(--border-radius, 6px)',
-                            border: `1px solid ${borderCol}`,
-                            backgroundColor: headerBg,
-                            color: 'var(--text-color)',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          <optgroup label={t('avisos.generalChannels')}>
-                            <option value="">{t('conferences.targetGlobal')}</option>
-                            <option value="STAFF_ALL">{t('ui.allConferenceStaff')}</option>
-                            <option value="CHAIRS_ALL">{t('ui.allChairs')}</option>
-                          </optgroup>
-                          <optgroup label={t('ui.committeeChairs')}>
-                            {listaComitesConsolidada.map(c => (
-                              <option key={`SEC_CHAIR_${c.id}`} value={`CHAIR_${c.id}`}>{t('ui.chairOf')} {c.nombre || c.id}</option>
-                            ))}
-                          </optgroup>
-                          <optgroup label={t('ui.assignedRoomStaff2')}>
-                            {listaComitesConsolidada.map(c => (
-                              <option key={`SEC_STAFF_${c.id}`} value={`STAFF_COMITE_${c.id}`}>{t('ui.staffOf')} {c.nombre || c.id}</option>
-                            ))}
-                          </optgroup>
-                          <optgroup label={t('ui.entireRoomChairDelegates')}>
-                            {listaComitesConsolidada.map(c => (
-                              <option key={`SEC_ALL_${c.id}`} value={c.id}>{t('ui.roomOf')} {c.nombre || c.id}</option>
-                            ))}
-                          </optgroup>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('conferences.issuer')}</label>
-                        <select
-                          value={avisoEmisor}
-                          onChange={(e) => setAvisoEmisor(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.55rem',
-                            borderRadius: 'var(--border-radius, 6px)',
-                            border: `1px solid ${borderCol}`,
-                            backgroundColor: headerBg,
-                            color: 'var(--text-color)',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          <option value="organizacion">{t('ui.secretariatOrganizers')}</option>
-                          <option value="staff">{t('ui.roomStaff')}</option>
-                          <option value="logistica">{t('conferences.issuerLogistics')}</option>
-                          <option value="mesa">{t('conferences.issuerChair')}</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('ui.priority')}</label>
-                        <select
-                          value={avisoTipo}
-                          onChange={(e) => setAvisoTipo(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.55rem',
-                            borderRadius: 'var(--border-radius, 6px)',
-                            border: `1px solid ${borderCol}`,
-                            backgroundColor: headerBg,
-                            color: 'var(--text-color)',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          <option value="info">{t('ui.information')}</option>
-                          <option value="urgente">{t('ui.urgent')}</option>
-                          <option value="alerta">{t('ui.alertLogistics')}</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('avisos.noticeMessage')}</label>
-                      <textarea
-                        required
-                        rows={2}
-                        value={avisoMensaje}
-                        onChange={(e) => setAvisoMensaje(e.target.value)}
-                        placeholder={t('ui.writeTheAnnouncementToDisplayOnProjectorsAndScreens')}
-                        style={{
-                          width: '100%',
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          border: `1px solid ${borderCol}`,
-                          backgroundColor: headerBg,
-                          color: 'var(--text-color)',
-                          fontSize: '0.88rem',
-                          resize: 'vertical'
-                        }}
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={enviandoAviso}
-                      style={{
-                        alignSelf: 'flex-start',
-                        padding: '0.65rem 1.25rem',
-                        borderRadius: 'var(--border-radius, 6px)',
-                        backgroundColor: 'var(--btn-bg)',
-                        color: 'var(--btn-text, #ffffff)',
-                        border: 'none',
-                        fontWeight: '650',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      <Send size={15} /> {enviandoAviso ? t('ui.issuing') : t('ui.issueAnnouncement')}
-                    </button>
-                  </form>
-
-                  {/* Avisos Activos */}
-                  <div>
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: '800', marginBottom: '0.65rem' }}>
-                      {t('ui.activeAnnouncementsInTheSystem')}{avisosActivos.length})
-                    </h4>
-
-                    {avisosActivos.length === 0 ? (
-                      <p style={{ fontSize: '0.82rem', color: textMuted, margin: 0 }}>{t('ui.noActiveAnnouncementsAtThisTime')}</p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {avisosActivos.map((av) => (
-                          <div
-                            key={av.id}
-                            style={{
-                              padding: '0.85rem 1.1rem',
-                              borderRadius: 'var(--border-radius, 6px)',
-                              backgroundColor: headerBg,
-                              border: `1px solid ${borderCol}`,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '0.45rem'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                <span style={{
-                                  padding: '0.15rem 0.45rem',
-                                  borderRadius: '4px',
-                                  backgroundColor: av.tipo === 'urgente' ? '#ef4444' : (av.tipo === 'alerta' ? '#f59e0b' : '#3b82f6'),
-                                  color: '#ffffff',
-                                  fontSize: '0.68rem',
-                                  fontWeight: '800',
-                                  textTransform: 'uppercase'
-                                }}>
-                                  {av.emisor}
-                                </span>
-                                <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '600' }}>
-                                  {t('ui.destination')} <strong style={{ color: 'var(--text-color)' }}>{getNombreDestino(av.comite_id)}</strong>
-                                </span>
-                                {av.creado_en && (
-                                  <span style={{ fontSize: '0.7rem', color: textMuted }}>
-                                    • {av.creado_en}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                <button
-                                  onClick={() => handleBorrarAviso(av.id)}
-                                  style={{
-                                    background: 'rgba(239, 68, 68, 0.1)',
-                                    border: '1px solid rgba(239, 68, 68, 0.35)',
-                                    color: '#ef4444',
-                                    fontSize: '0.73rem',
-                                    fontWeight: '800',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '3px',
-                                    padding: '0.2rem 0.45rem',
-                                    borderRadius: '5px'
-                                  }}
-                                  title={t('avisos.deleteNoticeTooltip', 'Borrar aviso para toda la conferencia')}
-                                >
-                                  <Trash2 size={12} /> {t('avisos.deleteNotice', 'Borrar')}
-                                </button>
-                                <button
-                                  onClick={() => handleIgnorarAviso(av.id)}
-                                  style={{
-                                    background: 'transparent',
-                                    border: '1px solid var(--subborder-color)',
-                                    color: 'var(--muted-text)',
-                                    fontSize: '0.73rem',
-                                    fontWeight: '700',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '3px',
-                                    padding: '0.2rem 0.45rem',
-                                    borderRadius: '5px'
-                                  }}
-                                  title={t('avisos.ignoreTooltip', 'Ignorar este aviso (ocultarlo de tu vista)')}
-                                >
-                                  <EyeOff size={12} /> {t('avisos.ignore', 'Ignorar')}
-                                </button>
-                              </div>
-                            </div>
-
-                            <div style={{ fontSize: '0.86rem', color: 'var(--text-color)', lineHeight: '1.4' }}>
-                              {formatearMensajeAviso(av.mensaje)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                )}
 
               </div>
             )}
@@ -4245,8 +4383,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                   width: '46px',
                   height: '46px',
                   borderRadius: 'var(--border-radius, 6px)',
-                  backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                  color: '#8b5cf6',
+                  backgroundColor: 'var(--accent-soft)',
+                  color: 'var(--accent-color)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -4488,7 +4626,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <span style={{
                   padding: '0.1rem 0.45rem',
                   borderRadius: 'var(--border-radius, 6px)',
-                  backgroundColor: secretariaWidgetTab === 'IMPORTAR' ? '#8b5cf6' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
+                  backgroundColor: secretariaWidgetTab === 'IMPORTAR' ? 'var(--btn-bg)' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
                   color: secretariaWidgetTab === 'IMPORTAR' ? '#ffffff' : textMuted,
                   fontSize: '0.72rem',
                   fontWeight: '800'
@@ -4519,7 +4657,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                 <span style={{
                   padding: '0.1rem 0.45rem',
                   borderRadius: 'var(--border-radius, 6px)',
-                  backgroundColor: secretariaWidgetTab === 'MATRIZ' ? '#8b5cf6' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
+                  backgroundColor: secretariaWidgetTab === 'MATRIZ' ? 'var(--btn-bg)' : (isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)'),
                   color: secretariaWidgetTab === 'MATRIZ' ? '#ffffff' : textMuted,
                   fontSize: '0.72rem',
                   fontWeight: '800'

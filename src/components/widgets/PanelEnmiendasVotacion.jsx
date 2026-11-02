@@ -1559,7 +1559,11 @@ const PanelEnmiendasVotacion = () => {
       </div>
 
       {/* ── PIE DEL PANEL UNIFICADO (Resultados en Vivo) ── */}
-      <ListaDerechos paises={paises} sesion={votacionSesion} />
+      <ListaDerechos
+        paises={paises}
+        sesion={votacionSesion}
+        votacionTerminada={totalAsistentes > 0 && votosEmitidos >= totalAsistentes}
+      />
     </div>
   );
 };

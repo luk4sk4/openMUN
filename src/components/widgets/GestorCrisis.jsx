@@ -37,7 +37,8 @@ import {
   Link as LinkIcon,
   Sliders,
   Calendar,
-  Edit3
+  Edit3,
+  ArrowLeft
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
@@ -625,39 +626,648 @@ const GestorCrisis = () => {
       overflow: 'hidden',
       position: 'relative'
     }}>
-      {/* ─── BARRA SUPERIOR: RELOJ DE SIMULACIÓN Y ACCIONES ─────────────── */}
+      {modalNuevoEvento ? (
+        /* ─── VISTA: EMITIR ALERTA DE CRISIS (PANTALLA COMPLETA DEL WIDGET) ─── */
+        <div style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: 'var(--panel-color)',
+          color: 'var(--text-color)',
+          boxSizing: 'border-box',
+          overflow: 'hidden'
+        }}>
+          {/* Cabecera de la Vista de Emisión */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            backgroundColor: 'var(--card-header-bg)',
+            borderBottom: '1px solid var(--border-color)',
+            gap: '8px',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setModalNuevoEvento(false)}
+                title={t('common.cancel', 'Volver')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-color)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <ArrowLeft size={15} />
+              </button>
+              <div>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: '0.95rem',
+                  fontWeight: '650',
+                  letterSpacing: '-0.01em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: 'var(--text-color)'
+                }}>
+                  <Megaphone size={16} style={{ color: 'var(--btn-bg)' }} />
+                  <span>{t('crisis.emitAlert', 'Emitir Alerta de Crisis / Última Hora')}</span>
+                </h3>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setModalPlantillas(true)}
+                title={t('ui.quickCrisisTemplates')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '5px 10px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-color)',
+                  fontSize: '0.74rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                <FileText size={12} color="var(--muted-text)" />
+                <span>{t('crisis.templates', 'Plantillas')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalNuevoEvento(false)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--muted-text)',
+                  fontSize: '0.76rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                {t('common.cancel', 'Cancelar')}
+              </button>
+              <button
+                type="button"
+                onClick={handleGuardarNuevoEvento}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid transparent',
+                  backgroundColor: 'var(--btn-bg)',
+                  color: 'var(--btn-text)',
+                  fontSize: '0.78rem',
+                  fontWeight: '650',
+                  cursor: 'pointer'
+                }}
+              >
+                <Send size={13} />
+                <span>{t('crisis.publishImmediateAlert', 'Publicar Alerta Inmediata')}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Formulario Espacioso Ocupando Todo el Widget */}
+          <form
+            onSubmit={handleGuardarNuevoEvento}
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '16px 20px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxSizing: 'border-box'
+            }}
+          >
+            {/* Grid 2 Columnas Responsivo */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+              gap: '16px',
+              alignItems: 'start'
+            }}>
+              {/* Columna Izquierda: Información Principal */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Titular */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.72rem',
+                    fontWeight: '750',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: 'var(--muted-text)',
+                    marginBottom: '5px'
+                  }}>
+                    {t('crisis.headlineLabel', 'TITULAR DE LA NOTICIA / SUCESO *')}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={t('ui.eGAirStrikeOnTheEasternBorder')}
+                    value={formTitulo}
+                    onChange={(e) => setFormTitulo(e.target.value)}
+                    style={{
+                      width: '100%',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      padding: '9px 12px',
+                      fontSize: '0.92rem',
+                      fontWeight: '600',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Categoría y Fuente */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.72rem',
+                      fontWeight: '750',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      color: 'var(--muted-text)',
+                      marginBottom: '5px'
+                    }}>
+                      {t('crisis.categoryLabel', 'CATEGORÍA / SEVERIDAD')}
+                    </label>
+                    <select
+                      value={formCategoria}
+                      onChange={(e) => setFormCategoria(e.target.value)}
+                      style={{
+                        width: '100%',
+                        backgroundColor: 'var(--input-bg)',
+                        color: 'var(--text-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        padding: '8px 10px',
+                        fontSize: '0.78rem',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="CRITICA">{t('crisis.critical', '🔴 Última Hora (Crítico)')}</option>
+                      <option value="MILITAR">{t('crisis.military', '⚔️ Alerta Militar / Ataque')}</option>
+                      <option value="DIPLOMATICA">{t('crisis.diplomatic', '🌐 Comunicado Diplomático')}</option>
+                      <option value="ECONOMICA">{t('crisis.economic', '💵 Colapso Financiero')}</option>
+                      <option value="CIBERNETICA">{t('crisis.cybernetic', '⚡ Ciberataque / Inteligencia')}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.72rem',
+                      fontWeight: '750',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      color: 'var(--muted-text)',
+                      marginBottom: '5px'
+                    }}>
+                      {t('crisis.sourceLabel', 'FUENTE INFORMATIVA')}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={t('ui.eGReutersIntelligence')}
+                      value={formFuente}
+                      onChange={(e) => setFormFuente(e.target.value)}
+                      style={{
+                        width: '100%',
+                        backgroundColor: 'var(--input-bg)',
+                        color: 'var(--text-color)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        padding: '8px 10px',
+                        fontSize: '0.78rem',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Descripción Detallada */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.72rem',
+                    fontWeight: '750',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: 'var(--muted-text)',
+                    marginBottom: '5px'
+                  }}>
+                    {t('crisis.descriptionLabel', 'DESCRIPCIÓN DEL ACONTECIMIENTO / DIRECTIVAS DE MESA')}
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder={t('ui.detailsAboutTheEventConsequencesAndCommitteeRequirements')}
+                    value={formDescripcion}
+                    onChange={(e) => setFormDescripcion(e.target.value)}
+                    style={{
+                      width: '100%',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      padding: '9px 12px',
+                      fontSize: '0.82rem',
+                      lineHeight: '1.45',
+                      outline: 'none',
+                      resize: 'vertical',
+                      minHeight: '85px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Delegaciones Involucradas */}
+                {paises.length > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                      <label style={{
+                        fontSize: '0.72rem',
+                        fontWeight: '750',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        color: 'var(--muted-text)'
+                      }}>
+                        {t('crisis.involvedCountries', 'DELEGACIONES INVOLUCRADAS')}
+                        {formPaises.length > 0 && (
+                          <span style={{ color: 'var(--accent-color)', marginLeft: '6px' }}>
+                            ({formPaises.length} seleccionadas)
+                          </span>
+                        )}
+                      </label>
+                      {formPaises.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFormPaises([])}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--muted-text)',
+                            fontSize: '0.68rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {t('common.clear', 'Limpiar selección')}
+                        </button>
+                      )}
+                    </div>
+                    <div style={{
+                      maxHeight: '110px',
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '5px',
+                      padding: '8px',
+                      backgroundColor: 'var(--card-header-bg)',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      border: '1px solid var(--border-color)'
+                    }}>
+                      {paises.map(p => {
+                        const sel = formPaises.includes(p.nombre);
+                        return (
+                          <button
+                            key={p.id || p.nombre}
+                            type="button"
+                            onClick={() => {
+                              setFormPaises(prev => sel ? prev.filter(x => x !== p.nombre) : [...prev, p.nombre]);
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '3px 8px',
+                              borderRadius: 'var(--border-radius, 6px)',
+                              border: `1px solid ${sel ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                              backgroundColor: sel ? 'var(--accent-soft)' : 'var(--input-bg)',
+                              color: sel ? 'var(--accent-color)' : 'var(--text-color)',
+                              fontSize: '0.72rem',
+                              fontWeight: sel ? '700' : '500',
+                              cursor: 'pointer',
+                              transition: 'all 0.12s ease'
+                            }}
+                          >
+                            <CountryFlag bandera={p.bandera} nombre={p.nombre} size="xs" />
+                            <span>{p.nombre}</span>
+                            {sel && <span style={{ fontSize: '0.65rem' }}>✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Columna Derecha: Retransmisión Visual y Opciones */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Imagen para Retransmisión de TV */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                    <label style={{
+                      fontSize: '0.72rem',
+                      fontWeight: '750',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      color: 'var(--muted-text)'
+                    }}>
+                      {t('crisis.imageLabel', 'IMAGEN PARA LA RETRANSMISIÓN DE TV (OPCIONAL)')}
+                    </label>
+                    {formImagen && (
+                      <button
+                        type="button"
+                        onClick={() => setFormImagen('')}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', fontSize: '0.68rem', fontWeight: '700', cursor: 'pointer' }}
+                      >
+                        {t('crisis.removeImage', 'Quitar imagen')}
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        backgroundColor: 'var(--input-bg)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--border-radius, 6px)',
+                        padding: '6px 10px',
+                        color: 'var(--text-color)',
+                        fontSize: '0.74rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        flexShrink: 0
+                      }}
+                    >
+                      <UploadCloud size={13} />
+                      <span>{t('crisis.uploadFile', 'Subir Imagen')}</span>
+                    </button>
+
+                    <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <LinkIcon size={12} color="var(--muted-text)" style={{ position: 'absolute', left: '8px' }} />
+                      <input
+                        type="text"
+                        placeholder={t('ui.orPasteAnImageUrl')}
+                        value={formImagen.startsWith('data:') ? 'Imagen local cargada (' + Math.round(formImagen.length / 1024) + ' KB)' : formImagen}
+                        onChange={(e) => {
+                          if (!formImagen.startsWith('data:')) setFormImagen(e.target.value);
+                          else setFormImagen('');
+                        }}
+                        style={{
+                          width: '100%',
+                          backgroundColor: 'var(--input-bg)',
+                          color: 'var(--text-color)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '6px 8px 6px 26px',
+                          fontSize: '0.76rem',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preajustes de Fotos */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.66rem', color: 'var(--muted-text)' }}>{t('crisis.quickPhotos', 'Preajustes:')}</span>
+                    {FOTOS_PRESET.map(fp => (
+                      <button
+                        key={fp.label}
+                        type="button"
+                        onClick={() => setFormImagen(fp.url)}
+                        style={{
+                          background: formImagen === fp.url ? 'var(--accent-soft)' : 'var(--input-bg)',
+                          border: `1px solid ${formImagen === fp.url ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                          borderRadius: 'var(--border-radius, 6px)',
+                          padding: '2px 6px',
+                          fontSize: '0.66rem',
+                          color: formImagen === fp.url ? 'var(--accent-color)' : 'var(--muted-text)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {fp.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Vista previa 16:9 de la imagen */}
+                  <div style={{
+                    marginTop: '8px',
+                    position: 'relative',
+                    width: '100%',
+                    aspectRatio: '16/9',
+                    maxHeight: '140px',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    overflow: 'hidden',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--card-header-bg)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {formImagen ? (
+                      <>
+                        <img
+                          src={formImagen}
+                          alt={t('ui.broadcastPreview')}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '6px',
+                          left: '8px',
+                          backgroundColor: 'rgba(0,0,0,0.65)',
+                          backdropFilter: 'blur(4px)',
+                          padding: '2px 6px',
+                          borderRadius: '3px',
+                          fontSize: '0.62rem',
+                          color: '#ffffff',
+                          fontWeight: '750',
+                          letterSpacing: '0.04em'
+                        }}>
+                          {t('ui.tvBroadcastPreview', 'VISTA PREVIA RETRANSMISIÓN TV')}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'var(--muted-text)' }}>
+                        <ImageIcon size={22} style={{ opacity: 0.5 }} />
+                        <span style={{ fontSize: '0.72rem' }}>{t('crisis.noImageSelected', 'Sin imagen adjunta (se usará el canal estándar)')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notificación y Sonido de Alarma */}
+                <div style={{
+                  padding: '12px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--card-header-bg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      id="chk-sound"
+                      checked={formEmitirAlerta}
+                      onChange={(e) => setFormEmitirAlerta(e.target.checked)}
+                      style={{ marginTop: '2px', cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '0.76rem', fontWeight: '650', color: 'var(--text-color)' }}>
+                        {t('crisis.playSoundOnPublish', 'Sonar alerta auditiva de transmisión de emergencia')}
+                      </span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
+                        {t('crisis.playSoundDesc', 'Emite un tono urgente en la sala y proyecta el pulso de crisis en directo.')}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer de Acciones del Formulario */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: '8px',
+              paddingTop: '10px',
+              borderTop: '1px solid var(--subborder-color)',
+              marginTop: 'auto'
+            }}>
+              <button
+                type="button"
+                onClick={() => setModalNuevoEvento(false)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--input-bg)',
+                  color: 'var(--text-color)',
+                  fontSize: '0.78rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                {t('common.cancel', 'Cancelar')}
+              </button>
+              <button
+                type="submit"
+                style={{
+                  padding: '7px 18px',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  border: '1px solid transparent',
+                  backgroundColor: 'var(--btn-bg)',
+                  color: 'var(--btn-text)',
+                  fontSize: '0.78rem',
+                  fontWeight: '650',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Send size={13} />
+                <span>{t('crisis.publishImmediate', 'Publicar Alerta Inmediata')}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <>
+        {/* ─── CABECERA DEL WIDGET (OPENMUN DESIGN SYSTEM) ─────────────── */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '8px 12px',
-        backgroundColor: 'var(--card-header-bg)',
-        borderBottom: '1px solid var(--border-color)',
+        padding: '12px 14px 8px 14px',
+        backgroundColor: 'transparent',
+        borderBottom: '1px solid var(--subborder-color)',
         gap: '8px',
         flexWrap: 'wrap'
       }}>
-        {/* Reloj Ficticio de Crisis */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* Título de Widget + Reloj Ficticio de Crisis */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: '0.95rem',
+            fontWeight: '650',
+            letterSpacing: '-0.01em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: 'var(--text-color)'
+          }}>
+            <Megaphone size={16} style={{ color: 'var(--btn-bg)' }} />
+            <span>{t('crisis.crisisRoom', 'Gabinete de Crisis')}</span>
+          </h3>
+
+          {/* Reloj Ficticio Pill */}
           <button
             onClick={abrirModalAjusteReloj}
             title={t('ui.clickToOpenTheExactCrisisClockAdjustmentPanel')}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '5px',
               backgroundColor: 'var(--input-bg)',
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--border-radius, 6px)',
-              padding: '4px 8px',
+              padding: '3px 8px',
               color: 'var(--text-color)',
-              fontSize: '0.78rem',
+              fontSize: '0.74rem',
               fontWeight: '650',
               fontVariantNumeric: 'tabular-nums',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
           >
-            <Clock size={13} style={{ color: 'var(--accent-color)' }} />
+            <Clock size={12} style={{ color: 'var(--accent-color)' }} />
             <span>{formatoHoraSimulada}</span>
             {relojSimulacion.velocidad > 1 && (
               <span style={{
@@ -673,173 +1283,15 @@ const GestorCrisis = () => {
               </span>
             )}
           </button>
-
-          {/* Botón Ajustar Exactamente */}
-          <button
-            onClick={abrirModalAjusteReloj}
-            title={t('ui.setTheExactDayHourMinutesAndClockSpeed')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '4px 8px',
-              borderRadius: 'var(--border-radius, 6px)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-color)',
-              fontSize: '0.74rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Sliders size={12} color="var(--muted-text)" />
-            <span>{t('common.edit', 'Ajustar')}</span>
-          </button>
-
-          {/* Play/Pause del reloj */}
-          <button
-            onClick={() => setRelojSimulacion(prev => ({ ...prev, activo: !prev.activo }))}
-            title={relojSimulacion.activo ? t('ui.pauseSimulationClock') : t('ui.startSimulationClock')}
-            aria-pressed={relojSimulacion.activo}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '28px',
-              height: '28px',
-              borderRadius: 'var(--border-radius, 6px)',
-              border: `1px solid ${relojSimulacion.activo ? 'var(--success-color)' : 'var(--border-color)'}`,
-              backgroundColor: relojSimulacion.activo ? 'var(--success-soft)' : 'var(--input-bg)',
-              color: relojSimulacion.activo ? 'var(--success-color)' : 'var(--muted-text)',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {relojSimulacion.activo ? <Pause size={12} /> : <Play size={12} />}
-          </button>
-
-          {/* Salto +15 min y +1h */}
-          <button
-            onClick={() => avanzarTiempoSimulado(15)}
-            title={t('ui.advance15SimulatedMinutes')}
-            style={{
-              padding: '4px 8px',
-              borderRadius: 'var(--border-radius, 6px)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-color)',
-              fontSize: '0.72rem',
-              fontWeight: '600',
-              fontVariantNumeric: 'tabular-nums',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            +15m
-          </button>
-          <button
-            onClick={() => avanzarTiempoSimulado(60)}
-            title={t('ui.advance1SimulatedHour')}
-            style={{
-              padding: '4px 8px',
-              borderRadius: 'var(--border-radius, 6px)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-color)',
-              fontSize: '0.72rem',
-              fontWeight: '600',
-              fontVariantNumeric: 'tabular-nums',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            +1h
-          </button>
         </div>
 
-        {/* Acciones Rápidas (Nuevo Evento, Plantillas, Exportar, Importar, Sonido, Broadcast) */}
+        {/* Acciones Principales y de Utilidad */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {/* Exportar JSON */}
-          <button
-            onClick={handleExportarCrisisJSON}
-            title={t('ui.exportAllCrisisAlertsToAJsonFile')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '5px 8px',
-              borderRadius: 'var(--border-radius, 6px)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-color)',
-              fontSize: '0.74rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Download size={13} color="var(--muted-text)" />
-            {t('common.export', 'Exportar')}
-          </button>
-
-          {/* Importar JSON */}
-          <button
-            onClick={() => jsonFileInputRef.current?.click()}
-            title={t('ui.importCrisisAlertsFromAJsonFile')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '5px 8px',
-              borderRadius: 'var(--border-radius, 6px)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-color)',
-              fontSize: '0.74rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Upload size={13} color="var(--muted-text)" />
-            {t('common.import', 'Importar')}
-          </button>
-          <input
-            ref={jsonFileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImportarCrisisJSON}
-            style={{ display: 'none' }}
-          />
-
-          <button
-            onClick={() => setModalPlantillas(true)}
-            title={t('ui.quickCrisisTemplates')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '5px 8px',
-              borderRadius: 'var(--border-radius, 6px)',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--input-bg)',
-              color: 'var(--text-color)',
-              fontSize: '0.74rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <FileText size={13} color="var(--muted-text)" />
-            {t('crisis.templates', 'Plantillas')}
-          </button>
-
           {/* Acción Principal Dominante */}
           <button
             onClick={() => setModalNuevoEvento(true)}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '5px',
               padding: '5px 12px',
@@ -847,7 +1299,7 @@ const GestorCrisis = () => {
               border: '1px solid transparent',
               backgroundColor: 'var(--btn-bg)',
               color: 'var(--btn-text)',
-              fontSize: '0.75rem',
+              fontSize: '0.76rem',
               fontWeight: '650',
               cursor: 'pointer',
               boxShadow: 'none',
@@ -855,7 +1307,7 @@ const GestorCrisis = () => {
             }}
           >
             <Plus size={13} strokeWidth={2.5} />
-            {t('crisis.emitAlertBtn', 'Emitir Alerta')}
+            <span>{t('crisis.emitAlertBtn', 'Emitir Alerta')}</span>
           </button>
 
           {/* Sonido */}
@@ -904,16 +1356,190 @@ const GestorCrisis = () => {
         </div>
       </div>
 
+      {/* ─── BARRA SECUNDARIA: CONTROLES DE SIMULACIÓN Y FILTROS ───────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '6px 14px 8px 14px',
+        borderBottom: '1px solid var(--subborder-color)',
+        gap: '8px',
+        flexWrap: 'wrap'
+      }}>
+        {/* Controles de avance de reloj */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          {/* Play/Pause */}
+          <button
+            onClick={() => setRelojSimulacion(prev => ({ ...prev, activo: !prev.activo }))}
+            title={relojSimulacion.activo ? t('ui.pauseSimulationClock') : t('ui.startSimulationClock')}
+            aria-pressed={relojSimulacion.activo}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '26px',
+              height: '26px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: `1px solid ${relojSimulacion.activo ? 'var(--success-color)' : 'var(--border-color)'}`,
+              backgroundColor: relojSimulacion.activo ? 'var(--success-soft)' : 'var(--input-bg)',
+              color: relojSimulacion.activo ? 'var(--success-color)' : 'var(--muted-text)',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            {relojSimulacion.activo ? <Pause size={11} /> : <Play size={11} />}
+          </button>
 
+          {/* Salto +15 min y +1h */}
+          <button
+            onClick={() => avanzarTiempoSimulado(15)}
+            title={t('ui.advance15SimulatedMinutes')}
+            style={{
+              padding: '3px 7px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-color)',
+              fontSize: '0.72rem',
+              fontWeight: '600',
+              fontVariantNumeric: 'tabular-nums',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            +15m
+          </button>
+          <button
+            onClick={() => avanzarTiempoSimulado(60)}
+            title={t('ui.advance1SimulatedHour')}
+            style={{
+              padding: '3px 7px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-color)',
+              fontSize: '0.72rem',
+              fontWeight: '600',
+              fontVariantNumeric: 'tabular-nums',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            +1h
+          </button>
+
+          <button
+            onClick={abrirModalAjusteReloj}
+            title={t('ui.setTheExactDayHourMinutesAndClockSpeed')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '3px 7px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--muted-text)',
+              fontSize: '0.72rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Sliders size={11} />
+            <span>{t('common.edit', 'Ajustar')}</span>
+          </button>
+        </div>
+
+        {/* Filtro, Plantillas, Import/Export */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Filter size={11} color="var(--muted-text)" />
+            <select
+              value={filtroCategoria}
+              onChange={(e) => setFiltroCategoria(e.target.value)}
+              style={{
+                padding: '3px 7px',
+                fontSize: '0.74rem',
+                borderRadius: 'var(--border-radius, 6px)',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--input-bg)',
+                color: 'var(--text-color)',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="TODOS">{t('common.all', 'Todos')} ({eventosCrisis.length})</option>
+              <option value="CRITICA">🔴 {t('crisis.criticalShort', 'Crítico')}</option>
+              <option value="MILITAR">⚔️ {t('crisis.militaryShort', 'Militar')}</option>
+              <option value="DIPLOMATICA">🌐 {t('crisis.diplomaticShort', 'Diplomático')}</option>
+              <option value="ECONOMICA">💵 {t('crisis.economicShort', 'Económico')}</option>
+              <option value="CIBERNETICA">⚡ {t('crisis.cyberneticShort', 'Ciberseguridad')}</option>
+            </select>
+          </div>
+
+          <button
+            onClick={() => setModalPlantillas(true)}
+            title={t('ui.quickCrisisTemplates')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '3px 7px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--text-color)',
+              fontSize: '0.72rem',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            <FileText size={11} color="var(--muted-text)" />
+            <span>{t('crisis.templates', 'Plantillas')}</span>
+          </button>
+
+          <button
+            onClick={handleExportarCrisisJSON}
+            title={t('ui.exportAllCrisisAlertsToAJsonFile')}
+            style={{
+              padding: '3px 6px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--muted-text)',
+              cursor: 'pointer'
+            }}
+          >
+            <Download size={12} />
+          </button>
+          <button
+            onClick={() => jsonFileInputRef.current?.click()}
+            title={t('ui.importCrisisAlertsFromAJsonFile')}
+            style={{
+              padding: '3px 6px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--input-bg)',
+              color: 'var(--muted-text)',
+              cursor: 'pointer'
+            }}
+          >
+            <Upload size={12} />
+          </button>
+        </div>
+      </div>
 
       {/* ─── BANNER TELEVISIVO ESTILO NOTICIERO (BREAKING NEWS TICKER) ──── */}
       {eventoBannerActivo && (
         <div style={{
-          backgroundColor: '#000000',
-          borderBottom: `2px solid ${catMeta.color}`,
+          backgroundColor: 'var(--card-header-bg)',
+          border: '1px solid var(--border-color)',
+          borderLeft: `4px solid ${catMeta.color}`,
+          borderRadius: 'var(--border-radius, 6px)',
+          margin: '10px 14px 4px 14px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+          boxShadow: 'none',
           position: 'relative',
           overflow: 'hidden'
         }}>
@@ -1021,47 +1647,6 @@ const GestorCrisis = () => {
           flexDirection: 'column',
           overflow: 'hidden'
         }}>
-          {/* Barra de Filtros */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 12px',
-            backgroundColor: 'var(--panel-color)',
-            borderBottom: '1px solid var(--subborder-color)',
-            fontSize: '0.74rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Filter size={12} color="var(--muted-text)" />
-              <span style={{ fontWeight: '600', color: 'var(--muted-text)', fontSize: '0.74rem' }}>{t('common.filter', 'Filtrar')}:</span>
-              <select
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                style={{
-                  backgroundColor: 'var(--input-bg)',
-                  color: 'var(--text-color)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 'var(--border-radius, 6px)',
-                  padding: '3px 8px',
-                  fontSize: '0.72rem',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="TODOS">{t('common.all', 'Todos')} ({eventosCrisis.length})</option>
-                <option value="CRITICA">🔴 {t('crisis.criticalShort', 'Crítico')}</option>
-                <option value="MILITAR">⚔️ {t('crisis.militaryShort', 'Militar')}</option>
-                <option value="DIPLOMATICA">🌐 {t('crisis.diplomaticShort', 'Diplomático')}</option>
-                <option value="ECONOMICA">💵 {t('crisis.economicShort', 'Económico')}</option>
-                <option value="CIBERNETICA">⚡ {t('crisis.cyberneticShort', 'Ciberseguridad')}</option>
-              </select>
-            </div>
-
-            <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
-              {eventosFiltrados.length} {t('crisis.eventsRegistered', 'acontecimientos registrados')}
-            </div>
-          </div>
-
           {/* Lista de Sucesos en el Feed */}
           <div style={{
             flex: 1,
@@ -1247,400 +1832,7 @@ const GestorCrisis = () => {
         </div>
       )}
 
-      {/* ─── MODAL: EMITIR NUEVA ALERTA DE CRISIS ────────────────────────── */}
-      {modalNuevoEvento && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(6px)',
-          zIndex: 200,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '12px',
-          animation: 'fadeIn 0.2s ease'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '460px',
-            backgroundColor: 'var(--panel-color)',
-            borderRadius: '10px',
-            border: '1px solid var(--border-color)',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.35)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              backgroundColor: 'var(--card-header-bg)',
-              borderBottom: '1px solid var(--border-color)',
-              color: 'var(--text-color)',
-              fontWeight: '800',
-              fontSize: '0.88rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Megaphone size={16} />
-                <span>{t('crisis.emitAlert', 'Emitir Alerta de Crisis / Última Hora')}</span>
-              </div>
-              <button
-                onClick={() => setModalNuevoEvento(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--muted-text)',
-                  fontSize: '1.1rem',
-                  cursor: 'pointer',
-                  fontWeight: '700'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleGuardarNuevoEvento} style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Titular */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', marginBottom: '4px' }}>
-                  {t('crisis.headlineLabel', 'TITULAR DE LA NOTICIA / SUCESO *')}
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder={t('ui.eGAirStrikeOnTheEasternBorder')}
-                  value={formTitulo}
-                  onChange={(e) => setFormTitulo(e.target.value)}
-                  style={{
-                    width: '100%',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-color)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    padding: '8px 10px',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-
-              {/* Categoría y Fuente */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', marginBottom: '4px' }}>
-                    {t('crisis.categoryLabel', 'CATEGORÍA / SEVERIDAD')}
-                  </label>
-                  <select
-                    value={formCategoria}
-                    onChange={(e) => setFormCategoria(e.target.value)}
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-color)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      padding: '7px 8px',
-                      fontSize: '0.78rem',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="CRITICA">{t('crisis.critical', '🔴 Última Hora (Crítico)')}</option>
-                    <option value="MILITAR">{t('crisis.military', '⚔️ Alerta Militar / Ataque')}</option>
-                    <option value="DIPLOMATICA">{t('crisis.diplomatic', '🌐 Comunicado Diplomático')}</option>
-                    <option value="ECONOMICA">{t('crisis.economic', '💵 Colapso Financiero')}</option>
-                    <option value="CIBERNETICA">{t('crisis.cybernetic', '⚡ Ciberataque / Inteligencia')}</option>
-                  </select>
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', marginBottom: '4px' }}>
-                    {t('crisis.sourceLabel', 'FUENTE INFORMATIVA')}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t('ui.eGReutersIntelligence')}
-                    value={formFuente}
-                    onChange={(e) => setFormFuente(e.target.value)}
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-color)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      padding: '7px 8px',
-                      fontSize: '0.78rem',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Descripción detallada */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', marginBottom: '4px' }}>
-                  {t('crisis.descriptionLabel', 'DESCRIPCIÓN DEL ACONTECIMIENTO / DIRECTIVAS DE MESA')}
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder={t('ui.detailsAboutTheEventConsequencesAndCommitteeRequirements')}
-                  value={formDescripcion}
-                  onChange={(e) => setFormDescripcion(e.target.value)}
-                  style={{
-                    width: '100%',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-color)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    padding: '8px 10px',
-                    fontSize: '0.8rem',
-                    outline: 'none',
-                    resize: 'none'
-                  }}
-                />
-              </div>
-
-              {/* Imagen / Transmisión Visual de la TV */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)' }}>
-                    {t('crisis.imageLabel', 'IMAGEN PARA LA RETRANSMISIÓN DE TV (OPCIONAL)')}
-                  </label>
-                  {formImagen && (
-                    <button
-                      type="button"
-                      onClick={() => setFormImagen('')}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', fontSize: '0.68rem', fontWeight: '700', cursor: 'pointer' }}
-                    >
-                      {t('crisis.removeImage', 'Quitar imagen')}
-                    </button>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  {/* Botón Subir Archivo */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      backgroundColor: 'var(--input-bg)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      padding: '6px 10px',
-                      color: 'var(--text-color)',
-                      fontSize: '0.74rem',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      flexShrink: 0
-                    }}
-                  >
-                    <UploadCloud size={14} /> {t('crisis.uploadFile', 'Subir Imagen')}
-                  </button>
-
-                  {/* Input de URL */}
-                  <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <LinkIcon size={12} color="var(--muted-text)" style={{ position: 'absolute', left: '8px' }} />
-                    <input
-                      type="text"
-                      placeholder={t('ui.orPasteAnImageUrl')}
-                      value={formImagen.startsWith('data:') ? 'Imagen local cargada (' + Math.round(formImagen.length / 1024) + ' KB)' : formImagen}
-                      onChange={(e) => {
-                        if (!formImagen.startsWith('data:')) setFormImagen(e.target.value);
-                        else setFormImagen('');
-                      }}
-                      style={{
-                        width: '100%',
-                        backgroundColor: 'var(--card-header-bg)',
-                        color: 'var(--text-color)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '6px',
-                        padding: '6px 8px 6px 26px',
-                        fontSize: '0.76rem',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Chips de Fotos Rápidas */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '5px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--muted-text)' }}>{t('crisis.quickPhotos', 'Plantillas:')}</span>
-                  {FOTOS_PRESET.map(fp => (
-                    <button
-                      key={fp.label}
-                      type="button"
-                      onClick={() => setFormImagen(fp.url)}
-                      style={{
-                        background: formImagen === fp.url ? 'var(--accent-soft)' : 'var(--input-bg)',
-                        border: `1px solid ${formImagen === fp.url ? 'var(--accent-color)' : 'var(--border-color)'}`,
-                        borderRadius: '4px',
-                        padding: '2px 5px',
-                        fontSize: '0.65rem',
-                        color: formImagen === fp.url ? 'var(--accent-color)' : 'var(--muted-text)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {fp.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Vista previa de la imagen */}
-                {formImagen && (
-                  <div style={{
-                    marginTop: '6px',
-                    position: 'relative',
-                    width: '100%',
-                    height: '60px',
-                    borderRadius: '6px',
-                    overflow: 'hidden',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: '#000'
-                  }}>
-                    <img
-                      src={formImagen}
-                      alt={t('ui.broadcastPreview')}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '4px',
-                      left: '6px',
-                      backgroundColor: 'rgba(0,0,0,0.7)',
-                      padding: '2px 6px',
-                      borderRadius: '3px',
-                      fontSize: '0.62rem',
-                      color: '#ffffff',
-                      fontWeight: '800',
-                      letterSpacing: '0.5px'
-                    }}>
-                      {t('ui.tvBroadcastPreview')}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Selector de Países Implicados */}
-              {paises.length > 0 && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '700', color: 'var(--muted-text)', marginBottom: '4px' }}>
-                    {t('crisis.involvedCountries', 'DELEGACIONES INVOLUCRADAS')}
-                  </label>
-                  <div style={{
-                    maxHeight: '50px',
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '4px',
-                    padding: '6px',
-                    backgroundColor: 'var(--card-header-bg)',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border-color)'
-                  }}>
-                    {paises.map(p => {
-                      const sel = formPaises.includes(p.nombre);
-                      return (
-                        <button
-                          key={p.id || p.nombre}
-                          type="button"
-                          onClick={() => {
-                            setFormPaises(prev => sel ? prev.filter(x => x !== p.nombre) : [...prev, p.nombre]);
-                          }}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '3px',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            border: `1px solid ${sel ? 'var(--accent-color)' : 'var(--border-color)'}`,
-                            backgroundColor: sel ? 'var(--accent-soft)' : 'transparent',
-                            color: sel ? 'var(--accent-color)' : 'var(--muted-text)',
-                            fontSize: '0.68rem',
-                            fontWeight: sel ? '700' : '500',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <CountryFlag bandera={p.bandera} nombre={p.nombre} size="xs" />
-                          <span>{p.nombre}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Checkbox Sonido de Alarma */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                <input
-                  type="checkbox"
-                  id="chk-sound"
-                  checked={formEmitirAlerta}
-                  onChange={(e) => setFormEmitirAlerta(e.target.checked)}
-                  style={{ cursor: 'pointer' }}
-                />
-                <label htmlFor="chk-sound" style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-color)', cursor: 'pointer' }}>
-                  {t('crisis.playSoundOnPublish', 'Sonar alerta auditiva de transmisión de emergencia')}
-                </label>
-              </div>
-
-              {/* Botón de Envío */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
-                <button
-                  type="button"
-                  onClick={() => setModalNuevoEvento(false)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'transparent',
-                    color: 'var(--muted-text)',
-                    fontSize: '0.78rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {t('common.cancel', 'Cancelar')}
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    backgroundColor: 'var(--btn-bg)',
-                    color: 'var(--btn-text)',
-                    fontSize: '0.78rem',
-                    fontWeight: '650',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: 'none'
-                  }}
-                >
-                  <Send size={14} />
-                  <span>{t('crisis.publishImmediate', 'Publicar Alerta Inmediata')}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        </>
       )}
 
       {/* ─── MODAL: PLANTILLAS RÁPIDAS DE CRISIS ─────────────────────────── */}
@@ -1651,8 +1843,8 @@ const GestorCrisis = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(6px)',
+          backgroundColor: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(4px)',
           zIndex: 200,
           display: 'flex',
           alignItems: 'center',
@@ -1765,8 +1957,8 @@ const GestorCrisis = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.85)',
-          backdropFilter: 'blur(6px)',
+          backgroundColor: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(4px)',
           zIndex: 250,
           display: 'flex',
           alignItems: 'center',

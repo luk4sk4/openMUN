@@ -24,6 +24,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAccessibility } from '../../context/AccessibilityContext';
 import worldSvgUrl from '../../assets/world.svg';
 
 // Generador de fondos SVG predefinidos para renderizado vectorial nítido
@@ -120,13 +121,14 @@ const BRUSH_SIZES = [
 
 const PizarraInteractiva = () => {
   const { t } = useTranslation();
+  const { isLight } = useAccessibility();
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // Estados de Herramienta
   const [tool, setTool] = useState('pen'); // 'pen' | 'highlighter' | 'eraser' | 'arrow' | 'circle' | 'text'
-  const [color, setColor] = useState('#ef4444');
+  const [color, setColor] = useState('#b45432');
   const [brushSize, setBrushSize] = useState(5);
   const [bgType, setBgType] = useState('world_map');
   const [customBgUrl, setCustomBgUrl] = useState(null);
@@ -191,7 +193,7 @@ const PizarraInteractiva = () => {
     if (bgImageRef.current) {
       ctx.drawImage(bgImageRef.current, 0, 0, canvas.width, canvas.height);
     } else {
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = isLight ? '#f2efe9' : '#222222';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
@@ -531,7 +533,7 @@ const PizarraInteractiva = () => {
             title={t('ui.pencilBrush')}
           >
             <Pen size={14} />
-            <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.pen', 'Lápiz')}</span>
+            
           </button>
 
           <button
@@ -554,7 +556,7 @@ const PizarraInteractiva = () => {
             title={t('ui.translucentHighlighter')}
           >
             <Highlighter size={14} />
-            <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.highlighter', 'Resaltador')}</span>
+            
           </button>
 
           <button
@@ -577,7 +579,7 @@ const PizarraInteractiva = () => {
             title={t('ui.tacticalArrow')}
           >
             <MoveRight size={14} />
-            <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.arrow', 'Flecha')}</span>
+            
           </button>
 
           <button
@@ -600,7 +602,7 @@ const PizarraInteractiva = () => {
             title={t('ui.tacticalZoneCircle')}
           >
             <Circle size={14} />
-            <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.zone', 'Zona')}</span>
+            
           </button>
 
           <button
@@ -623,7 +625,7 @@ const PizarraInteractiva = () => {
             title={t('ui.addText')}
           >
             <Type size={14} />
-            <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.text', 'Texto')}</span>
+            
           </button>
 
           <button
@@ -646,7 +648,7 @@ const PizarraInteractiva = () => {
             title={t('whiteboard.eraser')}
           >
             <Eraser size={14} />
-            <span style={{ display: 'none', md: 'inline' }}>{t('whiteboard.eraser', 'Borrador')}</span>
+            
           </button>
         </div>
 
@@ -866,7 +868,7 @@ const PizarraInteractiva = () => {
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
-          backgroundColor: '#020617',
+          backgroundColor: isLight ? '#f2efe9' : '#222222',
           cursor:
             tool === 'eraser'
               ? 'crosshair'

@@ -1,5 +1,6 @@
 import i18n from '../../../languages/index.js';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../../context/ConfirmContext';
 import React, { useState, useRef, memo } from 'react';
 import {
   Edit3,
@@ -32,6 +33,7 @@ const ArticuloItem = memo(({
   isLight = false
 }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [isEditing, setIsEditing] = useState(false);
   const [editPrefijo, setEditPrefijo] = useState(art.prefijo || '');
   const [editTexto, setEditTexto] = useState(art.texto || '');
@@ -184,8 +186,15 @@ const ArticuloItem = memo(({
 
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm(t('ui.deleteThisClauseFromTheResolution'))) {
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: t('ui.deleteClause', 'Eliminar cláusula'),
+                    message: t('ui.deleteThisClauseFromTheResolution'),
+                    confirmText: t('common.delete', 'Eliminar'),
+                    cancelText: t('common.cancel', 'Cancelar'),
+                    type: 'danger'
+                  });
+                  if (ok) {
                     onEliminarArticulo && onEliminarArticulo(art.id);
                   }
                 }}

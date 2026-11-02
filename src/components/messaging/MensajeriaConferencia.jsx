@@ -19,6 +19,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import conferenceService from '../../services/conferenceService';
 import {
   obtenerOpcionesDestino,
@@ -92,6 +93,7 @@ const MensajeriaConferencia = ({
   onAvisoEmitido
 }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
 
   // Conferencia ID activa
   const cleanConfId = useMemo(() => {
@@ -401,16 +403,20 @@ const MensajeriaConferencia = ({
 
   // Borrar aviso para toda la conferencia (solo emisor o secretaría/admin)
   const handleBorrarAviso = async (avisoId) => {
-    const confirmacion = window.confirm(
-      t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?')
-    );
+    const confirmacion = await confirm({
+      title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+      message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?'),
+      confirmText: t('common.delete', 'Eliminar'),
+      cancelText: t('common.cancel', 'Cancelar'),
+      type: 'danger'
+    });
     if (!confirmacion) return;
 
     try {
       await conferenceService.desactivarAviso(avisoId, cleanConfId);
       setAvisos(prev => prev.filter(a => String(a.id) !== String(avisoId)));
     } catch (err) {
-      alert(t('common.error', 'Error al borrar aviso: ') + err.message);
+      confirm.alert(t('common.error', 'Error al borrar aviso: ') + err.message);
     }
   };
 

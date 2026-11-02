@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import {
   procesarImagenBandera,
   normalizarBandera
@@ -40,6 +41,7 @@ const PAISES_POPULARES_ISO = [
 
 const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [nombre, setNombre] = useState('');
   const [bandera, setBandera] = useState('');
   const [veto, setVeto] = useState(false);
@@ -579,8 +581,15 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
             {onEliminar ? (
               <button
                 type="button"
-                onClick={() => {
-                  if (confirm(t('editCountry.confirmDelete', { name: nombre, defaultValue: `¿Eliminar definitivamente la delegación de "${nombre}" del comité?` }))) {
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: t('editCountry.deleteTitle', 'Eliminar delegación'),
+                    message: t('editCountry.confirmDelete', { name: nombre, defaultValue: `¿Eliminar definitivamente la delegación de "${nombre}" del comité?` }),
+                    confirmText: t('common.delete', 'Eliminar'),
+                    cancelText: t('common.cancel', 'Cancelar'),
+                    type: 'danger'
+                  });
+                  if (ok) {
                     onEliminar(pais.id);
                     onClose();
                   }

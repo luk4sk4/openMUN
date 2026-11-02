@@ -27,36 +27,41 @@ const CATEGORIAS = {
   CRITICA: {
     get nombre() { return i18n.t('ui.breakingNews'); },
     get badge() { return i18n.t('ui.breakingNews2'); },
-    color: '#ef4444',
-    bg: '#b91c1c',
+    color: 'var(--danger-color)',
+    bg: 'var(--danger-soft)',
+    border: 'var(--danger-color)',
     icon: Flame
   },
   MILITAR: {
     get nombre() { return i18n.t('ui.militaryAlert'); },
     get badge() { return i18n.t('ui.militaryAlert2'); },
-    color: '#f97316',
-    bg: '#c2410c',
+    color: 'var(--warning-color)',
+    bg: 'var(--warning-soft)',
+    border: 'var(--warning-color)',
     icon: ShieldAlert
   },
   DIPLOMATICA: {
     get nombre() { return i18n.t('ui.announcement2'); },
     get badge() { return i18n.t('ui.diplomaticAnnouncement'); },
-    color: '#3b82f6',
-    bg: '#1d4ed8',
+    color: 'var(--info-color)',
+    bg: 'var(--info-soft)',
+    border: 'var(--info-color)',
     icon: Megaphone
   },
   ECONOMICA: {
     get nombre() { return i18n.t('ui.financialCrisis'); },
     get badge() { return i18n.t('ui.economicImpact'); },
-    color: '#a855f7',
-    bg: '#7e22ce',
+    color: 'var(--accent-color)',
+    bg: 'var(--accent-soft)',
+    border: 'var(--accent-color)',
     icon: TrendingUp
   },
   CIBERNETICA: {
     get nombre() { return i18n.t('ui.cyberattack'); },
     get badge() { return i18n.t('ui.leakCyber'); },
-    color: '#10b981',
-    bg: '#047857',
+    color: 'var(--success-color)',
+    bg: 'var(--success-soft)',
+    border: 'var(--success-color)',
     icon: Zap
   }
 };
@@ -147,10 +152,11 @@ const PermanentCrisisBanner = ({ isLight }) => {
   return (
     <div style={{
       width: '100%',
-      backgroundColor: '#0a0d14',
-      borderBottom: `2px solid ${catMeta.color}`,
-      boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-      color: '#ffffff',
+      backgroundColor: 'var(--card-header-bg)',
+      borderBottom: '1px solid var(--border-color)',
+      borderLeft: `4px solid ${catMeta.color}`,
+      boxShadow: 'none',
+      color: 'var(--text-color)',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
@@ -173,14 +179,14 @@ const PermanentCrisisBanner = ({ isLight }) => {
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            backgroundColor: catMeta.color,
-            color: '#ffffff',
+            backgroundColor: catMeta.bg,
+            color: catMeta.color,
+            border: `1px solid ${catMeta.border}`,
             padding: '2px 8px',
-            borderRadius: '4px',
+            borderRadius: 'var(--border-radius, 6px)',
             fontSize: '0.68rem',
-            fontWeight: '900',
-            letterSpacing: '0.6px',
-            boxShadow: `0 0 10px ${catMeta.color}88`
+            fontWeight: '750',
+            letterSpacing: '0.04em'
           }}>
             <Radio size={11} style={{ animation: 'pulse 1.2s infinite' }} />
             <span>{catMeta.badge}</span>
@@ -190,14 +196,16 @@ const PermanentCrisisBanner = ({ isLight }) => {
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
-            backgroundColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: 'var(--input-bg)',
+            border: '1px solid var(--border-color)',
             padding: '2px 6px',
-            borderRadius: '4px',
-            fontSize: '0.66rem',
-            color: '#cbd5e1',
-            fontWeight: '700'
+            borderRadius: 'var(--border-radius, 6px)',
+            fontSize: '0.68rem',
+            color: 'var(--text-color)',
+            fontWeight: '600',
+            fontVariantNumeric: 'tabular-nums'
           }}>
-            <Clock size={10} color="#60a5fa" />
+            <Clock size={11} style={{ color: 'var(--accent-color)' }} />
             <span>{formatoHora}</span>
           </div>
         </div>
@@ -214,7 +222,7 @@ const PermanentCrisisBanner = ({ isLight }) => {
           <span style={{
             fontSize: '0.84rem',
             fontWeight: '800',
-            color: '#ffffff',
+            color: 'var(--text-color)',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}>
@@ -222,7 +230,7 @@ const PermanentCrisisBanner = ({ isLight }) => {
           </span>
 
           {eventoCrisis.fuente && (
-            <span style={{ fontSize: '0.68rem', color: '#94a3b8', opacity: 0.8, flexShrink: 0 }}>
+            <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)', flexShrink: 0 }}>
               ({t('crisis.source', 'Fuente')}: {eventoCrisis.fuente})
             </span>
           )}
@@ -243,12 +251,13 @@ const PermanentCrisisBanner = ({ isLight }) => {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '3px',
-                      backgroundColor: 'rgba(255,255,255,0.1)',
-                      padding: '2px 5px',
-                      borderRadius: '3px',
-                      border: '1px solid rgba(255,255,255,0.15)',
+                      backgroundColor: 'var(--input-bg)',
+                      padding: '2px 6px',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      border: '1px solid var(--border-color)',
                       fontSize: '0.68rem',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      color: 'var(--text-color)'
                     }}
                   >
                     <CountryFlag bandera={pObj.bandera} nombre={pObj.nombre} size="xs" />
@@ -272,12 +281,12 @@ const PermanentCrisisBanner = ({ isLight }) => {
               display: 'flex',
               alignItems: 'center',
               gap: '3px',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '4px',
-              color: '#e2e8f0',
-              padding: '2px 6px',
-              fontSize: '0.68rem',
+              backgroundColor: 'var(--input-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              color: 'var(--text-color)',
+              padding: '3px 8px',
+              fontSize: '0.7rem',
               fontWeight: '600',
               cursor: 'pointer'
             }}
@@ -296,7 +305,7 @@ const PermanentCrisisBanner = ({ isLight }) => {
               justifyContent: 'center',
               background: 'transparent',
               border: 'none',
-              color: '#94a3b8',
+              color: 'var(--muted-text)',
               cursor: 'pointer',
               padding: '2px',
               borderRadius: '4px'
@@ -312,12 +321,12 @@ const PermanentCrisisBanner = ({ isLight }) => {
       {/* ─── DETALLES EXPANDIDOS (MODO EXPANDIDO) ────────────────────────── */}
       {modoExpandido && (
         <div style={{
-          padding: '8px 16px 10px',
-          backgroundColor: '#07090f',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '10px 16px',
+          backgroundColor: 'var(--panel-color)',
+          borderTop: '1px solid var(--subborder-color)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px',
+          gap: '8px',
           animation: 'fadeIn 0.2s ease'
         }}>
           <div style={{
@@ -345,11 +354,12 @@ const PermanentCrisisBanner = ({ isLight }) => {
             <div style={{
               flex: 1,
               fontSize: '0.82rem',
-              color: '#e2e8f0',
+              color: 'var(--text-color)',
               lineHeight: '1.45',
-              backgroundColor: 'rgba(255,255,255,0.03)',
-              padding: '6px 10px',
-              borderRadius: '6px',
+              backgroundColor: 'var(--card-header-bg)',
+              padding: '8px 12px',
+              borderRadius: 'var(--border-radius, 6px)',
+              border: '1px solid var(--border-color)',
               borderLeft: `3px solid ${catMeta.color}`
             }}>
               {eventoCrisis.descripcion}
@@ -358,7 +368,7 @@ const PermanentCrisisBanner = ({ isLight }) => {
 
           {eventoCrisis.paisesInvolucrados && eventoCrisis.paisesInvolucrados.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
-              <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#94a3b8' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: '800', color: 'var(--muted-text)' }}>
                 {t('crisis.involvedDelegationsUpper', 'TODAS LAS DELEGACIONES IMPLICADAS')}:
               </span>
               {eventoCrisis.paisesInvolucrados.map(nP => {
@@ -370,12 +380,13 @@ const PermanentCrisisBanner = ({ isLight }) => {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
-                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      backgroundColor: 'var(--input-bg)',
                       padding: '2px 6px',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 'var(--border-radius, 6px)',
+                      border: '1px solid var(--border-color)',
                       fontSize: '0.7rem',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      color: 'var(--text-color)'
                     }}
                   >
                     <CountryFlag bandera={pObj.bandera} nombre={pObj.nombre} size="xs" />

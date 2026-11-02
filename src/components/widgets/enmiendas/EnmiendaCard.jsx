@@ -1,5 +1,6 @@
 import i18n from '../../../languages/index.js';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../../context/ConfirmContext';
 import React, { useState, memo } from 'react';
 import {
   FilePlus,
@@ -30,6 +31,7 @@ const EnmiendaCard = memo(({
   onEliminar
 }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [mostrarPreviewContexto, setMostrarPreviewContexto] = useState(false);
 
   const paisObj = (paises || []).find(
@@ -421,8 +423,15 @@ const EnmiendaCard = memo(({
           )}
 
           <button
-            onClick={() => {
-              if (window.confirm(t('ui.deleteThisAmendmentFromTheSession'))) {
+            onClick={async () => {
+              const ok = await confirm({
+                title: t('ui.deleteAmendment', 'Eliminar enmienda'),
+                message: t('ui.deleteThisAmendmentFromTheSession'),
+                confirmText: t('common.delete', 'Eliminar'),
+                cancelText: t('common.cancel', 'Cancelar'),
+                type: 'danger'
+              });
+              if (ok) {
                 onEliminar && onEliminar(enm.id);
               }
             }}

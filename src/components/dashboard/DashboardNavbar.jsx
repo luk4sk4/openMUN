@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Radio, Moon, Sun, Maximize2, Eye, Search, Megaphone, LayoutGrid, ToggleLeft, ToggleRight, Menu, Building2 } from 'lucide-react';
+import { Radio, Moon, Sun, Maximize2, Eye, Search, Megaphone, LayoutGrid, ToggleLeft, ToggleRight, Menu, Building2, MessageSquare, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
@@ -31,7 +31,8 @@ const DashboardNavbar = ({
   openLiveModal,
   connectionStatus,
   connectedPeers,
-  speakingRequests,
+  speakingRequests = [],
+  enmiendasPropuestas = [],
   roomSettings,
   roomId,
   unreadNotesCount = 0,
@@ -62,6 +63,7 @@ const DashboardNavbar = ({
 
 
   const isLiveActive = connectionStatus === 'host_active';
+  const totalSolicitudes = (speakingRequests?.length || 0) + (enmiendasPropuestas?.length || 0);
 
   // Cerrar el panel al cambiar de pestaña
   useEffect(() => {
@@ -186,6 +188,27 @@ const DashboardNavbar = ({
           <button onClick={() => { setIsToolsOpen(false); openAvisosModal(); }} title={t('avisos.navTitle', 'Mensajería y avisos')}>
             <Megaphone size={16} /><span>{t('header.announcements', 'Mensajería')}</span>
             {unreadNotesCount > 0 && <b className="dashboard-unread">{unreadNotesCount}</b>}
+          </button>
+          <button
+            onClick={() => {
+              setIsToolsOpen(false);
+              openLiveModal('SOLICITUDES');
+            }}
+            title={t('header.requestsTooltip', 'Solicitudes de delegaciones y mociones pendientes')}
+          >
+            <MessageSquare size={16} /><span>{t('header.requests', 'Solicitudes')}</span>
+            {totalSolicitudes > 0 && <b className="dashboard-unread">{totalSolicitudes}</b>}
+          </button>
+          <button
+            onClick={() => {
+              setIsToolsOpen(false);
+              if (typeof window !== 'undefined') {
+                window.open(`${window.location.origin}${window.location.pathname}?mode=secretariat&local=true`, '_blank');
+              }
+            }}
+            title={t('header.localSecretariatTooltip', 'Abrir Secretaría Local en una nueva pestaña (segunda pantalla o pajes)')}
+          >
+            <Layers size={16} /><span>{t('header.localSecretariat', 'Secretaría Local')}</span>
           </button>
           <SessionMenuDropdown
             placement="sidebar"

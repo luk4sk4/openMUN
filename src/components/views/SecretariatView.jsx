@@ -46,6 +46,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import CountryFlag from '../common/CountryFlag';
 import SpeakerNotesPanel from '../common/SpeakerNotesPanel';
 import { getCurrentSpeaker } from '../../utils/speakerNotes';
@@ -76,6 +77,7 @@ import ConsoleNavbar from '../dashboard/ConsoleNavbar';
 
 const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { isLight: contextIsLight, toggleThemeMode } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
@@ -194,7 +196,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   }, [registerSessionHandlers, aplicarEstadoExterno, ejecutarAccion]);
 
   const [activeTab, setActiveTab] = useState('NOTAS'); // 'NOTAS' | 'AVISOS' | 'SOLICITUDES' | 'DEBATE' | 'VOTACION' | 'INFO' | 'CRISIS' | 'AJUSTES' | 'CONEXIONES'
-  const [subTabNotas, setSubTabNotas] = useState('COMITE'); // 'COMITE' | 'CONFERENCIA'
+  const [subTabNotas, setSubTabNotas] = useState('COMITE'); // 'COMITE' | 'ORADOR' | 'CONFERENCIA'
   const [subTabInfo, setSubTabInfo] = useState('MATRIZ'); // 'MATRIZ' | 'ANADIR' | 'HISTORICO' | 'AGENDA' | 'IMPORTAR' | 'MOCIONES' | 'RULETA'
   const [subTabVotacion, setSubTabVotacion] = useState('OFICIAL'); // 'OFICIAL' | 'MAPA'
   const [subTabDebate, setSubTabDebate] = useState('MONITOR'); // 'MONITOR' | 'ANADIR'
@@ -421,7 +423,6 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
       {/* ── Contenido Principal de Secretaría ── */}
       <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
-        <SpeakerNotesPanel orador={oradorActual} modalidad={caucusActivo.activo ? caucusActivo.tipo || 'Caucus' : 'GSL'} tema={temaActual} notes={notes} sendNote={sendNote} />
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA: CRISIS & NOTICIERO                             */}
         {/* ═══════════════════════════════════════════════════════ */}
@@ -687,8 +688,15 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             <button
-                              onClick={() => {
-                                if (window.confirm(t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'))) {
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+                                  message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas eliminar este aviso?'),
+                                  confirmText: t('common.delete', 'Eliminar'),
+                                  cancelText: t('common.cancel', 'Cancelar'),
+                                  type: 'danger'
+                                });
+                                if (ok) {
                                   deleteAnnouncement(ann.id);
                                 }
                               }}
@@ -757,112 +765,172 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA 1: MENSAJERÍA Y NOTAS (COMITÉ Y CONFERENCIA)     */}
         {/* ═══════════════════════════════════════════════════════ */}
-        {activeTab === 'NOTAS' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
-            {/* Sub-pestañas: Comité vs Conferencia */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '12px',
-              padding: '0.45rem 0.75rem',
-              flexWrap: 'wrap',
-              gap: '0.6rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setSubTabNotas('COMITE')}
-                  style={{
-                    backgroundColor: subTabNotas === 'COMITE' ? 'var(--btn-bg)' : 'transparent',
-                    color: subTabNotas === 'COMITE' ? 'var(--btn-text)' : 'var(--muted-text)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.5rem 0.95rem',
-                    fontSize: '0.84rem',
-                    fontWeight: '800',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <MessageSquare size={15} />
-                  <span>{t('ui.committeeNotes')}</span>
-                  <span style={{
-                    fontSize: '0.72rem',
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '10px',
-                    backgroundColor: subTabNotas === 'COMITE' ? 'rgba(255,255,255,0.22)' : 'var(--card-header-bg)',
-                    color: subTabNotas === 'COMITE' ? '#ffffff' : 'var(--text-color)',
-                    fontWeight: '800'
-                  }}>
-                    {notes.length}
-                  </span>
-                </button>
+        {activeTab === 'NOTAS' && (() => {
+          const comiteNotesCount = notes.filter(n => n.type !== 'speaker_annotation').length;
+          const speakerNotesCount = notes.filter(n => n.type === 'speaker_annotation' && n.to === 'CHAIR').length;
 
-                <button
-                  type="button"
-                  onClick={() => setSubTabNotas('CONFERENCIA')}
-                  style={{
-                    backgroundColor: subTabNotas === 'CONFERENCIA' ? '#3b82f6' : 'transparent',
-                    color: subTabNotas === 'CONFERENCIA' ? '#ffffff' : 'var(--muted-text)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.5rem 0.95rem',
-                    fontSize: '0.84rem',
-                    fontWeight: '800',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <Globe size={15} />
-                  <span>{t('ui.conferenceAnnouncements')}</span>
-                  {avisosDB.length > 0 && (
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+              {/* Sub-pestañas: Comité vs Orador vs Conferencia */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: 'var(--panel-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px',
+                padding: '0.45rem 0.75rem',
+                flexWrap: 'wrap',
+                gap: '0.6rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSubTabNotas('COMITE')}
+                    style={{
+                      backgroundColor: subTabNotas === 'COMITE' ? 'var(--btn-bg)' : 'transparent',
+                      color: subTabNotas === 'COMITE' ? 'var(--btn-text)' : 'var(--muted-text)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.5rem 0.95rem',
+                      fontSize: '0.84rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <MessageSquare size={15} />
+                    <span>{t('ui.committeeNotes')}</span>
                     <span style={{
                       fontSize: '0.72rem',
                       padding: '0.1rem 0.45rem',
                       borderRadius: '10px',
-                      backgroundColor: subTabNotas === 'CONFERENCIA' ? 'rgba(255,255,255,0.25)' : 'rgba(59, 130, 246, 0.15)',
-                      color: subTabNotas === 'CONFERENCIA' ? '#ffffff' : '#60a5fa',
+                      backgroundColor: subTabNotas === 'COMITE' ? 'rgba(255,255,255,0.22)' : 'var(--card-header-bg)',
+                      color: subTabNotas === 'COMITE' ? '#ffffff' : 'var(--text-color)',
                       fontWeight: '800'
                     }}>
-                      {avisosDB.length}
+                      {comiteNotesCount}
                     </span>
-                  )}
-                </button>
-              </div>
-            </div>
+                  </button>
 
-            {subTabNotas === 'COMITE' ? (
-              <MensajeriaComite
-                currentRole="secretariat"
-                currentComiteId={currentComiteId}
-                currentComiteNombre={nombreComite}
-                paises={paises}
-                layout="split"
-                showHeader={false}
-              />
-            ) : (
-              <MensajeriaConferencia
-                currentRole="secretariat"
-                conferenciaId={confActiva?.id || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null)}
-                currentComiteId={currentComiteId}
-                currentComiteNombre={nombreComite}
-                comites={comitesConf}
-                initialAvisos={avisosDB}
-                layout="split"
-                showHeader={false}
-              />
-            )}
-          </div>
-        )}
+                  <button
+                    type="button"
+                    onClick={() => setSubTabNotas('ORADOR')}
+                    style={{
+                      backgroundColor: subTabNotas === 'ORADOR' ? 'var(--btn-bg)' : 'transparent',
+                      color: subTabNotas === 'ORADOR' ? 'var(--btn-text)' : 'var(--muted-text)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.5rem 0.95rem',
+                      fontSize: '0.84rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <FileText size={15} />
+                    <span>{t('speakerNotes.tabTitle', 'Notas de orador')}</span>
+                    <span style={{
+                      fontSize: '0.72rem',
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '10px',
+                      backgroundColor: subTabNotas === 'ORADOR' ? 'rgba(255,255,255,0.22)' : 'var(--card-header-bg)',
+                      color: subTabNotas === 'ORADOR' ? '#ffffff' : 'var(--text-color)',
+                      fontWeight: '800'
+                    }}>
+                      {speakerNotesCount}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSubTabNotas('CONFERENCIA')}
+                    style={{
+                      backgroundColor: subTabNotas === 'CONFERENCIA' ? 'var(--btn-bg)' : 'transparent',
+                      color: subTabNotas === 'CONFERENCIA' ? 'var(--btn-text)' : 'var(--muted-text)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.5rem 0.95rem',
+                      fontSize: '0.84rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Globe size={15} />
+                    <span>{t('ui.conferenceAnnouncements')}</span>
+                    {avisosDB.length > 0 && (
+                      <span style={{
+                        fontSize: '0.72rem',
+                        padding: '0.1rem 0.45rem',
+                        borderRadius: '10px',
+                        backgroundColor: subTabNotas === 'CONFERENCIA' ? 'rgba(255,255,255,0.25)' : 'var(--card-header-bg)',
+                        color: subTabNotas === 'CONFERENCIA' ? '#ffffff' : 'var(--text-color)',
+                        fontWeight: '800'
+                      }}>
+                        {avisosDB.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {subTabNotas === 'COMITE' && (
+                <MensajeriaComite
+                  currentRole="secretariat"
+                  currentComiteId={currentComiteId}
+                  currentComiteNombre={nombreComite}
+                  paises={paises}
+                  layout="split"
+                  showHeader={false}
+                />
+              )}
+
+              {subTabNotas === 'ORADOR' && (
+                <div style={{
+                  backgroundColor: 'var(--panel-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  maxWidth: '900px',
+                  width: '100%',
+                  margin: '0 auto',
+                  boxSizing: 'border-box'
+                }}>
+                  <SpeakerNotesPanel
+                    orador={oradorActual}
+                    modalidad={caucusActivo.activo ? caucusActivo.tipo || 'Caucus' : 'GSL'}
+                    tema={temaActual}
+                    notes={notes}
+                    sendNote={sendNote}
+                  />
+                </div>
+              )}
+
+              {subTabNotas === 'CONFERENCIA' && (
+                <MensajeriaConferencia
+                  currentRole="secretariat"
+                  conferenciaId={confActiva?.id || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null)}
+                  currentComiteId={currentComiteId}
+                  currentComiteNombre={nombreComite}
+                  comites={comitesConf}
+                  initialAvisos={avisosDB}
+                  layout="split"
+                  showHeader={false}
+                />
+              )}
+            </div>
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════════════════ */}
         {activeTab === 'SOLICITUDES' && (() => {
@@ -2038,8 +2106,15 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                       </span>
 
                       <button
-                        onClick={() => {
-                          if (confirm(t('ui.removeFromTheSession', { v0: peer.country || peer.peerId }))) {
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: t('ui.disconnect', 'Desconectar'),
+                            message: t('ui.removeFromTheSession', { v0: peer.country || peer.peerId }),
+                            confirmText: t('ui.disconnect', 'Desconectar'),
+                            cancelText: t('common.cancel', 'Cancelar'),
+                            type: 'danger'
+                          });
+                          if (ok) {
                             kickPeer(peer.peerId);
                           }
                         }}

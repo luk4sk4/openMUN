@@ -1,7 +1,17 @@
-import React from 'react';
-import { AlertTriangle, Download, Trash2, HelpCircle, X } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { AlertTriangle, Download, Trash2, HelpCircle, X, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+/**
+ * ConfirmModal
+ * Modal de confirmación y alerta alineado estrictamente con el sistema de diseño OpenMUN (/openmun-design).
+ *
+ * Utiliza los tokens del AccessibilityContext:
+ * - Superficie: var(--panel-color)
+ * - Bordes: var(--border-color) y var(--border-radius, 6px)
+ * - Botones: var(--btn-bg) / var(--danger-solid) / var(--warning-solid)
+ * - Tipografía: var(--font-family)
+ */
 const ConfirmModal = ({
   isOpen,
   onClose,
@@ -13,103 +23,107 @@ const ConfirmModal = ({
   confirmText,
   cancelText,
   type = 'info', // 'info' | 'load' | 'danger' | 'warning'
+  isAlert = false,
   loading = false
 }) => {
   const { t } = useTranslation();
+  const confirmBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Manejar tecla Escape para cerrar
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !loading) {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Auto-focus en el botón de confirmación
+    const timer = setTimeout(() => {
+      confirmBtnRef.current?.focus?.();
+    }, 50);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [isOpen, loading, onClose]);
+
   if (!isOpen) return null;
 
-  const displayTitle = title || t('common.areYouSure', '¿Estás seguro?');
+  const displayTitle = title || (isAlert ? t('common.notice', 'Aviso') : t('common.areYouSure', '¿Estás seguro?'));
   const displayConfirmText = confirmText || t('common.confirm', 'Aceptar');
+  const showCancel = !isAlert && cancelText !== null && cancelText !== false;
   const displayCancelText = cancelText || t('common.cancel', 'Cancelar');
 
   const isDanger = type === 'danger';
-  const isLoad = type === 'load';
 
   const iconConfig = {
     danger: {
       Icon: Trash2,
-      bg: 'rgba(239, 68, 68, 0.15)',
-      border: 'rgba(239, 68, 68, 0.35)',
-      color: '#ef4444',
-      btnBg: '#dc2626',
-      btnHover: '#b91c1c'
+      bg: 'var(--danger-soft)',
+      border: 'var(--danger-color)',
+      color: 'var(--danger-color)',
+      btnBg: 'var(--danger-solid, #a95449)',
+      btnText: '#ffffff'
     },
     load: {
       Icon: Download,
-      bg: 'rgba(59, 130, 246, 0.15)',
-      border: 'rgba(59, 130, 246, 0.35)',
-      color: '#3b82f6',
-      btnBg: '#2563eb',
-      btnHover: '#1d4ed8'
+      bg: 'var(--accent-soft)',
+      border: 'var(--accent-color)',
+      color: 'var(--accent-color)',
+      btnBg: 'var(--btn-bg)',
+      btnText: 'var(--btn-text, #ffffff)'
     },
     warning: {
       Icon: AlertTriangle,
-      bg: 'rgba(245, 158, 11, 0.15)',
-      border: 'rgba(245, 158, 11, 0.35)',
-      color: '#f59e0b',
-      btnBg: '#d97706',
-      btnHover: '#b45309'
+      bg: 'var(--warning-soft)',
+      border: 'var(--warning-color)',
+      color: 'var(--warning-color)',
+      btnBg: 'var(--warning-solid, #7a591e)',
+      btnText: '#ffffff'
     },
     info: {
       Icon: HelpCircle,
-      bg: 'rgba(99, 102, 241, 0.15)',
-      border: 'rgba(99, 102, 241, 0.35)',
-      color: '#6366f1',
-      btnBg: '#4f46e5',
-      btnHover: '#4338ca'
+      bg: 'var(--accent-soft)',
+      border: 'var(--accent-color)',
+      color: 'var(--accent-color)',
+      btnBg: 'var(--btn-bg)',
+      btnText: 'var(--btn-text, #ffffff)'
     }
   }[type] || {
     Icon: HelpCircle,
-    bg: 'rgba(99, 102, 241, 0.15)',
-    border: 'rgba(99, 102, 241, 0.35)',
-    color: '#6366f1',
-    btnBg: '#4f46e5',
-    btnHover: '#4338ca'
+    bg: 'var(--accent-soft)',
+    border: 'var(--accent-color)',
+    color: 'var(--accent-color)',
+    btnBg: 'var(--btn-bg)',
+    btnText: 'var(--btn-text, #ffffff)'
   };
 
-  const { Icon, bg, border, color, btnBg } = iconConfig;
+  const { Icon, bg, border, color, btnBg, btnText } = iconConfig;
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(5px)',
-        zIndex: 10000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        animation: 'fadeIn 0.15s ease'
-      }}
-      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-modal-title"
+      aria-describedby="confirm-modal-desc"
+      className="openmun-confirm-overlay"
+      onClick={!loading ? onClose : undefined}
     >
       <div
-        style={{
-          backgroundColor: 'var(--card-bg, #161a23)',
-          border: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.12))',
-          borderRadius: '14px',
-          width: '100%',
-          maxWidth: '430px',
-          padding: '1.4rem',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.05)',
-          color: 'var(--text-color, #ffffff)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          transform: 'scale(1)',
-          animation: 'modalPop 0.15s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
+        className="openmun-confirm-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Encabezado con Icono */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
           <div
             style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '10px',
+              width: '38px',
+              height: '38px',
+              borderRadius: 'var(--border-radius, 6px)',
               backgroundColor: bg,
               border: `1px solid ${border}`,
               color: color,
@@ -119,53 +133,77 @@ const ConfirmModal = ({
               flexShrink: 0
             }}
           >
-            <Icon size={22} />
+            <Icon size={20} />
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: '700' }}>
+            <h3
+              id="confirm-modal-title"
+              style={{
+                margin: '0 0 0.25rem 0',
+                fontSize: '0.96rem',
+                fontWeight: '650',
+                color: 'var(--text-color)'
+              }}
+            >
               {displayTitle}
             </h3>
-            <div style={{ fontSize: '0.82rem', color: 'var(--muted-text, #94a3b8)', lineHeight: 1.45 }}>
+            <div
+              id="confirm-modal-desc"
+              style={{
+                fontSize: '0.82rem',
+                color: 'var(--muted-text, #b9b9b9)',
+                lineHeight: 1.45,
+                wordBreak: 'break-word'
+              }}
+            >
               {message}
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
+            disabled={loading}
+            aria-label={t('common.close', 'Cerrar')}
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--muted-text, #94a3b8)',
-              cursor: 'pointer',
+              color: 'var(--muted-text)',
+              cursor: loading ? 'default' : 'pointer',
               padding: '4px',
-              borderRadius: '4px',
+              borderRadius: 'var(--border-radius, 6px)',
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: loading ? 0.5 : 0.85,
+              transition: 'opacity 0.15s ease'
             }}
           >
             <X size={16} />
           </button>
         </div>
 
-        {/* Destacado de Archivo o Elemento */}
+        {/* Destacado opcional */}
         {highlightText && (
           <div
             style={{
-              backgroundColor: 'var(--card-sub-bg, rgba(255, 255, 255, 0.04))',
-              border: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.08))',
-              borderRadius: '8px',
-              padding: '0.65rem 0.85rem',
-              fontSize: '0.82rem',
+              backgroundColor: 'var(--input-bg, rgba(255, 255, 255, 0.05))',
+              border: '1px solid var(--subborder-color)',
+              borderRadius: 'var(--border-radius, 6px)',
+              padding: '0.6rem 0.8rem',
+              fontSize: '0.8rem',
               fontWeight: '600',
-              color: 'var(--text-color, #ffffff)',
+              color: 'var(--text-color)',
               wordBreak: 'break-all',
               display: 'flex',
               alignItems: 'center',
               gap: '0.45rem'
             }}
           >
-            <span style={{ opacity: 0.6, fontSize: '0.75rem', fontWeight: 'normal' }}>{t('common.file', 'Archivo')}:</span>
+            <span style={{ opacity: 0.65, fontSize: '0.74rem', fontWeight: 'normal' }}>
+              {t('common.file', 'Archivo')}:
+            </span>
             <span>{highlightText}</span>
           </div>
         )}
@@ -175,11 +213,12 @@ const ConfirmModal = ({
           <div
             style={{
               fontSize: '0.74rem',
-              color: isDanger ? '#f87171' : 'var(--muted-text, #94a3b8)',
-              backgroundColor: isDanger ? 'rgba(239, 68, 68, 0.08)' : 'transparent',
-              padding: isDanger ? '0.4rem 0.6rem' : 0,
-              borderRadius: '6px',
-              border: isDanger ? '1px solid rgba(239, 68, 68, 0.2)' : 'none'
+              color: isDanger ? 'var(--danger-color)' : 'var(--muted-text)',
+              backgroundColor: isDanger ? 'var(--danger-soft)' : 'transparent',
+              padding: isDanger ? '0.45rem 0.65rem' : 0,
+              borderRadius: 'var(--border-radius, 6px)',
+              border: isDanger ? '1px solid var(--danger-color)' : 'none',
+              lineHeight: 1.4
             }}
           >
             {submessage}
@@ -188,43 +227,30 @@ const ConfirmModal = ({
 
         {/* Botones de Acción */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.2rem' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            style={{
-              background: 'transparent',
-              border: '1px solid var(--subborder-color, rgba(255, 255, 255, 0.15))',
-              borderRadius: '7px',
-              color: 'var(--text-color, #ffffff)',
-              padding: '7px 14px',
-              fontSize: '0.8rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {displayCancelText}
-          </button>
+          {showCancel && (
+            <button
+              type="button"
+              className="openmun-confirm-btn-cancel"
+              onClick={onClose}
+              disabled={loading}
+              style={{
+                opacity: loading ? 0.5 : 1
+              }}
+            >
+              {displayCancelText}
+            </button>
+          )}
 
           <button
+            ref={confirmBtnRef}
             type="button"
+            className="openmun-confirm-btn-action"
             onClick={onConfirm}
             disabled={loading}
             style={{
               backgroundColor: btnBg,
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '7px',
-              padding: '7px 16px',
-              fontSize: '0.8rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: `0 4px 12px ${bg}`,
-              transition: 'all 0.15s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem'
+              color: btnText,
+              opacity: loading ? 0.6 : 1
             }}
           >
             {displayConfirmText}

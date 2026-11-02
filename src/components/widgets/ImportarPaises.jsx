@@ -23,6 +23,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import {
@@ -577,6 +578,7 @@ const parsearExcel = parsearXLSX;
 // ── Componente Principal ────────────────────────────────────────────────────
 const ImportarPaises = () => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const {
     paises,
     setPaises,
@@ -895,7 +897,7 @@ const ImportarPaises = () => {
   };
 
   // Añadir un solo país al instante
-  const handleAñadirIndividual = (e) => {
+  const handleAñadirIndividual = async (e) => {
     e?.preventDefault();
     if (!nuevoNombre.trim()) {
       setError(t('ui.enterTheDelegationSName'));
@@ -916,7 +918,14 @@ const ImportarPaises = () => {
     // Validar duplicado exacto
     const existe = paises.some(p => p.nombre.toLowerCase() === nuevo.nombre.toLowerCase());
     if (existe) {
-      if (!confirm(t('ui.alreadyExistsInTheSessionAddItAnyway', { v0: nuevo.nombre }))) {
+      const ok = await confirm({
+        title: t('common.notice', 'Aviso'),
+        message: t('ui.alreadyExistsInTheSessionAddItAnyway', { v0: nuevo.nombre }),
+        confirmText: t('common.add', 'Añadir de todos modos'),
+        cancelText: t('common.cancel', 'Cancelar'),
+        type: 'warning'
+      });
+      if (!ok) {
         return;
       }
     }

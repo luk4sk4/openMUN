@@ -499,6 +499,7 @@ export const SessionProvider = ({ children }) => {
 
   // Votación
   const registrarVotoPais = useCallback((countryIdentifier, voto, emitir = true) => {
+    if (!countryIdentifier) return;
     setVotacionSesionState(prev => {
       const currentPaises = stateRef.current.paises || [];
       const paisObj = currentPaises.find(
@@ -507,11 +508,15 @@ export const SessionProvider = ({ children }) => {
       );
       const targetId = paisObj ? paisObj.id : countryIdentifier;
 
-      // Normalizar texto de voto a clave estándar ('favor' | 'contra' | 'abstencion' | 'pasar')
+      // Normalizar texto de voto a clave estándar ('favor' | 'contra' | 'abstencion' | 'pasar' | 'favor_derechos' | 'contra_derechos')
       let normalizedVoto = voto;
       if (voto !== null && voto !== undefined) {
         const s = String(voto).trim().toLowerCase();
-        if (s === 'favor' || s === 'a favor' || s === 'in favor' || s === 'yes' || s === 'si' || s === 'sí') {
+        if (s === 'favor_derechos' || s === 'a favor con derechos' || s === 'a favor c/ der.' || s === 'favor con derechos' || s === 'in favor with rights') {
+          normalizedVoto = 'favor_derechos';
+        } else if (s === 'contra_derechos' || s === 'en contra con derechos' || s === 'en contra c/ der.' || s === 'contra con derechos' || s === 'against with rights') {
+          normalizedVoto = 'contra_derechos';
+        } else if (s === 'favor' || s === 'a favor' || s === 'in favor' || s === 'yes' || s === 'si' || s === 'sí') {
           normalizedVoto = 'favor';
         } else if (s === 'contra' || s === 'en contra' || s === 'against' || s === 'no') {
           normalizedVoto = 'contra';
@@ -522,7 +527,7 @@ export const SessionProvider = ({ children }) => {
         }
       }
 
-      if ((voto === 'favor_derechos' || voto === 'contra_derechos') && (!paisObj || paisObj.estatus === 'Ausente')) return prev;
+      if ((normalizedVoto === 'favor_derechos' || normalizedVoto === 'contra_derechos') && (!paisObj || paisObj.estatus === 'Ausente')) return prev;
       return registrarVotoConDerechos(prev, targetId, normalizedVoto);
     });
 

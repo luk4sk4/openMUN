@@ -238,6 +238,7 @@ const Dashboard = () => {
         <LiveSessionModal
           isOpen={p2p.isLiveModalOpen}
           onClose={p2p.closeLiveModal}
+          initialTab={p2p.liveModalTab}
           isLight={isLight}
         />
         <DriveSessionsModal
@@ -329,6 +330,7 @@ const Dashboard = () => {
             connectionStatus={p2p.connectionStatus}
             connectedPeers={p2p.connectedPeers}
             speakingRequests={p2p.speakingRequests}
+            enmiendasPropuestas={p2p.enmiendasPropuestas}
             roomSettings={p2p.roomSettings}
             roomId={p2p.roomId}
             unreadNotesCount={p2p.unreadNotesCount}

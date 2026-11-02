@@ -28,7 +28,9 @@ import {
   PictureInPicture2,
   FileSpreadsheet,
   FileText,
-  Megaphone
+  Megaphone,
+  MessageSquare,
+  Layers
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAccessibility } from '../../context/AccessibilityContext';
@@ -257,6 +259,28 @@ const CommandPaletteModal = ({
         icon: Radio,
         shortcut: '',
         action: () => openLiveModal?.()
+      },
+      {
+        id: 'session-requests',
+        category: i18n.t('ui.session'),
+        title: t('header.requests', 'Solicitudes'),
+        desc: t('header.requestsTooltip', 'Solicitudes de delegaciones y mociones pendientes'),
+        icon: MessageSquare,
+        shortcut: '',
+        action: () => openLiveModal?.('SOLICITUDES')
+      },
+      {
+        id: 'session-secretariat-local',
+        category: i18n.t('ui.session'),
+        title: t('header.localSecretariat', 'Secretaría Local'),
+        desc: t('header.localSecretariatTooltip', 'Abrir Secretaría Local en una nueva pestaña (segunda pantalla o pajes)'),
+        icon: Layers,
+        shortcut: '',
+        action: () => {
+          if (typeof window !== 'undefined') {
+            window.open(`${window.location.origin}${window.location.pathname}?mode=secretariat&local=true`, '_blank');
+          }
+        }
       },
       {
         id: 'session-export',

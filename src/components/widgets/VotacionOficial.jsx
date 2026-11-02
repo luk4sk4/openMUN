@@ -25,15 +25,17 @@ import { useAccessibility } from '../../context/AccessibilityContext';
 import { ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const VotacionOficial = () => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const { isLight } = useAccessibility();
   const vetoColor = 'var(--timer-orange-color, var(--warning-color))';
   const vetoBg = 'var(--timer-orange-bg, var(--warning-soft))';
   const vetoBorder = 'var(--timer-orange-border, var(--warning-color))';
   const {
-    paises,
+    paises = [],
     votacionSesion,
     registrarVotoPais,
     configurarVotacion,
@@ -49,18 +51,29 @@ const VotacionOficial = () => {
   const [indiceRollCall, setIndiceRollCall] = useState(0);
   const [paisesPasados, setPaisesPasados] = useState([]); // IDs de países que seleccionaron 'Pasar' en Ronda 1
 
-  const { asunto = i18n.t('ui.draftResolutionMotion'), tipoVotacion = 'procedural', tipoMayoria = 'simple', aplicarVeto = true, votos = {} } = votacionSesion || {};
+  const {
+    asunto = i18n.t('ui.draftResolutionMotion'),
+    tipoVotacion = 'procedural',
+    tipoMayoria = 'simple',
+    aplicarVeto = true,
+    votos: rawVotos = {}
+  } = votacionSesion || {};
+
+  const votos = useMemo(() => {
+    return (rawVotos && typeof rawVotos === 'object') ? rawVotos : {};
+  }, [rawVotos]);
 
   // Conteo de Quórum y Asistencia
-  const totalPaises = paises.length;
-  const presentes = useMemo(() => paises.filter(p => p.estatus === 'Presente').length, [paises]);
-  const presentesYVotando = useMemo(() => paises.filter(p => p.estatus === 'Presente y Votando').length, [paises]);
-  const ausentes = useMemo(() => paises.filter(p => p.estatus === 'Ausente').length, [paises]);
+  const listaPaises = useMemo(() => (Array.isArray(paises) ? paises : []), [paises]);
+  const totalPaises = listaPaises.length;
+  const presentes = useMemo(() => listaPaises.filter(p => p && p.estatus === 'Presente').length, [listaPaises]);
+  const presentesYVotando = useMemo(() => listaPaises.filter(p => p && p.estatus === 'Presente y Votando').length, [listaPaises]);
+  const ausentes = useMemo(() => listaPaises.filter(p => p && p.estatus === 'Ausente').length, [listaPaises]);
 
   // Filtrado de países asistentes (excluyendo ausentes)
   const paisesAsistentes = useMemo(() => {
-    return paises.filter(p => p.estatus === 'Presente' || p.estatus === 'Presente y Votando');
-  }, [paises]);
+    return listaPaises.filter(p => p && (p.estatus === 'Presente' || p.estatus === 'Presente y Votando'));
+  }, [listaPaises]);
 
   const totalAsistentes = paisesAsistentes.length;
 
@@ -96,7 +109,8 @@ const VotacionOficial = () => {
   }, [paisesAsistentes, votos, aplicarVeto]);
 
   const votosEmitidos = favor + contra + abstencion;
-  const votosPendientes = totalAsistentes - votosEmitidos;
+  const votosPendientes = Math.max(0, totalAsistentes - votosEmitidos);
+  const finalizada = votosPendientes === 0 && totalAsistentes > 0;
 
   // Cálculo de Umbral según Tipo de Mayoría y MUN Rules
   const votosValidosSinAbstencion = favor + contra;
@@ -106,28 +120,34 @@ const VotacionOficial = () => {
   let textoRequerido = '';
 
   if (tipoMayoria === 'simple') {
-    if (tipoVotacion === 'substantive' && votosEmitidos > 0 && votosValidosSinAbstencion > 0) {
-      requeridos = Math.floor(votosValidosSinAbstencion / 2) + 1;
-      pasaSuperaMayoria = favor > contra && favor >= requeridos;
-      textoRequerido = t('ui.s501QuorumBase', { v0: requeridos, v1: t('voting.vote', 'voto'), v2: t('voting.inFavor', 'A Favor'), v3: t('common.of', 'de'), v4: votosValidosSinAbstencion, v5: t('voting.validVotes', 'votos válidos emitidos'), v6: reqSimpleQuorum });
+    if (tipoVotacion === 'substantive') {
+      const baseCalculo = finalizada ? votosValidosSinAbstencion : Math.max(0, totalAsistentes - abstencion);
+      requeridos = baseCalculo > 0 ? Math.floor(baseCalculo / 2) + 1 : reqSimpleQuorum;
+      pasaSuperaMayoria = finalizada && favor > contra && favor >= requeridos;
+      textoRequerido = finalizada
+        ? t('ui.s501QuorumBase', { v0: requeridos, v1: t('voting.vote', 'voto'), v2: t('voting.inFavor', 'A Favor'), v3: t('common.of', 'de'), v4: votosValidosSinAbstencion, v5: t('voting.validVotes', 'votos válidos emitidos'), v6: reqSimpleQuorum })
+        : `${requeridos} ${t('voting.vote', 'voto')}(s) ${t('voting.inFavor', 'A Favor')} (50% + 1 ${t('common.of', 'de')} ${totalAsistentes} ${t('voting.delegationsInRoom', 'delegaciones en sala')})`;
     } else {
       requeridos = reqSimpleQuorum;
-      pasaSuperaMayoria = favor > contra && favor >= requeridos;
+      pasaSuperaMayoria = finalizada && favor > contra && favor >= reqSimpleQuorum;
       textoRequerido = `${requeridos} ${t('voting.vote', 'voto')}(s) ${t('voting.inFavor', 'A Favor')} (50% + 1 ${t('common.of', 'de')} ${totalAsistentes} ${t('voting.delegationsInRoom', 'delegaciones en sala')})`;
     }
   } else if (tipoMayoria === '2/3') {
-    if (tipoVotacion === 'substantive' && votosEmitidos > 0 && votosValidosSinAbstencion > 0) {
-      requeridos = Math.ceil((votosValidosSinAbstencion * 2) / 3);
-      pasaSuperaMayoria = favor >= requeridos && favor > 0;
-      textoRequerido = t('ui.s23QuorumBase', { v0: requeridos, v1: t('voting.vote', 'voto'), v2: t('voting.inFavor', 'A Favor'), v3: t('common.of', 'de'), v4: votosValidosSinAbstencion, v5: t('voting.validVotes', 'votos válidos emitidos'), v6: reqDosTerciosQuorum });
+    if (tipoVotacion === 'substantive') {
+      const baseCalculo = finalizada ? votosValidosSinAbstencion : Math.max(0, totalAsistentes - abstencion);
+      requeridos = baseCalculo > 0 ? Math.ceil((baseCalculo * 2) / 3) : reqDosTerciosQuorum;
+      pasaSuperaMayoria = finalizada && favor >= requeridos && favor > 0;
+      textoRequerido = finalizada
+        ? t('ui.s23QuorumBase', { v0: requeridos, v1: t('voting.vote', 'voto'), v2: t('voting.inFavor', 'A Favor'), v3: t('common.of', 'de'), v4: votosValidosSinAbstencion, v5: t('voting.validVotes', 'votos válidos emitidos'), v6: reqDosTerciosQuorum })
+        : `${requeridos} ${t('voting.vote', 'voto')}(s) ${t('voting.inFavor', 'A Favor')} (2/3 ${t('common.of', 'de')} ${totalAsistentes} ${t('voting.delegationsInRoom', 'delegaciones en sala')})`;
     } else {
       requeridos = reqDosTerciosQuorum;
-      pasaSuperaMayoria = favor >= requeridos && favor > 0;
+      pasaSuperaMayoria = finalizada && favor >= reqDosTerciosQuorum && favor > 0;
       textoRequerido = `${requeridos} ${t('voting.vote', 'voto')}(s) ${t('voting.inFavor', 'A Favor')} (2/3 ${t('common.of', 'de')} ${totalAsistentes} ${t('voting.delegationsInRoom', 'delegaciones en sala')})`;
     }
   } else if (tipoMayoria === 'consensus') {
     requeridos = 0;
-    pasaSuperaMayoria = contra === 0 && favor > 0 && votosPendientes === 0;
+    pasaSuperaMayoria = finalizada && contra === 0 && favor > 0;
     textoRequerido = `0 ${t('voting.votes', 'votos')} ${t('voting.against', 'En Contra')} (100% ${t('voting.consensus', 'Consenso')} ${t('common.of', 'de')} ${totalAsistentes} ${t('voting.delegationsInRoom', 'delegaciones en sala')})`;
   }
 
@@ -144,7 +164,7 @@ const VotacionOficial = () => {
     estadoVotacion = 'VETADA';
     const nombresVeto = paisesConVetoEfectuado.map(p => p.nombre).join(', ');
     mensajeDictamen = `${t('voting.vetoedBy', 'REPROBADA POR VETO (Veto ejercido por:')} ${nombresVeto})`;
-  } else if (votosPendientes === 0 || (favor >= requeridos && tipoMayoria !== 'consensus')) {
+  } else if (finalizada) {
     if (pasaSuperaMayoria) {
       estadoVotacion = 'APROBADA';
       mensajeDictamen = `${t('voting.passedExclamation', '¡APROBADA!')} (${favor} ${t('voting.inFavor', 'A Favor')} vs ${contra} ${t('voting.against', 'En Contra')}${tipoVotacion === 'substantive' ? `, ${abstencion} ${t('voting.abstentions', 'Abstenciones')}` : ''})`;
@@ -256,7 +276,7 @@ const VotacionOficial = () => {
       color: 'var(--text-color)',
       fontFamily: 'var(--font-family)',
       borderRadius: 'var(--border-radius)',
-      border: '1px solid var(--border-color)',
+      border: 'none',
       gap: '0.4rem',
       fontSize: '0.85rem'
     }}>
@@ -511,9 +531,16 @@ const VotacionOficial = () => {
           </button>
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               if (votosEmitidos > 0) {
-                if (window.confirm(t('voting.confirmResetVoting', '¿Deseas reiniciar y limpiar todos los votos registrados?'))) {
+                const confirmed = await confirm({
+                  title: t('voting.confirmResetTitle', 'Reiniciar votación'),
+                  message: t('voting.confirmResetVoting', '¿Deseas reiniciar y limpiar todos los votos registrados?'),
+                  confirmText: t('voting.reset', 'Reiniciar'),
+                  cancelText: t('common.cancel', 'Cancelar'),
+                  type: 'danger'
+                });
+                if (confirmed) {
                   resetearVotacion();
                   setModoRollCall(false);
                 }
@@ -748,7 +775,7 @@ const VotacionOficial = () => {
       <ListaDerechos
         paises={paises}
         sesion={votacionSesion}
-        votacionTerminada={votosPendientes === 0 || (!modoRollCall && (estadoVotacion === 'APROBADA' || estadoVotacion === 'REPROBADA' || estadoVotacion === 'VETADA'))}
+        votacionTerminada={finalizada}
       />
 
       {/* ── Contadores Compactos (Una Sola Fila Esbelta) ── */}

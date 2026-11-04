@@ -99,7 +99,7 @@ const DonationBanner = ({ showDonationBanner, setShowDonationBanner, isLight, t 
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: 'auto' }}>
         <a
-          href="https://buymeacoffee.com"
+          href="https://buymeacoffee.com/openmun"
           target="_blank"
           rel="noopener noreferrer"
           style={{

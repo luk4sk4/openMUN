@@ -377,7 +377,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
 
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', margin: '0.1rem 0 0 0' }}>
                   <a
-                    href="https://buymeacoffee.com"
+                    href="https://buymeacoffee.com/openmun"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{

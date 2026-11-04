@@ -550,7 +550,7 @@ const CreateConferenceView = ({ onBack, isLight: propIsLight, onConferenceCreate
 
                 <div>
                   <a
-                    href="https://buymeacoffee.com"
+                    href="https://buymeacoffee.com/openmun"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{

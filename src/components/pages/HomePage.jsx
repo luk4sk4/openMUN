@@ -437,7 +437,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           }}>
             {/* Donaciones */}
             <a
-              href="https://buymeacoffee.com"
+              href="https://buymeacoffee.com/openmun"
               target="_blank"
               rel="noopener noreferrer"
               style={{

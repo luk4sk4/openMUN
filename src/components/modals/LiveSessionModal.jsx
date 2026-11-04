@@ -595,7 +595,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight, initialTab }) => {
                     </button>
 
                     <a
-                      href="https://buymeacoffee.com"
+                      href="https://buymeacoffee.com/openmun"
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{

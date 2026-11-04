@@ -898,7 +898,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
             </a>
             <span style={{ color: subBorderColor }}>•</span>
             <a
-              href="https://linkedin.com/in/lucas-kowalski"
+              href="https://www.linkedin.com/in/lucas-rodr%C3%ADguez-kowalski-136b3628b/"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: textMuted, textDecoration: 'none', fontWeight: '500' }}

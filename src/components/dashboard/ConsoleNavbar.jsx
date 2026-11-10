@@ -51,6 +51,10 @@ const ConsoleNavbar = ({
     setIsToolsOpen(false);
   }, [activeTab]);
 
+  useEffect(() => {
+    if (isToolsOpen) sidebarEdgeRef.current?.querySelector('button, select')?.focus({ preventScroll: true });
+  }, [isToolsOpen]);
+
   // Cerrar al pulsar Escape o al hacer clic fuera del sidebar
   useEffect(() => {
     if (!isToolsOpen) return;

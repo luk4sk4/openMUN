@@ -286,7 +286,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: isLight ? '#b45309' : '#f59e0b' }}>
                   <Clock size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ color: 'var(--text-color)' }}>{t('ui.inactivity')}</strong> {t('conferences.inactivityNotice', 'Un mes de inactividad provocará el cierre y eliminación automática de la conferencia para optimizar recursos del servidor.')}
+                    <strong style={{ color: 'var(--text-color)' }}>{t('ui.inactivity')}</strong> {t('conferences.inactivityNotice', 'La conferencia se elimina automáticamente tras un año sin actividad.')}
                   </div>
                 </div>
 
@@ -300,7 +300,7 @@ const CreateConferenceModal = ({ isOpen, onClose, isLight, onConferenceCreated }
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: isLight ? '#64748b' : '#94a3b8' }}>
                   <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong style={{ color: 'var(--text-color)' }}>{t('ui.announcementsAndMessages')}</strong> {t('conferences.announcementsNotice', 'Los avisos y mensajes emitidos en la conferencia se borran automáticamente a las 24 horas.')}
+                    <strong style={{ color: 'var(--text-color)' }}>{t('ui.announcementsAndMessages')}</strong> {t('conferences.announcementsNotice', 'Los avisos y mensajes se eliminan automáticamente un mes después de su envío.')}
                   </div>
                 </div>
               </div>

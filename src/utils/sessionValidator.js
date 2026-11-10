@@ -424,7 +424,9 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
     nombre: sanitizeString(typeof p.nombre === 'string' && p.nombre.trim() ? p.nombre.trim() : (p.name || i18n.t('ui.delegation', { v0: idx + 1 })), 200),
     bandera: sanitizeString(typeof p.bandera === 'string' ? p.bandera : (p.flag || '🌐'), 50),
     veto: Boolean(p.veto !== undefined ? p.veto : (p.tieneVeto !== undefined ? p.tieneVeto : false)),
-    estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Ausente', 50)
+    estatus: sanitizeString(typeof p.estatus === 'string' ? p.estatus : 'Ausente', 50),
+    equipo: sanitizeString(typeof p.equipo === 'string' ? p.equipo.trim() : (p.team || p.colegio || p.escuela || p.institucion || ''), 150),
+    delegado: sanitizeString(typeof p.delegado === 'string' ? p.delegado.trim() : (p.delegate || ''), 150)
   }));
 
   // 4. Extraer Agenda

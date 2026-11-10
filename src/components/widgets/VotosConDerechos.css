@@ -100,6 +100,25 @@
   flex-wrap: wrap;
 }
 
+.rights-header-collapsed {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.rights-header-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.rights-header .rights-panel-toggle {
+  min-width: 32px;
+  min-height: 32px;
+  justify-content: center;
+}
+
 .rights-header-title {
   display: flex;
   align-items: center;

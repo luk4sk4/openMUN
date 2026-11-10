@@ -15,7 +15,8 @@ import {
   FileSignature,
   BarChart3,
   Table,
-  Loader2
+  Loader2,
+  Users,
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
@@ -90,6 +91,7 @@ const HistoricoDelegaciones = () => {
   const [ordenAsc, setOrdenAsc] = useState(false);
   const [diaSeleccionado, setDiaSeleccionado] = useState('TODOS'); // 'TODOS' | 'YYYY-MM-DD'
   const [sesionSeleccionada, setSesionSeleccionada] = useState('TODAS');
+  const [filtroEquipo, setFiltroEquipo] = useState('TODOS');
   const [vistaModo, setVistaModo] = useState('tabla'); // 'tabla' | 'graficos'
   const [exportandoPdf, setExportandoPdf] = useState(false);
 
@@ -315,12 +317,29 @@ const HistoricoDelegaciones = () => {
     };
   }, [datosPaises, mocionesFiltradas, enmiendasFiltradas]);
 
-  // Filtrar por búsqueda
+  // Lista de equipos presentes en este comité
+  const listaEquipos = useMemo(() => {
+    const s = new Set();
+    paises.forEach(p => {
+      if (p.equipo && p.equipo.trim()) s.add(p.equipo.trim());
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, 'es'));
+  }, [paises]);
+
+  // Filtrar por búsqueda y equipo
   const paisesFiltrados = useMemo(() => {
-    return datosPaises.filter(p =>
-      p.nombre.toLowerCase().includes(busqueda.toLowerCase())
-    );
-  }, [datosPaises, busqueda]);
+    return datosPaises.filter(p => {
+      const q = busqueda.toLowerCase().trim();
+      const matchSearch = !q || p.nombre.toLowerCase().includes(q) || (p.equipo && p.equipo.toLowerCase().includes(q));
+      if (!matchSearch) return false;
+
+      if (filtroEquipo !== 'TODOS') {
+        if ((p.equipo || '').trim() !== filtroEquipo) return false;
+      }
+
+      return true;
+    });
+  }, [datosPaises, busqueda, filtroEquipo]);
 
   // Ordenar
   const paisesOrdenados = useMemo(() => {
@@ -369,6 +388,7 @@ const HistoricoDelegaciones = () => {
       const delegacionesParaReporte = datosPaises.map(d => ({
         id: d.id,
         nombre: d.nombre,
+        equipo: d.equipo,
         bandera: d.bandera,
         estatus: d.estatus,
         veto: d.veto,
@@ -542,11 +562,34 @@ const HistoricoDelegaciones = () => {
               }}
             />
           </div>
+          {/* Selector de Equipo */}
+          {listaEquipos.length > 0 && (
+            <select
+              value={filtroEquipo}
+              onChange={e => setFiltroEquipo(e.target.value)}
+              style={{
+                backgroundColor: 'var(--input-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                padding: '0.28rem 0.5rem',
+                color: 'var(--text-color)',
+                fontSize: '0.72rem',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              title={t('ui.filterByTeam', 'Filtrar por Equipo')}
+            >
+              <option value="TODOS">{t('ui.allTeams', 'Todos los equipos')} ({listaEquipos.length})</option>
+              {listaEquipos.map(eq => (
+                <option key={eq} value={eq}>{eq}</option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
       {/* ─── FILTRO POR DÍAS (PILLS INTERACTIVAS) ─── */}
-      <div style={{
+      <div className="mobile-wrap" style={{
         display: 'flex',
         alignItems: 'center',
         gap: '0.4rem',
@@ -874,9 +917,24 @@ const HistoricoDelegaciones = () => {
                         <td style={{ padding: '0.35rem 0.5rem', fontWeight: '600' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
                             <CountryFlag bandera={p.bandera} nombre={p.nombre} size="sm" />
-                            <span style={{ fontSize: '0.78rem', color: 'var(--text-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {p.nombre}
-                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-color)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {p.nombre}
+                              </span>
+                              {p.equipo && (
+                                <span style={{
+                                  fontSize: '0.66rem',
+                                  color: 'var(--accent-color)',
+                                  fontWeight: '600',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  marginTop: '1px'
+                                }}>
+                                  <Users size={10} /> {p.equipo}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
 

@@ -41,6 +41,7 @@ import {
   Mail,
   Key,
   Unlock,
+  GraduationCap,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -62,8 +63,11 @@ import {
 } from '../../utils/announcementHelpers';
 import { normalizarDatosComite, SESSION_STORAGE_KEYS } from '../../utils/sessionValidator';
 import EstablecerAgenda from '../widgets/EstablecerAgenda';
-import ImportarPaises from '../widgets/ImportarPaises';
+import ImportarPaises, { parsearXLSX, parsearTexto } from '../widgets/ImportarPaises';
+import RendimientoEquiposTab from '../conference/RendimientoEquiposTab';
 import MatrizPaises from '../widgets/MatrizPaises';
+
+const usesLuaxSessions = conferenceService.usesLuaxSessions;
 
 const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, isLight: propIsLight }) => {
   const { t } = useTranslation();
@@ -93,6 +97,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   // Estados de la conferencia
   const [confIdInput, setConfIdInput] = useState(initialConfId);
   const [pinAccesoInput, setPinAccesoInput] = useState(() => {
+    if (usesLuaxSessions) return '';
     if (initialConfId) {
       try {
         return localStorage.getItem(`openmun_conf_pin_${initialConfId.toLowerCase().trim()}`) || '';
@@ -111,11 +116,13 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const [activeMainTab, setActiveMainTab] = useState(() => {
     if (initialMode === 'admin') return 'SECRETARIA';
     if (initialMode === 'staff') return 'STAFF';
+    if (initialMode === 'equipos' || initialMode === 'teams') return 'EQUIPOS';
     return 'VER_COMITES';
   });
 
   // Estados de Admin / Secretaría (Auto-recuperado de localStorage si ya fue ingresado)
   const [adminPinInput, setAdminPinInput] = useState(() => {
+    if (usesLuaxSessions) return '';
     if (initialConfId) {
       try {
         return localStorage.getItem(`openmun_conf_admin_pin_${initialConfId.toLowerCase().trim()}`) || '';
@@ -125,6 +132,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   });
   const [mostrarAdminPin, setMostrarAdminPin] = useState(false);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    if (usesLuaxSessions) return conferenceService.hasLuaxOrganization(initialConfId.toLowerCase().trim());
     if (initialConfId) {
       try {
         const saved = localStorage.getItem(`openmun_conf_admin_pin_${initialConfId.toLowerCase().trim()}`);
@@ -146,6 +154,15 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const [mostrarConfNuevoPin, setMostrarConfNuevoPin] = useState(false);
   const [confPinAdminActual, setConfPinAdminActual] = useState('');
   const [mostrarConfPinActual, setMostrarConfPinActual] = useState(false);
+  const [confPinDocentesInput, setConfPinDocentesInput] = useState(() => {
+    if (initialConfId) {
+      try {
+        return localStorage.getItem(`openmun_conf_faculty_pin_${initialConfId.toLowerCase().trim()}`) || '';
+      } catch (e) { return ''; }
+    }
+    return '';
+  });
+  const [mostrarConfPinDocentes, setMostrarConfPinDocentes] = useState(false);
   const [guardandoConfSettings, setGuardandoConfSettings] = useState(false);
   const [confSettingsFeedback, setConfSettingsFeedback] = useState(null);
   const [secretariaSubTab, setSecretariaSubTab] = useState('COMITES'); // 'COMITES' | 'AVISOS' | 'CONFIG' | 'BACKUP'
@@ -164,6 +181,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         setConfEmailAdminInput(conferencia.email_admin || '');
       }
       setCambiarPinAcceso(Boolean(conferencia.requierePin));
+      try {
+        const savedFacPin = localStorage.getItem(`openmun_conf_faculty_pin_${conferencia.id.toLowerCase().trim()}`) || '';
+        if (savedFacPin) setConfPinDocentesInput(savedFacPin);
+      } catch (e) {}
       confSettingsInicializadoRef.current = true;
     }
   }, [conferencia]);
@@ -192,7 +213,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const [nuevaTareaAsignado, setNuevaTareaAsignado] = useState('');
   const [nuevaTareaComiteId, setNuevaTareaComiteId] = useState('GLOBAL');
   const [filtroComiteChecklist, setFiltroComiteChecklist] = useState('TODOS');
+  const checklistAction = useRef(false);
+  const checklistVersion = useRef(0);
   const [checklistStaff, setChecklistStaff] = useState(() => {
+    if (usesLuaxSessions) return [];
     try {
       const saved = localStorage.getItem('openmun_staff_panel_checklist');
       if (saved) return JSON.parse(saved);
@@ -204,6 +228,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
   useEffect(() => {
     if (!conferencia?.id) return;
+    if (usesLuaxSessions) {
+      checklistVersion.current++;
+      setChecklistStaff([]);
+      return;
+    }
     try {
       const saved = localStorage.getItem(`openmun_staff_panel_checklist_${conferencia.id}`);
       if (saved) {
@@ -216,6 +245,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   }, [conferencia?.id]);
 
   useEffect(() => {
+    if (usesLuaxSessions) return;
     try {
       if (conferencia?.id) {
         localStorage.setItem(`openmun_staff_panel_checklist_${conferencia.id}`, JSON.stringify(checklistStaff));
@@ -242,19 +272,19 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const cargarConferencia = useCallback(async (id, pin = '') => {
     if (!id || !id.trim()) return;
     const cleanId = id.trim().toLowerCase();
-    const effectivePin = pin || localStorage.getItem(`openmun_conf_pin_${cleanId}`) || '';
+    const effectivePin = pin || (!usesLuaxSessions && localStorage.getItem(`openmun_conf_pin_${cleanId}`)) || '';
     setLoading(true);
     setErrorMsg(null);
     try {
       const active = conferenceService.obtenerSesionActiva();
       const res = await conferenceService.accederConferencia(cleanId, effectivePin);
       if (res && res.id) {
-        if (effectivePin) {
+        if (effectivePin && !usesLuaxSessions) {
           try {
             localStorage.setItem(`openmun_conf_pin_${cleanId}`, effectivePin);
           } catch (e) {}
         }
-        const emailAdmin = res.email_admin || res.email || (active?.id === res.id ? active?.email_admin : null) || null;
+        const emailAdmin = res.email_admin || res.email || (!usesLuaxSessions && active?.id === res.id ? active.email_admin : null) || null;
         setConferencia({
           id: res.id,
           nombre: res.nombre,
@@ -265,7 +295,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           setConfEmailAdminInput(emailAdmin);
         }
         let initialComites = Array.isArray(res.comites) ? res.comites : [];
-        try {
+        if (!usesLuaxSessions) try {
           const localConfComites = localStorage.getItem(`openmun_conf_comites_${res.id}`);
           if (localConfComites) {
             const parsedLocal = JSON.parse(localConfComites);
@@ -290,7 +320,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         setComites(initialComites);
 
         // Auto-autenticar sesión de Secretaría si ya existe el PIN guardado
-        const savedAdminPin = localStorage.getItem(`openmun_conf_admin_pin_${res.id}`) ||
+        const savedAdminPin = usesLuaxSessions ? '' : localStorage.getItem(`openmun_conf_admin_pin_${res.id}`) ||
           (active?.id === res.id ? active?.pin_admin : '') || '';
 
         if (savedAdminPin) {
@@ -298,7 +328,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           setConfPinAdminActual(savedAdminPin);
           setIsAdminAuthenticated(true);
         } else {
-          setIsAdminAuthenticated(false);
+          setIsAdminAuthenticated(usesLuaxSessions && conferenceService.hasLuaxOrganization(res.id));
           setAdminPinInput('');
         }
 
@@ -307,7 +337,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           nombre: res.nombre,
           email_admin: emailAdmin,
           ...(savedAdminPin ? { pin_admin: savedAdminPin } : {}),
-          ...(effectivePin ? { pin_acceso: effectivePin } : {})
+          ...(!usesLuaxSessions && effectivePin ? { pin_acceso: effectivePin } : {})
         });
       }
     } catch (err) {
@@ -334,7 +364,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       const active = conferenceService.obtenerSesionActiva();
       if (active?.id) {
         setConfIdInput(active.id);
-        const savedPin = localStorage.getItem(`openmun_conf_pin_${active.id.toLowerCase()}`) || active.pin_acceso || '';
+        const savedPin = usesLuaxSessions ? '' : localStorage.getItem(`openmun_conf_pin_${active.id.toLowerCase()}`) || active.pin_acceso || '';
         if (savedPin) setPinAccesoInput(savedPin);
         cargarConferencia(active.id, savedPin);
       }
@@ -343,6 +373,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
   // Auto-autenticar Secretaría al cambiar de pestaña si ya hay un PIN registrado
   useEffect(() => {
+    if (usesLuaxSessions) return;
     if (activeMainTab === 'SECRETARIA' && conferencia?.id && !isAdminAuthenticated) {
       const savedAdminPin = localStorage.getItem(`openmun_conf_admin_pin_${conferencia.id.toLowerCase()}`) ||
         (conferenceService.obtenerSesionActiva()?.id === conferencia.id.toLowerCase() ? conferenceService.obtenerSesionActiva()?.pin_admin : '');
@@ -359,12 +390,20 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const fetchResumen = useCallback(async () => {
     if (!conferencia?.id || isFetchingRef.current) return;
     isFetchingRef.current = true;
+    const version = checklistVersion.current;
     try {
       const [resResult, avisosResult, checklistResult] = await Promise.allSettled([
         conferenceService.obtenerResumen(conferencia.id),
-        conferenceService.obtenerAvisos(conferencia.id, null, 'secretaria', null, true),
-        conferenceService.obtenerChecklist(conferencia.id)
+        usesLuaxSessions ? null : conferenceService.obtenerAvisos(conferencia.id, null, 'secretaria', null, true),
+        !usesLuaxSessions || conferenceService.hasLuaxOrganization(conferencia.id)
+          ? conferenceService.obtenerChecklist(conferencia.id) : null
       ]);
+
+      if (usesLuaxSessions && version === checklistVersion.current &&
+          !conferenceService.hasLuaxOrganization(conferencia.id)) {
+        setIsAdminAuthenticated(false);
+        setChecklistStaff(prev => prev.length ? [] : prev);
+      }
 
       if (resResult.status === 'fulfilled' && resResult.value) {
         const res = resResult.value;
@@ -372,6 +411,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           setResumenData(res.comites);
 
           setComites(prevComites => {
+            if (usesLuaxSessions) return res.comites;
             const map = new Map();
             try {
               const localSaved = localStorage.getItem(`openmun_conf_comites_${conferencia.id}`);
@@ -417,7 +457,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         setAvisosActivos(avisosResult.value.avisos);
       }
 
-      if (checklistResult.status === 'fulfilled' && checklistResult.value && Array.isArray(checklistResult.value.checklist)) {
+      if (checklistResult.status === 'fulfilled' && Array.isArray(checklistResult.value?.checklist) &&
+          (!usesLuaxSessions || (version === checklistVersion.current && conferenceService.hasLuaxOrganization(conferencia.id)))) {
         setChecklistStaff(checklistResult.value.checklist);
       }
 
@@ -491,6 +532,38 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     };
   }, [conferencia?.id, fetchResumen]);
 
+  const runLuaxChecklistAction = async action => {
+    if (checklistAction.current) return false;
+    const id = conferencia?.id;
+    if (!id || !conferenceService.hasLuaxOrganization(id)) {
+      setStaffFeedback(t('ui.secretariatPinRequired'));
+      return false;
+    }
+    checklistAction.current = true;
+    const version = ++checklistVersion.current;
+    try {
+      setStaffFeedback(null);
+      await action(id);
+    } catch (error) {
+      setStaffFeedback(error.message);
+      return false;
+    } finally {
+      checklistAction.current = false;
+    }
+    if (version === checklistVersion.current && conferenceService.hasLuaxOrganization(id)) {
+      const refreshVersion = ++checklistVersion.current;
+      try {
+        const result = await conferenceService.obtenerChecklist(id);
+        if (refreshVersion === checklistVersion.current && conferenceService.hasLuaxOrganization(id)) {
+          setChecklistStaff(result.checklist);
+        }
+      } catch (error) {
+        if (refreshVersion === checklistVersion.current) setStaffFeedback(error.message);
+      }
+    }
+    return true;
+  };
+
   // Handlers para Checklist de Staff (Indexada)
   const handleCrearTareaChecklist = async (e) => {
     if (e) e.preventDefault();
@@ -498,6 +571,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     const titulo = nuevaTareaStaff.trim();
     const asignado_a = nuevaTareaAsignado.trim() || null;
     const comite_id = nuevaTareaComiteId && nuevaTareaComiteId !== 'GLOBAL' ? nuevaTareaComiteId : null;
+    if (usesLuaxSessions) {
+      if (await runLuaxChecklistAction(id => conferenceService.crearTareaChecklist(id, { comite_id, titulo, asignado_a }))) {
+        setNuevaTareaStaff(value => value.trim() === titulo ? '' : value);
+      }
+      return;
+    }
 
     const tempId = `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const tempItem = {
@@ -531,6 +610,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
   const handleToggleTareaChecklist = async (task) => {
     const nuevoCompletado = !Boolean(task.completado || task.done);
+    if (usesLuaxSessions) {
+      await runLuaxChecklistAction(id => conferenceService.toggleTareaChecklist(task.id, nuevoCompletado, id));
+      return;
+    }
     setChecklistStaff(prev =>
       (prev || []).map(i => i.id === task.id ? { ...i, completado: nuevoCompletado ? 1 : 0, done: nuevoCompletado } : i)
     );
@@ -543,6 +626,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   };
 
   const handleEliminarTareaChecklist = async (tareaId) => {
+    if (usesLuaxSessions) {
+      await runLuaxChecklistAction(id => conferenceService.eliminarTareaChecklist(tareaId, id));
+      return;
+    }
     setChecklistStaff(prev => (prev || []).filter(i => i.id !== tareaId));
 
     try {
@@ -568,6 +655,10 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     });
     if (!ok) return;
 
+    if (usesLuaxSessions) {
+      await runLuaxChecklistAction(id => conferenceService.eliminarTareasCompletadas(id, comiteFiltro));
+      return;
+    }
     setChecklistStaff(prev => (prev || []).filter(i => {
       const isDone = Boolean(i.completado || i.done);
       if (!isDone) return true;
@@ -1001,7 +1092,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     try {
       await conferenceService.verificarAdmin(conferencia.id, adminPinInput.trim());
       setIsAdminAuthenticated(true);
-      try {
+      if (usesLuaxSessions) setAdminPinInput('');
+      else try {
         localStorage.setItem(`openmun_conf_admin_pin_${conferencia.id.toLowerCase()}`, adminPinInput.trim());
       } catch (err) {}
       fetchResumen();
@@ -1488,7 +1580,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   // Entrar a Comité como Mesa Directiva (Chair) - Carga JSON aislado y entra
   const handleEntrarComoMesa = async (comite) => {
     if (comite.requierePinMesa) {
-      const savedPin = localStorage.getItem(`openmun_comite_pin_${comite.id}`);
+      if (usesLuaxSessions && conferenceService.hasLuaxChair(comite.id)) {
+        await ejecutarEntradaMesa(comite);
+        return;
+      }
+      const savedPin = usesLuaxSessions ? '' : localStorage.getItem(`openmun_comite_pin_${comite.id}`);
       if (savedPin && (!comite.pin_mesa || savedPin === comite.pin_mesa)) {
         await ejecutarEntradaMesa(comite, savedPin);
         return;
@@ -1504,7 +1600,12 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   const ejecutarEntradaMesa = async (comite, pin = '') => {
     setLoading(true);
     try {
-      if (comite.requierePinMesa) {
+      if (usesLuaxSessions) {
+        if (!conferenceService.hasLuaxChair(comite.id)) {
+          if (comite.requierePinMesa) await conferenceService.verificarPinMesa(comite.id, pin);
+          else await conferenceService.enterLuaxChairWithoutPin(conferencia.id, comite.id);
+        }
+      } else if (comite.requierePinMesa) {
         if (!pin || !pin.trim()) {
           throw new Error(t('ui.enterTheChairPinToAccessThisCommittee'));
         }
@@ -2105,7 +2206,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         tabs={[
           { id: 'VER_COMITES', label: t('conferences.exploreCommittees', 'Ver Comités (Mesas)'), icon: Layers },
           { id: 'STAFF', label: t('conferences.staffPanel', 'Panel Staff'), icon: Users },
-          { id: 'SECRETARIA', label: t('conferences.organizationPanel', 'Panel Organización'), icon: Shield }
+          { id: 'SECRETARIA', label: t('conferences.organizationPanel', 'Panel Organización'), icon: Shield },
+          { id: 'EQUIPOS', label: t('conferences.teamsPerformance', 'Equipos / Faculty Advisors'), icon: GraduationCap }
         ]}
         isLight={isLight}
         toggleThemeMode={toggleThemeMode}
@@ -2116,8 +2218,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           <button type="button" onClick={() => cargarConferencia(conferencia.id)} title={t('conferences.sync', 'Sincronizar')}>
             <RefreshCw size={16} /><span>{t('conferences.sync', 'Sincronizar')}</span>
           </button>
-          <button type="button" onClick={handleExportarConferenciaJSON} title={t('conferences.exportDatabase', 'Exportar BD')}>
-            <Download size={16} /><span>{t('conferences.exportDatabase', 'Exportar BD')}</span>
+          <button type="button" onClick={handleExportarConferenciaJSON} title={t('conferences.exportDatabase')}>
+            <Download size={16} /><span>{t('conferences.exportDatabase')}</span>
           </button>
           <button type="button" onClick={() => { conferenceService.limpiarSesionActiva(); setConferencia(null); }} title={t('conferences.switchConference', 'Cambiar Conferencia')}>
             <Building2 size={16} /><span>{t('conferences.switchConference', 'Cambiar Conferencia')}</span>
@@ -2157,7 +2259,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               </div>
 
               {/* Buscador de comités */}
-              <div style={{ position: 'relative', minWidth: '260px' }}>
+              <div style={{ position: 'relative', minWidth: 'min(100%, 260px)' }}>
                 <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: textMuted }} />
                 <input
                   type="text"
@@ -2194,7 +2296,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             ) : (
               <div className="openmun-conf-comites-grid" style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
                 gap: '1.25rem'
               }}>
                 {comitesFiltrados.map((comite) => {
@@ -2350,7 +2452,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             </div>
 
             {/* Grid 2 Columnas: Formulario de Mensajería + Checklist Operativo */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '1.5rem' }}>
 
               {/* Bloque 1: Mensajería */}
               <div style={{
@@ -2514,21 +2616,6 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                       <h3 style={{ fontSize: '1.05rem', fontWeight: '800', margin: 0 }}>
                         {t('views.staff.checklistTitle')}
                       </h3>
-                      <span style={{
-                        fontSize: '0.66rem',
-                        fontWeight: '700',
-                        backgroundColor: 'var(--info-soft)',
-                        color: 'var(--info-color)',
-                        border: '1px solid var(--subborder-color)',
-                        padding: '0.12rem 0.45rem',
-                        borderRadius: 'var(--border-radius, 6px)',
-                        letterSpacing: '0.03em',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem'
-                      }}>
-                        <Database size={11} /> {t('ui.database')}
-                      </span>
                     </div>
                     <span style={{ fontSize: '0.78rem', color: textMuted, fontWeight: '600' }}>
                       {checklistFiltrada.filter(i => i.completado).length} {t('ui.of')} {checklistFiltrada.length} {t('ui.lists')}
@@ -3000,7 +3087,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
                 gap: '1rem'
               }}>
                 {listaComitesConsolidada.map((comite) => {
@@ -3235,6 +3322,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         setAdminPinInput('');
                         setConfPinAdminActual('');
                         if (conferencia?.id) {
+                          conferenceService.lockLuaxOrganization(conferencia.id);
+                          if (usesLuaxSessions) {
+                            checklistVersion.current++;
+                            setChecklistStaff([]);
+                          }
                           try {
                             localStorage.removeItem(`openmun_conf_admin_pin_${conferencia.id.toLowerCase()}`);
                           } catch (e) {}
@@ -3405,7 +3497,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           placeholder={t('ui.newCommitteeNameEGUnhcr')}
                           style={{
                             flex: 2,
-                            minWidth: '200px',
+                            minWidth: 'min(100%, 200px)',
                             padding: '0.65rem 0.85rem',
                             borderRadius: 'var(--border-radius, 6px)',
                             border: `1px solid ${borderCol}`,
@@ -3597,7 +3689,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     )}
 
                     <form onSubmit={handleEmitirAviso} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('messaging.recipient')}</label>
                           <select
@@ -3934,7 +4026,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                     }}>
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
                         gap: '1.25rem'
                       }}>
                         {/* 1. Nombre de la Conferencia */}
@@ -4116,7 +4208,61 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         </div>
                       </div>
 
-                      {/* Bloque de Autorización con PIN Actual y Botón Guardar */}
+
+                        {/* PIN para Faculty Advisors / Profesores Acompañantes */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem', color: 'var(--text-color)' }}>
+                            PIN para Faculty Advisors / Docentes (Opcional)
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type={mostrarConfPinDocentes ? 'text' : 'password'}
+                              value={confPinDocentesInput}
+                              onChange={(e) => setConfPinDocentesInput(e.target.value)}
+                              placeholder="Ej. faculty2026 (opcional)"
+                              style={{
+                                width: '100%',
+                                padding: '0.6rem 2.5rem 0.6rem 2.2rem',
+                                borderRadius: 'var(--border-radius, 6px)',
+                                border: `1px solid ${borderCol}`,
+                                backgroundColor: bgCard,
+                                color: 'var(--text-color)',
+                                fontSize: '0.88rem'
+                              }}
+                            />
+                            <Users
+                              size={16}
+                              style={{
+                                position: 'absolute',
+                                left: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                color: textMuted
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setMostrarConfPinDocentes(!mostrarConfPinDocentes)}
+                              style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'transparent',
+                                border: 'none',
+                                color: textMuted,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {mostrarConfPinDocentes ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </div>
+                          <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
+                            Permite a los profesores acompañantes consultar el rendimiento de sus alumnos en la pestaña Equipos sin tener acceso administrativo. Si se deja vacío, se podrá acceder con el PIN de Organización.
+                          </span>
+                        </div>
+
+                        {/* Bloque de Autorización con PIN Actual y Botón Guardar */}
                       <div style={{
                         padding: '1rem',
                         borderRadius: 'var(--border-radius, 6px)',
@@ -4129,7 +4275,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         gap: '1rem',
                         marginTop: '0.5rem'
                       }}>
-                        <div style={{ flex: 1, minWidth: '240px' }}>
+                        <div style={{ flex: 1, minWidth: 'min(100%, 240px)' }}>
                           <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem', color: 'var(--text-color)' }}>
                             {t('ui.currentSecretariatPinRequiredAuthorization')}
                           </label>
@@ -4320,6 +4466,19 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             )}
           </div>
         )}
+
+        {/* ════════════════════════════════════════════════════════════════════════
+            PESTAÑA 4: RENDIMIENTO DE EQUIPOS (FACULTY ADVISORS / PROFESORES)
+        ════════════════════════════════════════════════════════════════════════ */}
+        {activeMainTab === 'EQUIPOS' && (
+          <RendimientoEquiposTab
+            conferencia={conferencia}
+            listaComites={listaComitesConsolidada}
+            isAdmin={isAdminAuthenticated}
+            isLight={isLight}
+            onRefresh={fetchResumen}
+          />
+        )}
       </main>
 
       {/* ════════════════════════════════════════════════════════════════════════
@@ -4331,12 +4490,35 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             e.preventDefault();
             e.stopPropagation();
           }}
-          onDrop={(e) => {
+          onDrop={async (e) => {
             e.preventDefault();
             e.stopPropagation();
             const files = e.dataTransfer?.files;
             if (files && files.length > 0) {
               setSecretariaWidgetTab('IMPORTAR');
+              const file = files[0];
+              try {
+                const ext = file.name ? file.name.split('.').pop().toLowerCase() : '';
+                let newCountries = [];
+                if (ext === 'xlsx' || ext === 'xls') {
+                  newCountries = await parsearXLSX(file);
+                } else if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
+                  newCountries = parsearTexto(await file.text());
+                } else if (ext === 'json') {
+                  const raw = await file.text();
+                  const norm = normalizarDatosComite(raw, file.name.replace(/\.json$/i, ''));
+                  if (norm?.paises?.length > 0) newCountries = norm.paises;
+                }
+                if (newCountries && newCountries.length > 0) {
+                  setPaises(newCountries);
+                  setGuardadoFeedback({
+                    type: 'success',
+                    text: `¡Se importaron ${newCountries.length} delegaciones de "${file.name}"!`
+                  });
+                }
+              } catch (errDrop) {
+                console.warn('Error al procesar archivo en modal:', errDrop);
+              }
             }
           }}
           style={{
@@ -4378,7 +4560,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               flexWrap: 'wrap',
               gap: '1.25rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: '300px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 'min(100%, 300px)' }}>
                 <div style={{
                   width: '46px',
                   height: '46px',
@@ -4412,7 +4594,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         color: 'var(--text-color)',
                         fontSize: '1.15rem',
                         fontWeight: '800',
-                        minWidth: '260px',
+                        minWidth: 'min(100%, 260px)',
                         maxWidth: '450px'
                       }}
                     />

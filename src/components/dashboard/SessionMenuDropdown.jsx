@@ -131,6 +131,7 @@ const SessionMenuDropdown = ({
           {/* Menú Desplegable Ampliado y Limpio */}
           <div
             role="menu"
+            className={placement === 'sidebar' ? 'dashboard-sidebar-session-menu' : undefined}
             aria-label={t('header.sessionMenu', 'Sesión')}
             style={{
               position: placement === 'sidebar' ? 'fixed' : 'absolute',

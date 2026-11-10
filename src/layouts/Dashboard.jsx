@@ -217,7 +217,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className={isMaximized ? undefined : 'dashboard-shell'} style={{ ...themeStyles, ...(!isModular && { height: '100dvh', minHeight: 0, overflow: 'hidden' }) }}>
+    <div className={`chair-workspace${isMaximized ? '' : ' dashboard-shell'}${isModular ? '' : ' is-fixed'}`} style={themeStyles}>
       {/* File Input Oculto para Cargar Sesión */}
       <input
         type="file"

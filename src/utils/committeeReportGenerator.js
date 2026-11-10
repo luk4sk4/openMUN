@@ -437,7 +437,9 @@ export async function exportCommitteeReportPdf({
     // Nombre + Distintivo Veto
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...THEME.textMain);
-    const nombreBase = String(del.nombre || i18n.t('ui.delegation2', 'Delegación')).substring(0, 24);
+    const basePais = String(del.nombre || i18n.t('ui.delegation2', 'Delegación'));
+    const equipoTag = del.equipo ? ` [${del.equipo}]` : '';
+    const nombreBase = (basePais + equipoTag).substring(0, 30);
     doc.text(nombreBase, cellX + 6, cursorY + 12);
 
     if (del.veto) {

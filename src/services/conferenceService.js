@@ -6,6 +6,9 @@ import i18n from '../languages/index.js';
 
 import { SOCKET_SERVER_URL } from './peerService.js';
 import { registrarAvisoPropio } from '../utils/announcementHelpers.jsx';
+import { createLuaxAccess, LUAX_API_URL } from './luaxAccess.js';
+
+const luax = LUAX_API_URL ? createLuaxAccess(LUAX_API_URL) : null;
 
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -16,7 +19,7 @@ const getApiBaseUrl = () => {
   return envApiUrl || SOCKET_SERVER_URL || 'https://api.openmun.app';
 };
 
-export const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = LUAX_API_URL || getApiBaseUrl();
 
 async function safeFetch(url, options) {
   try {
@@ -114,6 +117,11 @@ async function fetchWithDeduplication(url, ttlMs = 4000) {
 }
 
 export const conferenceService = {
+  usesLuaxSessions: Boolean(luax),
+  hasLuaxOrganization: id => Boolean(luax?.hasOrganization(id)),
+  hasLuaxChair: id => Boolean(luax?.hasChair(id)),
+  lockLuaxOrganization: id => luax?.lockOrganization(id),
+  enterLuaxChairWithoutPin: (confId, comiteId) => luax.enterChairWithoutPin(confId, comiteId),
   // ── 1. GESTIÓN DE CONFERENCIAS ──
   async crearConferencia({ id, nombre, pin_admin, pin_acceso, email_admin }) {
     const cleanId = id.toLowerCase().trim();
@@ -138,6 +146,7 @@ export const conferenceService = {
 
   async accederConferencia(id, pin = '') {
     const cleanId = String(id).trim().toLowerCase();
+    if (luax) return luax.accessConference(cleanId, String(pin || '').trim());
     const effectivePin = pin ? String(pin).trim() : (localStorage.getItem(`openmun_conf_pin_${cleanId}`) || '');
     const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}/acceso`, {
       method: 'POST',
@@ -163,6 +172,7 @@ export const conferenceService = {
 
   async obtenerResumen(id) {
     const cleanId = String(id).trim().toLowerCase();
+    if (luax) return luax.getSummary(cleanId);
     const url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}/resumen`;
     const data = await fetchWithDeduplication(url, 4000);
     const active = this.obtenerSesionActiva();
@@ -390,6 +400,7 @@ export const conferenceService = {
   // ── 4. CHECKLIST DE STAFF ──
   async obtenerChecklist(conferenciaId, comiteId = null) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
+    if (luax) return luax.getChecklist(cleanConfId, comiteId);
     let url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist`;
     if (comiteId) {
       url += `?comite_id=${encodeURIComponent(String(comiteId).trim())}`;
@@ -399,6 +410,7 @@ export const conferenceService = {
 
   async crearTareaChecklist(conferenciaId, { comite_id, titulo, asignado_a }) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
+    if (luax) return luax.createChecklistTask(cleanConfId, { comite_id, titulo, asignado_a });
     const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -413,7 +425,8 @@ export const conferenceService = {
     return data;
   },
 
-  async toggleTareaChecklist(tareaId, completado) {
+  async toggleTareaChecklist(tareaId, completado, conferenciaId) {
+    if (luax) return luax.setChecklistTaskDone(conferenciaId, tareaId, completado);
     const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}/toggle`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -424,7 +437,8 @@ export const conferenceService = {
     return data;
   },
 
-  async eliminarTareaChecklist(tareaId) {
+  async eliminarTareaChecklist(tareaId, conferenciaId) {
+    if (luax) return luax.removeChecklistTask(conferenciaId, tareaId);
     const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}`, {
       method: 'DELETE'
     });
@@ -435,6 +449,7 @@ export const conferenceService = {
 
   async eliminarTareasCompletadas(conferenciaId, comiteId = null) {
     const cleanConfId = String(conferenciaId).trim().toLowerCase();
+    if (luax) return luax.removeCompletedChecklistTasks(cleanConfId, comiteId);
     let url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist/completados`;
     if (comiteId) {
       url += `?comite_id=${encodeURIComponent(String(comiteId).trim())}`;
@@ -457,6 +472,7 @@ export const conferenceService = {
       throw err;
     }
 
+    if (luax) return luax.verifyOrganization(cleanId, cleanPin);
     const active = this.obtenerSesionActiva();
     
     // Si la sesión activa tiene un pin_admin guardado localmente, compararlo primero
@@ -501,6 +517,7 @@ export const conferenceService = {
       throw err;
     }
 
+    if (luax) return luax.verifyChair(cleanComiteId.toLowerCase(), cleanPin);
     // 1. Si se conoce el pin_mesa esperado del comité, verificar coincidencia estricta
     if (pinEsperado && String(pinEsperado).trim() !== cleanPin) {
       const err = new Error(i18n.t('ui.incorrectChairPin'));
@@ -541,6 +558,7 @@ export const conferenceService = {
   async obtenerComite(comiteId) {
     if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
     const cleanId = String(comiteId).trim();
+    if (luax) return luax.getCommittee(cleanId.toLowerCase(), this.obtenerSesionActiva()?.id);
     const res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanId)}`);
     if (res.ok) {
       return await handleResponse(res);
@@ -621,6 +639,10 @@ export const conferenceService = {
     try {
       const actual = this.obtenerSesionActiva() || {};
       const merged = { ...actual, ...conferenciaData };
+      if (luax) {
+        delete merged.pin_admin;
+        delete merged.pin_acceso;
+      }
       localStorage.setItem('openmun_active_conference', JSON.stringify(merged));
       
       if (merged.id) {
@@ -656,6 +678,7 @@ export const conferenceService = {
   },
 
   limpiarSesionActiva() {
+    luax?.clear();
     try {
       localStorage.removeItem('openmun_active_conference');
       localStorage.removeItem('openmun_current_conf_id');

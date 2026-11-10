@@ -180,7 +180,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight, initialTab }) => {
       padding: '1rem',
       animation: 'fadeIn 0.2s ease-out'
     }}>
-      <div style={{
+      <div className="openmun-mobile-work-dialog" style={{
         backgroundColor: 'var(--panel-color)',
         border: '1px solid var(--border-color)',
         borderRadius: '10px',
@@ -195,7 +195,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight, initialTab }) => {
         overflow: 'hidden'
       }}>
         {/* Modal Header */}
-        <div style={{
+        <div className="openmun-work-dialog-header" style={{
           padding: '1rem 1.25rem',
           borderBottom: '1px solid var(--subborder-color)',
           backgroundColor: 'var(--card-header-bg)',
@@ -678,7 +678,7 @@ const LiveSessionModal = ({ isOpen, onClose, isLight, initialTab }) => {
               </div>
 
               {/* Panel de Código de Sala y QR */}
-              <div style={{
+              <div className="openmun-grid-2col" style={{
                 display: 'grid',
                 gridTemplateColumns: isHostActive && roomSettings?.privacyMode !== 'hidden' ? '1fr 200px' : '1fr',
                 gap: '1.25rem',

@@ -512,7 +512,7 @@ const PizarraInteractiva = () => {
         }}
       >
         {/* Selector de Herramientas */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
           <button
             onClick={() => setTool('pen')}
             aria-pressed={tool === 'pen'}
@@ -653,7 +653,7 @@ const PizarraInteractiva = () => {
         </div>
 
         {/* Paleta de Colores & Selector de Grosor */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {/* Paleta */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
             {PRESET_COLORS.map((c) => (
@@ -694,7 +694,7 @@ const PizarraInteractiva = () => {
           </div>
 
           {/* Selector de Grosor */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+          <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             {BRUSH_SIZES.map((b) => (
               <button
                 key={b.size}
@@ -720,7 +720,7 @@ const PizarraInteractiva = () => {
         </div>
 
         {/* Fondos Predefinidos, Carga de Archivo & Exportar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           {/* Selector de Fondo */}
           <select
             value={bgType}

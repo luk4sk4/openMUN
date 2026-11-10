@@ -189,6 +189,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
   } = useSession();
 
   const outerContainerRef = useRef(null);
+  const mapSvgRef = useRef(null);
   const {
     asunto = 'Votación',
     tipoVotacion = 'procedural',
@@ -399,7 +400,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
 
   // 1. Zoom con la rueda sin desplazar la pestaña
   useEffect(() => {
-    const el = outerContainerRef.current;
+    const el = mapSvgRef.current;
     if (!el) return;
 
     const onWheelNative = (e) => {
@@ -524,20 +525,12 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
   };
 
   // Manejadores de Eventos sobre cada Path
-  const handlePathClick = (country, name, e) => {
+  const handlePathClick = (country, e) => {
     e.stopPropagation();
     if (hasMovedPan) return;
 
-    const rect = outerContainerRef.current.getBoundingClientRect();
-    const popupX = Math.max(20, Math.min(rect.width - 240, e.clientX - rect.left));
-    const popupY = Math.max(20, Math.min(rect.height - 250, e.clientY - rect.top));
-
     if (country) {
-      setSelectedCountryForVote({
-        countryObj: country,
-        x: popupX,
-        y: popupY
-      });
+      setSelectedCountryForVote({ countryObj: country });
     }
   };
 
@@ -586,7 +579,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
         backgroundColor: 'var(--panel-color)',
         color: 'var(--text-color)',
         borderRadius: isFullscreen ? '0' : 'var(--border-radius)',
-        overflow: 'hidden',
+        overflowY: 'auto',
         border: 'none',
         boxShadow: 'none',
         position: 'relative',
@@ -695,6 +688,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
 
         {/* Marcadores de Conteo y Filtros Rápidos */}
         <div
+          className="mobile-wrap"
           role="group"
           aria-label={t('ui.voteFilters')}
           style={{
@@ -1335,7 +1329,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
         </div>
       )}
 
-      <ListaDerechos paises={paises} sesion={votacionSesion} votacionTerminada={stats.finalizada && !modoRollCall} />
 
       {/* ─── DOCK FLOTANTE DE ROLL CALL NOMINAL DENTRO DEL MAPA ─── */}
       {modoRollCall && (
@@ -1417,7 +1410,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               </div>
 
               {/* Botones de Voto Roll Call */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+              <div className="roll-call-actions">
                 {indiceRollCall > 0 && (
                   <button
                     type="button"
@@ -1447,7 +1440,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--success-solid)',
                     color: 'var(--btn-text)',
                     fontWeight: '750',
@@ -1470,7 +1462,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor_derechos')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--success-soft)',
                     color: 'var(--success-color)',
                     fontWeight: '750',
@@ -1495,7 +1486,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   onClick={() => registrarYAvanzarRollCall('abstencion')}
                   disabled={paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'transparent' : 'var(--warning-solid)',
                     color: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'var(--muted-text)' : 'var(--btn-text)',
                     border: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? '1px solid var(--border-color)' : 'none',
@@ -1524,7 +1514,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('contra_derechos')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--danger-soft)',
                     color: 'var(--danger-color)',
                     fontWeight: '750',
@@ -1548,7 +1537,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('contra')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--danger-solid)',
                     color: 'var(--btn-text)',
                     fontWeight: '750',
@@ -1572,7 +1560,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     type="button"
                     onClick={() => registrarYAvanzarRollCall('pasar')}
                     style={{
-                      padding: '0.35rem 0.65rem',
                       backgroundColor: 'var(--input-bg, var(--panel-color))',
                       color: 'var(--text-color)',
                       fontWeight: '600',
@@ -1715,6 +1702,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
         </div>
       )}
 
+      <ListaDerechos paises={paises} sesion={votacionSesion} votacionTerminada={stats.finalizada && (!modoRollCall || rollCallFinalizado)} />
+
       {/* ─── CONTENEDOR DEL MAPA VECTORIAL INTERACTIVO PURO REACT ─── */}
       <div
         onMouseDown={handleMouseDown}
@@ -1724,6 +1713,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
           flex: 1,
           width: '100%',
           height: '100%',
+          minHeight: '260px',
           position: 'relative',
           overflow: 'hidden',
           backgroundColor: 'var(--bg-color)',
@@ -1736,6 +1726,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
       >
         {/* Renderizado NATIVO Declarativo en React SVG (470 trazados a 60 FPS) */}
         <svg
+          ref={mapSvgRef}
           viewBox="0 0 2000 857"
           preserveAspectRatio="xMidYMid meet"
           style={{
@@ -1845,7 +1836,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     transition: isPanning ? 'none' : 'fill 0.15s ease, stroke 0.15s ease, opacity 0.15s ease',
                     cursor: country ? 'pointer' : 'default'
                   }}
-                  onClick={(e) => handlePathClick(country, p.name, e)}
+                  onClick={(e) => handlePathClick(country, e)}
                   onMouseEnter={(e) => handlePathMouseEnter(p.iso, country, p.name, e)}
                   onMouseMove={handlePathMouseMove}
                   onMouseLeave={handlePathMouseLeave}
@@ -1931,10 +1922,19 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
         {selectedCountryForVote && !modoRollCall && (
           <div
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setSelectedCountryForVote(null);
+            }}
             style={{
               position: 'absolute',
-              left: `${selectedCountryForVote.x}px`,
-              top: `${selectedCountryForVote.y}px`,
+              inset: '8px',
+              margin: 'auto',
+              width: 'min(calc(100% - 16px), 280px)',
+              height: 'fit-content',
+              maxHeight: 'calc(100% - 16px)',
+              boxSizing: 'border-box',
+              overflowY: 'auto',
               backgroundColor: 'var(--panel-color)',
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--border-radius)',
@@ -1944,7 +1944,6 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               display: 'flex',
               flexDirection: 'column',
               gap: '0.6rem',
-              minWidth: '210px',
               color: 'var(--text-color)',
               animation: 'fadeIn 0.15s ease-out'
             }}
@@ -1970,6 +1969,8 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               <button
                 type="button"
                 onClick={() => setSelectedCountryForVote(null)}
+                aria-label={t('common.close')}
+                autoFocus
                 style={{ background: 'transparent', border: 'none', color: 'var(--muted-text)', cursor: 'pointer', padding: '2px' }}
               >
                 <X size={14} />
@@ -1984,7 +1985,10 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                   (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'contra' ? 'var(--danger-color)' :
                   (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) === 'abstencion' ? 'var(--warning-color)' : 'var(--info-color)'
               }}>
-                {(votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]) ? (votos[selectedCountryForVote.countryObj.id] || votos[String(selectedCountryForVote.countryObj.id)]).toUpperCase() : t('voting.pendingUpper', 'PENDIENTE')}
+                {votos[selectedCountryForVote.countryObj.id] === 'favor' ? t('voting.inFavor') :
+                  votos[selectedCountryForVote.countryObj.id] === 'contra' ? t('voting.against') :
+                  votos[selectedCountryForVote.countryObj.id] === 'abstencion' ? t('voting.abstention') : t('voting.pendingUpper')}
+                {votacionSesion?.derechos?.[selectedCountryForVote.countryObj.id] && ` · ${t('voting.withRights')}`}
               </strong>
             </div>
 
@@ -2144,6 +2148,7 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
 
         {/* ─── LEYENDA INFERIOR SUTIL Y ELEGANTE ─── */}
         <div
+          className="voting-map-legend"
           style={{
             position: 'absolute',
             bottom: '12px',

@@ -20,7 +20,8 @@ import {
   Download,
   ArrowUpDown,
   Check,
-  RotateCcw
+  RotateCcw,
+  Users,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -72,7 +73,7 @@ function esHeaderPais(header) {
 function esHeaderDelegadoONombre(header) {
   const norm = normalizarTexto(header);
   // Si ya es un header de país (ej. "Nombre del País", "País asignado"), NO es delegado/nombre de persona
-  if (esHeaderPais(header)) {
+  if (esHeaderPais(header) || esHeaderEquipo(header)) {
     return false;
   }
   return /delegad|alumno|estudiante|student|persona|representante|participant|asistente|nombre|name/i.test(norm);
@@ -84,6 +85,11 @@ function esHeaderNombreGenerico(header) {
     return false;
   }
   return /^(nombre|name|delegaciones|countries|pa[ií]ses)$/i.test(norm) || /nombre\s*(del\s*)?(pais|pa[ií]s|country|estado)/i.test(norm);
+}
+
+function esHeaderEquipo(header) {
+  const norm = normalizarTexto(header);
+  return /\b(equipo|equipos|team|teams|colegio|colegios|school|schools|escuela|escuelas|instituto|institutos|instituci[oó]n|instituciones|institution|institutions|universidad|universidades|university|universities|club|clubes)\b/i.test(norm);
 }
 
 function esHeaderBandera(header) {
@@ -108,9 +114,9 @@ function esCeldaBandera(val) {
 
 // Analiza una tabla o matriz para determinar qué columnas contienen el País, Delegado, Bandera y Veto
 function detectarColumnasTabla(filas) {
-  if (!filas || filas.length === 0) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, filaInicio: 0 };
+  if (!filas || filas.length === 0) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, colEquipo: -1, filaInicio: 0 };
   const maxCols = Math.max(...filas.map(r => Array.isArray(r) ? r.length : 0));
-  if (maxCols <= 1) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, filaInicio: 0 };
+  if (maxCols <= 1) return { colPais: 0, colVeto: -1, colBandera: -1, colDelegado: -1, colEquipo: -1, filaInicio: 0 };
 
   // 1. Buscar si en las primeras 10 filas hay una fila con cabecera explícita
   const limiteCabecera = Math.min(filas.length, 10);
@@ -126,6 +132,7 @@ function detectarColumnasTabla(filas) {
     const indicesNombre = [];
     let idxVeto = -1;
     let idxBandera = -1;
+    let idxEquipo = -1;
 
     r.forEach((cell, cIdx) => {
       const val = String(cell ?? '').trim();
@@ -137,29 +144,32 @@ function detectarColumnasTabla(filas) {
       }
       if (esHeaderVeto(val)) idxVeto = cIdx;
       if (esHeaderBandera(val)) idxBandera = cIdx;
+      if (esHeaderEquipo(val)) idxEquipo = cIdx;
     });
 
     // Si encontramos una columna explícita de PAÍS
     if (indicesPais.length > 0) {
       const colPais = indicesPais[0];
       // Si hay columna NOMBRE o DELEGADO, se asume que es el nombre del delegado y no del país
-      const colDelegado = indicesNombre.find(idx => idx !== colPais) ?? -1;
+      const colDelegado = indicesNombre.find(idx => idx !== colPais && idx !== idxEquipo) ?? -1;
       return {
         colPais,
         colVeto: idxVeto !== colPais ? idxVeto : -1,
         colBandera: idxBandera !== colPais ? idxBandera : -1,
         colDelegado,
+        colEquipo: idxEquipo !== colPais ? idxEquipo : -1,
         filaInicio: rIdx + 1
       };
     }
 
     // Si no hay columna 'PAIS', pero hay columna NOMBRE genérica junto con veto o bandera u otros headers MUN
-    if (indicesNombre.length > 0 && (idxVeto >= 0 || idxBandera >= 0 || r.some(c => esHeaderNombreGenerico(c)))) {
+    if (indicesNombre.length > 0 && (idxVeto >= 0 || idxBandera >= 0 || idxEquipo >= 0 || r.some(c => esHeaderNombreGenerico(c)))) {
       return {
         colPais: indicesNombre[0],
         colVeto: idxVeto,
         colBandera: idxBandera,
         colDelegado: -1,
+        colEquipo: (idxEquipo >= 0 && idxEquipo !== indicesNombre[0]) ? idxEquipo : -1,
         filaInicio: rIdx + 1
       };
     }
@@ -220,7 +230,7 @@ function detectarColumnasTabla(filas) {
     }
   }
 
-  return { colPais, colVeto, colBandera, colDelegado, filaInicio: 0 };
+  return { colPais, colVeto, colBandera, colDelegado, colEquipo: -1, filaInicio: 0 };
 }
 
 function procesarFilaArray(fila, index, indicesCol = null) {
@@ -235,6 +245,7 @@ function procesarFilaArray(fila, index, indicesCol = null) {
     const rawBandera = indicesCol.colBandera >= 0 ? String(fila[indicesCol.colBandera] ?? '').trim() : '';
     const rawVeto = indicesCol.colVeto >= 0 ? String(fila[indicesCol.colVeto] ?? '').trim() : undefined;
     const rawDelegado = indicesCol.colDelegado >= 0 ? String(fila[indicesCol.colDelegado] ?? '').trim() : '';
+    const rawEquipo = indicesCol.colEquipo >= 0 ? String(fila[indicesCol.colEquipo] ?? '').trim() : '';
 
     const auto = autodetectarBanderaYVeto(nombre);
     const bandera = rawBandera ? normalizarBandera(rawBandera, nombre) : auto.bandera;
@@ -248,6 +259,7 @@ function procesarFilaArray(fila, index, indicesCol = null) {
       bandera,
       veto: Boolean(veto),
       delegado: rawDelegado || undefined,
+      equipo: rawEquipo || undefined,
       estatus: 'Ausente'
     };
   }
@@ -387,6 +399,12 @@ function filaAPais(fila, index, indicesCol = null) {
   const colId = allKeys.find(k => k !== colNombre && k !== keyDelegado && k !== colBandera && k !== colVeto && /^(id|codigo|c[oó]digo|code|iso)$/i.test(normalizarTexto(k)));
   const id = colId ? String(fila[colId]).trim() : `pais_${Date.now()}_${index}`;
 
+  // 5. Columna Equipo / Colegio (si existe)
+  const colEquipo = allKeys.find(k => k !== colNombre && k !== keyDelegado && k !== colBandera && k !== colVeto && esHeaderEquipo(k));
+  const rawEquipo = colEquipo
+    ? String(fila[colEquipo]).trim()
+    : String(fila.equipo || fila.team || fila.colegio || fila.escuela || fila.institucion || '').trim();
+
   const auto = autodetectarBanderaYVeto(nombre);
   const bandera = rawBandera ? normalizarBandera(rawBandera, nombre) : auto.bandera;
   const veto = rawVeto !== undefined
@@ -399,6 +417,7 @@ function filaAPais(fila, index, indicesCol = null) {
     bandera,
     veto: Boolean(veto),
     delegado: rawDelegado || undefined,
+    equipo: rawEquipo || undefined,
     estatus: 'Ausente'
   };
 }
@@ -2417,6 +2436,45 @@ const ImportarPaises = () => {
                         {t('ui.delegate')} {p.delegado}
                       </span>
                     )}
+                    {/* Badge de Equipo / Institución */}
+                    {p.equipo && (
+                      <span
+                        title={`${t('editCountry.team', 'Equipo / Institución')}: ${p.equipo} (${t('ui.clickToEdit', 'Haz clic para editar')})`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nuevo = window.prompt(t('ui.editAssignedTeam', 'Editar equipo asignado:'), p.equipo);
+                          if (nuevo !== null) {
+                            setPreview(prev => {
+                              const copy = [...prev];
+                              copy[originalIndex] = { ...copy[originalIndex], equipo: nuevo.trim() || undefined };
+                              return copy;
+                            });
+                          }
+                        }}
+                        style={{
+                          fontSize: '0.66rem',
+                          color: 'var(--accent-color)',
+                          backgroundColor: 'var(--accent-soft)',
+                          border: '1px solid var(--accent-soft)',
+                          padding: '0.1rem 0.45rem',
+                          borderRadius: 'var(--border-radius, 6px)',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '160px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          fontWeight: '600',
+                          flexShrink: 0,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Users size={11} style={{ flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.equipo}</span>
+                      </span>
+                    )}
 
                     {/* Botón Veto (P5) */}
                     <button
@@ -2529,6 +2587,14 @@ const ImportarPaises = () => {
       )}
     </div>
   );
+};
+
+export {
+  parsearXLSX,
+  parsearTexto,
+  detectarColumnasTabla,
+  filaAPais,
+  procesarFilaArray
 };
 
 export default ImportarPaises;

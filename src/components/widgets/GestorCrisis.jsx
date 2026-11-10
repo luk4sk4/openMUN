@@ -1452,7 +1452,7 @@ const GestorCrisis = () => {
         </div>
 
         {/* Filtro, Plantillas, Import/Export */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <Filter size={11} color="var(--muted-text)" />
             <select

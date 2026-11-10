@@ -525,7 +525,7 @@ const PanelEnmiendasVotacion = () => {
             </div>
 
             {/* Presets Rápidos */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem', width: '100%' }}>
+            <div className="amendment-timer-presets" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem', width: '100%' }}>
               {[30, 45, 60, 90, 120].map(s => {
                 const isActivo = tiempoInicial === s;
                 return (
@@ -797,7 +797,7 @@ const PanelEnmiendasVotacion = () => {
 
             {/* Vista Modo Mano Alzada (Contadores Claros con Steppers) */}
             {modoVotacion === 'manos' ? (
-              <div style={{
+              <div className="amendment-vote-counts" style={{
                 display: 'grid',
                 gridTemplateColumns: tipoVotacion === 'substantive' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
                 gap: '0.6rem'

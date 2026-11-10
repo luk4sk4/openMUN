@@ -9,6 +9,23 @@ export function useTabIndicator(activeTab, tabs) {
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
 
   useEffect(() => {
+    const nav = tabsNavRef.current;
+    if (!nav || nav.hidden) return;
+
+    if (activeTab && window.matchMedia('(max-width: 768px)').matches) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    const activeButton = nav.querySelector('button[aria-current="page"]');
+    if (!activeButton) return;
+
+    const left = activeButton.offsetLeft;
+    const right = left + activeButton.offsetWidth;
+    if (left < nav.scrollLeft) nav.scrollLeft = left;
+    else if (right > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = right - nav.clientWidth;
+  }, [activeTab]);
+
+  useEffect(() => {
     if (!tabsNavRef.current) return;
 
     const updateIndicator = () => {

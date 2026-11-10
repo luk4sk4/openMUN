@@ -19,26 +19,6 @@ export const formatEmail = (conferenceName) => {
 };
 
 /**
- * Genera el hash criptográfico SHA-256 de una contraseña en el cliente
- */
-export const hashPassword = async (password) => {
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    const msgUint8 = new TextEncoder().encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-  // Fallback si crypto.subtle no está disponible
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(16);
-};
-
-/**
  * Guarda la cuenta activa localmente
  */
 export const guardarCuentaLocal = (account) => {
@@ -113,7 +93,7 @@ export const formatSupabaseError = (err) => {
 
 /**
  * 1. Crear nueva conferencia / cuenta
- * Soporta tanto Supabase Auth (conferences) como tabla manual (accounts)
+ * Supabase Auth almacena el hash de la contraseña.
  */
 export async function registrarConferencia(nombre, password) {
   const client = getSupabaseClient();

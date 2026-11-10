@@ -55,6 +55,9 @@ export const getSupabaseClient = () => {
   }
 
   try {
+    if (new URL(url).protocol !== 'https:') {
+      throw new Error('La conexión a Supabase requiere HTTPS');
+    }
     cachedClient = createClient(url, key, {
       auth: {
         persistSession: true,

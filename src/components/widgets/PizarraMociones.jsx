@@ -38,6 +38,8 @@ const PizarraMociones = () => {
   const [varianteConsulta, setVarianteConsulta] = useState('Cadena / Ping-Pong');
   const [tema, setTema] = useState('');
   const [tiempoTotalMin, setTiempoTotalMin] = useState(10);
+  const [tiempoTotalSeg, setTiempoTotalSeg] = useState(0);
+  const duracionTotal = tiempoTotalMin * 60 + tiempoTotalSeg;
   const [tiempoOradorSeg, setTiempoOradorSeg] = useState(45);
   const [mostrarDropdownPais, setMostrarDropdownPais] = useState(false);
   const [busquedaPais, setBusquedaPais] = useState('');
@@ -104,9 +106,9 @@ const PizarraMociones = () => {
 
   const handleSubmitMocion = (e) => {
     e.preventDefault();
-    if (!proponente || !tema.trim()) return;
+    if (!proponente || !tema.trim() || (!esTour && duracionTotal === 0)) return;
 
-    let totalSeg = Number(tiempoTotalMin) * 60;
+    let totalSeg = duracionTotal;
     let oradorSeg = Number(tiempoOradorSeg);
 
     if (tipo === 'Caucus No Moderado' || tipo === 'Consulta General') {
@@ -147,7 +149,8 @@ const PizarraMociones = () => {
   const formatMinutos = (segundos) => {
     if (!segundos || segundos === 0) return 'N/A';
     const mins = Math.floor(segundos / 60);
-    return `${mins} min`;
+    const secs = segundos % 60;
+    return secs ? `${mins}:${String(secs).padStart(2, '0')}` : `${mins} min`;
   };
 
   const esModerado = tipo === 'Caucus Moderado';
@@ -157,8 +160,8 @@ const PizarraMociones = () => {
 
   const intervencionesEstimadas = useMemo(() => {
     if (!esModerado || !tiempoOradorSeg || tiempoOradorSeg <= 0) return 0;
-    return Math.floor((Number(tiempoTotalMin) * 60) / Number(tiempoOradorSeg));
-  }, [esModerado, tiempoTotalMin, tiempoOradorSeg]);
+    return Math.floor(duracionTotal / Number(tiempoOradorSeg));
+  }, [esModerado, duracionTotal, tiempoOradorSeg]);
 
   // Configuración de modalidades conforme al sistema de diseño
   const tiposMocionConfig = [
@@ -885,7 +888,7 @@ const PizarraMociones = () => {
               )}
 
               {/* Configuración de Tiempos y Presets */}
-              <div style={{ display: 'grid', gridTemplateColumns: (!esTour && esModerado) ? '1fr 1fr' : '1fr', gap: '0.45rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 14rem), 1fr))', gap: '8px' }}>
                 {/* Tiempo Total (excepto Tour de Table) */}
                 {tipo !== 'Tour de Table' && (
                   <div style={{
@@ -897,81 +900,22 @@ const PizarraMociones = () => {
                     flexDirection: 'column',
                     gap: '0.35rem'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--muted-text)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Clock size={12} style={{ color: 'var(--accent-color)' }} /> {t('motions.totalDuration', 'Tiempo Total')}
-                      </label>
-                      <span style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-color)', fontVariantNumeric: 'tabular-nums', fontFamily: 'monospace' }}>
-                        {tiempoTotalMin}m
-                      </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '700', color: 'var(--muted-text)' }}>
+                      <Clock size={12} aria-hidden="true" /> {t('motions.totalDuration', 'Tiempo Total')}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => setTiempoTotalMin(prev => Math.max(1, Number(prev) - 1))}
-                        style={{
-                          width: '26px',
-                          height: '26px',
-                          borderRadius: '4px',
-                          border: '1px solid var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-color)',
-                          fontSize: '0.9rem',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: 0
-                        }}
-                      >
-                        -
-                      </button>
-
-                      <input
-                        type="number"
-                        min="1"
-                        max="90"
-                        value={tiempoTotalMin}
-                        onChange={e => setTiempoTotalMin(Math.max(1, Number(e.target.value)))}
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          textAlign: 'center',
-                          padding: '0.25rem 0.2rem',
-                          backgroundColor: 'var(--input-bg)',
-                          border: '1px solid var(--border-color)',
-                          color: 'var(--text-color)',
-                          borderRadius: '4px',
-                          fontSize: '0.82rem',
-                          fontWeight: '700',
-                          fontVariantNumeric: 'tabular-nums',
-                          fontFamily: 'monospace'
-                        }}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => setTiempoTotalMin(prev => Math.min(90, Number(prev) + 1))}
-                        style={{
-                          width: '26px',
-                          height: '26px',
-                          borderRadius: '4px',
-                          border: '1px solid var(--border-color)',
-                          backgroundColor: 'var(--input-bg)',
-                          color: 'var(--text-color)',
-                          fontSize: '0.9rem',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: 0
-                        }}
-                      >
-                        +
-                      </button>
+                    <div className="motion-duration-fields">
+                      <label>
+                        {t('timers.minutes')}
+                        <input type="number" min="0" max="90" value={tiempoTotalMin}
+                          onChange={e => setTiempoTotalMin(e.target.valueAsNumber || 0)} />
+                      </label>
+                      <span aria-hidden="true">:</span>
+                      <label>
+                        {t('timers.seconds')}
+                        <input type="number" min="0" max="59" value={tiempoTotalSeg}
+                          onChange={e => setTiempoTotalSeg(e.target.valueAsNumber || 0)} />
+                      </label>
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.2rem', justifyContent: 'space-between' }}>
@@ -979,15 +923,19 @@ const PizarraMociones = () => {
                         <button
                           key={p}
                           type="button"
-                          onClick={() => setTiempoTotalMin(p)}
+                          aria-pressed={duracionTotal === p * 60}
+                          onClick={() => {
+                            setTiempoTotalMin(p);
+                            setTiempoTotalSeg(0);
+                          }}
                           style={{
                             flex: 1,
                             padding: '0.15rem 0',
                             fontSize: '0.67rem',
                             borderRadius: '3px',
-                            border: Number(tiempoTotalMin) === p ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
-                            backgroundColor: Number(tiempoTotalMin) === p ? 'var(--accent-soft)' : 'var(--input-bg)',
-                            color: Number(tiempoTotalMin) === p ? 'var(--accent-color)' : 'var(--muted-text)',
+                            border: duracionTotal === p * 60 ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                            backgroundColor: duracionTotal === p * 60 ? 'var(--accent-soft)' : 'var(--input-bg)',
+                            color: duracionTotal === p * 60 ? 'var(--accent-color)' : 'var(--muted-text)',
                             cursor: 'pointer',
                             fontWeight: '600',
                             textAlign: 'center'
@@ -1158,7 +1106,7 @@ const PizarraMociones = () => {
 
                 <button
                   type="submit"
-                  disabled={!proponente || !tema.trim()}
+                  disabled={!proponente || !tema.trim() || (!esTour && duracionTotal === 0)}
                   style={{
                     flex: 2,
                     padding: '0.45rem 0.85rem',

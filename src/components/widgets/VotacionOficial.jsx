@@ -610,13 +610,12 @@ const VotacionOficial = () => {
               </div>
 
               {/* Botones de Voto Roll Call */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+              <div className="roll-call-actions">
                 {/* 1. A Favor */}
                 <button
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--success-solid)',
                     color: 'var(--btn-text)',
                     fontWeight: '750',
@@ -639,7 +638,6 @@ const VotacionOficial = () => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('favor_derechos')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--success-soft)',
                     color: 'var(--success-color)',
                     fontWeight: '750',
@@ -664,7 +662,6 @@ const VotacionOficial = () => {
                   onClick={() => registrarYAvanzarRollCall('abstencion')}
                   disabled={paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'transparent' : 'var(--warning-solid)',
                     color: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? 'var(--muted-text)' : 'var(--btn-text)',
                     border: (paisActualRollCall.estatus === 'Presente y Votando' || rondaRollCall === 2) ? '1px solid var(--border-color)' : 'none',
@@ -693,7 +690,6 @@ const VotacionOficial = () => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('contra_derechos')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--danger-soft)',
                     color: 'var(--danger-color)',
                     fontWeight: '750',
@@ -717,7 +713,6 @@ const VotacionOficial = () => {
                   type="button"
                   onClick={() => registrarYAvanzarRollCall('contra')}
                   style={{
-                    padding: '0.35rem 0.75rem',
                     backgroundColor: 'var(--danger-solid)',
                     color: 'var(--btn-text)',
                     fontWeight: '750',
@@ -741,7 +736,6 @@ const VotacionOficial = () => {
                     type="button"
                     onClick={() => registrarYAvanzarRollCall('pasar')}
                     style={{
-                      padding: '0.35rem 0.65rem',
                       backgroundColor: 'var(--input-bg, var(--panel-color))',
                       color: 'var(--text-color)',
                       fontWeight: '600',
@@ -1049,7 +1043,7 @@ const VotacionOficial = () => {
                         borderRadius: 'calc(var(--border-radius) - 2px)',
                         border: `1px solid ${esFavorPuro ? 'var(--success-color)' : 'transparent'}`,
                         backgroundColor: esFavorPuro ? 'var(--success-soft)' : 'transparent',
-                        color: esFavorPuro ? 'var(--success-color)' : 'var(--text-color)',
+                        color: 'var(--success-color)',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1074,7 +1068,7 @@ const VotacionOficial = () => {
                         borderRadius: 'calc(var(--border-radius) - 2px)',
                         border: `1px solid ${esFavorDerechos ? 'var(--success-color)' : 'transparent'}`,
                         backgroundColor: esFavorDerechos ? 'var(--success-soft)' : 'transparent',
-                        color: esFavorDerechos ? 'var(--success-color)' : 'var(--text-color)',
+                        color: 'var(--success-color)',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1100,7 +1094,7 @@ const VotacionOficial = () => {
                         borderRadius: 'calc(var(--border-radius) - 2px)',
                         border: `1px solid ${esAbstencion ? 'var(--warning-color)' : 'transparent'}`,
                         backgroundColor: esAbstencion ? 'var(--warning-soft)' : 'transparent',
-                        color: deshabilitarAbstencion ? 'var(--muted-text)' : (esAbstencion ? 'var(--warning-color)' : 'var(--text-color)'),
+                        color: deshabilitarAbstencion ? 'var(--muted-text)' : 'var(--warning-color)',
                         cursor: deshabilitarAbstencion ? 'not-allowed' : 'pointer',
                         opacity: deshabilitarAbstencion ? 0.35 : 1,
                         display: 'inline-flex',
@@ -1126,7 +1120,7 @@ const VotacionOficial = () => {
                         borderRadius: 'calc(var(--border-radius) - 2px)',
                         border: `1px solid ${esContraDerechos ? 'var(--danger-color)' : 'transparent'}`,
                         backgroundColor: esContraDerechos ? 'var(--danger-soft)' : 'transparent',
-                        color: esContraDerechos ? 'var(--danger-color)' : 'var(--text-color)',
+                        color: 'var(--danger-color)',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1151,7 +1145,7 @@ const VotacionOficial = () => {
                         borderRadius: 'calc(var(--border-radius) - 2px)',
                         border: `1px solid ${esContraPuro ? 'var(--danger-color)' : 'transparent'}`,
                         backgroundColor: esContraPuro ? 'var(--danger-soft)' : 'transparent',
-                        color: esContraPuro ? 'var(--danger-color)' : 'var(--text-color)',
+                        color: 'var(--danger-color)',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',

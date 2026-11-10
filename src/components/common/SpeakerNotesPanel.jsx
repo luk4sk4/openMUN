@@ -9,6 +9,7 @@ export default function SpeakerNotesPanel({ orador, modalidad, tema, notes, send
   const [draft, setDraft] = useState(null);
   const [error, setError] = useState(false);
   const anotaciones = notes.filter(note => note.type === 'speaker_annotation' && note.to === 'CHAIR');
+  const avisos = notes.filter(note => note.type !== 'speaker_annotation' && note.text);
 
   const guardar = event => {
     event.preventDefault();
@@ -54,6 +55,17 @@ export default function SpeakerNotesPanel({ orador, modalidad, tema, notes, send
           {anotaciones.map(note => (
             <article key={note.id}>
               <small className="speaker-notes-secondary">{new Date(note.timestamp).toLocaleString()} · {note.from}</small>
+              <div className="speaker-notes-text">{note.text}</div>
+            </article>
+          ))}
+        </div>
+      </details>
+      <details>
+        <summary>{t('speakerNotes.committeeNotifications')} ({avisos.length})</summary>
+        <div className="speaker-notes-history">
+          {avisos.map(note => (
+            <article key={note.id}>
+              <small className="speaker-notes-secondary">{new Date(note.timestamp).toLocaleString()} · {note.from} → {note.to}</small>
               <div className="speaker-notes-text">{note.text}</div>
             </article>
           ))}

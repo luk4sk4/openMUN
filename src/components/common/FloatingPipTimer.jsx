@@ -19,6 +19,7 @@ const FloatingPipTimer = ({
   onToggleTimer,
   onSiguienteOrador,
   onResetTimer,
+  onAdjustTime,
   onClosePip: _onClosePip
 }) => {
   const { t } = useTranslation();
@@ -90,6 +91,7 @@ const FloatingPipTimer = ({
         color: 'var(--text-color, #f7f2eb)',
         fontFamily: 'var(--font-family, Inter, system-ui, sans-serif)',
         justifyContent: 'space-between',
+        overflowY: 'auto',
         userSelect: 'none'
       }}
     >
@@ -169,7 +171,7 @@ const FloatingPipTimer = ({
       </div>
 
       {/* Botonera de Control Semántica */}
-      <div style={{ display: 'flex', gap: '0.45rem', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', justifyContent: 'center', alignItems: 'center' }}>
         {/* Iniciar / Pausar */}
         <button
           type="button"
@@ -252,6 +254,25 @@ const FloatingPipTimer = ({
         >
           <RotateCcw size={14} />
         </button>
+        {[-15, 15].map(delta => (
+          <button
+            key={delta}
+            type="button"
+            onClick={() => onAdjustTime(delta)}
+            aria-label={t(delta < 0 ? 'agenda.adjustTimeLess' : 'agenda.adjustTimeMore')}
+            style={{
+              background: 'var(--input-bg)',
+              color: 'var(--text-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: '0.45rem 0.65rem',
+              font: 'inherit',
+              cursor: 'pointer'
+            }}
+          >
+            {delta > 0 ? '+' : ''}{delta}s
+          </button>
+        ))}
       </div>
     </div>
   );

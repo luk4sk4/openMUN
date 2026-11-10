@@ -156,6 +156,7 @@ const CronometroDual = ({ modoInicial = null }) => {
 
   const displayOradorState = getTimerStyle(tiempoOradorSeg, corriendo);
   const displayTotalState = getTimerStyle(tiempoTotalSeg, corriendo);
+  const tiempoVisible = formatTimeWithNegative(esTiempoSoloGeneral ? tiempoTotalSeg : tiempoOradorSeg);
 
   const progresoTotalPorcentaje = tiempoTotalInicial > 0
     ? Math.min(100, Math.max(0, ((tiempoTotalInicial - tiempoTotalSeg) / tiempoTotalInicial) * 100))
@@ -329,7 +330,7 @@ const CronometroDual = ({ modoInicial = null }) => {
 
       {/* ── Banner de Tiempo Total Caucus (Pegado arriba, justo debajo de las banderas) ── */}
       {tipoMocion === 'Caucus Moderado' && (
-        <div style={{
+        <div className="mobile-wrap" style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -435,10 +436,10 @@ const CronometroDual = ({ modoInicial = null }) => {
           ...(esTiempoSoloGeneral ? displayTotalState : displayOradorState).style
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <div style={{
+        <div className="timer-readout" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <div className="timer-readout-digits" style={{
             fontWeight: '900',
-            fontSize: 'clamp(6.8rem, min(14.5vw, 24vh), 12rem)',
+            '--timer-characters': tiempoVisible.length,
             fontFamily: 'monospace',
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '0.04em',
@@ -447,7 +448,7 @@ const CronometroDual = ({ modoInicial = null }) => {
             marginBottom: '4px',
             textShadow: 'var(--timer-digits-shadow, none)'
           }}>
-            {formatTimeWithNegative(esTiempoSoloGeneral ? tiempoTotalSeg : tiempoOradorSeg)}
+            {tiempoVisible}
           </div>
 
           <div style={{
@@ -742,6 +743,7 @@ const CronometroDual = ({ modoInicial = null }) => {
         onToggleTimer={handleStartPause}
         onSiguienteOrador={esTiempoSoloGeneral ? null : handleSiguienteOrador}
         onResetTimer={handleReset}
+        onAdjustTime={esTiempoSoloGeneral ? handleModificarTiempoTotal : handleModificarTiempoOrador}
         onClosePip={closePip}
       />
     </div>

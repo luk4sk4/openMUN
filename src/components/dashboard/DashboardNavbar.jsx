@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { Radio, Moon, Sun, Maximize2, Eye, Search, Megaphone, LayoutGrid, ToggleLeft, ToggleRight, Menu, Building2, MessageSquare, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import OpenMunLogo from '../common/OpenMunLogo';
@@ -58,6 +58,7 @@ const DashboardNavbar = ({
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const sidebarEdgeRef = useRef(null);
   const toggleBtnRef = useRef(null);
+  const sidebarId = useId();
   const { tabsNavRef, indicatorStyle } = useTabIndicator(activeTab, tabs);
 
 
@@ -69,6 +70,10 @@ const DashboardNavbar = ({
   useEffect(() => {
     setIsToolsOpen(false);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (isToolsOpen) sidebarEdgeRef.current?.querySelector('button')?.focus({ preventScroll: true });
+  }, [isToolsOpen]);
 
   // Cerrar al pulsar Escape o al hacer clic fuera
   useEffect(() => {
@@ -84,18 +89,19 @@ const DashboardNavbar = ({
     };
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !sessionMenuOpen) {
         setIsToolsOpen(false);
+        toggleBtnRef.current?.focus();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isToolsOpen]);
+  }, [isToolsOpen, sessionMenuOpen]);
 
   return (
     <>
@@ -145,7 +151,7 @@ const DashboardNavbar = ({
           )}
           <button className="dashboard-modulation" role="switch" aria-checked={isModular} onClick={toggleModulation}
               title={isModular ? t('header.fixedMode', 'Volver a la vista fija') : t('header.modularMode', 'Personalizar los módulos')}>
-              {isModular ? <ToggleRight size={23} /> : <ToggleLeft size={23} />}<span>{t('header.modulation', 'Modulación')}</span>
+              {isModular ? <ToggleRight size={23} /> : <ToggleLeft size={23} />}<span>{t('header.modulation')}</span>
             </button>
             <button
               ref={toggleBtnRef}
@@ -154,6 +160,7 @@ const DashboardNavbar = ({
               onClick={() => setIsToolsOpen(prev => !prev)}
               aria-label={t('header.toggleTools', 'Abrir o cerrar herramientas del comité')}
               aria-expanded={isToolsOpen}
+              aria-controls={sidebarId}
               title={t('header.tools', 'Herramientas del comité')}
             >
               <Menu size={20} />
@@ -170,7 +177,7 @@ const DashboardNavbar = ({
       ref={sidebarEdgeRef}
       className={`dashboard-sidebar-edge${activeTab !== 'HOME' ? ' has-context' : ''}${sessionMenuOpen || isToolsOpen ? ' is-open' : ''}`}
     >
-      <aside className="dashboard-sidebar" aria-label={t('header.tools', 'Herramientas del comité')}>
+      <aside id={sidebarId} className="dashboard-sidebar" aria-label={t('header.tools', 'Herramientas del comité')}>
         <div className="dashboard-toolbar-actions">
           <button onClick={() => { setIsToolsOpen(false); openCommandPalette(); }} title={t('palette.buttonTooltip', 'Buscar comandos (Ctrl+K)')}>
             <Search size={16} /><span>{t('header.search', 'Buscar')}</span><kbd>Ctrl K</kbd>

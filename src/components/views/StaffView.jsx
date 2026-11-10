@@ -1587,7 +1587,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
               {/* ── 1. CABECERA RESUMEN DE SALA EN TIEMPO REAL ── */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
                 gap: '1rem'
               }}>
                 {/* Card 1: Estado del Debate */}
@@ -1793,7 +1793,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
               {monitorSubTab === 'AMBAS' && (
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
                   gap: '1.5rem',
                   alignItems: 'start'
                 }}>

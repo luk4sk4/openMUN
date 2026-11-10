@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, CheckCircle2, Pause, Play, RotateCcw, Scale, X } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown, Pause, Play, RotateCcw, Scale, X } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { playTimerAlarm } from '../../utils/audioAlerts';
 import './VotosConDerechos.css';
@@ -65,6 +65,7 @@ function ListaDerechosContent({ delegaciones, sesion }) {
   const [ahora, setAhora] = useState(Date.now());
   const [turnoActivoId, setTurnoActivoId] = useState(null);
   const [turnosRealizados, setTurnosRealizados] = useState([]);
+  const [expandido, setExpandido] = useState(true);
   const alarmaSonadaRef = useRef(false);
 
   // Mantener o seleccionar orador activo
@@ -168,12 +169,12 @@ function ListaDerechosContent({ delegaciones, sesion }) {
   return (
     <section className="rights-panel" aria-label={t('voting.rightsOfExplanationTitle')}>
       {/* Encabezado del panel */}
-      <div className="rights-header">
+      <div className={expandido ? 'rights-header' : 'rights-header rights-header-collapsed'}>
         <div className="rights-header-title">
           <Scale size={14} />
           <span>{t('voting.rightsOfExplanationTitle', 'Fundamentación de Voto con Derechos')}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        {expandido && <div className="rights-header-controls">
           <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)', fontVariantNumeric: 'tabular-nums' }}>
             {t('voting.completedOfTotal', { done: turnosRealizados.length, total: delegaciones.length, defaultValue: `Concluidas: ${turnosRealizados.length} de ${delegaciones.length}` })}
           </span>
@@ -189,9 +190,19 @@ function ListaDerechosContent({ delegaciones, sesion }) {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
+        <button
+          type="button"
+          className="rights-btn-control rights-panel-toggle"
+          aria-expanded={expandido}
+          aria-label={`${t(expandido ? 'common.close' : 'common.open')} · ${t('voting.rightsOfExplanationTitle')}`}
+          onClick={() => setExpandido(prev => !prev)}
+        >
+          {expandido ? <X size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+        </button>
       </div>
 
+      {expandido && <>
       {/* Hero del Orador Activo con Mini Cronómetro (parecido a Set Agenda) */}
       {paisActivo && !todosConcluidos ? (
         <div className="rights-hero-card">
@@ -335,6 +346,7 @@ function ListaDerechosContent({ delegaciones, sesion }) {
           })}
         </div>
       </div>
+      </>}
     </section>
   );
 }

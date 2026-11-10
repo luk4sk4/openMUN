@@ -6,7 +6,8 @@ import {
   Search,
   Globe2,
   RotateCcw,
-  CheckCircle2
+  CheckCircle2,
+  Users,
 } from 'lucide-react';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
@@ -43,6 +44,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const [nombre, setNombre] = useState('');
+  const [equipo, setEquipo] = useState('');
   const [bandera, setBandera] = useState('');
   const [veto, setVeto] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -58,6 +60,7 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
   useEffect(() => {
     if (pais) {
       setNombre(pais.nombre || '');
+      setEquipo(pais.equipo || '');
       setBandera(pais.bandera || 'un');
       setVeto(pais.veto || false);
       setUrlInput('');
@@ -156,7 +159,8 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
     onGuardar(pais.id, {
       nombre: nombre.trim(),
       bandera: bandera || 'un',
-      veto
+      veto,
+      equipo: equipo.trim()
     });
     onClose();
   };
@@ -302,6 +306,45 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                 Auto
               </button>
             </div>
+          </div>
+          {/* Equipo / Colegio / Institución */}
+          <div>
+            <label
+              htmlFor="edit-country-team-input"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.78rem',
+                fontWeight: '650',
+                color: 'var(--muted-text)',
+                marginBottom: '0.35rem'
+              }}
+            >
+              <Users size={13} style={{ color: 'var(--accent-color)' }} />
+              {t('editCountry.team', 'Equipo / Colegio / Institución')}
+            </label>
+            <input
+              id="edit-country-team-input"
+              type="text"
+              value={equipo}
+              onChange={(e) => setEquipo(e.target.value)}
+              placeholder="Ej. Colegio San Ignacio, Equipo A, Instituto..."
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '0.5rem 0.75rem',
+                backgroundColor: 'var(--input-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                color: 'var(--text-color)',
+                fontSize: '0.85rem',
+                outline: 'none'
+              }}
+            />
+            <span style={{ fontSize: '0.7rem', color: 'var(--muted-text)', display: 'block', marginTop: '0.25rem' }}>
+              {t('ui.teamFieldDescription', 'Asigna esta delegación a un colegio o equipo para agruparla en la pestaña de rendimiento de equipos.')}
+            </span>
           </div>
 
           {/* Sección de Bandera e Imagen */}

@@ -15,11 +15,9 @@ import {
   Send,
   Building2,
   Sliders,
-  CheckCircle2,
   Check,
   X,
   UserX,
-  Shield,
   Zap,
   Vote,
   FileText,
@@ -28,10 +26,6 @@ import {
   BarChart3,
   Calendar,
   UserPlus,
-  Hand,
-  Lock,
-  Mail,
-  Landmark,
   Flame,
   Tv,
   Map,
@@ -74,6 +68,7 @@ import SelectorAleatorio from '../widgets/SelectorAleatorio';
 import MensajeriaComite from '../messaging/MensajeriaComite';
 import MensajeriaConferencia from '../messaging/MensajeriaConferencia';
 import ConsoleNavbar from '../dashboard/ConsoleNavbar';
+import './SecretariatView.css';
 
 const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const { t } = useTranslation();
@@ -195,8 +190,8 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     });
   }, [registerSessionHandlers, aplicarEstadoExterno, ejecutarAccion]);
 
-  const [activeTab, setActiveTab] = useState('NOTAS'); // 'NOTAS' | 'AVISOS' | 'SOLICITUDES' | 'DEBATE' | 'VOTACION' | 'INFO' | 'CRISIS' | 'AJUSTES' | 'CONEXIONES'
-  const [subTabNotas, setSubTabNotas] = useState('COMITE'); // 'COMITE' | 'ORADOR' | 'CONFERENCIA'
+  const [activeTab, setActiveTab] = useState('NOTAS');
+  const [subTabNotas, setSubTabNotas] = useState('COMITE'); // 'COMITE' | 'CONFERENCIA' | 'AVISOS'
   const [subTabInfo, setSubTabInfo] = useState('MATRIZ'); // 'MATRIZ' | 'ANADIR' | 'HISTORICO' | 'AGENDA' | 'IMPORTAR' | 'MOCIONES' | 'RULETA'
   const [subTabVotacion, setSubTabVotacion] = useState('OFICIAL'); // 'OFICIAL' | 'MAPA'
   const [subTabDebate, setSubTabDebate] = useState('MONITOR'); // 'MONITOR' | 'ANADIR'
@@ -359,31 +354,73 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     }] : [])
   ];
 
+  const comiteNotesCount = notes.filter(n => n.type !== 'speaker_annotation').length;
+  const speakerNotesCount = notes.filter(n => n.type === 'speaker_annotation' && n.to === 'CHAIR').length;
+  const inboxTabs = [
+    { id: 'COMITE', label: t('ui.committeeNotes'), icon: MessageSquare, count: comiteNotesCount },
+    { id: 'CONFERENCIA', label: t('ui.conferenceAnnouncements'), icon: Globe, count: avisosDB.length },
+    { id: 'AVISOS', label: t('views.secretariat.officialAnnouncements'), icon: Megaphone, count: visibleAnnouncements.length }
+  ];
+
   const secretariatTabs = [
-    { id: 'NOTAS', label: t('views.delegate.inbox', 'Bandeja de Notas'), icon: MessageSquare, badge: notes.length },
-    { id: 'AVISOS', label: t('views.secretariat.officialAnnouncements', 'Avisos Oficiales'), icon: Megaphone, badge: visibleAnnouncements.length },
+    { id: 'NOTAS', label: t('views.delegate.inbox', 'Buzón de Entrada'), icon: MessageSquare, badge: comiteNotesCount + avisosDB.length + visibleAnnouncements.length },
+    { id: 'ORADOR', label: t('speakerNotes.tabTitle', 'Notas de orador'), icon: FileText, badge: speakerNotesCount },
     { id: 'SOLICITUDES', label: t('views.secretariat.speakingRequestsTab', 'Solicitudes'), icon: Zap, badge: speakingRequests.length + enmiendasPropuestas.length },
     { id: 'DEBATE', label: t('views.secretariat.debateMonitor', 'Monitor de Debate & Oradores'), icon: Clock },
     { id: 'VOTACION', label: t('views.secretariat.votingMap', 'Votaciones & Mapa'), icon: Vote },
     { id: 'INFO', label: t('views.secretariat.committeeManagement', 'Gestión de Comité & Widgets'), icon: BarChart3 },
     { id: 'CRISIS', label: t('views.secretariat.crisisCabinet', 'Gabinete de Crisis & Noticiero'), icon: Flame },
-    { id: 'AJUSTES', label: t('views.secretariat.settingsPermissions', 'Ajustes y Permisos'), icon: Sliders },
     { id: 'CONEXIONES', label: t('views.secretariat.connections', 'Conexiones'), icon: Users, badge: connectedPeers.length }
   ];
 
   const secretariatSidebarActions = (
-    <button
-      type="button"
-      onClick={handleExportarNotasCSV}
-      title={t('views.secretariat.exportCsv', 'Exportar notas en CSV')}
-    >
-      <Download size={16} />
-      <span>{t('views.secretariat.exportCsv', 'Exportar CSV')}</span>
-    </button>
+    <>
+      <details className="secretariat-settings">
+        <summary><Sliders size={16} aria-hidden="true" /> {t('views.secretariat.settingsPermissions')}</summary>
+        <div className="secretariat-settings-fields">
+          <small>{t('ui.changesMadeByTheSecretariatSyncImmediatelyWithTheChair')}</small>
+          {[
+            ['speakerRequestMode', 'liveSession.gslRequestMode', 'liveSession.gslRequestModeDesc'],
+            ['caucusRequestMode', 'liveSession.caucusRequestMode', 'ui.controlHowDelegatesJoinTheListDuringAModeratedDebate']
+          ].map(([key, label, description]) => (
+            <label key={key}>
+              {t(label)}
+              <small>{t(description)}</small>
+              <select value={roomSettings[key]} onChange={event => updateRoomSettings({ [key]: event.target.value })}>
+                <option value="direct">{t('liveSession.requestModeDirect')}</option>
+                <option value="approval">{t('liveSession.requestModeApproval')}</option>
+                <option value="disabled">{t('liveSession.requestModeDisabled')}</option>
+              </select>
+            </label>
+          ))}
+          <fieldset>
+            <legend>{t('liveSession.delegatePermissions')}</legend>
+            {['allowDelegateNotes', 'allowChairNotes', 'allowMotions', 'allowLiveVoting'].map(key => (
+              <label key={key}>
+                <input
+                  type="checkbox"
+                  checked={roomSettings[key]}
+                  onChange={event => updateRoomSettings({ [key]: event.target.checked })}
+                />
+                <span>{t(`liveSession.${key}`)}<small>{t(`liveSession.${key}Desc`)}</small></span>
+              </label>
+            ))}
+          </fieldset>
+        </div>
+      </details>
+      <button
+        type="button"
+        onClick={handleExportarNotasCSV}
+        title={t('views.secretariat.exportCsv', 'Exportar notas en CSV')}
+      >
+        <Download size={16} />
+        <span>{t('views.secretariat.exportCsv', 'Exportar CSV')}</span>
+      </button>
+    </>
   );
 
   return (
-    <div className="dashboard-shell" style={{
+    <div className="dashboard-shell secretariat-shell" style={{
       minHeight: '100vh',
       backgroundColor: 'var(--bg-color)',
       color: 'var(--text-color)',
@@ -441,11 +478,45 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PESTAÑA: AVISOS OFICIALES (SECRETARÍA)                 */}
-        {/* ═══════════════════════════════════════════════════════ */}
-        {activeTab === 'AVISOS' && (
-          <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 420px) 1fr', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+        {activeTab === 'NOTAS' && (
+          <>
+            <div className="secretariat-inbox-tabs" role="group" aria-label={t('views.delegate.inbox')}>
+              {inboxTabs.map(({ id, label, icon: Icon, count }) => (
+                <button key={id} type="button" aria-pressed={subTabNotas === id} onClick={() => setSubTabNotas(id)}>
+                  <Icon size={15} aria-hidden="true" />
+                  {label}
+                  {count > 0 && <b className="dashboard-unread">{count}</b>}
+                </button>
+              ))}
+            </div>
+            {subTabNotas === 'COMITE' && (
+              <MensajeriaComite
+                currentRole="secretariat"
+                currentComiteId={currentComiteId}
+                currentComiteNombre={nombreComite}
+                paises={paises}
+                layout="split"
+                showHeader={false}
+              />
+            )}
+
+            {subTabNotas === 'CONFERENCIA' && (
+              <MensajeriaConferencia
+                currentRole="secretariat"
+                conferenciaId={confActiva?.id || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null)}
+                currentComiteId={currentComiteId}
+                currentComiteNombre={nombreComite}
+                comites={comitesConf}
+                initialAvisos={avisosDB}
+                layout="split"
+                showHeader={false}
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === 'NOTAS' && subTabNotas === 'AVISOS' && (
+          <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 420px) minmax(0, 1fr)', gap: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
             {/* Formulario de Emisión de Aviso */}
             <div style={{
               backgroundColor: 'var(--panel-color)',
@@ -760,179 +831,27 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PESTAÑA 1: BANDEJA DE NOTAS / PAJES                     */}
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PESTAÑA 1: MENSAJERÍA Y NOTAS (COMITÉ Y CONFERENCIA)     */}
-        {/* ═══════════════════════════════════════════════════════ */}
-        {activeTab === 'NOTAS' && (() => {
-          const comiteNotesCount = notes.filter(n => n.type !== 'speaker_annotation').length;
-          const speakerNotesCount = notes.filter(n => n.type === 'speaker_annotation' && n.to === 'CHAIR').length;
+        {activeTab === 'ORADOR' && (
+          <div style={{
+            backgroundColor: 'var(--panel-color)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '12px',
+            padding: '1.25rem',
+            maxWidth: '900px',
+            width: '100%',
+            margin: '0 auto',
+            boxSizing: 'border-box'
+          }}>
+            <SpeakerNotesPanel
+              orador={oradorActual}
+              modalidad={caucusActivo.activo ? caucusActivo.tipo || 'Caucus' : 'GSL'}
+              tema={temaActual}
+              notes={notes}
+              sendNote={sendNote}
+            />
+          </div>
+        )}
 
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
-              {/* Sub-pestañas: Comité vs Orador vs Conferencia */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: 'var(--panel-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '12px',
-                padding: '0.45rem 0.75rem',
-                flexWrap: 'wrap',
-                gap: '0.6rem'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => setSubTabNotas('COMITE')}
-                    style={{
-                      backgroundColor: subTabNotas === 'COMITE' ? 'var(--btn-bg)' : 'transparent',
-                      color: subTabNotas === 'COMITE' ? 'var(--btn-text)' : 'var(--muted-text)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '0.5rem 0.95rem',
-                      fontSize: '0.84rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.45rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <MessageSquare size={15} />
-                    <span>{t('ui.committeeNotes')}</span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      padding: '0.1rem 0.45rem',
-                      borderRadius: '10px',
-                      backgroundColor: subTabNotas === 'COMITE' ? 'rgba(255,255,255,0.22)' : 'var(--card-header-bg)',
-                      color: subTabNotas === 'COMITE' ? '#ffffff' : 'var(--text-color)',
-                      fontWeight: '800'
-                    }}>
-                      {comiteNotesCount}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSubTabNotas('ORADOR')}
-                    style={{
-                      backgroundColor: subTabNotas === 'ORADOR' ? 'var(--btn-bg)' : 'transparent',
-                      color: subTabNotas === 'ORADOR' ? 'var(--btn-text)' : 'var(--muted-text)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '0.5rem 0.95rem',
-                      fontSize: '0.84rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.45rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <FileText size={15} />
-                    <span>{t('speakerNotes.tabTitle', 'Notas de orador')}</span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      padding: '0.1rem 0.45rem',
-                      borderRadius: '10px',
-                      backgroundColor: subTabNotas === 'ORADOR' ? 'rgba(255,255,255,0.22)' : 'var(--card-header-bg)',
-                      color: subTabNotas === 'ORADOR' ? '#ffffff' : 'var(--text-color)',
-                      fontWeight: '800'
-                    }}>
-                      {speakerNotesCount}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSubTabNotas('CONFERENCIA')}
-                    style={{
-                      backgroundColor: subTabNotas === 'CONFERENCIA' ? 'var(--btn-bg)' : 'transparent',
-                      color: subTabNotas === 'CONFERENCIA' ? 'var(--btn-text)' : 'var(--muted-text)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '0.5rem 0.95rem',
-                      fontSize: '0.84rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.45rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <Globe size={15} />
-                    <span>{t('ui.conferenceAnnouncements')}</span>
-                    {avisosDB.length > 0 && (
-                      <span style={{
-                        fontSize: '0.72rem',
-                        padding: '0.1rem 0.45rem',
-                        borderRadius: '10px',
-                        backgroundColor: subTabNotas === 'CONFERENCIA' ? 'rgba(255,255,255,0.25)' : 'var(--card-header-bg)',
-                        color: subTabNotas === 'CONFERENCIA' ? '#ffffff' : 'var(--text-color)',
-                        fontWeight: '800'
-                      }}>
-                        {avisosDB.length}
-                      </span>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {subTabNotas === 'COMITE' && (
-                <MensajeriaComite
-                  currentRole="secretariat"
-                  currentComiteId={currentComiteId}
-                  currentComiteNombre={nombreComite}
-                  paises={paises}
-                  layout="split"
-                  showHeader={false}
-                />
-              )}
-
-              {subTabNotas === 'ORADOR' && (
-                <div style={{
-                  backgroundColor: 'var(--panel-color)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  padding: '1.25rem',
-                  maxWidth: '900px',
-                  width: '100%',
-                  margin: '0 auto',
-                  boxSizing: 'border-box'
-                }}>
-                  <SpeakerNotesPanel
-                    orador={oradorActual}
-                    modalidad={caucusActivo.activo ? caucusActivo.tipo || 'Caucus' : 'GSL'}
-                    tema={temaActual}
-                    notes={notes}
-                    sendNote={sendNote}
-                  />
-                </div>
-              )}
-
-              {subTabNotas === 'CONFERENCIA' && (
-                <MensajeriaConferencia
-                  currentRole="secretariat"
-                  conferenciaId={confActiva?.id || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_conf_id') : null)}
-                  currentComiteId={currentComiteId}
-                  currentComiteNombre={nombreComite}
-                  comites={comitesConf}
-                  initialAvisos={avisosDB}
-                  layout="split"
-                  showHeader={false}
-                />
-              )}
-            </div>
-          );
-        })()}
-
-        {/* ═══════════════════════════════════════════════════════ */}
         {activeTab === 'SOLICITUDES' && (() => {
           const puntosParlamentarios = speakingRequests.filter(r => r.speechType === 'POINT');
           const otrasSolicitudes = speakingRequests.filter(r => r.speechType !== 'POINT');
@@ -1680,346 +1599,6 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
               {subTabInfo === 'IMPORTAR' && <ImportarPaises />}
               {subTabInfo === 'MOCIONES' && <PizarraMociones />}
               {subTabInfo === 'RULETA' && <SelectorAleatorio />}
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PESTAÑA 4: AJUSTES Y PERMISOS DE SALA                   */}
-        {/* ═══════════════════════════════════════════════════════ */}
-        {activeTab === 'AJUSTES' && (
-          <div style={{ maxWidth: '850px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
-            <div style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '1.25rem 1.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
-                  {t('ui.roomSettingsAndDelegatePermissions')}
-                </h3>
-                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--muted-text)' }}>
-                  {t('ui.changesMadeByTheSecretariatSyncImmediatelyWithTheChair')}
-                </p>
-              </div>
-            </div>
-
-            {/* Sección 1: Modo de Solicitud de Oradores (GSL y Caucus) */}
-            <div style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                  <Zap size={18} color="#3b82f6" /> {t('liveSession.gslRequestMode')}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                  {t('liveSession.gslRequestModeDesc')}
-                </div>
-              </div>
-
-              {/* 3 opciones selector en tarjetas */}
-              <div className="openmun-grid-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {/* Opción 1: Directas */}
-                <div
-                  onClick={() => updateRoomSettings({ speakerRequestMode: 'direct' })}
-                  style={{
-                    border: `1.5px solid ${roomSettings.speakerRequestMode === 'direct' ? '#22c55e' : 'var(--border-color)'}`,
-                    backgroundColor: roomSettings.speakerRequestMode === 'direct' ? 'rgba(34, 197, 94, 0.12)' : 'var(--card-header-bg)',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'direct' ? '#22c55e' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Zap size={14} /> {t('liveSession.requestModeDirect')}
-                    </span>
-                    {roomSettings.speakerRequestMode === 'direct' && <CheckCircle2 size={16} color="#22c55e" />}
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    {t('ui.theDelegateJoinsTheListAutomaticallyWithoutChairConfirmation')}
-                  </span>
-                </div>
-
-                {/* Opción 2: Requiere Aprobación */}
-                <div
-                  onClick={() => updateRoomSettings({ speakerRequestMode: 'approval' })}
-                  style={{
-                    border: `1.5px solid ${roomSettings.speakerRequestMode === 'approval' ? '#eab308' : 'var(--border-color)'}`,
-                    backgroundColor: roomSettings.speakerRequestMode === 'approval' ? 'rgba(234, 179, 8, 0.12)' : 'var(--card-header-bg)',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'approval' ? '#eab308' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Hand size={14} /> {t('liveSession.requestModeApproval')}
-                    </span>
-                    {roomSettings.speakerRequestMode === 'approval' && <CheckCircle2 size={16} color="#eab308" />}
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    {t('ui.requiresApprovalFromTheChairOrSecretariat')}
-                  </span>
-                </div>
-
-                {/* Opción 3: Deshabilitadas */}
-                <div
-                  onClick={() => updateRoomSettings({ speakerRequestMode: 'disabled' })}
-                  style={{
-                    border: `1.5px solid ${roomSettings.speakerRequestMode === 'disabled' ? '#ef4444' : 'var(--border-color)'}`,
-                    backgroundColor: roomSettings.speakerRequestMode === 'disabled' ? 'rgba(239, 68, 68, 0.12)' : 'var(--card-header-bg)',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.speakerRequestMode === 'disabled' ? '#ef4444' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Lock size={14} /> {t('liveSession.requestModeDisabled')}
-                    </span>
-                    {roomSettings.speakerRequestMode === 'disabled' && <CheckCircle2 size={16} color="#ef4444" />}
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    {t('ui.blocksSpeakingRequestsFromTheDelegateView')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Sección 2: Solicitudes de Caucus Moderado */}
-            <div style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                  <Clock size={18} color="#a855f7" /> {t('liveSession.caucusRequestMode')}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--muted-text)', marginTop: '2px' }}>
-                  {t('ui.controlHowDelegatesJoinTheListDuringAModeratedDebate')}
-                </div>
-              </div>
-
-              <div className="openmun-grid-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {/* Opción 1: Directas */}
-                <div
-                  onClick={() => updateRoomSettings({ caucusRequestMode: 'direct' })}
-                  style={{
-                    border: `1.5px solid ${roomSettings.caucusRequestMode === 'direct' ? '#22c55e' : 'var(--border-color)'}`,
-                    backgroundColor: roomSettings.caucusRequestMode === 'direct' ? 'rgba(34, 197, 94, 0.12)' : 'var(--card-header-bg)',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'direct' ? '#22c55e' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Zap size={14} /> {t('liveSession.requestModeDirect')}
-                    </span>
-                    {roomSettings.caucusRequestMode === 'direct' && <CheckCircle2 size={16} color="#22c55e" />}
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    {t('ui.automaticEntryToTheCaucusList')}
-                  </span>
-                </div>
-
-                {/* Opción 2: Requiere Aprobación */}
-                <div
-                  onClick={() => updateRoomSettings({ caucusRequestMode: 'approval' })}
-                  style={{
-                    border: `1.5px solid ${roomSettings.caucusRequestMode === 'approval' ? '#eab308' : 'var(--border-color)'}`,
-                    backgroundColor: roomSettings.caucusRequestMode === 'approval' ? 'rgba(234, 179, 8, 0.12)' : 'var(--card-header-bg)',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'approval' ? '#eab308' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Hand size={14} /> {t('liveSession.requestModeApproval')}
-                    </span>
-                    {roomSettings.caucusRequestMode === 'approval' && <CheckCircle2 size={16} color="#eab308" />}
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    {t('ui.theChairOrSecretariatApprovesEachTurn')}
-                  </span>
-                </div>
-
-                {/* Opción 3: Deshabilitadas */}
-                <div
-                  onClick={() => updateRoomSettings({ caucusRequestMode: 'disabled' })}
-                  style={{
-                    border: `1.5px solid ${roomSettings.caucusRequestMode === 'disabled' ? '#ef4444' : 'var(--border-color)'}`,
-                    backgroundColor: roomSettings.caucusRequestMode === 'disabled' ? 'rgba(239, 68, 68, 0.12)' : 'var(--card-header-bg)',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: roomSettings.caucusRequestMode === 'disabled' ? '#ef4444' : 'var(--text-color)', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Lock size={14} /> {t('liveSession.requestModeDisabled')}
-                    </span>
-                    {roomSettings.caucusRequestMode === 'disabled' && <CheckCircle2 size={16} color="#ef4444" />}
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--muted-text)', lineHeight: '1.3' }}>
-                    {t('ui.requestsBlockedDuringTheCaucus')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Sección 3: Permisos y Capacidades de Delegados */}
-            <div style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '800', fontSize: '0.95rem' }}>
-                <Shield size={18} color="#10b981" /> {t('liveSession.delegatePermissions')}
-              </div>
-
-              <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-                {/* Toggle Notas entre Delegados */}
-                <div style={{
-                  backgroundColor: 'var(--card-header-bg)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '0.75rem 1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Mail size={15} /> {t('liveSession.allowDelegateNotes')}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowDelegateNotesDesc')}</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={roomSettings.allowDelegateNotes}
-                    onChange={e => updateRoomSettings({ allowDelegateNotes: e.target.checked })}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
-                  />
-                </div>
-
-                {/* Toggle Notas a la Mesa */}
-                <div style={{
-                  backgroundColor: 'var(--card-header-bg)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '0.75rem 1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Landmark size={15} /> {t('liveSession.allowChairNotes')}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowChairNotesDesc')}</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={roomSettings.allowChairNotes}
-                    onChange={e => updateRoomSettings({ allowChairNotes: e.target.checked })}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
-                  />
-                </div>
-
-                {/* Toggle Proponer Mociones */}
-                <div style={{
-                  backgroundColor: 'var(--card-header-bg)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '0.75rem 1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <FileText size={15} /> {t('liveSession.allowMotions')}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowMotionsDesc')}</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={roomSettings.allowMotions}
-                    onChange={e => updateRoomSettings({ allowMotions: e.target.checked })}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
-                  />
-                </div>
-
-                {/* Toggle Votación en Vivo */}
-                <div style={{
-                  backgroundColor: 'var(--card-header-bg)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '0.75rem 1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Vote size={15} /> {t('liveSession.allowLiveVoting')}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted-text)' }}>{t('liveSession.allowLiveVotingDesc')}</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={roomSettings.allowLiveVoting}
-                    onChange={e => updateRoomSettings({ allowLiveVoting: e.target.checked })}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#22c55e' }}
-                  />
-                </div>
-              </div>
             </div>
           </div>
         )}

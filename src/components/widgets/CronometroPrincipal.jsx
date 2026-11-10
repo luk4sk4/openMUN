@@ -176,6 +176,7 @@ const CronometroPrincipal = () => {
   };
 
   const displayState = getTimerStyle(segundosRestantes, corriendo);
+  const tiempoVisible = formatTimeWithNegative(segundosRestantes);
 
   const progresoPorcentaje = tiempoInicial > 0
     ? Math.min(100, Math.max(0, ((tiempoInicial - segundosRestantes) / tiempoInicial) * 100))
@@ -400,10 +401,10 @@ const CronometroPrincipal = () => {
           ...displayState.style
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <div style={{
+        <div className="timer-readout" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <div className="timer-readout-digits" style={{
             fontWeight: '900',
-            fontSize: 'clamp(6.8rem, min(14.5vw, 24vh), 12rem)',
+            '--timer-characters': tiempoVisible.length,
             fontFamily: 'monospace',
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '0.04em',
@@ -412,7 +413,7 @@ const CronometroPrincipal = () => {
             marginBottom: '4px',
             textShadow: 'var(--timer-digits-shadow, none)'
           }}>
-            {formatTimeWithNegative(segundosRestantes)}
+            {tiempoVisible}
           </div>
           <div style={{
             fontSize: '0.9rem',
@@ -885,6 +886,7 @@ const CronometroPrincipal = () => {
         onToggleTimer={handleStartPause}
         onSiguienteOrador={handleSiguienteOrador}
         onResetTimer={handleReset}
+        onAdjustTime={delta => setSegundosRestantes(prev => prev + delta)}
         onClosePip={closePip}
       />
     </div>

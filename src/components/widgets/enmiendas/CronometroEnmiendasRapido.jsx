@@ -250,7 +250,7 @@ const CronometroEnmiendasRapido = memo(({
         </div>
 
         {/* Display del Tiempo & Controles */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <div style={{
             fontSize: '1.15rem',
             fontWeight: '900',

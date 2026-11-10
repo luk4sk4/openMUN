@@ -401,7 +401,7 @@ const CreateConferenceView = ({ onBack, isLight: propIsLight, onConferenceCreate
                     <span style={{ color: 'var(--muted-text)' }}>
                       {t(
                         'conferences.inactivityNotice',
-                        'Un mes de inactividad provocará el cierre y eliminación automática de la conferencia para optimizar recursos del servidor.'
+                        'La conferencia se elimina automáticamente tras un año sin actividad.'
                       )}
                     </span>
                   </div>
@@ -433,7 +433,7 @@ const CreateConferenceView = ({ onBack, isLight: propIsLight, onConferenceCreate
                     <span style={{ color: 'var(--muted-text)' }}>
                       {t(
                         'conferences.announcementsNotice',
-                        'Los avisos y mensajes emitidos en la conferencia se borran automáticamente a las 24 horas.'
+                        'Los avisos y mensajes se eliminan automáticamente un mes después de su envío.'
                       )}
                     </span>
                   </div>

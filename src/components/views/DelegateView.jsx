@@ -3344,7 +3344,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
               )}
 
               {/* 4. Configuración de Tiempos y Presets */}
-              <div style={{ display: 'grid', gridTemplateColumns: (!esTourMocion && esModeradoMocion) ? '1fr 1fr' : '1fr', gap: '0.5rem' }}>
+              <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: (!esTourMocion && esModeradoMocion) ? '1fr 1fr' : '1fr', gap: '0.5rem' }}>
                 {/* Tiempo Total (excepto Tour de Table) */}
                 {!esTourMocion && (
                   <div style={{

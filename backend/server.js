@@ -83,6 +83,18 @@ const qUpdateConferencia = db.prepare(`
       ultimo_cambio = CURRENT_TIMESTAMP
   WHERE id = @id
 `);
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS touch_conference_on_notice_insert AFTER INSERT ON avisos
+  BEGIN UPDATE conferencias SET ultimo_cambio = CURRENT_TIMESTAMP WHERE id = NEW.conferencia_id; END;
+  CREATE TRIGGER IF NOT EXISTS touch_conference_on_notice_update AFTER UPDATE ON avisos
+  BEGIN UPDATE conferencias SET ultimo_cambio = CURRENT_TIMESTAMP WHERE id = NEW.conferencia_id; END;
+  CREATE TRIGGER IF NOT EXISTS touch_conference_on_checklist_insert AFTER INSERT ON checklist_staff
+  BEGIN UPDATE conferencias SET ultimo_cambio = CURRENT_TIMESTAMP WHERE id = NEW.conferencia_id; END;
+  CREATE TRIGGER IF NOT EXISTS touch_conference_on_checklist_update AFTER UPDATE ON checklist_staff
+  BEGIN UPDATE conferencias SET ultimo_cambio = CURRENT_TIMESTAMP WHERE id = NEW.conferencia_id; END;
+  CREATE TRIGGER IF NOT EXISTS touch_conference_on_checklist_delete AFTER DELETE ON checklist_staff
+  BEGIN UPDATE conferencias SET ultimo_cambio = CURRENT_TIMESTAMP WHERE id = OLD.conferencia_id; END;
+`);
 const qTouchConferencia = db.prepare(`
   UPDATE conferencias SET ultimo_cambio = CURRENT_TIMESTAMP WHERE id = ?
 `);
@@ -129,7 +141,7 @@ const qGetAvisosActivos = db.prepare(`
   FROM avisos 
   WHERE conferencia_id = ? 
     AND activo = 1 
-    AND creado_en >= datetime('now', '-24 hours')
+    AND datetime(creado_en, '+1 month', 'floor') > datetime('now')
   ORDER BY creado_en DESC
 `);
 const qGetAvisosChairConComite = db.prepare(`
@@ -147,7 +159,7 @@ const qGetAvisosChairConComite = db.prepare(`
       OR LOWER(comite_id) = ('chair_' || LOWER(?))
       OR LOWER(comite_id) = ('mesa_' || LOWER(?))
     )
-    AND creado_en >= datetime('now', '-24 hours')
+    AND datetime(creado_en, '+1 month', 'floor') > datetime('now')
   ORDER BY creado_en DESC
 `);
 const qGetAvisosChairSinComite = db.prepare(`
@@ -161,7 +173,7 @@ const qGetAvisosChairSinComite = db.prepare(`
       OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
       OR UPPER(comite_id) IN ('CHAIRS_ALL', 'CHAIR_ALL', 'MESAS_ALL', 'MESA_ALL', 'CHAIR_GLOBAL', 'MESA_GLOBAL')
     )
-    AND creado_en >= datetime('now', '-24 hours')
+    AND datetime(creado_en, '+1 month', 'floor') > datetime('now')
   ORDER BY creado_en DESC
 `);
 const qGetAvisosStaffConComite = db.prepare(`
@@ -179,7 +191,7 @@ const qGetAvisosStaffConComite = db.prepare(`
       OR LOWER(comite_id) = ('staff_comite_' || LOWER(?))
       OR LOWER(comite_id) = ('staff_' || LOWER(?))
     )
-    AND creado_en >= datetime('now', '-24 hours')
+    AND datetime(creado_en, '+1 month', 'floor') > datetime('now')
   ORDER BY creado_en DESC
 `);
 const qGetAvisosStaffGlobales = db.prepare(`
@@ -194,7 +206,7 @@ const qGetAvisosStaffGlobales = db.prepare(`
       OR UPPER(comite_id) IN ('STAFF_ALL', 'STAFF_GLOBAL')
       OR comite_id LIKE 'STAFF_%'
     )
-    AND creado_en >= datetime('now', '-24 hours')
+    AND datetime(creado_en, '+1 month', 'floor') > datetime('now')
   ORDER BY creado_en DESC
 `);
 const qGetAvisosDelegateConComite = db.prepare(`
@@ -209,7 +221,7 @@ const qGetAvisosDelegateConComite = db.prepare(`
       OR LOWER(comite_id) = LOWER(?)
       OR LOWER(comite_id) = ('comite_' || LOWER(?))
     )
-    AND creado_en >= datetime('now', '-24 hours')
+    AND datetime(creado_en, '+1 month', 'floor') > datetime('now')
   ORDER BY creado_en DESC
 `);
 const qGetAvisosDelegateGlobales = db.prepare(`
@@ -222,7 +234,7 @@ const qGetAvisosDelegateGlobales = db.prepare(`
       OR comite_id = '' 
       OR UPPER(comite_id) IN ('GLOBAL', 'ALL', 'TODOS')
     )
-    AND creado_en >= datetime('now', '-24 hours')
+    AND datetime(creado_en, '+1 month', 'floor') > datetime('now')
   ORDER BY creado_en DESC
 `);
 const qGetAvisosPorComite = qGetAvisosChairConComite;
@@ -231,8 +243,7 @@ const qGetAvisosStaffAll = qGetAvisosStaffGlobales;
 const qDesactivarAviso = db.prepare(`UPDATE avisos SET activo = 0 WHERE id = ?`);
 const qLimpiarAvisosViejos = db.prepare(`
   DELETE FROM avisos 
-  WHERE creado_en < datetime('now', '-24 hours') 
-     OR activo = 0
+  WHERE datetime(creado_en, '+1 month', 'floor') <= datetime('now')
 `);
 // Checklist Staff
 const qGetChecklistAll = db.prepare(`
@@ -284,7 +295,7 @@ const qDeleteCompletadosGlobal = db.prepare(`
 // Auto-limpieza de conferencias inactivas
 const qGetConferenciasInactivas = db.prepare(`
   SELECT * FROM conferencias 
-  WHERE ultimo_cambio < datetime('now', '-30 days')
+  WHERE datetime(COALESCE(ultimo_cambio, creado_en), '+1 year', 'floor') <= datetime('now')
 `);
 const qGetComitesDeConf = db.prepare(`
   SELECT id, nombre, pin_mesa, tipo_sesion, topico_actual, datos_json, actualizado_en 
@@ -293,6 +304,7 @@ const qGetComitesDeConf = db.prepare(`
 `);
 const qDeleteConferencia = db.prepare(`
   DELETE FROM conferencias WHERE id = ?
+    AND datetime(COALESCE(ultimo_cambio, creado_en), '+1 year', 'floor') <= datetime('now')
 `);
 // Helper para parsear comités
 function mapearComites(rawList) {
@@ -309,7 +321,7 @@ function mapearComites(rawList) {
         });
 }
 // ==========================================
-// AUTO-LIMPIEZA Y RESPALDO (30 DÍAS)
+// AUTO-LIMPIEZA Y RESPALDO (1 AÑO)
 // ==========================================
 async function limpiarConferenciasInactivas() {
         try {
@@ -344,7 +356,7 @@ async function limpiarConferenciasInactivas() {
 							from: process.env.SMTP_FROM || `"OpenMUN" <${process.env.SMTP_USER}>`,
 							to: conf.email_admin,
 							subject: `Respaldo y Cierre por Inactividad: ${conf.nombre}`,
-							text: `Hola,\n\nTu conferencia "${conf.nombre}" ha superado los 30 días sin actividad y ha sido archivada.\n\nTe adjuntamos el archivo de respaldo completo.\n\nAtentamente,\nEl equipo de OpenMUN.`,
+							text: `Hola,\n\nTu conferencia "${conf.nombre}" ha superado un año sin actividad y ha sido archivada.\n\nTe adjuntamos el archivo de respaldo completo.\n\nAtentamente,\nEl equipo de OpenMUN.`,
 							attachments: [
 								{
 									filename: `backup_${conf.id}.json`,

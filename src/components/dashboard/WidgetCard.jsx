@@ -66,6 +66,7 @@ const WidgetCard = ({
     >
       {/* Borde Superior Draggable Fino (Reserva de arrastre) */}
       {!fixedLayout && <div
+        className="widget-layout-handle"
         onMouseDown={onStartDrag}
         onTouchStart={onStartDrag}
         style={{
@@ -162,7 +163,7 @@ const WidgetCard = ({
       </div>}
 
       {/* Contenido del Widget */}
-      <div style={{
+      <div className="widget-card-content" style={{
         flex: 1,
         minHeight: 0,
         overflow: 'auto',
@@ -184,6 +185,7 @@ const WidgetCard = ({
 
       {/* Handle de Resize Esquina */}
       {!fixedLayout && <div
+        className="widget-layout-handle"
         onMouseDown={onStartResize}
         onTouchStart={onStartResize}
         style={{

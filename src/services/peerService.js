@@ -5,9 +5,9 @@ import { createStateDelta } from '../utils/deltaSync.js';
 import { playChimeAlert } from '../utils/audioAlerts.js';
 
 export const LOCAL_BROADCAST_CHANNEL_NAME = 'openmun_local_secret_channel';
-export const SOCKET_SERVER_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SOCKET_SERVER_URL)
-  ? import.meta.env.VITE_SOCKET_SERVER_URL
-  : 'https://api.openmun.app';
+export const SOCKET_SERVER_URL = import.meta.env?.VITE_LUAX_API_URL?.trim().replace(/\/$/, '')
+  || import.meta.env?.VITE_SOCKET_SERVER_URL
+  || 'https://api.openmun.app';
 
 /**
  * Sanitiza y optimiza el estado antes de enviarlo por la red:

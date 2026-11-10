@@ -52,14 +52,14 @@ const WidgetGridBoard = ({
     const panels = FIXED_LAYOUTS[activeTab] || [];
     const rows = Math.max(1, ...panels.map(panel => panel.row + panel.rowSpan));
     return <main className="dashboard-fixed-view">
-      <div key={activeTab} className={`dashboard-fixed-grid dashboard-fixed-grid--${activeTab.toLowerCase()} dashboard-tab-pane-transition`} style={{ '--fixed-rows': rows, '--fixed-panel-count': panels.length }}>
+      <div key={activeTab} className={`dashboard-fixed-grid dashboard-fixed-grid--${activeTab.toLowerCase()} dashboard-tab-pane-transition`} style={{ '--fixed-rows': rows }}>
         {panels.map(widget => <WidgetCard key={widget.i} widget={widget} fixedLayout isLight={isLight} />)}
       </div>
     </main>;
   }
 
   return (
-    <main key={activeTab} className="dashboard-tab-pane-transition" style={{
+    <main key={activeTab} className="dashboard-modular-view dashboard-tab-pane-transition" style={{
       flex: 1,
       padding: '1rem',
       userSelect: activeInteraction ? 'none' : 'auto',
@@ -67,6 +67,7 @@ const WidgetGridBoard = ({
     }}>
       <div
         ref={boardRef}
+        className="dashboard-modular-grid"
         style={{
           position: 'relative',
           width: '100%',
@@ -76,7 +77,7 @@ const WidgetGridBoard = ({
         }}
       >
         {/* Rejilla Guía */}
-        {gridCells}
+        <div className="dashboard-modular-guides" aria-hidden="true">{gridCells}</div>
 
         {/* Renderizado de Widgets */}
         {boardW > 0 && widgets.map(w => {

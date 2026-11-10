@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import OpenMunLogo from '../common/OpenMunLogo';
 import YoutubeIcon from '../common/YoutubeIcon';
-import GavelAnimation from '../common/GavelAnimation';
 import { useTranslation } from 'react-i18next';
 import { lazyWithRetry } from '../../utils/lazyWithRetry';
 const CreateConferenceModal = lazyWithRetry(() => import('../modals/CreateConferenceModal'), 'CreateConferenceModal');
@@ -72,7 +71,7 @@ const FAQ_ITEMS = [
     id: 'como-funcionan-conferencias',
     categoria: 'Tecnología',
     pregunta: '¿Cómo funcionan las conferencias?',
-    respuesta: 'Cuando creas una conferencia, guardamos un archivo en nuestra base de datos. Cuando te unes a ella, modificas o lees ese archivo. La base de datos es privada y nadie más que vosotros y nosotros tenemos acceso. Como ese espacio es limitado, los avisos se borran a las 24 horas y las conferencias completas, tras un mes sin actividad en la conferencia. Si pones un correo electrónico, te mandaremos un archivo con toda la información de la conferencia para que no pierdas nada.'
+    respuesta: 'Cuando creas una conferencia, guardamos un archivo en nuestra base de datos. Cuando te unes a ella, modificas o lees ese archivo. La base de datos es privada y nadie más que vosotros y nosotros tenemos acceso. Como ese espacio es limitado, los avisos y mensajes se eliminan un mes después de su envío y las conferencias completas, tras un año sin actividad en la conferencia. Si pones un correo electrónico, te mandaremos un archivo con toda la información de la conferencia para que no pierdas nada.'
   },
   {
     id: 'donar',
@@ -92,7 +91,6 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
   const { t } = useTranslation();
   const [isCreateConfModalOpen, setIsCreateConfModalOpen] = useState(false);
   const [isHowToUseModalOpen, setIsHowToUseModalOpen] = useState(false);
-  const [showGavel, setShowGavel] = useState(false);
 
   // Copiar email
   const [copiado, setCopiado] = useState(false);
@@ -187,7 +185,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           {/* Bloque Superior: Logo + descripción (izq) y Botones de acción (der) */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
             gap: '2.5rem',
             alignItems: 'center'
           }}>
@@ -310,7 +308,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 }}
                 style={{
                   width: '100%',
-                  padding: '0.82rem 1.15rem',
+                  padding: '1.15rem 1.25rem',
                   backgroundColor: controlBg,
                   color: textPrimary,
                   border: `1px solid ${borderColor}`,
@@ -332,14 +330,14 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: '650' }}>
+                  <span style={{ fontSize: '1.05rem', fontWeight: '700' }}>
                     {t('conferences.createTitle', 'Crear Nueva Conferencia')}
                   </span>
                   <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400' }}>
                     {t('conferences.createDescShort', 'Organiza un evento multi-comité sincronizado en vivo')}
                   </span>
                 </div>
-                <Building2 size={16} style={{ color: textMuted }} />
+                <Building2 size={20} style={{ color: textMuted }} />
               </button>
 
               {/* Acción Secundaria: Unirse a Conferencia */}
@@ -413,14 +411,6 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
               >
                 <HelpCircle size={15} />
                 <span>{t('home.howToUseOpenMun', '¿Cómo usar OpenMUN?')}</span>
-              </button>
-              <button
-                type="button"
-                className="gavel-demo-button"
-                disabled={showGavel}
-                onClick={() => setShowGavel(true)}
-              >
-                {t('home.testGavel', 'Probar mazo (temporal)')}
               </button>
             </div>
           </div>
@@ -558,7 +548,7 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
             gap: '2rem'
           }}>
             {/* Columna 1: Qué es MUN */}
@@ -961,7 +951,6 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
       </div>
 
       {/* Modal Crear Conferencia */}
-      {showGavel && <GavelAnimation onComplete={() => setShowGavel(false)} />}
       <Suspense fallback={null}>
         <CreateConferenceModal
           isOpen={isCreateConfModalOpen}

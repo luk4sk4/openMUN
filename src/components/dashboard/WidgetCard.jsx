@@ -14,6 +14,10 @@ const WidgetCard = ({
   cellH,
   gap,
   isLight,
+  isMaximized = false,
+  fullscreenMode = 'with_left',
+  setFullscreenMode,
+  toggleMaximize,
   isInteracting,
   isFocused,
   isDraggingThis,
@@ -173,7 +177,13 @@ const WidgetCard = ({
         {WidgetComponent ? (
           <WidgetErrorBoundary widgetId={id} widgetTitle={meta.title} isLight={isLight}>
             <Suspense fallback={<WidgetSkeleton widgetId={id} meta={meta} isLight={isLight} />}>
-              <WidgetComponent isLight={isLight} />
+              <WidgetComponent
+                isLight={isLight}
+                isMaximized={isMaximized}
+                fullscreenMode={fullscreenMode}
+                setFullscreenMode={setFullscreenMode}
+                toggleMaximize={toggleMaximize}
+              />
             </Suspense>
           </WidgetErrorBoundary>
         ) : (

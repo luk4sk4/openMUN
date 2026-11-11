@@ -1,4 +1,4 @@
-require('dotenv').config();
+try { process.loadEnvFile(); } catch {}
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { Pool, databaseConfig } = require('../config/db');
@@ -12,7 +12,7 @@ async function migrate(pool) {
     await client.query('CREATE TABLE IF NOT EXISTS openmun_schema_versions (version integer PRIMARY KEY)');
     const result = await client.query('SELECT version FROM openmun_schema_versions');
     const applied = new Set(result.rows.map(row => row.version));
-    if ([...applied].some(version => ![1, 2, 3].includes(version))) throw new Error('Unknown schema version');
+    if ([...applied].some(version => ![1, 2, 3, 4, 5].includes(version))) throw new Error('Unknown schema version');
     if (!applied.has(1)) {
       const sql = await fs.readFile(path.join(__dirname, 'schema.sql'), 'utf8');
       await client.query(sql);
@@ -48,6 +48,19 @@ async function migrate(pool) {
     if (!applied.has(3)) {
       await client.query(await fs.readFile(path.join(__dirname, 'retention.sql'), 'utf8'));
       await client.query('INSERT INTO openmun_schema_versions VALUES (3)');
+    }
+    if (!applied.has(4)) {
+      await client.query(await fs.readFile(path.join(__dirname, 'compatibility.sql'), 'utf8'));
+      await client.query('INSERT INTO openmun_schema_versions VALUES (4)');
+    }
+    if (!applied.has(5)) {
+      await client.query(`
+        ALTER TABLE mensajes ADD COLUMN backup_id uuid NOT NULL DEFAULT gen_random_uuid();
+        CREATE UNIQUE INDEX mensajes_comite_backup_id ON mensajes(comite_id,backup_id) WHERE comite_id IS NOT NULL;
+        CREATE INDEX mensajes_comite_historial ON mensajes(conferencia_id,comite_id,creado_en,id)
+          WHERE comite_id IS NOT NULL AND (tipo_aviso IS NULL OR tipo_aviso='room_announcement');
+        INSERT INTO openmun_schema_versions VALUES (5);
+      `);
     }
     await client.query('COMMIT');
   } catch (error) {

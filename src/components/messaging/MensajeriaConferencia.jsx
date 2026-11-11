@@ -142,28 +142,7 @@ const MensajeriaConferencia = ({
     }
   }, [cleanConfId, propComites]);
 
-  // Lista de avisos obtenidos: inicializada desde props o caché en memoria compartida
-  const [avisos, setAvisos] = useState(() => {
-    if (Array.isArray(propInitialAvisos) && propInitialAvisos.length > 0) {
-      return propInitialAvisos;
-    }
-    if (conferenceService.obtenerAvisosEnMemoria) {
-      return conferenceService.obtenerAvisosEnMemoria();
-    }
-    return [];
-  });
-
-  // Sincronizar si llegan avisos iniciales desde el padre
-  useEffect(() => {
-    if (Array.isArray(propInitialAvisos) && propInitialAvisos.length > 0) {
-      setAvisos(prev => {
-        const map = new Map();
-        propInitialAvisos.forEach(a => { if (a?.id) map.set(String(a.id), a); });
-        prev.forEach(a => { if (a?.id && !map.has(String(a.id))) map.set(String(a.id), a); });
-        return Array.from(map.values());
-      });
-    }
-  }, [propInitialAvisos]);
+  const [avisos, setAvisos] = useState(propInitialAvisos);
 
   const [cargando, setCargando] = useState(false);
   const [descartadosLocales, setDescartadosLocales] = useState(() => obtenerAvisosIgnorados());
@@ -171,7 +150,6 @@ const MensajeriaConferencia = ({
 
   // Estados del Redactor de Comunicados
   const [tabMovil, setTabMovil] = useState('TABLON'); // 'TABLON' | 'EMITIR'
-  const [emisor, setEmisor] = useState('');
   const [destino, setDestino] = useState('GLOBAL');
   const [tipo, setTipo] = useState('info');
   const [mensaje, setMensaje] = useState('');
@@ -184,10 +162,11 @@ const MensajeriaConferencia = ({
   const [busqueda, setBusqueda] = useState('');
 
   // Emisor por defecto según rol
-  const getEmisorDefecto = useCallback(() => {
+  const emisor = useMemo(() => {
     const nombreSala = effectiveComiteNombre || (listaComites.find(c => String(c.id).toLowerCase() === String(effectiveComiteId).toLowerCase())?.nombre) || effectiveComiteId;
 
-    if (propRole === 'secretaria' || propRole === 'secretariat' || propRole === 'organizacion' || propRole === 'admin') {
+    if (propRole === 'secretariat') return nombreSala ? `Secretaría (${nombreSala})` : 'Secretaría';
+    if (propRole === 'secretaria' || propRole === 'organizacion' || propRole === 'admin') {
       return 'Organización / Secretaría General';
     }
     if (propRole === 'staff_global') {
@@ -202,20 +181,10 @@ const MensajeriaConferencia = ({
     return 'Delegación';
   }, [propRole, effectiveComiteNombre, effectiveComiteId, listaComites, t]);
 
-  useEffect(() => {
-    setEmisor(getEmisorDefecto());
-  }, [getEmisorDefecto]);
-
   // Cargar avisos desde el servicio
   const fetchAvisos = useCallback(async (silencioso = false) => {
     const targetConfId = cleanConfId || conferenceService.obtenerSesionActiva()?.id;
-    if (!targetConfId) {
-      if (conferenceService.obtenerAvisosEnMemoria) {
-        const enMem = conferenceService.obtenerAvisosEnMemoria();
-        if (enMem.length > 0) setAvisos(enMem);
-      }
-      return;
-    }
+    if (!targetConfId) return;
     if (!silencioso) setCargando(true);
     try {
       const res = await conferenceService.obtenerAvisos(
@@ -225,10 +194,7 @@ const MensajeriaConferencia = ({
         effectiveComiteNombre
       );
       const items = Array.isArray(res) ? res : (res && Array.isArray(res.avisos) ? res.avisos : []);
-      if (items.length > 0) {
-        setAvisos(items);
-        conferenceService.guardarAvisosEnMemoria?.(items);
-      }
+      setAvisos(items);
     } catch (e) {
       console.warn('Error cargando avisos de conferencia:', e);
     } finally {
@@ -238,6 +204,7 @@ const MensajeriaConferencia = ({
 
   // Polling e integración en tiempo real
   useEffect(() => {
+    setAvisos([]);
     fetchAvisos();
 
     const interval = setInterval(() => {
@@ -245,10 +212,7 @@ const MensajeriaConferencia = ({
     }, 12000);
 
     const handleNuevoAviso = (e) => {
-      if (e.detail) {
-        setAvisos(prev => [e.detail, ...prev.filter(a => a.id !== e.detail.id)]);
-        conferenceService.guardarAvisosEnMemoria?.([e.detail]);
-      }
+      if (e.detail?.conferencia_id === cleanConfId) fetchAvisos(true);
     };
 
     const handleAvisoDesactivado = (e) => {
@@ -269,19 +233,19 @@ const MensajeriaConferencia = ({
       }
     };
 
-    window.addEventListener('openmun_nuevo_aviso', handleNuevoAviso);
+    window.addEventListener('openmun_avisos_actualizados', handleNuevoAviso);
     window.addEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
     window.addEventListener('openmun_aviso_ignorado', handleAvisoIgnorado);
     window.addEventListener('openmun_aviso_restaurado', handleAvisoRestaurado);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('openmun_nuevo_aviso', handleNuevoAviso);
+      window.removeEventListener('openmun_avisos_actualizados', handleNuevoAviso);
       window.removeEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
       window.removeEventListener('openmun_aviso_ignorado', handleAvisoIgnorado);
       window.removeEventListener('openmun_aviso_restaurado', handleAvisoRestaurado);
     };
-  }, [fetchAvisos]);
+  }, [cleanConfId, fetchAvisos]);
 
   // Opciones de destino agrupadas para el selector
   const opcionesDestino = useMemo(() => {
@@ -290,9 +254,10 @@ const MensajeriaConferencia = ({
 
   // Filtrado de avisos
   const avisosFiltrados = useMemo(() => {
+    const ignorados = new Set(descartadosLocales.map(String));
     return avisos.filter(av => {
-      if (!av) return false;
-      const estaIgnorado = descartadosLocales.map(String).includes(String(av.id));
+      if (!av || String(av.conferencia_id).toLowerCase() !== cleanConfId) return false;
+      const estaIgnorado = ignorados.has(String(av.id));
 
       if (mostrarIgnorados) {
         if (!estaIgnorado) return false;
@@ -343,7 +308,7 @@ const MensajeriaConferencia = ({
 
       return true;
     });
-  }, [avisos, descartadosLocales, mostrarIgnorados, filtroPrioridad, filtroDestino, busqueda, effectiveComiteId, propRole, effectiveComiteNombre, listaComites]);
+  }, [avisos, cleanConfId, descartadosLocales, mostrarIgnorados, filtroPrioridad, filtroDestino, busqueda, effectiveComiteId, propRole, effectiveComiteNombre, listaComites]);
 
   // Manejador de emisión de aviso
   const handleEmitirAviso = async (e) => {
@@ -358,7 +323,7 @@ const MensajeriaConferencia = ({
 
       const resAviso = await conferenceService.crearAviso(cleanConfId, {
         comite_id: targetComite,
-        emisor: emisor.trim() || 'Organización',
+        emisor,
         tipo,
         mensaje: mensaje.trim()
       });
@@ -404,7 +369,7 @@ const MensajeriaConferencia = ({
   // Borrar aviso para toda la conferencia (solo emisor o secretaría/admin)
   const handleBorrarAviso = async (avisoId) => {
     const confirmacion = await confirm({
-      title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+      title: t('avisos.deleteNotice', 'Eliminar'),
       message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?'),
       confirmText: t('common.delete', 'Eliminar'),
       cancelText: t('common.cancel', 'Cancelar'),
@@ -585,14 +550,14 @@ const MensajeriaConferencia = ({
             <form onSubmit={handleEmitirAviso} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {/* Emisor */}
               <div>
-                <label style={{ fontSize: '0.73rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                <label htmlFor="conference-announcement-sender" style={{ fontSize: '0.73rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                   {t('ui.senderSignatory')}
                 </label>
                 <input
                   type="text"
+                  id="conference-announcement-sender"
                   value={emisor}
-                  onChange={e => setEmisor(e.target.value)}
-                  placeholder={t('ui.eGOrganizersGeneralStaffCouncilChair')}
+                  readOnly
                   style={{
                     width: '100%',
                     marginTop: '0.35rem',
@@ -602,8 +567,7 @@ const MensajeriaConferencia = ({
                     padding: '0.55rem 0.75rem',
                     color: 'var(--text-color)',
                     fontSize: '0.85rem',
-                    fontWeight: '700',
-                    outline: 'none'
+                    fontWeight: '700'
                   }}
                 />
               </div>

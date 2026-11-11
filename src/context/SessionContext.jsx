@@ -2,9 +2,10 @@ import i18n from '../languages/index.js';
 import { useTranslation } from 'react-i18next';
 import { normalizarSesionesDebate, necesitaConfirmarSesion, fechaRegistro } from '../utils/debateSessions';
 import NewDebateSessionModal from '../components/modals/NewDebateSessionModal';
+import GavelAnimation from '../components/common/GavelAnimation';
+import ConfettiAnimation from '../components/common/ConfettiAnimation';
 import { registrarVotoConDerechos } from '../utils/votingRights';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { googleDriveService } from '../services/googleDriveService';
 import { conferenceService } from '../services/conferenceService';
 import {
   registrarConferencia,
@@ -38,37 +39,72 @@ export const SessionProvider = ({ children }) => {
 
   const [paises, setPaisesState] = useState(() => {
     const saved = localStorage.getItem('openmun_paises');
-    return saved ? JSON.parse(saved) : PAISES_INICIALES;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return PAISES_INICIALES;
   });
 
   const [oradoresCola, setOradoresColaState] = useState(() => {
     const saved = localStorage.getItem('openmun_oradores');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return [];
   });
 
   const [oradoresCaucus, setOradoresCaucusState] = useState(() => {
     const saved = localStorage.getItem('openmun_oradores_caucus');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return [];
   });
 
   const [registroIntervenciones, setRegistroIntervencionesState] = useState(() => {
     const saved = localStorage.getItem('openmun_intervenciones');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return [];
   });
 
   const [mociones, setMocionesState] = useState(() => {
     const saved = localStorage.getItem('openmun_mociones');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return [];
   });
 
   const [historicoMociones, setHistoricoMocionesState] = useState(() => {
     const saved = localStorage.getItem('openmun_historico_mociones');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return [];
   });
 
   const [caucusActivo, setCaucusActivoState] = useState(() => {
-    const saved = localStorage.getItem('openmun_caucus');
-    return saved ? JSON.parse(saved) : {
+    const defaultCaucus = {
       activo: false,
       proponente: '',
       posicionProponente: 'Primero',
@@ -78,26 +114,48 @@ export const SessionProvider = ({ children }) => {
       tiempoTotal: 600,
       tiempoOrador: 45
     };
+    const saved = localStorage.getItem('openmun_caucus');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return defaultCaucus;
   });
 
   const [votacionSesion, setVotacionSesionState] = useState(() => {
-    const saved = localStorage.getItem('openmun_votacion');
-    return saved ? JSON.parse(saved) : {
+    const defaultVotacion = {
       asunto: i18n.t('ui.draftResolutionMotion'),
       tipoVotacion: 'procedural',
       tipoMayoria: 'simple',
       aplicarVeto: true,
       votos: {}
     };
+    const saved = localStorage.getItem('openmun_votacion');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return defaultVotacion;
   });
 
   const [agendaSesion, setAgendaSesionState] = useState(() => {
-    const saved = localStorage.getItem('openmun_agenda');
-    return saved ? JSON.parse(saved) : {
+    const defaultAgenda = {
       establecida: false,
       temaActual: '',
       temasPropuestos: []
     };
+    const saved = localStorage.getItem('openmun_agenda');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return defaultAgenda;
   });
 
   const [nombreComite, setNombreComiteState] = useState(() => {
@@ -105,32 +163,60 @@ export const SessionProvider = ({ children }) => {
   });
 
   const [enmiendasSesion, setEnmiendasSesionState] = useState(() => {
-    const saved = localStorage.getItem('openmun_enmiendas');
-    return saved ? JSON.parse(saved) : {
+    const defaultEnmiendas = {
       tituloProyecto: i18n.t('ui.draftResolutionARes791'),
       textoResolucion: '',
       articulos: [],
       enmiendas: []
     };
+    const saved = localStorage.getItem('openmun_enmiendas');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return defaultEnmiendas;
   });
 
   const [relojGSLState, setRelojGSLState] = useState({ segundosRestantes: 60, tiempoInicial: 60, corriendo: false });
-  const [yieldEvento, setYieldEvento] = useState(null);
-
-  // Estados de Google Drive
-  const [driveFileId, setDriveFileId] = useState(() => {
-    const saved = localStorage.getItem('openmun_drive_file_id');
-    return (saved && /^[a-zA-Z0-9_-]{10,100}$/.test(saved)) ? saved : null;
+  const [relojDebateState, setRelojDebateState] = useState(() => {
+    const defaultReloj = {
+      modo: 'GSL',
+      corriendo: false,
+      segundosRestantes: 60,
+      tiempoInicial: 60,
+      timestamp: Date.now(),
+      tiempoTotalSeg: 600,
+      tiempoTotalInicial: 600,
+      tiempoOradorSeg: 45,
+      limiteOradorSeg: 45
+    };
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('openmun_reloj_debate');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.corriendo && parsed.timestamp) {
+              const transcurrido = Math.floor((Date.now() - parsed.timestamp) / 1000);
+              parsed.segundosRestantes = (parsed.segundosRestantes ?? 60) - transcurrido;
+              if (parsed.tiempoOradorSeg !== undefined) {
+                parsed.tiempoOradorSeg = parsed.tiempoOradorSeg - transcurrido;
+              }
+              if (parsed.tiempoTotalSeg !== undefined) {
+                parsed.tiempoTotalSeg = Math.max(0, parsed.tiempoTotalSeg - transcurrido);
+              }
+              parsed.timestamp = Date.now();
+            }
+            return { ...defaultReloj, ...parsed };
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    return defaultReloj;
   });
-  const [driveFileName, setDriveFileName] = useState(() => localStorage.getItem('openmun_drive_file_name') || 'openmun_sesion_activa.json');
-  const [isDriveLinked, setIsDriveLinked] = useState(false);
-  const [driveSyncStatus, setDriveSyncStatus] = useState('disconnected'); // 'disconnected' | 'connecting' | 'synced' | 'syncing' | 'error' | 'conflict'
-  const [driveUser, setDriveUser] = useState(null);
-  const [driveLastSync, setDriveLastSync] = useState(null);
-  const [driveFilesList, setDriveFilesList] = useState([]);
-  const [driveRemoteModifiedTime, setDriveRemoteModifiedTime] = useState(null);
-  const driveRemoteModifiedTimeRef = useRef(null);
-  const isInitialSyncRef = useRef(false);
+  const [yieldEvento, setYieldEvento] = useState(null);
 
   // Estados de Supabase Cloud
   const [cloudAccount, setCloudAccount] = useState(() => obtenerCuentaActiva());
@@ -157,7 +243,8 @@ export const SessionProvider = ({ children }) => {
     agendaSesion,
     nombreComite,
     enmiendasSesion,
-    relojGSLState
+    relojGSLState,
+    relojDebateState
   });
 
   useEffect(() => {
@@ -174,9 +261,10 @@ export const SessionProvider = ({ children }) => {
       agendaSesion,
       nombreComite,
       enmiendasSesion,
-      relojGSLState
+      relojGSLState,
+      relojDebateState
     };
-  }, [tipoSesion, paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, relojGSLState]);
+  }, [tipoSesion, paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, relojGSLState, relojDebateState]);
 
   // PERSISTENCIA EN LOCALSTORAGE
   useEffect(() => {
@@ -192,6 +280,7 @@ export const SessionProvider = ({ children }) => {
     localStorage.setItem('openmun_agenda', JSON.stringify(agendaSesion));
     localStorage.setItem('openmun_comite', nombreComite);
     localStorage.setItem('openmun_enmiendas', JSON.stringify(enmiendasSesion));
+    localStorage.setItem('openmun_reloj_debate', JSON.stringify(relojDebateState));
 
     const sesionDataCompleta = {
       version: '2.0',
@@ -329,7 +418,12 @@ export const SessionProvider = ({ children }) => {
       aplicarVeto: true,
       votos: {}
     });
-    setEnmiendasSesionState(nuevasEnmiendas);
+    setEnmiendasSesionState(nuevasEnmiendas || {
+      tituloProyecto: i18n.t('ui.draftResolutionARes791'),
+      textoResolucion: '',
+      articulos: [],
+      enmiendas: []
+    });
 
     // Persistir claves en localStorage para mantener sincronía inmediata
     try {
@@ -423,9 +517,11 @@ export const SessionProvider = ({ children }) => {
           await conferenceService.actualizarComite(comiteId, {
             tipo_sesion: currentTipo,
             topico_actual: currentAgenda?.topico || currentAgenda?.tema || undefined,
-            datos_json: sesionData
+            datos_json: sesionData,
+            backupOnly: true
           });
         } catch (errPatch) {
+          if (conferenceService.usesLuaxSessions) throw errPatch;
           // Si el comité no existiera aún en BD, crearlo vía POST
           await conferenceService.crearOActualizarComite(confId, {
             id: comiteId,
@@ -451,45 +547,82 @@ export const SessionProvider = ({ children }) => {
 
     if (nuevoEstado.tipoSesion && typeof nuevoEstado.tipoSesion === 'string') {
       setTipoSesionState(nuevoEstado.tipoSesion);
+      stateRef.current.tipoSesion = nuevoEstado.tipoSesion;
       localStorage.setItem('openmun_tipo_sesion', nuevoEstado.tipoSesion);
     }
     if (Array.isArray(nuevoEstado.paises)) {
       setPaisesState(nuevoEstado.paises);
+      stateRef.current.paises = nuevoEstado.paises;
     }
     if (Array.isArray(nuevoEstado.oradoresCola)) {
       setOradoresColaState(nuevoEstado.oradoresCola);
+      stateRef.current.oradoresCola = nuevoEstado.oradoresCola;
     }
     if (Array.isArray(nuevoEstado.oradoresCaucus)) {
       setOradoresCaucusState(nuevoEstado.oradoresCaucus);
+      stateRef.current.oradoresCaucus = nuevoEstado.oradoresCaucus;
     }
     if (Array.isArray(nuevoEstado.registroIntervenciones)) {
       setRegistroIntervencionesState(nuevoEstado.registroIntervenciones);
+      stateRef.current.registroIntervenciones = nuevoEstado.registroIntervenciones;
     }
     if (Array.isArray(nuevoEstado.mociones)) {
       setMocionesState(nuevoEstado.mociones);
+      stateRef.current.mociones = nuevoEstado.mociones;
     }
     if (Array.isArray(nuevoEstado.historicoMociones)) {
       setHistoricoMocionesState(nuevoEstado.historicoMociones);
+      stateRef.current.historicoMociones = nuevoEstado.historicoMociones;
     }
     if (nuevoEstado.caucusActivo && typeof nuevoEstado.caucusActivo === 'object') {
       setCaucusActivoState(nuevoEstado.caucusActivo);
+      stateRef.current.caucusActivo = nuevoEstado.caucusActivo;
     }
     if (nuevoEstado.votacionSesion && typeof nuevoEstado.votacionSesion === 'object') {
       setVotacionSesionState(nuevoEstado.votacionSesion);
+      stateRef.current.votacionSesion = nuevoEstado.votacionSesion;
     }
     if (nuevoEstado.agendaSesion && typeof nuevoEstado.agendaSesion === 'object') {
       setAgendaSesionState(nuevoEstado.agendaSesion);
+      stateRef.current.agendaSesion = nuevoEstado.agendaSesion;
     }
     if (typeof nuevoEstado.nombreComite === 'string' && nuevoEstado.nombreComite) {
       setNombreComiteState(nuevoEstado.nombreComite);
+      stateRef.current.nombreComite = nuevoEstado.nombreComite;
     } else if (typeof nuevoEstado.comision === 'string' && nuevoEstado.comision) {
       setNombreComiteState(nuevoEstado.comision);
+      stateRef.current.nombreComite = nuevoEstado.comision;
     }
     if (nuevoEstado.enmiendasSesion && typeof nuevoEstado.enmiendasSesion === 'object') {
       setEnmiendasSesionState(nuevoEstado.enmiendasSesion);
+      stateRef.current.enmiendasSesion = nuevoEstado.enmiendasSesion;
     }
     if (nuevoEstado.relojGSLState && typeof nuevoEstado.relojGSLState === 'object') {
       setRelojGSLState(nuevoEstado.relojGSLState);
+      stateRef.current.relojGSLState = nuevoEstado.relojGSLState;
+    }
+    if (nuevoEstado.relojDebateState && typeof nuevoEstado.relojDebateState === 'object') {
+      setRelojDebateState(nuevoEstado.relojDebateState);
+      stateRef.current.relojDebateState = nuevoEstado.relojDebateState;
+
+      if (typeof window !== 'undefined') {
+        const r = nuevoEstado.relojDebateState;
+        const esCaucus = Boolean(nuevoEstado.caucusActivo?.activo);
+        const modo = r.modo || (esCaucus ? 'CAUCUS' : 'GSL');
+        const signalDetail = {
+          signal: r.corriendo ? 'start' : 'stop',
+          source: 'remote_sync',
+          segundosRestantes: r.segundosRestantes,
+          tiempoInicial: r.tiempoInicial,
+          tiempoOradorSeg: r.tiempoOradorSeg,
+          limiteOradorSeg: r.limiteOradorSeg,
+          tiempoTotalSeg: r.tiempoTotalSeg,
+          modo,
+          timestamp: r.timestamp || Date.now()
+        };
+        window.dispatchEvent(new CustomEvent('openmun_timer_signal', { detail: signalDetail }));
+        window.dispatchEvent(new CustomEvent('openmun_timer_sync', { detail: r }));
+      }
     }
   }, []);
 
@@ -557,6 +690,90 @@ export const SessionProvider = ({ children }) => {
       emitirAccion('resetearVotacion', {});
     }
   }, [emitirAccion]);
+
+  // Celebración al finalizar votación (mazo siempre + confeti si se aprueba)
+  const [gavelRunId, setGavelRunId] = useState(0);
+  const [confettiRunId, setConfettiRunId] = useState(0);
+
+  const dispararCelebracionVoto = useCallback((esAprobada = false) => {
+    setGavelRunId(Date.now());
+    if (esAprobada) {
+      setConfettiRunId(Date.now());
+    } else {
+      setConfettiRunId(0);
+    }
+  }, []);
+
+  const estadoFinVotacion = useMemo(() => {
+    const listaPaises = Array.isArray(paises) ? paises : [];
+    const asistentes = listaPaises.filter(p => p.estatus === 'Presente' || p.estatus === 'Presente y Votando');
+    const totalAsistentes = asistentes.length;
+    const votosMap = votacionSesion?.votos || {};
+    const tipoVotacion = votacionSesion?.tipoVotacion || 'procedural';
+    const tipoMayoria = votacionSesion?.tipoMayoria || 'simple';
+    const aplicarVeto = votacionSesion?.aplicarVeto ?? true;
+
+    let aFavor = 0;
+    let enContra = 0;
+    let abstenciones = 0;
+    let votosPendientes = 0;
+    let vetoActivado = false;
+
+    asistentes.forEach(p => {
+      const v = votosMap[p.id];
+      if (v === 'favor' || v === 'favor_derechos') {
+        aFavor++;
+      } else if (v === 'contra' || v === 'contra_derechos') {
+        enContra++;
+        if (tipoVotacion === 'substantive' && aplicarVeto && p.veto) {
+          vetoActivado = true;
+        }
+      } else if (v === 'abstencion' && tipoVotacion !== 'procedural') {
+        abstenciones++;
+      } else {
+        votosPendientes++;
+      }
+    });
+
+    const finalizada = totalAsistentes > 0 && votosPendientes === 0;
+    const votantesActivos = aFavor + enContra;
+
+    let umbralRequerido = 0;
+    if (tipoMayoria === 'simple') {
+      umbralRequerido = votantesActivos > 0 ? Math.floor(votantesActivos / 2) + 1 : 1;
+    } else if (tipoMayoria === '2/3') {
+      umbralRequerido = votantesActivos > 0 ? Math.ceil((votantesActivos * 2) / 3) : 1;
+    } else if (tipoMayoria === 'consensus') {
+      umbralRequerido = totalAsistentes;
+    }
+
+    let estadoVotacion = 'EN CURSO';
+    if (vetoActivado && tipoVotacion === 'substantive' && aplicarVeto) {
+      estadoVotacion = 'RECHAZADA POR VETO';
+    } else if (finalizada) {
+      if (tipoMayoria === 'consensus') {
+        estadoVotacion = enContra === 0 && aFavor > 0 ? 'APROBADA POR CONSENSO' : 'FALLIDA (DISSENSO)';
+      } else if (votantesActivos === 0) {
+        estadoVotacion = 'FALLIDA (SIN VOTOS)';
+      } else if (aFavor >= umbralRequerido && aFavor > enContra) {
+        estadoVotacion = 'APROBADA';
+      } else {
+        estadoVotacion = 'RECHAZADA';
+      }
+    }
+
+    const aprobada = estadoVotacion.includes('APROBADA');
+    return { finalizada, aprobada, estadoVotacion, aFavor, enContra, abstenciones };
+  }, [paises, votacionSesion]);
+
+  const prevVoteFinalizadaRef = useRef(estadoFinVotacion.finalizada);
+  useEffect(() => {
+    const wasFinalizada = prevVoteFinalizadaRef.current;
+    prevVoteFinalizadaRef.current = estadoFinVotacion.finalizada;
+    if (!wasFinalizada && estadoFinVotacion.finalizada) {
+      dispararCelebracionVoto(estadoFinVotacion.aprobada);
+    }
+  }, [estadoFinVotacion.finalizada, estadoFinVotacion.aprobada, dispararCelebracionVoto]);
 
   // Países / Matriz
   const setPaises = useCallback((nuevosPaises, emitir = true) => {
@@ -642,7 +859,11 @@ export const SessionProvider = ({ children }) => {
   }, [emitirAccion]);
 
   const removerOrador = useCallback((id, emitir = true) => {
-    setOradoresColaState(prev => prev.filter(o => o.id !== id && o.nombre !== id));
+    setOradoresColaState(prev => {
+      const next = prev.filter(o => o.id !== id && o.nombre !== id);
+      stateRef.current.oradoresCola = next;
+      return next;
+    });
     if (emitir) {
       emitirAccion('removerOrador', { id });
     }
@@ -802,7 +1023,11 @@ export const SessionProvider = ({ children }) => {
   }, [emitirAccion]);
 
   const avanzarOradorCaucus = useCallback((emitir = true) => {
-    setOradoresCaucusState(prev => prev.slice(1));
+    setOradoresCaucusState(prev => {
+      const next = prev.slice(1);
+      stateRef.current.oradoresCaucus = next;
+      return next;
+    });
     if (emitir) {
       emitirAccion('avanzarOradorCaucus', {});
     }
@@ -857,6 +1082,199 @@ export const SessionProvider = ({ children }) => {
     }
   }, [emitirAccion]);
 
+  const controlarRelojDebate = useCallback((comando, payload = {}, emitir = true) => {
+    setRelojDebateState(prev => {
+      let next = { ...prev };
+      const ahora = Date.now();
+      const esCaucus = Boolean(stateRef.current.caucusActivo?.activo);
+      if (!payload.modo) {
+        next.modo = esCaucus ? 'CAUCUS' : 'GSL';
+      } else {
+        next.modo = payload.modo;
+      }
+
+      if (prev.corriendo && prev.timestamp) {
+        const transcurrido = Math.floor((ahora - prev.timestamp) / 1000);
+        next.segundosRestantes = (prev.segundosRestantes ?? 60) - transcurrido;
+        if (next.tiempoOradorSeg !== undefined) {
+          next.tiempoOradorSeg = (prev.tiempoOradorSeg ?? prev.limiteOradorSeg ?? 45) - transcurrido;
+        }
+        if (next.tiempoTotalSeg !== undefined) {
+          next.tiempoTotalSeg = Math.max(0, (prev.tiempoTotalSeg ?? 600) - transcurrido);
+        }
+      }
+      next.timestamp = ahora;
+
+      if (payload.segundosRestantes !== undefined) {
+        next.segundosRestantes = payload.segundosRestantes;
+      }
+      if (payload.tiempoInicial !== undefined) {
+        next.tiempoInicial = payload.tiempoInicial;
+      }
+      if (payload.tiempoOradorSeg !== undefined) {
+        next.tiempoOradorSeg = payload.tiempoOradorSeg;
+      }
+      if (payload.limiteOradorSeg !== undefined) {
+        next.limiteOradorSeg = payload.limiteOradorSeg;
+      }
+      if (payload.tiempoTotalSeg !== undefined) {
+        next.tiempoTotalSeg = payload.tiempoTotalSeg;
+      }
+
+      switch (comando) {
+        case 'start':
+          next.corriendo = true;
+          iniciarActividadDebate();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_hotkey_toggle_timer', { detail: { action: 'start' } }));
+          }
+          break;
+
+        case 'stop':
+        case 'pause':
+          next.corriendo = false;
+          registrarActividadDebate();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_hotkey_toggle_timer', { detail: { action: 'pause' } }));
+          }
+          break;
+
+        case 'toggle':
+          next.corriendo = !prev.corriendo;
+          if (next.corriendo) {
+            iniciarActividadDebate();
+          } else {
+            registrarActividadDebate();
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_hotkey_toggle_timer', { detail: { running: next.corriendo } }));
+          }
+          break;
+
+        case 'reset':
+          next.corriendo = false;
+          next.segundosRestantes = payload.tiempoInicial || next.tiempoInicial || 60;
+          if (next.limiteOradorSeg) {
+            next.tiempoOradorSeg = next.limiteOradorSeg;
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_hotkey_reset_timer'));
+          }
+          break;
+
+        case 'adjust': {
+          const delta = payload.delta || 0;
+          next.segundosRestantes = (next.segundosRestantes || 0) + delta;
+          if (next.tiempoOradorSeg !== undefined) {
+            next.tiempoOradorSeg = (next.tiempoOradorSeg || 0) + delta;
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_hotkey_adjust_time', { detail: { delta } }));
+          }
+          break;
+        }
+
+        case 'set_time':
+        case 'set_preset': {
+          const nuevosSegundos = payload.segundos ?? payload.tiempoInicial ?? 60;
+          next.corriendo = false;
+          next.tiempoInicial = nuevosSegundos;
+          next.segundosRestantes = nuevosSegundos;
+          if (payload.tiempoOradorSeg !== undefined) next.tiempoOradorSeg = payload.tiempoOradorSeg;
+          if (payload.limiteOradorSeg !== undefined) next.limiteOradorSeg = payload.limiteOradorSeg;
+          if (payload.tiempoTotalSeg !== undefined) next.tiempoTotalSeg = payload.tiempoTotalSeg;
+          break;
+        }
+
+        case 'set_modo': {
+          if (payload.modo === 'GSL' || payload.modo === 'CAUCUS') {
+            next.modo = payload.modo;
+          }
+          break;
+        }
+
+        case 'next_speaker': {
+          next.corriendo = false;
+          if (next.modo === 'CAUCUS') {
+            const oradorActual = stateRef.current.oradoresCaucus?.[0];
+            const limite = next.limiteOradorSeg || stateRef.current.caucusActivo?.tiempoOrador || 45;
+            const restante = next.tiempoOradorSeg !== undefined ? next.tiempoOradorSeg : limite;
+            if (oradorActual && (oradorActual.nombre || typeof oradorActual === 'string')) {
+              const nombre = oradorActual.nombre || oradorActual;
+              const hablado = Math.max(1, limite - restante);
+              const overtime = restante < 0 ? Math.abs(restante) : 0;
+              registrarIntervencion(nombre, limite, hablado, overtime, false);
+            }
+            avanzarOradorCaucus(false);
+            next.tiempoOradorSeg = limite;
+          } else {
+            const cola = stateRef.current.oradoresCola || [];
+            if (cola.length > 0) {
+              const oradorActual = cola[0];
+              const tInit = next.tiempoInicial || 60;
+              const hablado = next.segundosRestantes < 0 ? tInit + Math.abs(next.segundosRestantes) : Math.max(1, tInit - next.segundosRestantes);
+              const overtime = next.segundosRestantes < 0 ? Math.abs(next.segundosRestantes) : 0;
+              registrarIntervencion(oradorActual.nombre, tInit, hablado, overtime, false);
+              removerOrador(oradorActual.id, false);
+            }
+            next.segundosRestantes = next.tiempoInicial || 60;
+          }
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_hotkey_next_speaker'));
+          }
+          break;
+        }
+
+        case 'sync':
+          if (payload && typeof payload === 'object') {
+            next = { ...next, ...payload, timestamp: ahora };
+          }
+          break;
+
+        default:
+          break;
+      }
+
+      stateRef.current.relojDebateState = next;
+      stateRef.current.relojGSLState = {
+        segundosRestantes: next.segundosRestantes,
+        tiempoInicial: next.tiempoInicial,
+        corriendo: next.corriendo
+      };
+
+      if (typeof window !== 'undefined') {
+        const signalName = payload.signal || (comando === 'next_speaker' ? 'next_speaker' : (next.corriendo ? 'start' : 'stop'));
+        const signalDetail = {
+          signal: signalName,
+          comando,
+          source: payload.source,
+          segundosRestantes: next.segundosRestantes,
+          tiempoInicial: next.tiempoInicial,
+          tiempoOradorSeg: next.tiempoOradorSeg,
+          limiteOradorSeg: next.limiteOradorSeg,
+          tiempoTotalSeg: next.tiempoTotalSeg,
+          modo: next.modo,
+          timestamp: ahora
+        };
+
+        try {
+          localStorage.setItem('openmun_reloj_debate', JSON.stringify(next));
+          localStorage.setItem('openmun_cronometros', JSON.stringify(next));
+          localStorage.setItem('openmun_timer_signal', JSON.stringify(signalDetail));
+        } catch { /* ignore */ }
+
+        window.dispatchEvent(new CustomEvent('openmun_timer_signal', { detail: signalDetail }));
+        window.dispatchEvent(new CustomEvent('openmun_timer_sync', { detail: next }));
+      }
+
+      return next;
+    });
+
+    if (emitir) {
+      emitirAccion('controlarRelojDebate', { comando, payload });
+    }
+  }, [iniciarActividadDebate, registrarActividadDebate, emitirAccion, registrarIntervencion, removerOrador, avanzarOradorCaucus]);
+
   // Agenda & Comité
   const establecerAgenda = useCallback((temaActual, temasPropuestos = [], emitir = true) => {
     setAgendaSesionState(prev => ({
@@ -883,6 +1301,92 @@ export const SessionProvider = ({ children }) => {
     if (emitir) {
       emitirAccion('cambiarTemaActual', { nuevoTema });
     }
+  }, [emitirAccion]);
+
+  const siguienteTemaAgenda = useMemo(() => {
+    const temas = Array.isArray(agendaSesion?.temasPropuestos) ? agendaSesion.temasPropuestos : [];
+    if (temas.length === 0) return null;
+    const temaActualStr = agendaSesion?.temaActual || '';
+    let activeIdx = temas.findIndex(item => item.titulo === temaActualStr);
+    if (activeIdx === -1) {
+      activeIdx = temas.findIndex(item => item.estado === 'En Discusión');
+    }
+    if (activeIdx === -1) {
+      return temas.find(item => item.estado !== 'Concluido') || null;
+    }
+    for (let i = activeIdx + 1; i < temas.length; i++) {
+      if (temas[i].estado !== 'Concluido') return temas[i];
+    }
+    for (let i = 0; i < activeIdx; i++) {
+      if (temas[i].estado !== 'Concluido') return temas[i];
+    }
+    return null;
+  }, [agendaSesion]);
+
+  const irASiguienteTema = useCallback((emitir = true) => {
+    const currentAgenda = stateRef.current.agendaSesion || { establecida: false, temaActual: '', temasPropuestos: [] };
+    const temas = Array.isArray(currentAgenda.temasPropuestos) ? currentAgenda.temasPropuestos : [];
+    const temaActualStr = currentAgenda.temaActual || '';
+
+    let activeIdx = temas.findIndex(item => item.titulo === temaActualStr);
+    if (activeIdx === -1) {
+      activeIdx = temas.findIndex(item => item.estado === 'En Discusión');
+    }
+
+    let nextIdx = -1;
+    if (activeIdx === -1) {
+      nextIdx = temas.findIndex(item => item.estado !== 'Concluido');
+    } else {
+      for (let i = activeIdx + 1; i < temas.length; i++) {
+        if (temas[i].estado !== 'Concluido') {
+          nextIdx = i;
+          break;
+        }
+      }
+      if (nextIdx === -1) {
+        for (let i = 0; i < activeIdx; i++) {
+          if (temas[i].estado !== 'Concluido') {
+            nextIdx = i;
+            break;
+          }
+        }
+      }
+    }
+
+    const nextItem = nextIdx !== -1 ? temas[nextIdx] : null;
+    const nuevoTemaActual = nextItem ? nextItem.titulo : '';
+    const nuevosTemas = temas.map((item, idx) => {
+      if (idx === activeIdx) {
+        return { ...item, estado: 'Concluido' };
+      }
+      if (idx === nextIdx) {
+        return { ...item, estado: 'En Discusión' };
+      }
+      return item;
+    });
+
+    setAgendaSesionState(prev => ({
+      ...prev,
+      establecida: prev.establecida || nuevosTemas.length > 0,
+      temaActual: nuevoTemaActual,
+      temasPropuestos: nuevosTemas
+    }));
+
+    setVotacionSesionState(prev => ({
+      ...prev,
+      votos: {},
+      derechos: {}
+    }));
+
+    if (emitir) {
+      emitirAccion('irASiguienteTema', {});
+    }
+
+    return {
+      temaAnterior: activeIdx !== -1 ? temas[activeIdx]?.titulo : temaActualStr,
+      siguienteTema: nextItem ? nextItem.titulo : '',
+      concluida: !nextItem
+    };
   }, [emitirAccion]);
 
   const setNombreComite = useCallback((nuevoNombre, emitir = true) => {
@@ -987,7 +1491,7 @@ export const SessionProvider = ({ children }) => {
     setHistoricoMocionesState(prev => prev.map(m => (m.id === mocion.id || m.tema === mocion.tema) ? { ...m, estado: 'Aprobada' } : m));
     setMocionesState(prev => prev.filter(m => m.id !== mocion.id));
 
-    setCaucusActivoState({
+    const nuevoCaucus = {
       activo: true,
       proponente: mocion.proponente,
       posicionProponente: posProponente,
@@ -997,12 +1501,30 @@ export const SessionProvider = ({ children }) => {
       tiempoTotal: Number(mocion.tiempoTotal) || 0,
       tiempoOrador: Number(mocion.tiempoOrador) || 0,
       timestampActivacion: Date.now()
-    });
+    };
+    setCaucusActivoState(nuevoCaucus);
+    stateRef.current.caucusActivo = nuevoCaucus;
+    try {
+      localStorage.setItem('openmun_caucus', JSON.stringify(nuevoCaucus));
+    } catch { /* ignore */ }
+
+    if (controlarRelojDebate) {
+      const tOrador = Number(mocion.tiempoOrador) || 60;
+      const tTotal = Number(mocion.tiempoTotal) || 600;
+      controlarRelojDebate('sync', {
+        source: 'main',
+        modo: 'CAUCUS',
+        limiteOradorSeg: tOrador,
+        tiempoOradorSeg: tOrador,
+        tiempoTotalSeg: tTotal,
+        corriendo: false
+      });
+    }
 
     if (emitir) {
       emitirAccion('activarMocion', { mocion });
     }
-  }, [emitirAccion]);
+  }, [emitirAccion, controlarRelojDebate]);
 
   const votarMocion = useCallback((id, nuevoEstado, emitir = true) => {
     if (nuevoEstado === 'Fallida') {
@@ -1252,6 +1774,9 @@ export const SessionProvider = ({ children }) => {
       case 'cambiarTemaActual':
         cambiarTemaActual(payload.nuevoTema, false);
         break;
+      case 'irASiguienteTema':
+        irASiguienteTema(false);
+        break;
       case 'setNombreComite':
         setNombreComite(payload.nombreComite, false);
         break;
@@ -1279,6 +1804,9 @@ export const SessionProvider = ({ children }) => {
       case 'actualizarRelojGSL':
         actualizarRelojGSL(payload.segundosRestantes, payload.tiempoInicial, payload.corriendo, false);
         break;
+      case 'controlarRelojDebate':
+        controlarRelojDebate(payload.comando, payload.payload, false);
+        break;
       case 'setEnmiendasSesion':
         setEnmiendasSesion(payload.enmiendasSesion, false);
         break;
@@ -1303,10 +1831,10 @@ export const SessionProvider = ({ children }) => {
     agregarOrador, removerOrador, moverOrador, vaciarOradoresGSL, ordenarOradoresGSLAlfabetico,
     reordenarOradoresGSL, cederTiempo, agregarOradorCaucus, removerOradorCaucus, avanzarOradorCaucus,
     vaciarOradoresDebate, ordenarOradoresDebateAlfabetico, reordenarOradoresDebate, moverOradorCaucus,
-    setCaucusActivo, establecerAgenda, actualizarSesionesDebate, cambiarTemaActual, setNombreComite, agregarMocion, activarMocion,
+    setCaucusActivo, establecerAgenda, actualizarSesionesDebate, cambiarTemaActual, irASiguienteTema, setNombreComite, agregarMocion, activarMocion,
     votarMocion, eliminarMocion, reordenarMociones, ordenarMocionesDisruptividad, registrarIntervencion,
     actualizarRelojGSL, setEnmiendasSesion, guardarResolucionEnmiendas, agregarEnmiendaResolucion,
-    resolverEnmiendaResolucion, eliminarEnmiendaResolucion
+    resolverEnmiendaResolucion, eliminarEnmiendaResolucion, controlarRelojDebate
   ]);
 
   // ─────────────────────────────────────────────────────────────
@@ -1326,6 +1854,8 @@ export const SessionProvider = ({ children }) => {
             ejecutarAccion(data.accion, data.payload);
           } else if (data.type === 'SESSION_SYNC') {
             aplicarEstadoExterno(data.state);
+          } else if (data.type === 'RELOJ_DEBATE_ACTION') {
+            controlarRelojDebate(data.comando, data.payload, false);
           }
         };
       } catch (err) {
@@ -1347,6 +1877,16 @@ export const SessionProvider = ({ children }) => {
         if (e.key === 'openmun_votacion') setVotacionSesionState(JSON.parse(e.newValue));
         if (e.key === 'openmun_agenda') setAgendaSesionState(JSON.parse(e.newValue));
         if (e.key === 'openmun_comite') setNombreComiteState(e.newValue);
+        if (e.key === 'openmun_reloj_debate') {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed) setRelojDebateState(parsed);
+        }
+        if (e.key === 'openmun_timer_signal') {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('openmun_timer_signal', { detail: parsed }));
+          }
+        }
       } catch (err) {
         console.error('Error rehidratando desde storage event:', err);
       }
@@ -1508,327 +2048,6 @@ export const SessionProvider = ({ children }) => {
     } catch (err) {
       console.error('Error al exportar sesión completa:', err);
       alert(t('ui.couldNotExportTheSessionCheckYourBrowserPermissionsOr'));
-    }
-  };
-
-  // Listar todos los archivos en la carpeta openMUN de Drive
-  const listarSesionesDrive = async () => {
-    try {
-      if (!googleDriveService.isAuthenticated()) return [];
-      const archivos = await googleDriveService.listarArchivosSesion();
-      setDriveFilesList(archivos);
-      return archivos;
-    } catch (err) {
-      console.warn('Error al listar archivos de Drive:', err);
-      return [];
-    }
-  };
-
-  // 3. CONECTAR Y VINCULAR CON GOOGLE DRIVE
-  const conectarGoogleDrive = async () => {
-    try {
-      setDriveSyncStatus('connecting');
-      const authResult = await googleDriveService.conectar();
-      if (authResult.user) {
-        setDriveUser(authResult.user);
-      }
-
-      // Obtener lista de archivos en la carpeta openMUN
-      const archivos = await googleDriveService.listarArchivosSesion();
-      setDriveFilesList(archivos);
-
-      const hayDatosLocales = paises.length > 0 || oradoresCola.length > 0 || (nombreComite && nombreComite.trim().length > 0);
-
-      // Si ya hay un archivo id guardado y existe en Drive
-      const isValidId = driveFileId && /^[a-zA-Z0-9_-]{10,100}$/.test(driveFileId);
-      let targetFile = isValidId ? archivos.find(f => f.id === driveFileId) : null;
-      if (!targetFile && archivos.length > 0) {
-        targetFile = archivos[0];
-      }
-
-      // Si teníamos un id en localStorage pero ya no existe en la carpeta openMUN, limpiarlo
-      if (driveFileId && !targetFile) {
-        localStorage.removeItem('openmun_drive_file_id');
-        localStorage.removeItem('openmun_drive_file_name');
-        setDriveFileId(null);
-      }
-
-      if (targetFile) {
-        setDriveFileId(targetFile.id);
-        setDriveFileName(targetFile.name);
-        driveRemoteModifiedTimeRef.current = targetFile.modifiedTime || new Date().toISOString();
-        setDriveRemoteModifiedTime(driveRemoteModifiedTimeRef.current);
-        localStorage.setItem('openmun_drive_file_id', targetFile.id);
-        localStorage.setItem('openmun_drive_file_name', targetFile.name);
-
-        if (!hayDatosLocales) {
-          // Si no hay datos locales, cargar directamente la sesión desde Drive comprobando validez
-          const sesionRemota = await googleDriveService.descargarSesion(targetFile.id);
-          const ok = cargarSesionJSON(sesionRemota);
-          if (!ok) {
-            console.warn('[Google Drive] El archivo de sesión en Drive no superó la validación.');
-            alert(t('ui.theGoogleDriveFileDoesNotContainAValidOpenmun'));
-            setDriveSyncStatus('error');
-            return false;
-          }
-        } else {
-          // Si ya hay datos locales, sincronizar actualizando el archivo en Drive
-          const snapshotActual = generarSnapshotSesion();
-          const updated = await googleDriveService.actualizarArchivoSesion(targetFile.id, snapshotActual);
-          if (updated?.modifiedTime) {
-            driveRemoteModifiedTimeRef.current = updated.modifiedTime;
-            setDriveRemoteModifiedTime(updated.modifiedTime);
-          }
-        }
-      } else {
-        // No existe ningún archivo en la carpeta openMUN -> crear nuevo archivo
-        const nombreArchivo = nombreComite && nombreComite.trim().length > 0
-          ? `openmun_${nombreComite.trim().replace(/[^a-zA-Z0-9_-]/g, '_')}.json`
-          : 'openmun_sesion_activa.json';
-        const snapshotActual = generarSnapshotSesion();
-        const nuevoArchivo = await googleDriveService.crearArchivoSesion(snapshotActual, nombreArchivo);
-        setDriveFileId(nuevoArchivo.id);
-        setDriveFileName(nuevoArchivo.name);
-        driveRemoteModifiedTimeRef.current = nuevoArchivo.modifiedTime || new Date().toISOString();
-        setDriveRemoteModifiedTime(driveRemoteModifiedTimeRef.current);
-        localStorage.setItem('openmun_drive_file_id', nuevoArchivo.id);
-        localStorage.setItem('openmun_drive_file_name', nuevoArchivo.name);
-        const actualizados = await googleDriveService.listarArchivosSesion();
-        setDriveFilesList(actualizados);
-      }
-
-      setIsDriveLinked(true);
-      setDriveSyncStatus('synced');
-      setDriveLastSync(new Date());
-      isInitialSyncRef.current = true;
-      return true;
-    } catch (err) {
-      console.error('[Google Drive Connect Error]:', err);
-      setDriveSyncStatus('error');
-      alert(t('ui.couldNotConnectToGoogleDriveCheckYourConnectionAnd'));
-      return false;
-    }
-  };
-
-  // Cargar una sesión específica desde Drive por su File ID
-  const cargarSesionDesdeDrive = async (fileId, fileName) => {
-    try {
-      if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-        alert(t('ui.invalidFileIdentifier'));
-        return false;
-      }
-      setDriveSyncStatus('syncing');
-      const sesionRemota = await googleDriveService.descargarSesion(fileId);
-      const ok = cargarSesionJSON(sesionRemota);
-      if (ok) {
-        const meta = await googleDriveService.obtenerMetadatosArchivo(fileId).catch(() => null);
-        const modTime = meta?.modifiedTime || new Date().toISOString();
-        driveRemoteModifiedTimeRef.current = modTime;
-        setDriveRemoteModifiedTime(modTime);
-
-        setDriveFileId(fileId);
-        if (fileName) setDriveFileName(fileName);
-        localStorage.setItem('openmun_drive_file_id', fileId);
-        if (fileName) localStorage.setItem('openmun_drive_file_name', fileName);
-        setIsDriveLinked(true);
-        setDriveSyncStatus('synced');
-        setDriveLastSync(new Date());
-        return true;
-      } else {
-        setDriveSyncStatus('error');
-        alert(t('ui.theSelectedFileDoesNotContainAValidOpenmunSession'));
-        return false;
-      }
-    } catch (err) {
-      console.error('[Google Drive Load Error]:', err);
-      setDriveSyncStatus('error');
-      alert(t('ui.couldNotLoadTheSelectedSessionFromGoogleDrive'));
-      return false;
-    }
-  };
-
-  // Guardar la sesión actual como un nuevo archivo en Drive
-  const guardarNuevaSesionEnDrive = async (nombreArchivo) => {
-    try {
-      setDriveSyncStatus('syncing');
-      const snapshotActual = generarSnapshotSesion();
-      const sanitizedName = (nombreArchivo || 'openmun_sesion.json').trim().replace(/[^a-zA-Z0-9._-]/g, '_');
-      const nuevo = await googleDriveService.crearArchivoSesion(snapshotActual, sanitizedName);
-      
-      const modTime = nuevo.modifiedTime || new Date().toISOString();
-      driveRemoteModifiedTimeRef.current = modTime;
-      setDriveRemoteModifiedTime(modTime);
-
-      setDriveFileId(nuevo.id);
-      setDriveFileName(nuevo.name);
-      localStorage.setItem('openmun_drive_file_id', nuevo.id);
-      localStorage.setItem('openmun_drive_file_name', nuevo.name);
-      
-      const archivos = await googleDriveService.listarArchivosSesion();
-      setDriveFilesList(archivos);
-
-      setIsDriveLinked(true);
-      setDriveSyncStatus('synced');
-      setDriveLastSync(new Date());
-      return nuevo;
-    } catch (err) {
-      console.error('[Google Drive Create Error]:', err);
-      setDriveSyncStatus('error');
-      alert(t('ui.couldNotCreateTheFileInGoogleDrive'));
-      return null;
-    }
-  };
-
-  // Vincular la sincronización activa a un archivo existente de Drive
-  const vincularArchivoDrive = async (fileId, fileName) => {
-    try {
-      if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-        return false;
-      }
-      setDriveFileId(fileId);
-      setDriveFileName(fileName);
-      localStorage.setItem('openmun_drive_file_id', fileId);
-      localStorage.setItem('openmun_drive_file_name', fileName);
-      setDriveSyncStatus('syncing');
-
-      const snapshotActual = generarSnapshotSesion();
-      const updated = await googleDriveService.actualizarArchivoSesion(fileId, snapshotActual);
-      const modTime = updated?.modifiedTime || new Date().toISOString();
-      driveRemoteModifiedTimeRef.current = modTime;
-      setDriveRemoteModifiedTime(modTime);
-
-      setIsDriveLinked(true);
-      setDriveSyncStatus('synced');
-      setDriveLastSync(new Date());
-      return true;
-    } catch (err) {
-      console.error('[Google Drive Link Error]:', err);
-      setDriveSyncStatus('error');
-      return false;
-    }
-  };
-
-  // Eliminar un archivo de Drive
-  const eliminarSesionDrive = async (fileId) => {
-    try {
-      if (!fileId || typeof fileId !== 'string' || !/^[a-zA-Z0-9_-]{10,100}$/.test(fileId)) {
-        return false;
-      }
-      await googleDriveService.eliminarArchivo(fileId);
-      if (driveFileId === fileId) {
-        setDriveFileId(null);
-        setDriveFileName('');
-        driveRemoteModifiedTimeRef.current = null;
-        setDriveRemoteModifiedTime(null);
-        localStorage.removeItem('openmun_drive_file_id');
-        localStorage.removeItem('openmun_drive_file_name');
-        setIsDriveLinked(false);
-        setDriveSyncStatus('disconnected');
-      }
-      const archivos = await googleDriveService.listarArchivosSesion();
-      setDriveFilesList(archivos);
-      return true;
-    } catch (err) {
-      console.error('[Google Drive Delete Error]:', err);
-      alert(t('ui.couldNotDeleteTheFileFromGoogleDrive'));
-      return false;
-    }
-  };
-
-  // 4. DESCONECTAR GOOGLE DRIVE
-  const desconectarGoogleDrive = () => {
-    googleDriveService.desconectar();
-    setIsDriveLinked(false);
-    setDriveSyncStatus('disconnected');
-    setDriveUser(null);
-    setDriveFilesList([]);
-    driveRemoteModifiedTimeRef.current = null;
-    setDriveRemoteModifiedTime(null);
-  };
-
-  // 5. SINCRONIZACIÓN MANUAL CON DRIVE
-  const sincronizarDriveManual = async (force = false) => {
-    if (!isDriveLinked || !driveFileId) {
-      return await conectarGoogleDrive();
-    }
-    try {
-      setDriveSyncStatus('syncing');
-      const snapshot = generarSnapshotSesion();
-      const updated = await googleDriveService.actualizarArchivoSesion(driveFileId, snapshot, {
-        checkConflict: !force,
-        expectedModifiedTime: driveRemoteModifiedTimeRef.current
-      });
-      const modTime = updated?.modifiedTime || new Date().toISOString();
-      driveRemoteModifiedTimeRef.current = modTime;
-      setDriveRemoteModifiedTime(modTime);
-      setDriveSyncStatus('synced');
-      setDriveLastSync(new Date());
-      return true;
-    } catch (err) {
-      if (err.code === 'CONFLICT') {
-        console.warn('[Google Drive Conflict] Modificación remota detectada al sincronizar manualmente.');
-        setDriveSyncStatus('conflict');
-        return false;
-      }
-      console.error('[Google Drive Manual Sync Error]:', err);
-      setDriveSyncStatus('error');
-      return false;
-    }
-  };
-
-  // 6. AUTO-GUARDADO CONTINUO EN GOOGLE DRIVE (Debounce de 2.5s)
-  useEffect(() => {
-    if (!isDriveLinked || !driveFileId || !googleDriveService.isAuthenticated()) return;
-    if (driveSyncStatus === 'conflict') return; // Pausar auto-guardado si hay conflicto pendiente
-
-    if (!isInitialSyncRef.current) {
-      isInitialSyncRef.current = true;
-      return;
-    }
-
-    setDriveSyncStatus('syncing');
-    const debounceTimer = setTimeout(async () => {
-      try {
-        const snapshot = generarSnapshotSesion();
-        const updated = await googleDriveService.actualizarArchivoSesion(driveFileId, snapshot, {
-          checkConflict: true,
-          expectedModifiedTime: driveRemoteModifiedTimeRef.current
-        });
-        const modTime = updated?.modifiedTime || new Date().toISOString();
-        driveRemoteModifiedTimeRef.current = modTime;
-        setDriveRemoteModifiedTime(modTime);
-        setDriveSyncStatus('synced');
-        setDriveLastSync(new Date());
-      } catch (err) {
-        if (err.code === 'CONFLICT') {
-          console.warn('[Google Drive Conflict] Modificación remota detectada en auto-guardado. Auto-guardado en pausa.');
-          setDriveSyncStatus('conflict');
-        } else {
-          console.warn('[Google Drive Auto-Save Warning]:', err);
-          setDriveSyncStatus('error');
-          if (typeof window !== 'undefined' && (!navigator.onLine || err.name === 'TypeError')) {
-            window.dispatchEvent(new CustomEvent('openmun_network_failure'));
-          }
-        }
-      }
-    }, 2500);
-
-    return () => clearTimeout(debounceTimer);
-  }, [paises, oradoresCola, oradoresCaucus, registroIntervenciones, mociones, historicoMociones, caucusActivo, votacionSesion, agendaSesion, nombreComite, enmiendasSesion, isDriveLinked, driveFileId, driveSyncStatus, generarSnapshotSesion]);
-
-  // 7. RESOLVER CONFLICTO DE GOOGLE DRIVE
-  const resolverConflictoDrive = async (accion = 'recargar') => {
-    if (!driveFileId) return false;
-    try {
-      if (accion === 'recargar') {
-        return await cargarSesionDesdeDrive(driveFileId, driveFileName);
-      } else if (accion === 'sobrescribir') {
-        return await sincronizarDriveManual(true);
-      }
-      return false;
-    } catch (err) {
-      console.error('[Google Drive Conflict Resolution Error]:', err);
-      return false;
     }
   };
 
@@ -2294,11 +2513,15 @@ export const SessionProvider = ({ children }) => {
     setCaucusActivo,
     relojGSLState,
     actualizarRelojGSL,
+    relojDebateState,
+    controlarRelojDebate,
     yieldEvento,
     votacionSesion,
     registrarVotoPais,
     configurarVotacion,
     resetearVotacion,
+    estadoFinVotacion,
+    dispararCelebracionVoto,
     enmiendasSesion,
     setEnmiendasSesion,
     guardarResolucionEnmiendas,
@@ -2308,28 +2531,14 @@ export const SessionProvider = ({ children }) => {
     agendaSesion,
     establecerAgenda,
     cambiarTemaActual,
+    siguienteTemaAgenda,
+    irASiguienteTema,
     nombreComite,
     setNombreComite,
     establecerEstadoComiteCompleto,
     ejecutarAccion,
     aplicarEstadoExterno,
     generarSnapshotSesion,
-    isDriveLinked,
-    driveSyncStatus,
-    driveUser,
-    driveLastSync,
-    driveFileName,
-    driveFilesList,
-    driveRemoteModifiedTime,
-    resolverConflictoDrive,
-    conectarGoogleDrive,
-    desconectarGoogleDrive,
-    sincronizarDriveManual,
-    listarSesionesDrive,
-    cargarSesionDesdeDrive,
-    guardarNuevaSesionEnDrive,
-    vincularArchivoDrive,
-    eliminarSesionDrive,
     // Supabase Cloud
     cloudAccount,
     isCloudLinked,
@@ -2390,11 +2599,15 @@ export const SessionProvider = ({ children }) => {
     setCaucusActivo,
     relojGSLState,
     actualizarRelojGSL,
+    relojDebateState,
+    controlarRelojDebate,
     yieldEvento,
     votacionSesion,
     registrarVotoPais,
     configurarVotacion,
     resetearVotacion,
+    estadoFinVotacion,
+    dispararCelebracionVoto,
     enmiendasSesion,
     setEnmiendasSesion,
     guardarResolucionEnmiendas,
@@ -2404,28 +2617,14 @@ export const SessionProvider = ({ children }) => {
     agendaSesion,
     establecerAgenda,
     cambiarTemaActual,
+    siguienteTemaAgenda,
+    irASiguienteTema,
     nombreComite,
     setNombreComite,
     establecerEstadoComiteCompleto,
     ejecutarAccion,
     aplicarEstadoExterno,
     generarSnapshotSesion,
-    isDriveLinked,
-    driveSyncStatus,
-    driveUser,
-    driveLastSync,
-    driveFileName,
-    driveFilesList,
-    driveRemoteModifiedTime,
-    resolverConflictoDrive,
-    conectarGoogleDrive,
-    desconectarGoogleDrive,
-    sincronizarDriveManual,
-    listarSesionesDrive,
-    cargarSesionDesdeDrive,
-    guardarNuevaSesionEnDrive,
-    vincularArchivoDrive,
-    eliminarSesionDrive,
     cloudAccount,
     isCloudLinked,
     cloudSyncStatus,
@@ -2443,6 +2642,18 @@ export const SessionProvider = ({ children }) => {
   return (
     <SessionContext.Provider value={contextValue}>
       {children}
+      {gavelRunId > 0 && (
+        <GavelAnimation
+          key={`gavel-${gavelRunId}`}
+          onComplete={() => setGavelRunId(0)}
+        />
+      )}
+      {confettiRunId > 0 && (
+        <ConfettiAnimation
+          key={`confetti-${confettiRunId}`}
+          onComplete={() => setConfettiRunId(0)}
+        />
+      )}
       <NewDebateSessionModal
         isOpen={confirmarSesion}
         onDecision={nueva => confirmarSesionRef.current?.resolve(nueva)}

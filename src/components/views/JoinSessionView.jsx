@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { LUAX_API_URL } from '../../services/luaxAccess.js';
 import { 
   Radio, 
   Key, 
@@ -286,7 +287,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
           </div>
 
           {/* Formulario según el Rol seleccionado */}
-          {selectedRole === 'delegate' ? (
+          {selectedRole === 'delegate' && !LUAX_API_URL ? (
             <div style={{
               backgroundColor: 'rgba(34, 197, 94, 0.08)',
               border: '1px solid rgba(34, 197, 94, 0.25)',
@@ -321,7 +322,7 @@ const JoinSessionView = ({ isLight: propIsLight, onBackToChair }) => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {t('ui.accessPassword')}{selectedRole === 'secretariat' ? t('views.secretariat.badge') : selectedRole === 'staff' ? t('conferences.issuerStaff') : t('views.backroom.badge')})
+                {selectedRole === 'delegate' ? t('ui.conferenceAccessPinOptional') : <>{t('ui.accessPassword')}{selectedRole === 'secretariat' ? t('views.secretariat.badge') : selectedRole === 'staff' ? t('conferences.issuerStaff') : t('views.backroom.badge')})</>}
               </label>
               <div style={{ position: 'relative' }}>
                 <input

@@ -1,3 +1,4 @@
+import peerService, { canReceiveNote } from '../../services/peerService.js';
 import i18n from '../../languages/index.js';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -300,16 +301,14 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     }
 
     const handleNuevo = (e) => {
-      if (e.detail) {
-        setAvisosDB(prev => [e.detail, ...prev.filter(a => a.id !== e.detail.id)]);
-      }
+      if (e.detail?.conferencia_id === confActiva.id) fetchAvisos();
     };
     const handleDesactivado = (e) => {
       if (e.detail?.id) {
         setAvisosDB(prev => prev.filter(a => String(a.id) !== String(e.detail.id)));
       }
     };
-    window.addEventListener('openmun_nuevo_aviso', handleNuevo);
+    window.addEventListener('openmun_avisos_actualizados', handleNuevo);
     window.addEventListener('openmun_aviso_desactivado', handleDesactivado);
 
     return () => {
@@ -317,10 +316,10 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVis);
       }
-      window.removeEventListener('openmun_nuevo_aviso', handleNuevo);
+      window.removeEventListener('openmun_avisos_actualizados', handleNuevo);
       window.removeEventListener('openmun_aviso_desactivado', handleDesactivado);
     };
-  }, [confActiva?.id]);
+  }, [confActiva?.id, currentComiteId, currentComiteNombre]);
 
   const showToast = (msg, type = 'success') => {
     addToast({ message: msg, type });
@@ -341,25 +340,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
   const totalPaises = paises.length;
   const presentesCount = paises.filter(p => p.estatus === 'Presente' || p.estatus === 'Presente y Votando').length;
 
-  // Filtrar notas relevantes para el staff (incluye notas a la Mesa / Chair y comunicados de sala)
-  const notasStaff = notes.filter(n => {
-    if (!n || !n.text) return false;
-    const dest = (n.to || '').toUpperCase().trim();
-    return (
-      dest === 'STAFF' ||
-      dest === 'CHAIR' ||
-      dest === 'MESA' ||
-      dest === 'MESA DE PRESIDENCIA' ||
-      dest === 'TODOS' ||
-      dest === 'ALL' ||
-      n.fromRole === 'staff' ||
-      n.fromRole === 'chair' ||
-      n.from === 'Staff' ||
-      n.from === 'Mesa de Presidencia' ||
-      n.type === 'logistica' ||
-      n.type === 'paje'
-    );
-  });
+  const notasStaff = notes.filter(note => canReceiveNote(note, 'staff', null, peerService.clientId));
 
   const notasFiltradas = notasStaff.filter(n => {
     if (filtroNotas === 'RECIBIDAS') return !n.isOutgoing && n.fromRole !== 'staff';
@@ -375,18 +356,17 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     showToast(t('ui.committeeStatusChangedTo', { v0: nuevoTipo.toUpperCase() }));
   };
 
-  const handleEmitirAviso = (e) => {
+  const handleEmitirAviso = async (e) => {
     e.preventDefault();
     if (!tituloAviso.trim() && !textoAviso.trim()) return;
 
-    broadcastAnnouncement({
+    const sent = await broadcastAnnouncement({
       title: tituloAviso.trim() || 'Aviso Oficial de Staff',
       text: textoAviso.trim(),
       priority: prioridadAviso,
-      target: destinoAviso,
-      senderRole: 'staff',
-      senderName: `Staff (${comisionNombre})`
+      target: destinoAviso
     });
+    if (!sent) return;
 
     setTituloAviso('');
     setTextoAviso('');
@@ -413,7 +393,7 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
         mensaje: mensajeCompleto
       });
 
-      const res = await conferenceService.obtenerAvisos(confActiva.id);
+      const res = await conferenceService.obtenerAvisos(confActiva.id, currentComiteId, 'staff', currentComiteNombre);
       if (res?.avisos) setAvisosDB(res.avisos);
 
       setTituloAvisoConf('');
@@ -426,11 +406,11 @@ const StaffView = ({ isLight: propIsLight, onExit }) => {
     }
   };
 
-  const handleEnviarNota = (e) => {
+  const handleEnviarNota = async (e) => {
     e.preventDefault();
     if (!textoNota.trim()) return;
 
-    sendNote(destinatarioNota, textoNota.trim(), tipoNota);
+    if (!await sendNote(destinatarioNota, textoNota.trim(), tipoNota)) return;
     setTextoNota('');
     showToast(t('ui.noteSentTo', { v0: destinatarioNota }));
   };

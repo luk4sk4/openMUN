@@ -17,3 +17,47 @@ export const FIXED_LAYOUTS = {
     { i: 'panel_enmiendas_votacion', col: 7, row: 0, colSpan: 5, rowSpan: 7 }
   ]
 };
+
+// Fullscreen presentation layouts (three modes: with_left, timer_only, and with_adder)
+export const FULLSCREEN_LAYOUTS = {
+  GSL: {
+    with_left: [
+      { i: 'lista_oradores', col: 0, row: 0, colSpan: 4, rowSpan: 6 },
+      { i: 'cronometro_principal', col: 4, row: 0, colSpan: 8, rowSpan: 6 }
+    ],
+    timer_only: [
+      { i: 'cronometro_principal', col: 0, row: 0, colSpan: 12, rowSpan: 6 }
+    ],
+    with_adder: [
+      { i: 'lista_oradores', col: 0, row: 0, colSpan: 3, rowSpan: 6 },
+      { i: 'cronometro_principal', col: 3, row: 0, colSpan: 6, rowSpan: 6 },
+      { i: 'anadir_paises_gsl', col: 9, row: 0, colSpan: 3, rowSpan: 6 }
+    ],
+    all: [
+      { i: 'lista_oradores', col: 0, row: 0, colSpan: 3, rowSpan: 6 },
+      { i: 'cronometro_principal', col: 3, row: 0, colSpan: 6, rowSpan: 6 },
+      { i: 'anadir_paises_gsl', col: 9, row: 0, colSpan: 3, rowSpan: 6 }
+    ]
+  },
+  DEBATE: {
+    with_left: [
+      { i: 'pizarra_mociones', col: 0, row: 0, colSpan: 5, rowSpan: 6 },
+      { i: 'cronometro_dual', col: 5, row: 0, colSpan: 7, rowSpan: 6 }
+    ],
+    timer_only: [
+      { i: 'cronometro_dual', col: 0, row: 0, colSpan: 12, rowSpan: 6 }
+    ],
+    with_adder: [
+      { i: 'pizarra_mociones', col: 0, row: 0, colSpan: 4, rowSpan: 6 },
+      { i: 'cronometro_dual', col: 4, row: 0, colSpan: 5, rowSpan: 6 },
+      { i: 'anadir_paises_debate', col: 9, row: 0, colSpan: 3, rowSpan: 6 }
+    ],
+    all: [
+      { i: 'pizarra_mociones', col: 0, row: 0, colSpan: 4, rowSpan: 6 },
+      { i: 'cronometro_dual', col: 4, row: 0, colSpan: 5, rowSpan: 6 },
+      { i: 'anadir_paises_debate', col: 9, row: 0, colSpan: 3, rowSpan: 6 }
+    ]
+  }
+};
+
+

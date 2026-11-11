@@ -18,7 +18,9 @@ import React, { lazy } from 'react';
  * @returns {React.LazyExoticComponent<React.ComponentType<any>>}
  */
 export function lazyWithRetry(componentImport, componentName = 'component') {
-  return lazy(async () => {
+  let LazyComponent = null;
+
+  const createLazy = () => lazy(async () => {
     const reloadKey = `openmun_lazy_reload_${componentName}`;
     const hasAlreadyReloaded = window.sessionStorage.getItem(reloadKey) === 'true';
 
@@ -30,6 +32,10 @@ export function lazyWithRetry(componentImport, componentName = 'component') {
       }
       return component;
     } catch (error) {
+      // Clear cached LazyComponent so a manual Retry in WidgetErrorBoundary
+      // creates a fresh React.lazy instance instead of re-throwing a rejected promise.
+      LazyComponent = null;
+
       const isDynamicChunkError =
         error?.name === 'ChunkLoadError' ||
         error?.message?.includes('dynamically imported module') ||
@@ -100,6 +106,16 @@ export function lazyWithRetry(componentImport, componentName = 'component') {
       throw error;
     }
   });
+
+  const RetryableLazyWrapper = (props) => {
+    if (!LazyComponent) {
+      LazyComponent = createLazy();
+    }
+    return React.createElement(LazyComponent, props);
+  };
+  RetryableLazyWrapper.displayName = `LazyWithRetry(${componentName})`;
+
+  return RetryableLazyWrapper;
 }
 
 export default lazyWithRetry;

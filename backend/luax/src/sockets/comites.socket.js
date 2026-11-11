@@ -68,15 +68,8 @@ function registerCommitteeSockets(io, socket, on, db, persistence) {
   });
 
   on('enviar-datos-debate', (body, actor) => {
-    const cid = committeeFor(body, actor, ['org', 'chair']);
-    if (!Number.isSafeInteger(body.revision) || body.revision < 1) throw httpError(400, 'Revisión inválida');
-    const snapshot = validateSnapshot(body.snapshot);
-    return persistence.enqueue(cid, {
-      conference: actor.conferenceId, revision: body.revision, snapshot,
-      publish: () => socket.to(committeeRoom(actor.conferenceId, cid)).emit('nuevos-datos-debate', {
-        revision: body.revision, snapshot
-      })
-    });
+    committeeFor(body, actor, ['org', 'chair']);
+    throw httpError(410, 'Actualice el cliente para guardar mediante luax-snapshot');
   });
 
   on('enviar-mensaje', async (body, actor) => {

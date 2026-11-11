@@ -4,6 +4,7 @@ const { gunzipSync } = require('node:zlib');
 function createNoteRelay(io) {
   const hosts = new Map();
   const hostOnly = new Set(['NOTE_RECEIVED', 'AUTH_RESULT', 'SELECT_COUNTRY_RESULT']);
+  const announcements = new Set(['BROADCAST_ANNOUNCEMENT', 'DELETE_ANNOUNCEMENT']);
   const toHost = new Set(['AUTH', 'SEND_NOTE', 'REVIEW_NOTE']);
   return {
     registerHost(socket, room) {
@@ -33,7 +34,7 @@ function createNoteRelay(io) {
       if (hostOnly.has(message.type) && socket.id !== host) return false;
       const packet = { ...message, senderSocketId: socket.id };
       delete packet.senderMeta;
-      if (toHost.has(message.type)) {
+      if (toHost.has(message.type) || (announcements.has(message.type) && socket.id !== host)) {
         if (!host || host === socket.id) return false;
         io.to(host).emit('nuevos-datos', packet);
       } else if (message.targetSocketId) {

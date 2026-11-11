@@ -31,7 +31,8 @@ export const DebateAgendaModal = ({
   onActualizarDebate,
   onResolverDebate,
   onReiniciarDebate,
-  onCancelarDebate
+  onCancelarDebate,
+  onIrASiguienteTema
 }) => {
   const { t } = useTranslation();
   const [ahora, setAhora] = useState(Date.now());
@@ -682,8 +683,18 @@ export const DebateAgendaModal = ({
                       defaultValue: `El tema no ha alcanzado la mayoría necesaria (${debate.favor} a favor, ${debate.contra} en contra de ${debate.presentes} presentes).`
                     })}
               </p>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="button" className="debate-btn debate-btn-primary" onClick={onClose}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {typeof onIrASiguienteTema === 'function' && (
+                  <button type="button" className="debate-btn debate-btn-primary" onClick={onIrASiguienteTema}>
+                    <span>{t('voting.goToNextTopic', 'Ir a siguiente tema')}</span>
+                    <ArrowRight size={14} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={typeof onIrASiguienteTema === 'function' ? 'debate-btn' : 'debate-btn debate-btn-primary'}
+                  onClick={onClose}
+                >
                   {t('common.done', 'Finalizar y volver a la agenda')}
                 </button>
                 <button type="button" className="debate-btn" onClick={onReiniciarDebate}>

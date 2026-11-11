@@ -19,6 +19,7 @@
   --muted-text: #bab6af;
   --btn-bg: #b45432;
   --btn-text: #ffffff;
+  --accent-color: #efa37f;
   --font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   transition: filter 0.25s ease, background-color 0.25s ease, color 0.25s ease;
 }
@@ -1733,6 +1734,151 @@ body.light-theme .dashboard-fixed-grid > .fixed-panel,
   .openmun-create-conference-card {
     padding: 1.25rem 1rem !important;
   }
+}
+
+/* Estilos de la Página de Creación de Conferencia */
+.openmun-create-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .openmun-create-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+.openmun-create-panel {
+  background-color: var(--panel-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius, 6px);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-sizing: border-box;
+}
+
+/* Tooltips y controles de ayuda (OpenMUN Design System) */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  width: max-content;
+  max-width: min(260px, 80vw);
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--border-radius, 6px);
+  background-color: var(--panel-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: var(--font-family, Inter, system-ui, sans-serif);
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  z-index: 1200;
+}
+
+[data-tooltip-align="left"]::after {
+  left: 0;
+  transform: translateY(2px);
+}
+
+[data-tooltip-align="right"]::after {
+  left: auto;
+  right: 0;
+  transform: translateY(2px);
+}
+
+[data-tooltip-pos="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 7px);
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+[data-tooltip-align="left"]:hover::after,
+[data-tooltip-align="left"]:focus-visible::after,
+[data-tooltip-align="right"]:hover::after,
+[data-tooltip-align="right"]:focus-visible::after {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tooltip]::after {
+    transition: none;
+  }
+}
+
+.openmun-donate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--border-radius, 6px);
+  background-color: var(--card-header-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.openmun-donate-btn:hover {
+  background-color: var(--card-hover);
+  border-color: var(--accent-color);
+}
+
+.openmun-donate-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.openmun-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--text-color);
+  cursor: help;
+}
+
+.openmun-field-label-icon {
+  color: var(--muted-text);
+  opacity: 0.75;
+  flex-shrink: 0;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.openmun-field-label:hover .openmun-field-label-icon {
+  color: var(--accent-color);
+  opacity: 1;
 }
 .motion-duration-fields {
   display: grid;

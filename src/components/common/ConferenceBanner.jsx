@@ -21,11 +21,12 @@ const ConferenceBanner = ({
 }) => {
   const { t } = useTranslation();
   const confirm = useConfirm();
-  const [avisos, setAvisos] = useState(() => (conferenceService.obtenerAvisosEnMemoria ? conferenceService.obtenerAvisosEnMemoria() : []));
+  const [avisos, setAvisos] = useState([]);
   const [comites, setComites] = useState(propComites || []);
   const [avisoActualIndex, setAvisoActualIndex] = useState(0);
   const [descartados, setDescartados] = useState(() => obtenerAvisosIgnorados());
 
+  const conferenceId = conferenceService.obtenerSesionActiva()?.id?.toLowerCase();
   const effectiveComiteId = comiteId || (typeof window !== 'undefined' ? localStorage.getItem('openmun_current_comite_id') : null);
   const effectiveRole = role || (typeof window !== 'undefined' ? (localStorage.getItem('openmun_user_role') || 'chair') : 'chair');
   const effectiveComiteNombre = comiteNombre || (typeof window !== 'undefined' ? (localStorage.getItem('openmun_current_comite_nombre') || localStorage.getItem('openmun_p2p_room_name')) : null);
@@ -36,30 +37,27 @@ const ConferenceBanner = ({
       setComites(propComites);
       return;
     }
-    const confData = conferenceService.obtenerSesionActiva();
-    if (confData?.id) {
-      conferenceService.obtenerResumen(confData.id).then(res => {
+    if (conferenceId) {
+      conferenceService.obtenerResumen(conferenceId).then(res => {
         if (res?.comites && Array.isArray(res.comites)) {
           setComites(res.comites);
         }
       }).catch(() => {});
     }
-  }, [propComites]);
+  }, [conferenceId, propComites]);
 
   const fetchAvisos = useCallback(async () => {
     try {
-      const confData = conferenceService.obtenerSesionActiva();
-      if (!confData?.id) return;
+      if (!conferenceId) return;
 
-      const res = await conferenceService.obtenerAvisos(confData.id, effectiveComiteId, effectiveRole, effectiveComiteNombre);
+      const res = await conferenceService.obtenerAvisos(conferenceId, effectiveComiteId, effectiveRole, effectiveComiteNombre);
       if (res && Array.isArray(res.avisos)) {
         setAvisos(res.avisos);
-        conferenceService.guardarAvisosEnMemoria?.(res.avisos);
       }
     } catch (e) {
       // En modo offline o sin servidor simplemente silenciar
     }
-  }, [effectiveComiteId, effectiveRole, effectiveComiteNombre]);
+  }, [conferenceId, effectiveComiteId, effectiveRole, effectiveComiteNombre]);
 
   useEffect(() => {
     fetchAvisos();
@@ -70,10 +68,7 @@ const ConferenceBanner = ({
   // Listener para avisos que lleguen en vivo por evento custom
   useEffect(() => {
     const handleNuevoAviso = (e) => {
-      if (e.detail) {
-        setAvisos(prev => [e.detail, ...prev.filter(a => a.id !== e.detail.id)]);
-        conferenceService.guardarAvisosEnMemoria?.([e.detail]);
-      }
+      if (e.detail?.conferencia_id === conferenceId) fetchAvisos();
     };
 
     const handleAvisoDesactivado = (e) => {
@@ -94,25 +89,26 @@ const ConferenceBanner = ({
       }
     };
 
-    window.addEventListener('openmun_nuevo_aviso', handleNuevoAviso);
+    window.addEventListener('openmun_avisos_actualizados', handleNuevoAviso);
     window.addEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
     window.addEventListener('openmun_aviso_ignorado', handleAvisoIgnorado);
     window.addEventListener('openmun_aviso_restaurado', handleAvisoRestaurado);
 
     return () => {
-      window.removeEventListener('openmun_nuevo_aviso', handleNuevoAviso);
+      window.removeEventListener('openmun_avisos_actualizados', handleNuevoAviso);
       window.removeEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
       window.removeEventListener('openmun_aviso_ignorado', handleAvisoIgnorado);
       window.removeEventListener('openmun_aviso_restaurado', handleAvisoRestaurado);
     };
-  }, []);
+  }, [conferenceId, fetchAvisos]);
 
   const listaComitesEfectiva = (propComites && propComites.length > 0) ? propComites : comites;
 
   // Filtrar avisos correspondientes al rol y comité actual
+  const ignorados = new Set(descartados.map(String));
   const avisosVisibles = avisos.filter(a => {
-    if (!a) return false;
-    if (descartados.map(String).includes(String(a.id))) return false;
+    if (!a || a.conferencia_id !== conferenceId) return false;
+    if (ignorados.has(String(a.id))) return false;
     return correspondeAviso(a, {
       role: effectiveRole,
       currentComiteId: effectiveComiteId,
@@ -135,7 +131,7 @@ const ConferenceBanner = ({
   const handleBorrar = async () => {
     if (!aviso) return;
     const confirmacion = await confirm({
-      title: t('avisos.deleteNoticeTitle', 'Borrar aviso'),
+      title: t('avisos.deleteNotice', 'Borrar aviso'),
       message: t('avisos.deleteNoticeConfirm', '¿Seguro que deseas borrar este aviso para toda la conferencia?'),
       confirmText: t('common.delete', 'Eliminar'),
       cancelText: t('common.cancel', 'Cancelar'),

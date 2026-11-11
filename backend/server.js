@@ -66,6 +66,49 @@ if (process.env.SOCKET_ADMIN_PASSWORD_HASH) {
 }
 const salasConTemporizador = new Set();
 const noteRelay = createNoteRelay(io);
+
+// ==========================================
+// SANITIZACIÓN Y VALIDACIÓN DE INPUTS (Anti-SQLi)
+// ==========================================
+function sanitizeId(val, maxLen = 64) {
+	if (val === null || val === undefined) return '';
+	return String(val)
+		.replace(/\0/g, '')
+		.toLowerCase()
+		.trim()
+		.replace(/[^a-z0-9_-]/g, '')
+		.slice(0, maxLen);
+}
+
+function sanitizeField(val, maxLen = 255) {
+	if (val === null || val === undefined) return '';
+	return String(val)
+		.replace(/\0/g, '')
+		.trim()
+		.slice(0, maxLen);
+}
+
+function sanitizePin(val) {
+	if (val === null || val === undefined) return '';
+	return String(val)
+		.replace(/\0/g, '')
+		.trim()
+		.slice(0, 64);
+}
+
+function sanitizeEmail(val) {
+	if (!val) return null;
+	const str = String(val).replace(/\0/g, '').toLowerCase().trim().slice(0, 255);
+	const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+	return emailRegex.test(str) ? str : null;
+}
+
+function sanitizeDatabaseId(val) {
+	if (val === null || val === undefined) return null;
+	const str = String(val).trim();
+	if (!/^[1-9][0-9]{0,18}$/.test(str)) return null;
+	return str;
+}
 // ==========================================
 // CONSULTAS PREPARADAS SQLITE
 // ==========================================
@@ -137,7 +180,7 @@ const qInsertAviso = db.prepare(`
   VALUES (?, ?, ?, ?, ?)
 `);
 const qGetAvisosActivos = db.prepare(`
-  SELECT id, emisor, tipo, mensaje, comite_id, creado_en 
+  SELECT id, conferencia_id, emisor, tipo, mensaje, comite_id, creado_en 
   FROM avisos 
   WHERE conferencia_id = ? 
     AND activo = 1 
@@ -390,238 +433,258 @@ setInterval(() => {
 // ==========================================
 // 1. Crear Conferencia
 app.post('/api/conferencias', (req, res) => {
-        const { id, nombre, pin_admin, pin_acceso, email_admin } = req.body;
-        if (!id || !nombre || !pin_admin) {
-                return res.status(400).json({ error: 'Faltan campos obligatorios (id, nombre, pin_admin)' });
-        }
-        try {
-                qInsertConferencia.run({
-                        id: id.toLowerCase().trim(),
-                        nombre: nombre.trim(),
-                        pin_admin: pin_admin.toString().trim(),
-                        pin_acceso: pin_acceso ? pin_acceso.toString().trim() : null,
-                        email_admin: email_admin ? email_admin.toString().trim() : null
-                });
-                res.json({ ok: true, mensaje: 'Conferencia creada exitosamente' });
-        } catch (err) {
-                if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
-                        return res.status(409).json({ error: 'El ID de la conferencia ya existe' });
-                }
-                res.status(500).json({ error: err.message });
-        }
+	const body = req.body || {};
+	const cleanId = sanitizeId(body.id);
+	const cleanNombre = sanitizeField(body.nombre, 255);
+	const cleanPinAdmin = sanitizePin(body.pin_admin);
+	const cleanPinAcceso = body.pin_acceso ? sanitizePin(body.pin_acceso) : null;
+	const cleanEmail = body.email_admin ? sanitizeEmail(body.email_admin) : null;
+
+	if (!cleanId || !cleanNombre || !cleanPinAdmin) {
+		return res.status(400).json({ error: 'Faltan campos obligatorios válidos (id, nombre, pin_admin)' });
+	}
+	try {
+		qInsertConferencia.run({
+			id: cleanId,
+			nombre: cleanNombre,
+			pin_admin: cleanPinAdmin,
+			pin_acceso: cleanPinAcceso,
+			email_admin: cleanEmail
+		});
+		res.json({ ok: true, mensaje: 'Conferencia creada exitosamente' });
+	} catch (err) {
+		if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+			return res.status(409).json({ error: 'El ID de la conferencia ya existe' });
+		}
+		res.status(500).json({ error: err.message });
+	}
 });
 // 2. Acceso a Conferencia
 app.post('/api/conferencias/:id/acceso', (req, res) => {
-        const confId = req.params.id.toLowerCase().trim();
-        const conf = qGetConferencia.get(confId);
-        if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
-        const { pin } = req.body;
-        const pinRecibido = pin ? pin.toString().trim() : '';
-        if (conf.pin_acceso && conf.pin_acceso !== pinRecibido) {
-                return res.status(401).json({ error: 'PIN de acceso incorrecto' });
-        }
-        const rawComites = qGetComitesResumen.all(conf.id);
-        res.json({
-                id: conf.id,
-                nombre: conf.nombre,
-                email_admin: conf.email_admin,
-                requierePin: Boolean(conf.pin_acceso),
-                comites: mapearComites(rawComites)
-        });
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
+	const conf = qGetConferencia.get(confId);
+	if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
+	const pinRecibido = sanitizePin(req.body?.pin);
+	if (conf.pin_acceso && conf.pin_acceso !== pinRecibido) {
+		return res.status(401).json({ error: 'PIN de acceso incorrecto' });
+	}
+	const rawComites = qGetComitesResumen.all(conf.id);
+	res.json({
+		id: conf.id,
+		nombre: conf.nombre,
+		email_admin: conf.email_admin,
+		requierePin: Boolean(conf.pin_acceso),
+		comites: mapearComites(rawComites)
+	});
 });
 // 3. Resumen de Conferencia (Dashboard Secretaría)
 app.get('/api/conferencias/:id/resumen', (req, res) => {
-        const confId = req.params.id.toLowerCase().trim();
-        const conf = qGetConferencia.get(confId);
-        if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
-        const rawComites = qGetComitesResumen.all(confId);
-        res.json({
-                id: conf.id,
-                nombre: conf.nombre,
-                email_admin: conf.email_admin,
-                requierePin: Boolean(conf.pin_acceso),
-                comites: mapearComites(rawComites)
-        });
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
+	const conf = qGetConferencia.get(confId);
+	if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
+	const rawComites = qGetComitesResumen.all(confId);
+	res.json({
+		id: conf.id,
+		nombre: conf.nombre,
+		email_admin: conf.email_admin,
+		requierePin: Boolean(conf.pin_acceso),
+		comites: mapearComites(rawComites)
+	});
 });
 // 4. Actualizar Conferencia
 app.patch('/api/conferencias/:id', (req, res) => {
-        const confId = req.params.id.toLowerCase().trim();
-        const { pin_admin_actual, nombre, nuevo_pin_admin, pin_acceso, email_admin } = req.body;
-        if (!pin_admin_actual) {
-                return res.status(400).json({ error: 'Se requiere el pin_admin_actual para realizar cambios' });
-        }
-        const conf = qGetConferencia.get(confId);
-        if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
-        if (conf.pin_admin !== pin_admin_actual.toString().trim()) {
-                return res.status(401).json({ error: 'PIN de administración incorrecto' });
-        }
-        try {
-                const finalNombre = nombre !== undefined ? (nombre ? nombre.trim() : conf.nombre) : conf.nombre;
-                const finalPinAdmin = nuevo_pin_admin !== undefined ? (nuevo_pin_admin ? nuevo_pin_admin.toString().trim() : conf.pin_admin) : conf.pin_admin;
-                const finalPinAcceso = pin_acceso !== undefined ? (pin_acceso ? pin_acceso.toString().trim() : null) : conf.pin_acceso;
-                const finalEmail = email_admin !== undefined ? (email_admin ? email_admin.toString().trim() : null) : conf.email_admin;
-                qUpdateConferencia.run({
-                        id: confId,
-                        nombre: finalNombre,
-                        pin_admin: finalPinAdmin,
-                        pin_acceso: finalPinAcceso,
-                        email_admin: finalEmail
-                });
-                res.json({ ok: true, mensaje: 'Conferencia actualizada correctamente' });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
+	const body = req.body || {};
+	const pinAdminActual = sanitizePin(body.pin_admin_actual);
+	if (!pinAdminActual) {
+		return res.status(400).json({ error: 'Se requiere el pin_admin_actual para realizar cambios' });
+	}
+	const conf = qGetConferencia.get(confId);
+	if (!conf) return res.status(404).json({ error: 'Conferencia no encontrada' });
+	if (conf.pin_admin !== pinAdminActual) {
+		return res.status(401).json({ error: 'PIN de administración incorrecto' });
+	}
+	try {
+		const finalNombre = body.nombre !== undefined ? sanitizeField(body.nombre, 255) || conf.nombre : conf.nombre;
+		const finalPinAdmin = body.nuevo_pin_admin !== undefined ? sanitizePin(body.nuevo_pin_admin) || conf.pin_admin : conf.pin_admin;
+		const finalPinAcceso = body.pin_acceso !== undefined ? (body.pin_acceso ? sanitizePin(body.pin_acceso) : null) : conf.pin_acceso;
+		const finalEmail = body.email_admin !== undefined ? sanitizeEmail(body.email_admin) : conf.email_admin;
+		qUpdateConferencia.run({
+			id: confId,
+			nombre: finalNombre,
+			pin_admin: finalPinAdmin,
+			pin_acceso: finalPinAcceso,
+			email_admin: finalEmail
+		});
+		res.json({ ok: true, mensaje: 'Conferencia actualizada correctamente' });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 5. Crear o guardar Comité completo
 app.post('/api/conferencias/:id/comites', (req, res) => {
-        const conferencia_id = req.params.id.toLowerCase().trim();
-        const { id, nombre, pin_mesa, datos_json } = req.body;
-        const comiteId = id ? id.toLowerCase().trim() : `${conferencia_id}_${Date.now()}`;
-        const jsonStr = typeof datos_json === 'object' ? JSON.stringify(datos_json) : (datos_json || '{}');
-        try {
-                qUpsertComite.run({
-                        id: comiteId,
-                        conferencia_id,
-                        nombre: nombre ? nombre.trim() : 'Comité sin nombre',
-                        pin_mesa: pin_mesa ? pin_mesa.toString().trim() : null,
-                        datos_json: jsonStr
-                });
-                qTouchConferencia.run(conferencia_id);
-                res.json({ ok: true, comiteId });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const conferencia_id = sanitizeId(req.params.id);
+	if (!conferencia_id) return res.status(400).json({ error: 'ID de conferencia inválido' });
+	const body = req.body || {};
+	const comiteId = body.id ? sanitizeId(body.id) : `${conferencia_id}_${Date.now()}`;
+	const cleanNombre = sanitizeField(body.nombre || 'Comité sin nombre', 255);
+	const cleanPin = body.pin_mesa ? sanitizePin(body.pin_mesa) : null;
+	const jsonStr = typeof body.datos_json === 'object' ? JSON.stringify(body.datos_json) : (body.datos_json ? String(body.datos_json).replace(/\0/g, '') : '{}');
+	try {
+		qUpsertComite.run({
+			id: comiteId,
+			conferencia_id,
+			nombre: cleanNombre,
+			pin_mesa: cleanPin,
+			datos_json: jsonStr
+		});
+		qTouchConferencia.run(conferencia_id);
+		res.json({ ok: true, comiteId });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 6. Obtener datos completos de un comité específico
 app.get('/api/comites/:id', (req, res) => {
-        const comiteId = req.params.id.toLowerCase().trim();
-        try {
-                const comite = qGetComite.get(comiteId);
-                if (!comite) {
-                        return res.status(404).json({ error: 'Comité no encontrado' });
-                }
-                let parsedDatos = comite.datos_json;
-                if (typeof parsedDatos === 'string') {
-                        try { parsedDatos = JSON.parse(parsedDatos); } catch (e) { parsedDatos = {}; }
-                }
-                res.json({
-                        ...comite,
-                        requierePinMesa: Boolean(comite.pin_mesa),
-                        datos_json: parsedDatos || {}
-                });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const comiteId = sanitizeId(req.params.id);
+	if (!comiteId) return res.status(400).json({ error: 'ID de comité inválido' });
+	try {
+		const comite = qGetComite.get(comiteId);
+		if (!comite) {
+			return res.status(404).json({ error: 'Comité no encontrado' });
+		}
+		let parsedDatos = comite.datos_json;
+		if (typeof parsedDatos === 'string') {
+			try { parsedDatos = JSON.parse(parsedDatos); } catch (e) { parsedDatos = {}; }
+		}
+		res.json({
+			...comite,
+			requierePinMesa: Boolean(comite.pin_mesa),
+			datos_json: parsedDatos || {}
+		});
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 7. Acceso a Comité (Validación de PIN de Mesa Directiva)
 app.post('/api/comites/:id/acceso', (req, res) => {
-        const comiteId = req.params.id.toLowerCase().trim();
-        try {
-                const comite = qGetComite.get(comiteId);
-                if (!comite) return res.status(404).json({ error: 'Comité no encontrado' });
-                const { pin } = req.body;
-                const pinRecibido = pin ? pin.toString().trim() : '';
-                if (comite.pin_mesa && comite.pin_mesa !== pinRecibido) {
-                        return res.status(401).json({ error: 'PIN de Mesa Directiva incorrecto' });
-                }
-                let parsedDatos = comite.datos_json;
-                if (typeof parsedDatos === 'string') {
-                        try { parsedDatos = JSON.parse(parsedDatos); } catch (e) { parsedDatos = {}; }
-                }
-                res.json({
-                        ok: true,
-                        id: comite.id,
-                        nombre: comite.nombre,
-                        pin_mesa: comite.pin_mesa,
-                        requierePinMesa: Boolean(comite.pin_mesa),
-                        datos_json: parsedDatos || {}
-                });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const comiteId = sanitizeId(req.params.id);
+	if (!comiteId) return res.status(400).json({ error: 'ID de comité inválido' });
+	try {
+		const comite = qGetComite.get(comiteId);
+		if (!comite) return res.status(404).json({ error: 'Comité no encontrado' });
+		const pinRecibido = sanitizePin(req.body?.pin);
+		if (comite.pin_mesa && comite.pin_mesa !== pinRecibido) {
+			return res.status(401).json({ error: 'PIN de Mesa Directiva incorrecto' });
+		}
+		let parsedDatos = comite.datos_json;
+		if (typeof parsedDatos === 'string') {
+			try { parsedDatos = JSON.parse(parsedDatos); } catch (e) { parsedDatos = {}; }
+		}
+		res.json({
+			ok: true,
+			id: comite.id,
+			nombre: comite.nombre,
+			pin_mesa: comite.pin_mesa,
+			requierePinMesa: Boolean(comite.pin_mesa),
+			datos_json: parsedDatos || {}
+		});
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 8. Actualizar comité
 app.patch('/api/comites/:id', (req, res) => {
-        const comiteId = req.params.id.toLowerCase().trim();
-        const { nombre, pin_mesa, tipo_sesion, topico_actual, datos_json } = req.body;
-        const comite = qGetComite.get(comiteId);
-        if (!comite) {
-                return res.status(404).json({ error: 'Comité no encontrado' });
-        }
-        let finalDatosJson = comite.datos_json;
-        if (datos_json !== undefined) {
-                finalDatosJson = typeof datos_json === 'object' ? JSON.stringify(datos_json) : (datos_json || '{}');
-        }
-        const finalNombre = nombre !== undefined ? (nombre ? nombre.trim() : comite.nombre) : comite.nombre;
-        const finalPin = pin_mesa !== undefined ? (pin_mesa ? pin_mesa.toString().trim() : null) : comite.pin_mesa;
-        const finalTipo = tipo_sesion !== undefined ? tipo_sesion : comite.tipo_sesion;
-        const finalTopico = topico_actual !== undefined ? (topico_actual ? topico_actual.trim() : '') : comite.topico_actual;
-        try {
-                qUpdateComiteCompleto.run({
-                        id: comiteId,
-                        nombre: finalNombre,
-                        pin_mesa: finalPin,
-                        tipo_sesion: finalTipo,
-                        topico_actual: finalTopico,
-                        datos_json: finalDatosJson
-                });
-                if (comite.conferencia_id) {
-                        qTouchConferencia.run(comite.conferencia_id);
-                }
-                res.json({ ok: true, mensaje: 'Comité actualizado correctamente' });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const comiteId = sanitizeId(req.params.id);
+	if (!comiteId) return res.status(400).json({ error: 'ID de comité inválido' });
+	const body = req.body || {};
+	const comite = qGetComite.get(comiteId);
+	if (!comite) {
+		return res.status(404).json({ error: 'Comité no encontrado' });
+	}
+	let finalDatosJson = comite.datos_json;
+	if (body.datos_json !== undefined) {
+		finalDatosJson = typeof body.datos_json === 'object' ? JSON.stringify(body.datos_json) : (body.datos_json ? String(body.datos_json).replace(/\0/g, '') : '{}');
+	}
+	const finalNombre = body.nombre !== undefined ? (body.nombre ? sanitizeField(body.nombre, 255) : comite.nombre) : comite.nombre;
+	const finalPin = body.pin_mesa !== undefined ? (body.pin_mesa ? sanitizePin(body.pin_mesa) : null) : comite.pin_mesa;
+	const finalTipo = body.tipo_sesion !== undefined ? sanitizeField(body.tipo_sesion, 32) : comite.tipo_sesion;
+	const finalTopico = body.topico_actual !== undefined ? (body.topico_actual ? sanitizeField(body.topico_actual, 2000) : '') : comite.topico_actual;
+	try {
+		qUpdateComiteCompleto.run({
+			id: comiteId,
+			nombre: finalNombre,
+			pin_mesa: finalPin,
+			tipo_sesion: finalTipo,
+			topico_actual: finalTopico,
+			datos_json: finalDatosJson
+		});
+		if (comite.conferencia_id) {
+			qTouchConferencia.run(comite.conferencia_id);
+		}
+		res.json({ ok: true, mensaje: 'Comité actualizado correctamente' });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 9. Estado de comité rápido
 app.patch('/api/comites/:id/estado', (req, res) => {
-        const comiteId = req.params.id.toLowerCase().trim();
-        const { tipo_sesion, topico_actual } = req.body;
-        try {
-                qUpdateComiteEstado.run(tipo_sesion || null, topico_actual || null, comiteId);
-                res.json({ ok: true });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const comiteId = sanitizeId(req.params.id);
+	if (!comiteId) return res.status(400).json({ error: 'ID de comité inválido' });
+	const body = req.body || {};
+	const cleanTipo = body.tipo_sesion ? sanitizeField(body.tipo_sesion, 32) : null;
+	const cleanTopico = body.topico_actual ? sanitizeField(body.topico_actual, 2000) : null;
+	try {
+		qUpdateComiteEstado.run(cleanTipo, cleanTopico, comiteId);
+		res.json({ ok: true });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 10. Eliminar un comité
 app.delete('/api/comites/:id', (req, res) => {
-        const comiteId = req.params.id.toLowerCase().trim();
-        try {
-                const comite = qGetComite.get(comiteId);
-                const info = qDeleteComite.run(comiteId);
-                if (comite?.conferencia_id) {
-                        qTouchConferencia.run(comite.conferencia_id);
-                }
-                res.json({ ok: true, eliminados: info.changes });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const comiteId = sanitizeId(req.params.id);
+	if (!comiteId) return res.status(400).json({ error: 'ID de comité inválido' });
+	try {
+		const comite = qGetComite.get(comiteId);
+		const info = qDeleteComite.run(comiteId);
+		if (comite?.conferencia_id) {
+			qTouchConferencia.run(comite.conferencia_id);
+		}
+		res.json({ ok: true, eliminados: info.changes });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 11. Eliminar comité con ruta padre (fallback)
 app.delete('/api/conferencias/:conferencia_id/comites/:id', (req, res) => {
-        const comiteId = req.params.id.toLowerCase().trim();
-        const confId = req.params.conferencia_id.toLowerCase().trim();
-        try {
-                const info = qDeleteComite.run(comiteId);
-                qTouchConferencia.run(confId);
-                res.json({ ok: true, eliminados: info.changes });
-        } catch (err) {
-                res.status(500).json({ error: err.message });
-        }
+	const comiteId = sanitizeId(req.params.id);
+	const confId = sanitizeId(req.params.conferencia_id);
+	if (!comiteId) return res.status(400).json({ error: 'ID de comité inválido' });
+	try {
+		const info = qDeleteComite.run(comiteId);
+		if (confId) qTouchConferencia.run(confId);
+		res.json({ ok: true, eliminados: info.changes });
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+	}
 });
 // 12. Avisos
 app.post('/api/conferencias/:id/avisos', (req, res) => {
-	const confId = req.params.id.toLowerCase().trim();
-	const { comite_id, emisor, tipo, mensaje } = req.body;
-	if (!mensaje || !mensaje.trim()) {
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
+	const { comite_id, emisor, tipo, mensaje } = req.body || {};
+	const textoMensaje = sanitizeField(mensaje, 8000);
+	if (!textoMensaje) {
 		return res.status(400).json({ error: 'El mensaje es obligatorio' });
 	}
 	try {
-		const targetComite = comite_id ? comite_id.trim() : null;
-		const emisorNombre = emisor ? emisor.trim() : 'Organización';
-		const tipoAviso = tipo || 'info';
-		const textoMensaje = mensaje.trim();
+		const targetComite = comite_id ? sanitizeField(comite_id, 64) : null;
+		const emisorNombre = emisor ? sanitizeField(emisor, 128) : 'Organización';
+		const tipoAviso = tipo ? sanitizeField(tipo, 32) : 'info';
 
 		const info = qInsertAviso.run(
 			confId,
@@ -641,13 +704,7 @@ app.post('/api/conferencias/:id/avisos', (req, res) => {
 			creado_en: new Date().toISOString()
 		};
 
-		// Broadcast en tiempo real por Socket.io
-		io.emit('nuevo-aviso', nuevoAviso);
-		io.to(confId).emit('nuevo-aviso', nuevoAviso);
-		if (targetComite) {
-			io.to(targetComite).emit('nuevo-aviso', nuevoAviso);
-			io.to(`${confId}_${targetComite}`).emit('nuevo-aviso', nuevoAviso);
-		}
+		io.to(`avisos:${confId}`).emit('avisos-actualizados', { conferencia_id: confId });
 
 		res.json({ ok: true, id: info.lastInsertRowid, aviso: nuevoAviso });
 	} catch (err) {
@@ -686,64 +743,13 @@ function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], cur
 
 	const normCurrent = normalizarComiteIdBackend(currentComiteId);
 	const normNombre = normalizarComiteIdBackend(currentComiteNombre);
-	const rawCurrent = currentComiteId ? String(currentComiteId).trim().toLowerCase() : '';
-
-	// Buscar comité coincidente en la lista de comités de la conferencia
-	const matchingComite = (comites || []).find(c => {
-		if (!c) return false;
-		const cid = String(c.id || '').trim().toLowerCase();
-		const cnom = String(c.nombre || '').trim().toLowerCase();
-		const normCid = normalizarComiteIdBackend(c.id);
-		const normCnom = normalizarComiteIdBackend(c.nombre);
-		return (
-			(rawCurrent && cid === rawCurrent) ||
-			(normCurrent && normCid === normCurrent) ||
-			(normCurrent && normCnom === normCurrent) ||
-			(normNombre && normCnom === normNombre) ||
-			(normNombre && normCid === normNombre)
-		);
-	});
-
-	const matchingIdNorm = matchingComite ? normalizarComiteIdBackend(matchingComite.id) : null;
-	const matchingNomNorm = matchingComite ? normalizarComiteIdBackend(matchingComite.nombre) : null;
-	const matchingRawId = matchingComite ? String(matchingComite.id).trim().toLowerCase() : null;
-
-	const coincideComite = (normTarget, rawTarget) => {
-		if (!normTarget && !rawTarget) return false;
-		const cleanTarget = (normTarget || '').toLowerCase();
-		const cleanRaw = (rawTarget || '').toLowerCase();
-
-		// 1. Coincidencia directa con ID o Nombre actual (bidireccional)
-		if (normCurrent && (cleanTarget === normCurrent || cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
-		if (rawCurrent && (cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
-		if (normNombre && (cleanTarget === normNombre || cleanRaw === normNombre || cleanRaw.includes(normNombre) || normNombre.includes(cleanTarget) || cleanTarget.includes(normNombre))) return true;
-
-		// 2. Coincidencia con datos de comité coincidente en la lista
-		if (matchingIdNorm && (cleanTarget === matchingIdNorm || cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
-		if (matchingNomNorm && (cleanTarget === matchingNomNorm || cleanRaw === matchingNomNorm || cleanRaw.includes(matchingNomNorm) || matchingNomNorm.includes(cleanTarget))) return true;
-		if (matchingRawId && (cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
-
-		// 3. Búsqueda directa del comité objetivo en la lista
-		const targetComiteObj = (comites || []).find(c => {
-			if (!c) return false;
-			const cid = String(c.id || '').trim().toLowerCase();
-			const cnom = String(c.nombre || '').trim().toLowerCase();
-			const nCid = normalizarComiteIdBackend(c.id);
-			const nCnom = normalizarComiteIdBackend(c.nombre);
-			return cleanTarget === cid || cleanTarget === nCid || cleanRaw === cid || cleanTarget === cnom || cleanTarget === nCnom || cleanRaw === cnom;
-		});
-
-		if (targetComiteObj) {
-			const tid = String(targetComiteObj.id || '').trim().toLowerCase();
-			const tnom = String(targetComiteObj.nombre || '').trim().toLowerCase();
-			const nTid = normalizarComiteIdBackend(targetComiteObj.id);
-			const nTnom = normalizarComiteIdBackend(targetComiteObj.nombre);
-			if (rawCurrent && (rawCurrent === tid || rawCurrent.endsWith(tid) || tid.endsWith(rawCurrent))) return true;
-			if (normCurrent && (normCurrent === nTid || normCurrent === nTnom)) return true;
-			if (normNombre && (normNombre === nTnom || normNombre === nTid)) return true;
-		}
-
-		return false;
+	const matchingComite = comites.find(c => normalizarComiteIdBackend(c?.id) === normCurrent);
+	const coincideComite = target => {
+	  if (!target || normCurrent === 'todos') return false;
+	  if (normCurrent === target) return true;
+	  const matchingName = matchingComite ? normalizarComiteIdBackend(matchingComite.nombre) : normNombre;
+	  return Boolean(matchingName) && matchingName === target &&
+	    !comites.some(c => normalizarComiteIdBackend(c?.id) === target);
 	};
 
 	// CHAIR / MESA DIRECTIVA
@@ -759,11 +765,11 @@ function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], cur
 		}
 		if (destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_')) {
 			const targetMesa = normalizarComiteIdBackend(destinoUpper);
-			const rawTarget = rawDestino.replace(/^(chair_|mesa_)/i, '');
-			return coincideComite(targetMesa, rawTarget);
+
+			return coincideComite(targetMesa);
 		}
 		const targetComite = normalizarComiteIdBackend(destinoUpper);
-		return coincideComite(targetComite, rawDestino);
+		return coincideComite(targetComite);
 	}
 
 	// STAFF
@@ -778,18 +784,18 @@ function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], cur
 		}
 		if (destinoUpper.startsWith('STAFF_COMITE_') || destinoUpper.startsWith('STAFF_')) {
 			const targetStaffComite = normalizarComiteIdBackend(destinoUpper);
-			const rawTarget = rawDestino.replace(/^(staff_comite_|staff_)/i, '');
+
 			// El staff de conferencia (global) o sin sala fija NO debe ver los mensajes internos dirigidos a staff de comités individuales
 			if ((!normCurrent && !normNombre) || normCurrent === 'todos' || userRole === 'staff_global') {
 				return false;
 			}
-			return coincideComite(targetStaffComite, rawTarget);
+			return coincideComite(targetStaffComite);
 		}
 		if ((!normCurrent && !normNombre) || normCurrent === 'todos') {
 			return false;
 		}
 		const targetComite = normalizarComiteIdBackend(destinoUpper);
-		return coincideComite(targetComite, rawDestino);
+		return coincideComite(targetComite);
 	}
 
 	// DELEGATE
@@ -801,7 +807,7 @@ function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], cur
 
 		if ((normCurrent || normNombre) && normCurrent !== 'todos') {
 			const targetComite = normalizarComiteIdBackend(destinoUpper);
-			return coincideComite(targetComite, rawDestino);
+			return coincideComite(targetComite);
 		}
 		return false;
 	}
@@ -810,9 +816,12 @@ function avisoCorrespondeBackend(aviso, role, currentComiteId, comites = [], cur
 }
 
 app.get('/api/conferencias/:id/avisos', (req, res) => {
-	const confId = req.params.id.toLowerCase().trim();
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
 	const { comite_id, role, rol, todos, comite_nombre } = req.query;
-	const userRole = (role || rol || '').toLowerCase().trim();
+	const userRole = sanitizeField(role || rol || '', 32).toLowerCase();
+	const cleanComiteId = comite_id ? sanitizeField(comite_id, 64) : null;
+	const cleanComiteNombre = comite_nombre ? sanitizeField(comite_nombre, 255) : null;
 
 	try {
 		const todosAvisos = qGetAvisosActivos.all(confId) || [];
@@ -826,7 +835,7 @@ app.get('/api/conferencias/:id/avisos', (req, res) => {
 		} catch (e) {}
 
 		const avisosFiltrados = todosAvisos.filter(a =>
-			avisoCorrespondeBackend(a, userRole, comite_id, comitesConf, comite_nombre)
+			avisoCorrespondeBackend(a, userRole, cleanComiteId, comitesConf, cleanComiteNombre)
 		);
 		res.json({ avisos: avisosFiltrados });
 	} catch (err) {
@@ -835,7 +844,8 @@ app.get('/api/conferencias/:id/avisos', (req, res) => {
 });
 
 app.patch('/api/avisos/:id/desactivar', (req, res) => {
-	const avisoId = req.params.id;
+	const avisoId = sanitizeDatabaseId(req.params.id);
+	if (!avisoId) return res.status(400).json({ error: 'ID de aviso inválido' });
 	try {
 		qDesactivarAviso.run(avisoId);
 		io.emit('aviso-desactivado', { id: Number(avisoId) || avisoId });
@@ -846,7 +856,8 @@ app.patch('/api/avisos/:id/desactivar', (req, res) => {
 });
 
 app.delete('/api/avisos/:id', (req, res) => {
-	const avisoId = req.params.id;
+	const avisoId = sanitizeDatabaseId(req.params.id);
+	if (!avisoId) return res.status(400).json({ error: 'ID de aviso inválido' });
 	try {
 		qDesactivarAviso.run(avisoId);
 		io.emit('aviso-desactivado', { id: Number(avisoId) || avisoId });
@@ -858,16 +869,18 @@ app.delete('/api/avisos/:id', (req, res) => {
 
 // 13. Checklist Staff
 app.get('/api/conferencias/:id/checklist', (req, res) => {
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
 	const { comite_id } = req.query;
-	const confId = req.params.id.toLowerCase().trim();
+	const cleanComiteId = comite_id ? sanitizeField(comite_id, 64) : null;
 	try {
 		let checklist;
-		if (!comite_id || !comite_id.trim() || comite_id.trim().toUpperCase() === 'TODOS') {
+		if (!cleanComiteId || cleanComiteId.toUpperCase() === 'TODOS') {
 			checklist = qGetChecklistAll.all(confId);
-		} else if (comite_id.trim().toUpperCase() === 'GLOBAL') {
+		} else if (cleanComiteId.toUpperCase() === 'GLOBAL') {
 			checklist = qGetChecklistGlobal.all(confId);
 		} else {
-			checklist = qGetChecklistPorComite.all(confId, comite_id.trim());
+			checklist = qGetChecklistPorComite.all(confId, cleanComiteId);
 		}
 		res.json({ checklist });
 	} catch (err) {
@@ -875,16 +888,21 @@ app.get('/api/conferencias/:id/checklist', (req, res) => {
 	}
 });
 app.post('/api/conferencias/:id/checklist', (req, res) => {
-	const { comite_id, titulo, asignado_a } = req.body;
-	if (!titulo || !titulo.trim()) {
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
+	const { comite_id, titulo, asignado_a } = req.body || {};
+	const cleanTitulo = sanitizeField(titulo, 255);
+	if (!cleanTitulo) {
 		return res.status(400).json({ error: 'El título de la tarea es obligatorio' });
 	}
 	try {
+		const cleanComiteId = comite_id ? sanitizeField(comite_id, 64) : null;
+		const cleanAsignadoA = asignado_a ? sanitizeField(asignado_a, 128) : null;
 		const info = qInsertChecklistItem.run(
-			req.params.id.toLowerCase().trim(),
-			comite_id ? comite_id.trim() : null,
-			titulo.trim(),
-			asignado_a ? asignado_a.trim() : null
+			confId,
+			cleanComiteId,
+			cleanTitulo,
+			cleanAsignadoA
 		);
 		res.json({ ok: true, id: info.lastInsertRowid });
 	} catch (err) {
@@ -892,33 +910,39 @@ app.post('/api/conferencias/:id/checklist', (req, res) => {
 	}
 });
 app.patch('/api/checklist/:id/toggle', (req, res) => {
-	const { completado } = req.body;
+	const taskId = sanitizeDatabaseId(req.params.id);
+	if (!taskId) return res.status(400).json({ error: 'ID de tarea inválido' });
+	const { completado } = req.body || {};
 	try {
-		qToggleChecklistItem.run(completado ? 1 : 0, req.params.id);
+		qToggleChecklistItem.run(completado ? 1 : 0, taskId);
 		res.json({ ok: true });
 	} catch (err) {
 		res.status(500).json({ error: err.message });
 	}
 });
 app.delete('/api/checklist/:id', (req, res) => {
+	const taskId = sanitizeDatabaseId(req.params.id);
+	if (!taskId) return res.status(400).json({ error: 'ID de tarea inválido' });
 	try {
-		qDeleteChecklistItem.run(req.params.id);
+		qDeleteChecklistItem.run(taskId);
 		res.json({ ok: true, mensaje: 'Elemento eliminado' });
 	} catch (err) {
 		res.status(500).json({ error: err.message });
 	}
 });
 app.delete('/api/conferencias/:id/checklist/completados', (req, res) => {
+	const confId = sanitizeId(req.params.id);
+	if (!confId) return res.status(400).json({ error: 'ID de conferencia inválido' });
 	const { comite_id } = req.query;
-	const confId = req.params.id.toLowerCase().trim();
+	const cleanComiteId = comite_id ? sanitizeField(comite_id, 64) : null;
 	try {
 		let info;
-		if (!comite_id || !comite_id.trim() || comite_id.trim().toUpperCase() === 'TODOS') {
+		if (!cleanComiteId || cleanComiteId.toUpperCase() === 'TODOS') {
 			info = qDeleteCompletadosAll.run(confId);
-		} else if (comite_id.trim().toUpperCase() === 'GLOBAL') {
+		} else if (cleanComiteId.toUpperCase() === 'GLOBAL') {
 			info = qDeleteCompletadosGlobal.run(confId);
 		} else {
-			info = qDeleteCompletadosPorComite.run(confId, comite_id.trim());
+			info = qDeleteCompletadosPorComite.run(confId, cleanComiteId);
 		}
 		res.json({ ok: true, eliminados: info.changes });
 	} catch (err) {
@@ -933,7 +957,7 @@ io.on('connection', (socket) => {
 	socket.on('unirse-conferencia', (confId) => {
 		if (!confId) return;
 		const confNorm = confId.toString().trim().toLowerCase();
-		socket.join(confNorm);
+		socket.join(`avisos:${confNorm}`);
 	});
 	socket.on('unirse-comite', (request, acknowledge) => {
 		const sala = typeof request === 'object' ? request?.sala : request;
@@ -953,10 +977,13 @@ io.on('connection', (socket) => {
 					: comiteGuardado.datos_json;
 				// Los históricos de notas se entregan mediante AUTH_RESULT, filtrados por rol.
 				const publicData = { ...datos };
+				delete publicData.announcements;
 				delete publicData.notes;
 				delete publicData.openmun_notes;
 				if (publicData.snapshot && typeof publicData.snapshot === 'object') {
 					publicData.snapshot = { ...publicData.snapshot };
+					delete publicData.snapshot.openmun_announcements;
+					delete publicData.snapshot.announcements;
 					delete publicData.snapshot.openmun_notes;
 					delete publicData.snapshot.notes;
 				}

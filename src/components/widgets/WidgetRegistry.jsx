@@ -1,3 +1,4 @@
+import React from 'react';
 import { lazyWithRetry } from '../../utils/lazyWithRetry';
 
 // Lazy load widgets with automatic chunk reload retry on new deployments
@@ -11,10 +12,9 @@ const HistoricoDelegaciones = lazyWithRetry(() => import('./HistoricoDelegacione
 const VotacionOficial = lazyWithRetry(() => import('./VotacionOficial'), 'VotacionOficial');
 const EstablecerAgenda = lazyWithRetry(() => import('./EstablecerAgenda'), 'EstablecerAgenda');
 const ImportarPaises = lazyWithRetry(() => import('./ImportarPaises'), 'ImportarPaises');
-const ConfigurarComite = lazyWithRetry(() => import('./ConfigurarComite'), 'ConfigurarComite');
 const AnadirPaises = lazyWithRetry(() => import('./AnadirPaises'), 'AnadirPaises');
-const AnadirPaisesGSL = lazyWithRetry(() => import('./AnadirPaisesGSL'), 'AnadirPaisesGSL');
-const AnadirPaisesDebate = lazyWithRetry(() => import('./AnadirPaisesDebate'), 'AnadirPaisesDebate');
+const AnadirPaisesGSL = () => <AnadirPaises fixedDestino="GSL" />;
+const AnadirPaisesDebate = () => <AnadirPaises fixedDestino="DEBATE" />;
 const SelectorAleatorio = lazyWithRetry(() => import('./SelectorAleatorio'), 'SelectorAleatorio');
 const GestorCrisis = lazyWithRetry(() => import('./GestorCrisis'), 'GestorCrisis');
 const TeleNoticiasCrisis = lazyWithRetry(() => import('./TeleNoticiasCrisis'), 'TeleNoticiasCrisis');

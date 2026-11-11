@@ -33,6 +33,19 @@ import {
 import { useTranslation } from 'react-i18next';
 import { PRESET_TEMPLATES } from '../../plantillas/widgets';
 import { useToast } from '../../context/ToastContext';
+import { TAB_CONFIG } from '../../utils/dashboardTabs';
+
+const CATEGORY_LABEL_KEYS = {
+  TODOS: 'sidebar.categories.allUpper',
+  TODAS: 'sidebar.categories.allFemUpper',
+  Recomendados: 'sidebar.categories.recommended',
+  Tiempo: 'sidebar.categories.time',
+  Debate: 'sidebar.categories.debate',
+  Mociones: 'sidebar.categories.motions',
+  Votaciones: 'sidebar.categories.voting',
+  Estadísticas: 'sidebar.categories.statistics',
+  Configuración: 'sidebar.categories.settings',
+};
 
 // Metadata rica para cada widget disponible
 export const WIDGET_METADATA = {
@@ -469,10 +482,10 @@ const WidgetSidebar = ({
             <span>{t('sidebar.tabAspect', 'Pestaña / Aspecto')}:</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="widget-sidebar-tab-pill">
-                {activeTab}
+                {t(TAB_CONFIG[activeTab]?.labelKey, activeTab)}
               </span>
               <span className="widget-sidebar-count">
-                ({activeWidgetIds.length} {t('common.activePlural', 'activos')})
+                ({activeWidgetIds.length} {activeWidgetIds.length === 1 ? t('common.activeSingular', 'activo') : t('common.activePlural', 'activos')})
               </span>
             </div>
           </div>
@@ -486,7 +499,7 @@ const WidgetSidebar = ({
               title={t('ui.resetWidgetsToTheDefaultLayout', { v0: activeTab })}
             >
               <RotateCcw size={14} />
-              <span>{t('common.default', 'Default')} ({activeTab})</span>
+              <span>{t('common.default', 'Default')} ({t(TAB_CONFIG[activeTab]?.labelKey, activeTab)})</span>
             </button>
 
             <button
@@ -526,6 +539,7 @@ const WidgetSidebar = ({
                 {categories.map(cat => {
                   const isSelected = filterCategory === cat;
                   const isRecPill = cat === 'Recomendados';
+                  const label = t(CATEGORY_LABEL_KEYS[cat] || `sidebar.categories.${cat.toLowerCase()}`, cat);
                   return (
                     <button
                       key={cat}
@@ -536,7 +550,7 @@ const WidgetSidebar = ({
                       onClick={() => setFilterCategory(cat)}
                     >
                       {isRecPill && <Star size={12} fill={isSelected ? 'currentColor' : 'none'} />}
-                      <span>{cat}</span>
+                      <span>{label}</span>
                     </button>
                   );
                 })}
@@ -652,18 +666,21 @@ const WidgetSidebar = ({
           <div className="widget-sidebar-list">
             {/* Filtros de Categoría de Plantillas */}
             <div className="widget-sidebar-pills-row" style={{ padding: '4px 0 6px' }} role="tablist">
-              {templateCategories.map(cat => (
-                <button
-                  key={cat}
-                  type="button"
-                  role="tab"
-                  aria-selected={templateFilterCategory === cat}
-                  className={`widget-sidebar-pill${templateFilterCategory === cat ? ' is-active' : ''}`}
-                  onClick={() => setTemplateFilterCategory(cat)}
-                >
-                  <span>{cat}</span>
-                </button>
-              ))}
+              {templateCategories.map(cat => {
+                const label = t(CATEGORY_LABEL_KEYS[cat] || `sidebar.categories.${cat.toLowerCase()}`, cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    role="tab"
+                    aria-selected={templateFilterCategory === cat}
+                    className={`widget-sidebar-pill${templateFilterCategory === cat ? ' is-active' : ''}`}
+                    onClick={() => setTemplateFilterCategory(cat)}
+                  >
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Listado de Tarjetas de Plantillas */}

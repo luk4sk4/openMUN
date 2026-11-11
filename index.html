@@ -121,7 +121,7 @@
   </head>
   <body>
     <div id="root">
-      <!-- Pre-renderizado estático legible para buscadores y auditores de verificación (SEO & Google OAuth Crawlers) -->
+      <!-- Pre-renderizado estático legible para buscadores y accesibilidad (SEO) -->
       <header style="padding: 2rem 1.5rem; font-family: system-ui, -apple-system, sans-serif; text-align: center; max-width: 900px; margin: 0 auto;">
         <h1 style="font-size: 2.2rem; color: #2563eb; margin-bottom: 0.5rem;">OpenMUN — Plataforma Educativa Libre para Modelos de Naciones Unidas</h1>
         <p style="font-size: 1.05rem; line-height: 1.6; color: #334155; margin-bottom: 1.5rem;">
@@ -142,14 +142,14 @@
         </section>
 
         <section style="margin-bottom: 2rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #f8fafc;">
-          <h2 style="color: #0f172a; margin-top: 0;">Integración con Google Drive y Uso de Datos de Google</h2>
+          <h2 style="color: #0f172a; margin-top: 0;">Privacidad, Soberanía de Datos y Ausencia de Servicios de Terceros</h2>
           <p>
-            OpenMUN incluye una funcionalidad opcional de sincronización y respaldo con Google Drive. La finalidad exclusiva de esta integración es permitir a los usuarios guardar y recuperar copias de seguridad de sus comités (archivos en formato JSON con listas de países y configuraciones de debate) en su propio almacenamiento en la nube de Google Drive.
+            OpenMUN no depende ni utiliza servicios de Google (como Google Drive o Google Identity) ni servicios externos de almacenamiento en la nube para la gestión de comités. Los datos de las sesiones se conservan de forma 100% local en tu propio navegador web mediante LocalStorage o a través de archivos de respaldo JSON exportables directamente en tu dispositivo.
           </p>
           <ul>
-            <li><strong>Seguridad del lado del cliente:</strong> La app funciona íntegramente en el navegador web (client-side). Los tokens y archivos nunca se almacenan en servidores de OpenMUN.</li>
-            <li><strong>Privacidad garantizada:</strong> No vendemos datos de usuarios ni los compartimos con terceros. Los datos de Google nunca se utilizan para publicidad ni para entrenar modelos de Inteligencia Artificial.</li>
-            <li><strong>Cumplimiento estricto:</strong> El uso de la información recibida de las API de Google se ajusta a la Política de datos del usuario de los servicios de las API de Google, incluidos los requisitos de Uso Limitado (Limited Use).</li>
+            <li><strong>Privacidad garantizada por diseño:</strong> La aplicación funciona íntegramente en el navegador web (client-side). No se envían datos personales ni archivos de debate a servidores de terceros ni a plataformas publicitarias.</li>
+            <li><strong>Sin rastreo publicitario ni cookies de terceros:</strong> No vendemos datos ni los compartimos con intermediarios. No usamos cookies de seguimiento ni entrenamos modelos de Inteligencia Artificial con tu información.</li>
+            <li><strong>Sincronización segura de conferencias:</strong> Para eventos multi-comité, la sincronización se realiza a través de la infraestructura segura y cifrada de OpenMUN sin intermediación de grandes corporaciones tecnológicas.</li>
           </ul>
         </section>
 

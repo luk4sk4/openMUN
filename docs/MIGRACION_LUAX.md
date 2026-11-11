@@ -28,6 +28,18 @@ La persona que dirige el corte registra la versión desplegada de cada backend y
 
 El acceso REST de ensayo se activa con `VITE_LUAX_API_URL` en el build de frontend. Usa un origen HTTPS o un HTTP de loopback y configura el origen del frontend en `ALLOWED_ORIGINS` del backend de ensayo. Sin esa variable se conserva el flujo legado. Con ella, REST y la dirección de Socket.IO apuntan al entorno de ensayo en vez de mezclarlo con la API pública.
 
+Para publicar la versión nueva en paralelo al legado:
+
+| Entorno | Frontend | API | Datos |
+| --- | --- | --- | --- |
+| Legado | `openmun.app` | `api.openmun.app` → LUAX :3000 | SQLite |
+| Pruebas | `pruebas.openmun.app` | `pruebasapi.openmun.app` → LUAX :3006 | PostgreSQL de pruebas con datos ficticios |
+
+1. En Cloudflare, crear el registro DNS proxied de `pruebasapi` con el mismo origen LUAX que `api`. Mantener TLS en modo Full (strict).
+2. Preparar la release de pruebas en el puerto 3006 y migrar solo su base PostgreSQL. Usar credenciales de pruebas y configurar `ALLOWED_ORIGINS=https://pruebas.openmun.app`.
+3. Añadir un bloque Nginx independiente a partir de [pruebasapi.nginx.conf](../backend/luax/deploy/pruebasapi.nginx.conf). Validar con `sudo nginx -t` antes de recargar y comprobar `https://pruebasapi.openmun.app/readyz`.
+4. Compilar con `VITE_LUAX_API_URL=https://pruebasapi.openmun.app` y publicar los archivos en el sitio de pruebas existente. Antes de sustituir su build, conservar una copia para poder revertir. Comprobar REST, Socket.IO y una exportación e importación del historial con datos ficticios.
+
 La vista de conferencia ya puede abrir una sesión de observador, leer el resumen, validar el PIN de organización o de Mesa y leer el comité con el alcance correspondiente. Una sesión de organización puede emitir la sesión de Mesa para un comité sin PIN. Los tokens de esta integración viven en memoria y recargar la aplicación requiere volver a autenticarse. La validación de acceso se prueba contra Express con una base simulada.
 
 El modo de ensayo cubre acceso, lectura y el checklist para sesiones de organización. Las tareas se leen de PostgreSQL y la vista refresca la lista tras guardar un cambio. Los filtros permiten operar sobre toda la conferencia, sus tareas globales o un comité concreto. Para actualizar una instalación existente, aplicar los permisos de checklist indicados en el README del backend antes de iniciar esta versión.
@@ -141,6 +153,31 @@ Para el ensayo, crear dos bases desechables en una instancia PostgreSQL 16 priva
 
 ## 5. Corte en producción
 
+### Procedimiento preparado (10 de noviembre de 2026)
+
+La release `final.20261110` ya está instalada en LUAX con el código de esta rama. [cutover.sh](../backend/luax/deploy/cutover.sh) se ensayó completo en modo `rehearsal` con una copia del SQLite real. Pasaron la importación doble sin duplicados (8 conferencias, 10 comités, 1 tarea y esquema 4), `/readyz`, el acceso de observador, el rechazo de un PIN erróneo, Socket.IO y CORS. La base del ensayo se eliminó después. El legado no registra escrituras desde el 3 de noviembre.
+
+Como el frontend actual y el backend nuevo no son compatibles entre sí, el corte en producción sigue estos pasos:
+
+1. **Publicar el frontend:** compilar y desplegar con `VITE_LUAX_API_URL=https://api.openmun.app` (la CSP ya autoriza `https://api.openmun.app` y `wss://api.openmun.app`).
+2. **Ejecutar el corte en LUAX:**
+   ```bash
+   MODE=production RELEASE=final.20261110 bash ~/openmun-cutover.sh
+   ```
+   El script:
+   - Detiene `comites-app` (puerto 3000).
+   - Toma respaldos atómicos y verificados de SQLite y PostgreSQL en `/home/ubuntu/openmun-backups/cutover-production.<id>`.
+   - Renombra la base PostgreSQL `openmun` a `openmun_pre_cutover_<ts>`.
+   - Crea la base `openmun` limpia, ejecuta `migrate.js` (esquema 4), aplica `app-grants.sql` e importa los datos dos veces comprobando la idempotencia.
+   - Inicia `openmun-backend` en `127.0.0.1:3005` mediante PM2 (`openmun-backend`).
+   - Actualiza Nginx (`/etc/nginx/sites-enabled/default`) configurando Real-IP de Cloudflare (`CF-Connecting-IP` verificado) y cambiando el `proxy_pass` hacia `http://127.0.0.1:3005;`.
+3. **Rollback temprano (si fuera necesario antes de que haya escrituras reales):**
+   ```bash
+   BACKUP=<directorio_impreso_en_paso_2> bash ~/openmun-rollback.sh
+   ```
+   Restaura la configuración anterior de Nginx, reinicia `comites-app` y detiene `openmun-backend`.
+
+### Plan de ejecución detallado
 1. Confirmar que los bloqueos de contrato, autorización y durabilidad están cerrados, que el ensayo y el rollback pasaron, y que el responsable de producto acepta el alcance de datos externos. Etiquetar el código desplegado de los dos backends y del frontend. Guardar de forma privada la configuración efectiva de Nginx, PM2 y variables de entorno.
 2. Activar mantenimiento y congelar escrituras de ambos lados. Drenar las sesiones y los sockets existentes, incluidos clientes que puedan llegar directamente a un puerto. Pausar automatizaciones que escriban. Detener el proceso legado con el usuario que administra su PM2 y verificar que `3000` ya no acepta conexiones de aplicación. Dejar el nuevo disponible solo de forma privada para comprobaciones o detenerlo durante la carga.
 3. Tomar los respaldos finales y registrar el inventario bajo congelación. Si apareció actividad en PostgreSQL desde el ensayo, aplicar el plan de reconciliación aprobado o abortar. Ejecutar el plan del importador, aplicar la versión ensayada y conciliar antes de arrancar los escritores.

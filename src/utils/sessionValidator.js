@@ -1,5 +1,7 @@
 import i18n from '../languages/index.js';
 import { normalizarSesionesDebate } from './debateSessions.js';
+import { sanitizeString as baseSanitizeString } from './sanitizeInput.js';
+import { normalizeSpeakerNote } from './speakerNotes.js';
 /**
  * sessionValidator.js
  * Validador robusto de archivos de sesión JSON para OpenMUN.
@@ -28,6 +30,7 @@ export const SESSION_STORAGE_KEYS = [
   'openmun_cronometro_enmiendas',
   'openmun_mesa_activa',
   'openmun_notes',
+  'openmun_notas_oradores',
   'openmun_announcements',
   'openmun_enmiendas_propuestas',
   'openmun_room_settings',
@@ -82,6 +85,7 @@ export const ALLOWED_STORAGE_KEYS = new Set([
   'openmun_crisis_eventos',
   'openmun_crisis_reloj',
   'openmun_notes',
+  'openmun_notas_oradores',
   'openmun_room_settings',
   'openmun_config',
   'openmun_tipo_sesion',
@@ -95,13 +99,9 @@ export const ALLOWED_STORAGE_KEYS = new Set([
  */
 export function sanitizeString(str, maxLength = 50000) {
   if (typeof str !== 'string') return '';
-  let clean = str;
-  if (clean.length > maxLength) {
-    clean = clean.slice(0, maxLength);
-  }
-  clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  clean = clean.replace(/javascript\s*:/gi, '');
-  return clean;
+  return baseSanitizeString(str, maxLength)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/javascript\s*:/gi, '');
 }
 
 /**
@@ -222,7 +222,10 @@ export function validateSessionJSON(rawInput) {
     'relojCrisis',
     'relojSimulacion',
     'notes',
-    'openmun_notes'
+    'openmun_notes',
+    'notasOradores',
+    'speakerNotes',
+    'openmun_notas_oradores'
   ];
 
   const hasDirectSessionKey = directSessionKeys.some(k => k in parsed);
@@ -522,12 +525,32 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
   }
   const relojCrisis = (rawRelojCrisis && typeof rawRelojCrisis === 'object' && !Array.isArray(rawRelojCrisis)) ? rawRelojCrisis : null;
 
-  // 12. Notas, Ajustes de Sala y Configuración
+  // 12. Notas, Notas de Oradores, Ajustes de Sala y Configuración
   let rawNotes = inner.notes || inner.openmun_notes || snapshot.openmun_notes;
   if (typeof rawNotes === 'string') {
     try { rawNotes = JSON.parse(rawNotes); } catch { rawNotes = []; }
   }
-  const notes = Array.isArray(rawNotes) ? rawNotes : [];
+  const allNotes = Array.isArray(rawNotes) ? rawNotes : [];
+  const legacySpeakerNotes = allNotes.filter(n => n && n.type === 'speaker_annotation');
+  const notes = allNotes.filter(n => !n || n.type !== 'speaker_annotation');
+
+  let rawSpeakerNotes = inner.notasOradores || inner.speakerNotes || inner.openmun_notas_oradores || snapshot.openmun_notas_oradores;
+  if (typeof rawSpeakerNotes === 'string') {
+    try { rawSpeakerNotes = JSON.parse(rawSpeakerNotes); } catch { rawSpeakerNotes = []; }
+  }
+  const combinedSpeakerNotes = [
+    ...(Array.isArray(rawSpeakerNotes) ? rawSpeakerNotes : []),
+    ...legacySpeakerNotes
+  ];
+  const seenNoteIds = new Set();
+  const notasOradores = [];
+  for (const item of combinedSpeakerNotes) {
+    const normalized = normalizeSpeakerNote(item);
+    if (normalized && !seenNoteIds.has(normalized.id)) {
+      seenNoteIds.add(normalized.id);
+      notasOradores.push(normalized);
+    }
+  }
 
   let rawRoomSettings = inner.roomSettings || inner.openmun_room_settings || snapshot.openmun_room_settings;
   if (typeof rawRoomSettings === 'string') {
@@ -567,6 +590,7 @@ export function normalizarDatosComite(rawInput, fallbackNombre = '') {
     eventosCrisis,
     relojCrisis,
     notes,
+    notasOradores,
     roomSettings,
     config
   };

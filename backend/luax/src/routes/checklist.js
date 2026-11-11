@@ -19,19 +19,22 @@ function registerChecklist(router, db, session) {
   const path = '/conferencias/:id/checklist';
   const conference = req => {
     const cid = id(req.params.id);
-    requireScope(session(req), cid, null, ['org']);
+    const actor = requireScope(session(req), cid, null, ['org', 'staff']);
+    req.staffCommittee = actor.role === 'staff' ? actor.committeeId : null;
+    if (actor.role === 'staff' && !req.staffCommittee) throw httpError(403, 'Comité no asignado');
     return cid;
   };
-  async function remove(cid, condition, value) {
+  async function remove(cid, condition, value, committee = null) {
     const result = await db.query(`
       WITH deleted AS (
-        DELETE FROM checklist_staff WHERE conferencia_id = $1 AND ${condition} RETURNING id
+        DELETE FROM checklist_staff WHERE conferencia_id = $1 AND ${condition}
+          AND ($3::text IS NULL OR comite_id=$3) RETURNING id
       ), touch AS (
         UPDATE conferencias SET ultimo_cambio = GREATEST(ultimo_cambio, statement_timestamp())
         WHERE id = $1 AND EXISTS (SELECT 1 FROM deleted)
       )
       SELECT count(*)::int AS eliminados FROM deleted
-    `, [cid, value]);
+    `, [cid, value, committee]);
     return result.rows[0].eliminados;
   }
 
@@ -40,8 +43,9 @@ function registerChecklist(router, db, session) {
     const result = await db.query(`
       SELECT id,conferencia_id,comite_id,titulo,completado,asignado_a,creado_en
       FROM checklist_staff WHERE conferencia_id = $1 AND ${committeeFilter}
+        AND ($3::text IS NULL OR comite_id=$3 OR comite_id IS NULL)
       ORDER BY completado IS TRUE, creado_en DESC, id DESC
-    `, [cid, filter(req.query.comite_id)]);
+    `, [cid, filter(req.query.comite_id), req.staffCommittee]);
     res.json({ checklist: result.rows });
   });
 
@@ -49,6 +53,7 @@ function registerChecklist(router, db, session) {
     const cid = conference(req);
     const body = req.body || {};
     const committee = body.comite_id == null ? null : id(body.comite_id);
+    if (req.staffCommittee && committee !== req.staffCommittee) throw httpError(403, 'Solo puede crear tareas de su comité');
     const title = field(body.titulo, 255);
     const assignee = body.asignado_a == null ? null : field(body.asignado_a, 128);
     const result = await db.query(`
@@ -66,8 +71,8 @@ function registerChecklist(router, db, session) {
     const done = req.body?.completado;
     if (typeof done !== 'boolean') throw httpError(400, 'Estado de tarea inválido');
     const result = await db.query(
-      'UPDATE checklist_staff SET completado = $3 WHERE conferencia_id = $1 AND id = $2',
-      [cid, taskId(req.params.taskId), done]
+      'UPDATE checklist_staff SET completado = $3 WHERE conferencia_id = $1 AND id = $2 AND ($4::text IS NULL OR comite_id=$4)',
+      [cid, taskId(req.params.taskId), done, req.staffCommittee]
     );
     if (!result.rowCount) throw httpError(404, 'Tarea no disponible');
     res.json({ ok: true });
@@ -75,13 +80,13 @@ function registerChecklist(router, db, session) {
 
   router.delete(path + '/completados', async (req, res) => {
     const cid = conference(req);
-    const eliminados = await remove(cid, 'completado IS TRUE AND ' + committeeFilter, filter(req.query.comite_id));
+    const eliminados = await remove(cid, 'completado IS TRUE AND ' + committeeFilter, filter(req.query.comite_id), req.staffCommittee);
     res.json({ ok: true, eliminados });
   });
 
   router.delete(path + '/:taskId', async (req, res) => {
     const cid = conference(req);
-    await remove(cid, 'id = $2', taskId(req.params.taskId));
+    await remove(cid, 'id = $2', taskId(req.params.taskId), req.staffCommittee);
     res.json({ ok: true });
   });
 }

@@ -33,7 +33,7 @@ import {
   procesarImagenBandera,
   DICCIONARIO_PAISES_ISO
 } from '../../utils/flags';
-import { PLANTILLAS_PAISES } from '../../plantillas/paises';
+import { PLANTILLAS_COMITES as PLANTILLAS_PAISES } from '../../plantillas/comites';
 import { normalizarDatosComite } from '../../utils/sessionValidator';
 
 const P5_SET = new Set([

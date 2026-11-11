@@ -35,15 +35,7 @@ export async function compressData(data) {
       );
       const buffer = await stream.arrayBuffer();
       const bytes = new Uint8Array(buffer);
-      
-      let binary = '';
-      const len = bytes.byteLength;
-      const chunkSize = 8192;
-      for (let i = 0; i < len; i += chunkSize) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunkSize, len)));
-      }
-      
-      const base64 = btoa(binary);
+      const base64 = bytes.toBase64 ? bytes.toBase64() : btoa(Array.from(bytes, b => String.fromCharCode(b)).join(''));
       return {
         _c: true,
         data: base64
@@ -69,11 +61,9 @@ export async function decompressData(payload) {
   if (typeof payload === 'object' && payload._c === true && typeof payload.data === 'string') {
     try {
       if (typeof DecompressionStream !== 'undefined') {
-        const binary = atob(payload.data);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
+        const bytes = Uint8Array.fromBase64
+          ? Uint8Array.fromBase64(payload.data)
+          : Uint8Array.from(atob(payload.data), c => c.charCodeAt(0));
 
         const stream = new Response(
           new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))

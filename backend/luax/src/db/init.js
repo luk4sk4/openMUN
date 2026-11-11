@@ -1,4 +1,4 @@
-const schemaVersion = 3;
+const schemaVersion = 5;
 
 async function checkReadiness(db) {
   const result = await db.query('SELECT MAX(version)::int AS version FROM openmun_schema_versions');

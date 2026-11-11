@@ -1,6 +1,8 @@
 const { field, httpError } = require('./auth');
+const { publicState } = require('./committeeState');
 
 function validateSnapshot(value) {
+  if (value?.version === 2 && Object.keys(value).length === 2) return { version: 2, state: publicState(value.state) };
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
       Object.keys(value).some(key => !['topic', 'timer', 'speakers', 'motion'].includes(key))) {
     throw httpError(400, 'Snapshot inválido');

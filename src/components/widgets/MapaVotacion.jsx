@@ -29,11 +29,13 @@ import {
   Square,
   Settings,
   ShieldAlert,
-  Scale
+  Scale,
+  ArrowRight
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../../context/SessionContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useToast } from '../../context/ToastContext';
 import { ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { emojiToIso, normalizarBandera, DICCIONARIO_PAISES_ISO } from '../../utils/flags';
@@ -180,12 +182,15 @@ const PARSED_WORLD_PATHS = (() => {
 const MapaVotacion = ({ isLight: propIsLight }) => {
   const { t } = useTranslation();
   const confirm = useConfirm();
+  const { addToast } = useToast();
   const {
     paises,
     votacionSesion,
     registrarVotoPais,
     configurarVotacion,
-    resetearVotacion
+    resetearVotacion,
+    siguienteTemaAgenda,
+    irASiguienteTema
   } = useSession();
 
   const outerContainerRef = useRef(null);
@@ -855,6 +860,54 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
             {modoRollCall ? <Square size={12} fill="var(--accent-color)" /> : <Play size={12} fill="var(--btn-text)" color="var(--btn-text)" />}
             <span>{modoRollCall ? t('voting.exitRollCall', 'Salir Roll Call') : t('voting.startRollCall', 'Modo Roll Call')}</span>
           </button>
+
+          {stats.finalizada && (
+            <button
+              type="button"
+              onClick={() => {
+                const res = irASiguienteTema();
+                setModoRollCall(false);
+                setRollCallFinalizado(false);
+                setSelectedCountryForVote(null);
+                if (res?.siguienteTema) {
+                  addToast({
+                    title: t('voting.nextTopicActivatedTitle', 'Siguiente punto de agenda'),
+                    description: t('voting.nextTopicActivatedDesc', {
+                      topic: res.siguienteTema,
+                      defaultValue: `Tema activo: ${res.siguienteTema}`
+                    }),
+                    type: 'success'
+                  });
+                } else {
+                  addToast({
+                    title: t('voting.agendaCompletedTitle', 'Agenda concluida'),
+                    description: t('voting.allTopicsCompletedDesc', 'Se han concluido todos los puntos de agenda propuestos.'),
+                    type: 'info'
+                  });
+                }
+              }}
+              title={siguienteTemaAgenda
+                ? `${t('voting.goToNextTopicTitle', 'Avanzar automáticamente al siguiente punto de agenda')}: ${siguienteTemaAgenda.titulo}`
+                : t('voting.goToNextTopicTitle', 'Avanzar automáticamente al siguiente punto de agenda')}
+              style={{
+                padding: '0.38rem 0.85rem',
+                backgroundColor: 'var(--btn-bg)',
+                border: '1px solid var(--btn-bg)',
+                borderRadius: 'var(--border-radius)',
+                color: 'var(--btn-text)',
+                fontSize: '0.75rem',
+                fontWeight: '750',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>{t('voting.goToNextTopic', 'Ir a siguiente tema')}</span>
+              <ArrowRight size={12} />
+            </button>
+          )}
 
           {/* Botón Reiniciar Votación */}
           <button
@@ -1646,12 +1699,30 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
               </div>
 
               {/* Botones de acción post Roll Call */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
                 <button
                   type="button"
                   onClick={() => {
+                    const res = irASiguienteTema();
                     setModoRollCall(false);
                     setRollCallFinalizado(false);
+                    setSelectedCountryForVote(null);
+                    if (res?.siguienteTema) {
+                      addToast({
+                        title: t('voting.nextTopicActivatedTitle', 'Siguiente punto de agenda'),
+                        description: t('voting.nextTopicActivatedDesc', {
+                          topic: res.siguienteTema,
+                          defaultValue: `Tema activo: ${res.siguienteTema}`
+                        }),
+                        type: 'success'
+                      });
+                    } else {
+                      addToast({
+                        title: t('voting.agendaCompletedTitle', 'Agenda concluida'),
+                        description: t('voting.allTopicsCompletedDesc', 'Se han concluido todos los puntos de agenda propuestos.'),
+                        type: 'info'
+                      });
+                    }
                   }}
                   style={{
                     padding: '0.45rem 1rem',
@@ -1661,6 +1732,30 @@ const MapaVotacion = ({ isLight: propIsLight }) => {
                     border: 'none',
                     borderRadius: 'var(--border-radius)',
                     fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <span>{t('voting.goToNextTopic', 'Ir a siguiente tema')}</span>
+                  <ArrowRight size={13} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModoRollCall(false);
+                    setRollCallFinalizado(false);
+                  }}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    backgroundColor: 'var(--input-bg, var(--panel-color))',
+                    color: 'var(--text-color)',
+                    fontWeight: '700',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius)',
+                    fontSize: '0.76rem',
                     cursor: 'pointer'
                   }}
                 >

@@ -1,9 +1,18 @@
 import React, { useState, useRef } from 'react';
-import { Minimize2, ChevronRight, Landmark, Home } from 'lucide-react';
+import { Minimize2, ChevronRight, Landmark, Home, Columns2, Columns3, Clock, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TAB_CONFIG } from '../../utils/dashboardTabs';
 
-const FullscreenMenu = ({ activeTab, setActiveTab, tabs, toggleMaximize, isLight, nombreComite }) => {
+const FullscreenMenu = ({
+  activeTab,
+  setActiveTab,
+  tabs,
+  toggleMaximize,
+  fullscreenMode = 'with_left',
+  setFullscreenMode,
+  isLight,
+  nombreComite
+}) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const closeTimer = useRef(null);
@@ -15,6 +24,10 @@ const FullscreenMenu = ({ activeTab, setActiveTab, tabs, toggleMaximize, isLight
   const cancelClose = () => {
     clearTimeout(closeTimer.current);
   };
+
+  const isDebate = activeTab === 'DEBATE';
+  const isGSL = activeTab === 'GSL';
+  const hasPresentationModes = isDebate || isGSL;
 
   const ActiveIcon = TAB_CONFIG[activeTab]?.Icon || Home;
   const currentTabLabel = t(TAB_CONFIG[activeTab]?.labelKey, TAB_CONFIG[activeTab]?.label || activeTab);
@@ -142,6 +155,116 @@ const FullscreenMenu = ({ activeTab, setActiveTab, tabs, toggleMaximize, isLight
             );
           })}
         </div>
+
+        {/* Modos de presentación en GSL / DEBATE */}
+        {hasPresentationModes && (
+          <div style={{ borderTop: `1px solid ${isLight ? '#e2e8f0' : '#27272a'}`, padding: '0.35rem' }}>
+            <div style={{
+              fontSize: '0.64rem',
+              fontWeight: '750',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: 'var(--muted-text)',
+              padding: '0.2rem 0.5rem 0.35rem'
+            }}>
+              {t('header.fsPresentationLayout', 'Vista de presentación')}
+            </div>
+
+            <button
+              onClick={() => {
+                if (setFullscreenMode) setFullscreenMode('with_left');
+                else toggleMaximize('with_left');
+                setOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                width: '100%',
+                padding: '0.4rem 0.65rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: fullscreenMode === 'with_left' ? 'var(--accent-soft)' : 'transparent',
+                color: fullscreenMode === 'with_left' ? 'var(--accent-color)' : 'var(--text-color)',
+                fontWeight: fullscreenMode === 'with_left' ? '700' : '500',
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background-color 0.12s ease'
+              }}
+              onMouseEnter={e => { if (fullscreenMode !== 'with_left') e.currentTarget.style.backgroundColor = isLight ? '#f1f5f9' : '#18181b'; }}
+              onMouseLeave={e => { if (fullscreenMode !== 'with_left') e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <Columns2 size={13} />
+              <span>
+                {isDebate ? t('header.fsWithMotions', 'Con pizarra y oradores') : t('header.fsWithSpeakers', 'Con lista de oradores')}
+              </span>
+              {fullscreenMode === 'with_left' && <Check size={12} style={{ marginLeft: 'auto' }} />}
+            </button>
+
+            <button
+              onClick={() => {
+                if (setFullscreenMode) setFullscreenMode('timer_only');
+                else toggleMaximize('timer_only');
+                setOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                width: '100%',
+                padding: '0.4rem 0.65rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: fullscreenMode === 'timer_only' ? 'var(--accent-soft)' : 'transparent',
+                color: fullscreenMode === 'timer_only' ? 'var(--accent-color)' : 'var(--text-color)',
+                fontWeight: fullscreenMode === 'timer_only' ? '700' : '500',
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background-color 0.12s ease',
+                marginTop: '2px'
+              }}
+              onMouseEnter={e => { if (fullscreenMode !== 'timer_only') e.currentTarget.style.backgroundColor = isLight ? '#f1f5f9' : '#18181b'; }}
+              onMouseLeave={e => { if (fullscreenMode !== 'timer_only') e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <Clock size={13} />
+              <span>{t('header.fsTimerOnly', 'Solo cronómetro')}</span>
+              {fullscreenMode === 'timer_only' && <Check size={12} style={{ marginLeft: 'auto' }} />}
+            </button>
+
+            <button
+              onClick={() => {
+                if (setFullscreenMode) setFullscreenMode('with_adder');
+                else toggleMaximize('with_adder');
+                setOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                width: '100%',
+                padding: '0.4rem 0.65rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: (fullscreenMode === 'with_adder' || fullscreenMode === 'all') ? 'var(--accent-soft)' : 'transparent',
+                color: (fullscreenMode === 'with_adder' || fullscreenMode === 'all') ? 'var(--accent-color)' : 'var(--text-color)',
+                fontWeight: (fullscreenMode === 'with_adder' || fullscreenMode === 'all') ? '700' : '500',
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background-color 0.12s ease',
+                marginTop: '2px'
+              }}
+              onMouseEnter={e => { if (fullscreenMode !== 'with_adder' && fullscreenMode !== 'all') e.currentTarget.style.backgroundColor = isLight ? '#f1f5f9' : '#18181b'; }}
+              onMouseLeave={e => { if (fullscreenMode !== 'with_adder' && fullscreenMode !== 'all') e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <Columns3 size={13} />
+              <span>{t('header.fsWithAdder', 'Completo (con añadir países)')}</span>
+              {(fullscreenMode === 'with_adder' || fullscreenMode === 'all') && <Check size={12} style={{ marginLeft: 'auto' }} />}
+            </button>
+          </div>
+        )}
 
         {/* Divider + Salir de pantalla completa */}
         <div style={{ borderTop: `1px solid ${isLight ? '#e2e8f0' : '#27272a'}`, padding: '0.35rem' }}>

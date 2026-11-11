@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Users,
   Lock,
@@ -138,6 +139,7 @@ const RendimientoEquiposTab = ({
   isLight = false,
   onRefresh = null
 }) => {
+  const { t } = useTranslation();
   const confId = conferencia?.id ? String(conferencia.id).toLowerCase().trim() : '';
 
   // ── 1. EXTRACCIÓN Y AGREGACIÓN DE DATOS DE RENDIMIENTO ──
@@ -2770,7 +2772,7 @@ const RendimientoEquiposTab = ({
                 cursor: 'pointer'
               }}
             >
-              <option value="TODOS">Todos los Equipos ({datosEquipos.length})</option>
+              <option value="TODOS">{t('ui.allTeams', 'Todos los equipos')} ({datosEquipos.length})</option>
               {nombresEquipos.map(n => (
                 <option key={n} value={n}>{n}</option>
               ))}

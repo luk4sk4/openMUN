@@ -2,6 +2,18 @@
 
 Copia versionable del backend nuevo. El proceso de LUAX y el frontend legado se gestionan por separado. El contrato de sesión y los snapshots de este backend requieren integrar y probar el cliente antes del corte. Véase el [runbook](../../docs/MIGRACION_LUAX.md).
 
+## Candidato de migración integral (esquema 4)
+
+Aplicar `src/db/app-grants.sql` con el rol operador después de migrar el esquema. El manifiesto incluye las columnas nuevas, edición de metadatos, eliminación de comités y reintentos de mensajería. No concede DDL ni acceso al esquema `legacy_import`.
+
+El cliente integrado usa `luax-join`, `luax-command` y `luax-snapshot`. Solo una conexión de Mesa puede escribir por comité. Las ediciones REST de estado se rechazan mientras Mesa emite; el autoguardado privado usa `backupOnly: true` y conserva el snapshot público. El evento anterior `enviar-datos-debate` exige actualizar el cliente.
+
+El checklist admite organización y staff; staff lee tareas globales y propias, y modifica únicamente las de su comité. Los avisos internos y las notas se guardan en PostgreSQL con destinatarios comprobados en servidor. La interfaz espera el ack antes de confirmar el envío de una nota.
+
+El respaldo JSON de conferencia 2.1 incluye el historial de cada comité en `tablas.comites[].mensajes`, con las anotaciones de Mesa y su puntuación. Los avisos enviados desde la mensajería de conferencia quedan fuera. La organización puede exportar y restaurar el historial mediante `/api/comites/:id/historial-respaldo`. La migración 5 añade `mensajes.backup_id` para deduplicar restauraciones por comité. Se conservan las fechas originales y se sigue aplicando la retención de un mes.
+
+Para repetir el ensayo real desde Windows, ejecutar `scripts/test-luax-postgres.ps1` desde la raíz. Crea un PostgreSQL 16 desechable en LUAX, prueba la API con un rol sin DDL e importa dos veces una copia SQLite coherente. Conserva el respaldo privado del ensayo en LUAX y elimina el contenedor; no cambia la producción.
+
 ## Preparación y roles
 
 1. En ensayo, preparar un PostgreSQL 16 aislado. En LUAX, tomar los respaldos del runbook, congelar el backend durante la migración y usar su base dedicada en el puerto 5433.

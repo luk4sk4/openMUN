@@ -1,33 +1,75 @@
 import i18n from '../../languages/index.js';
 import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Clock, ChevronUp, ChevronDown, PictureInPicture2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Clock, ChevronUp, ChevronDown, PictureInPicture2, CheckCircle2, AlertTriangle, Maximize2, Minimize2 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import FloatingPipTimer from '../common/FloatingPipTimer';
+import FullscreenButtonDropdown from '../common/FullscreenButtonDropdown';
 import { usePictureInPictureTimer } from '../../hooks/usePictureInPictureTimer';
 import { useTranslation } from 'react-i18next';
 
-const CronometroDual = ({ modoInicial = null }) => {
+const CronometroDual = ({
+  modoInicial = null,
+  isLight,
+  isMaximized = false,
+  fullscreenMode = 'with_left',
+  setFullscreenMode,
+  toggleMaximize
+}) => {
   const { t } = useTranslation();
   const {
     caucusActivo,
     oradoresCaucus,
     avanzarOradorCaucus,
-    registrarIntervencion
+    registrarIntervencion,
+    controlarRelojDebate,
+    relojDebateState
   } = useSession();
+
+  const handleToggleFullscreen = () => {
+    if (typeof toggleMaximize === 'function') {
+      toggleMaximize();
+    } else {
+      window.dispatchEvent(new CustomEvent('openmun_toggle_fullscreen'));
+    }
+  };
 
   const [modoSeleccionado, setModoSeleccionado] = useState(modoInicial);
 
   const tipoMocion = modoSeleccionado || caucusActivo?.tipo || (modoInicial || 'Caucus Moderado');
   const esTiempoSoloGeneral = tipoMocion === 'Caucus No Moderado' || tipoMocion.includes('Consulta General');
 
-  const [tiempoTotalSeg, setTiempoTotalSeg] = useState(caucusActivo?.tiempoTotal || 600);
+  const [tiempoTotalSeg, setTiempoTotalSeg] = useState(() => {
+    if (typeof relojDebateState?.tiempoTotalSeg === 'number') {
+      if (relojDebateState.corriendo && relojDebateState.timestamp) {
+        const elapsed = Math.floor((Date.now() - relojDebateState.timestamp) / 1000);
+        return Math.max(0, relojDebateState.tiempoTotalSeg - elapsed);
+      }
+      return relojDebateState.tiempoTotalSeg;
+    }
+    return caucusActivo?.tiempoTotal || 600;
+  });
   const [tiempoTotalInicial, setTiempoTotalInicial] = useState(caucusActivo?.tiempoTotal || 600);
-  const [tiempoOradorSeg, setTiempoOradorSeg] = useState(caucusActivo?.tiempoOrador || 45);
+  const [tiempoOradorSeg, setTiempoOradorSeg] = useState(() => {
+    if (typeof relojDebateState?.tiempoOradorSeg === 'number') {
+      if (relojDebateState.corriendo && relojDebateState.timestamp) {
+        const elapsed = Math.floor((Date.now() - relojDebateState.timestamp) / 1000);
+        return relojDebateState.tiempoOradorSeg - elapsed;
+      }
+      return relojDebateState.tiempoOradorSeg;
+    }
+    return caucusActivo?.tiempoOrador || 45;
+  });
   const [limiteOradorSeg, setLimiteOradorSeg] = useState(caucusActivo?.tiempoOrador || 45);
   const [corriendo, setCorriendo] = useDebateRunning();
   const [mensajeGuardado, setMensajeGuardado] = useState(false);
+
+  useEffect(() => {
+    if (relojDebateState?.corriendo) {
+      setCorriendo(true);
+    }
+  }, []);
 
   const timerRef = useRef(null);
 
@@ -43,8 +85,18 @@ const CronometroDual = ({ modoInicial = null }) => {
       setTiempoOradorSeg(caucusActivo.tiempoOrador);
       setLimiteOradorSeg(caucusActivo.tiempoOrador);
       setCorriendo(false);
+      if (controlarRelojDebate) {
+        controlarRelojDebate('sync', {
+          source: 'main',
+          tiempoOradorSeg: caucusActivo.tiempoOrador,
+          limiteOradorSeg: caucusActivo.tiempoOrador,
+          tiempoTotalSeg: caucusActivo.tiempoTotal,
+          corriendo: false,
+          modo: 'CAUCUS'
+        });
+      }
     }
-  }, [caucusActivo]);
+  }, [caucusActivo, controlarRelojDebate]);
 
   // Conteo reactivo
   useEffect(() => {
@@ -63,7 +115,20 @@ const CronometroDual = ({ modoInicial = null }) => {
     return () => clearInterval(timerRef.current);
   }, [corriendo, tipoMocion, esTiempoSoloGeneral]);
 
-  const handleStartPause = () => setCorriendo(!corriendo);
+  const handleStartPause = () => {
+    const next = !corriendo;
+    setCorriendo(next);
+    if (controlarRelojDebate) {
+      controlarRelojDebate(next ? 'start' : 'stop', {
+        source: 'main',
+        tiempoOradorSeg,
+        limiteOradorSeg,
+        tiempoTotalSeg,
+        tiempoTotalInicial,
+        modo: 'CAUCUS'
+      });
+    }
+  };
 
   const handleSiguienteOrador = () => {
     setCorriendo(false);
@@ -79,6 +144,16 @@ const CronometroDual = ({ modoInicial = null }) => {
 
     setTiempoOradorSeg(limiteOradorSeg);
     avanzarOradorCaucus();
+    if (controlarRelojDebate) {
+      controlarRelojDebate('sync', {
+        source: 'main',
+        signal: 'next_speaker',
+        tiempoOradorSeg: limiteOradorSeg,
+        limiteOradorSeg,
+        corriendo: false,
+        modo: 'CAUCUS'
+      });
+    }
   };
 
   const handleReset = () => {
@@ -87,6 +162,17 @@ const CronometroDual = ({ modoInicial = null }) => {
     setTiempoTotalSeg(initTotal);
     setTiempoTotalInicial(initTotal);
     setTiempoOradorSeg(limiteOradorSeg);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('reset', {
+        source: 'main',
+        tiempoInicial: limiteOradorSeg,
+        segundosRestantes: limiteOradorSeg,
+        tiempoOradorSeg: limiteOradorSeg,
+        limiteOradorSeg,
+        tiempoTotalSeg: initTotal,
+        modo: 'CAUCUS'
+      });
+    }
   };
 
   const handleModificarTiempoTotal = (seg) => {
@@ -96,30 +182,89 @@ const CronometroDual = ({ modoInicial = null }) => {
 
   const handleModificarTiempoOrador = (seg) => {
     setTiempoOradorSeg(prev => prev + seg);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('adjust', { source: 'main', delta: seg, modo: 'CAUCUS' });
+    }
   };
 
-  // Escuchar eventos globales de atajos de teclado
+  // Escuchar eventos globales de sincronización de cronómetro y atajos de teclado
   useEffect(() => {
-    const handleToggle = () => setCorriendo(prev => !prev);
+    const handleTimerSignal = (e) => {
+      const detail = e.detail;
+      if (!detail || detail.source === 'main') return;
+
+      const { signal, tiempoOradorSeg: seg, limiteOradorSeg: limite, segundosRestantes: gslSeg } = detail;
+      if (signal === 'start') {
+        const s = typeof seg === 'number' ? seg : (typeof gslSeg === 'number' ? gslSeg : null);
+        if (s !== null) setTiempoOradorSeg(s);
+        if (typeof limite === 'number') setLimiteOradorSeg(limite);
+        setCorriendo(true);
+      } else if (signal === 'stop' || signal === 'pause') {
+        const s = typeof seg === 'number' ? seg : (typeof gslSeg === 'number' ? gslSeg : null);
+        if (s !== null) setTiempoOradorSeg(s);
+        setCorriendo(false);
+      } else if (signal === 'reset' || signal === 'next_speaker') {
+        setCorriendo(false);
+        const s = typeof seg === 'number' ? seg : (typeof limite === 'number' ? limite : limiteOradorSeg);
+        setTiempoOradorSeg(s);
+      } else if (signal === 'adjust') {
+        if (typeof detail.delta === 'number') {
+          setTiempoOradorSeg(prev => prev + detail.delta);
+        }
+      }
+    };
+
+    const handleToggleHotkey = (e) => {
+      if (e?.detail?.action === 'start') {
+        setCorriendo(true);
+      } else if (e?.detail?.action === 'pause' || e?.detail?.action === 'stop') {
+        setCorriendo(false);
+      } else if (typeof e?.detail?.running === 'boolean') {
+        setCorriendo(e.detail.running);
+      } else if (!e?.detail?.action && typeof e?.detail?.running !== 'boolean') {
+        handleStartPause();
+      }
+    };
+
     const handleNext = () => handleSiguienteOrador();
     const handleResetEv = () => handleReset();
     const handleAdjust = (e) => {
       const delta = e.detail?.delta || 0;
       setTiempoOradorSeg(prev => prev + delta);
     };
+    const handleSync = (e) => {
+      const state = e.detail;
+      if (!state || state.source === 'main') return;
+      if (typeof state.corriendo === 'boolean') {
+        setCorriendo(state.corriendo);
+      }
+      if (typeof state.tiempoOradorSeg === 'number') {
+        setTiempoOradorSeg(state.tiempoOradorSeg);
+      }
+      if (typeof state.limiteOradorSeg === 'number') {
+        setLimiteOradorSeg(state.limiteOradorSeg);
+      }
+      if (typeof state.tiempoTotalSeg === 'number') {
+        setTiempoTotalSeg(state.tiempoTotalSeg);
+      }
+    };
 
-    window.addEventListener('openmun_hotkey_toggle_timer', handleToggle);
+    window.addEventListener('openmun_timer_signal', handleTimerSignal);
+    window.addEventListener('openmun_hotkey_toggle_timer', handleToggleHotkey);
     window.addEventListener('openmun_hotkey_next_speaker', handleNext);
     window.addEventListener('openmun_hotkey_reset_timer', handleResetEv);
     window.addEventListener('openmun_hotkey_adjust_time', handleAdjust);
+    window.addEventListener('openmun_timer_sync', handleSync);
 
     return () => {
-      window.removeEventListener('openmun_hotkey_toggle_timer', handleToggle);
+      window.removeEventListener('openmun_timer_signal', handleTimerSignal);
+      window.removeEventListener('openmun_hotkey_toggle_timer', handleToggleHotkey);
       window.removeEventListener('openmun_hotkey_next_speaker', handleNext);
       window.removeEventListener('openmun_hotkey_reset_timer', handleResetEv);
       window.removeEventListener('openmun_hotkey_adjust_time', handleAdjust);
+      window.removeEventListener('openmun_timer_sync', handleSync);
     };
-  }, [limiteOradorSeg, tiempoOradorSeg, oradoresCaucus, avanzarOradorCaucus, registrarIntervencion, caucusActivo]);
+  }, [limiteOradorSeg, tiempoOradorSeg, oradoresCaucus, avanzarOradorCaucus, registrarIntervencion, caucusActivo, handleStartPause, handleReset, handleSiguienteOrador]);
 
   const formatTimeWithNegative = (seg) => {
     const isNegative = seg < 0;
@@ -325,6 +470,15 @@ const CronometroDual = ({ modoInicial = null }) => {
               <span>PiP</span>
             </button>
           )}
+
+          {/* Botón Pantalla Completa (Dos Opciones de Disposición) */}
+          <FullscreenButtonDropdown
+            activeTab="DEBATE"
+            isMaximized={isMaximized}
+            fullscreenMode={fullscreenMode}
+            setFullscreenMode={setFullscreenMode}
+            toggleMaximize={toggleMaximize}
+          />
         </div>
       </div>
 

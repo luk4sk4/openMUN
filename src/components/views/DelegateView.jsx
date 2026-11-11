@@ -1,3 +1,4 @@
+import { canReceiveNote } from '../../services/peerService.js';
 import i18n from '../../languages/index.js';
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
@@ -506,12 +507,7 @@ const DelegateView = ({ isLight: propIsLight, onExit }) => {
     setTimeout(() => setEnmiendaEnviadaFeedback(false), 5000);
   };
 
-  // Filtrar notas que pertenecen a este país
-  const misNotas = notes.filter(n => 
-    n.from?.toLowerCase() === clientCountry?.toLowerCase() ||
-    n.to?.toLowerCase() === clientCountry?.toLowerCase() ||
-    n.to?.toUpperCase() === 'TODOS'
-  );
+  const misNotas = notes.filter(note => canReceiveNote(note, 'delegate', clientCountry));
 
   const delegateTabs = [
     { id: 'DEBATE', label: t('views.delegate.debateTab', 'Debate en Vivo'), icon: Mic },

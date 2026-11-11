@@ -12,14 +12,21 @@ const source = readFileSync(new URL('../src/services/peerService.js', import.met
   .replace(/^export default .*;\r?$/gm, '')
   .replace(/^export /gm, '');
 
-function loadService(compressData = async data => data, io) {
+function loadService(compressData = async data => data, io, luaxUrl = '', committeeId = null) {
   const storage = new Map();
+  if (committeeId) storage.set('openmun_current_comite_id', committeeId);
   const NetworkService = vm.runInNewContext(`${source}\nNetworkService`, {
-    console, setTimeout, clearTimeout, compressData, io,
+    console, setTimeout, clearTimeout, compressData, io, LUAX_API_URL: luaxUrl,
+    connectLuax: async service => service.roomId,
     localStorage: { setItem: (key, value) => storage.set(key, value), getItem: key => storage.get(key) || null }
   });
   return new NetworkService();
 }
+
+test('LUAX hosts the active committee instead of a stale generated room', async () => {
+  const service = loadService(undefined, undefined, 'https://luax.test', 'active-committee');
+  assert.equal(await service.initHost('MUN-OLD'), 'ACTIVE-COMMITTEE');
+});
 
 function setup() {
   const sockets = new Map();

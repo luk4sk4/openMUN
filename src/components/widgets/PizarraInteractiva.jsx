@@ -94,10 +94,10 @@ const BLACKBOARD_SVG = createSvgDataUrl(`
 `);
 
 const PRESET_BACKGROUNDS = [
-  { id: 'world_map', name: 'Mapa Mundial', icon: Compass, src: WORLD_MAP_SVG },
-  { id: 'tactical_radar', name: 'Radar de Crisis', icon: Target, src: TACTICAL_RADAR_SVG },
-  { id: 'blackboard', name: 'Pizarra Oscura', icon: Grid, src: BLACKBOARD_SVG },
-  { id: 'whiteboard', name: 'Pizarra Blanca', icon: Layers, src: WHITEBOARD_SVG },
+  { id: 'world_map', key: 'worldMap', name: 'Mapa Mundial', icon: Compass, src: WORLD_MAP_SVG },
+  { id: 'tactical_radar', key: 'tacticalRadar', name: 'Radar de Crisis', icon: Target, src: TACTICAL_RADAR_SVG },
+  { id: 'blackboard', key: 'blackboard', name: 'Pizarra Oscura', icon: Grid, src: BLACKBOARD_SVG },
+  { id: 'whiteboard', key: 'whiteboard', name: 'Pizarra Blanca', icon: Layers, src: WHITEBOARD_SVG },
 ];
 
 const PRESET_COLORS = [
@@ -113,10 +113,10 @@ const PRESET_COLORS = [
 ];
 
 const BRUSH_SIZES = [
-  { label: 'Fino', size: 2 },
-  { label: 'Medio', size: 5 },
-  { label: 'Grueso', size: 12 },
-  { label: 'Marcador', size: 24 }
+  { id: 'fine', label: 'Fino', size: 2 },
+  { id: 'medium', label: 'Medio', size: 5 },
+  { id: 'thick', label: 'Grueso', size: 12 },
+  { id: 'marker', label: 'Marcador', size: 24 }
 ];
 
 const PizarraInteractiva = () => {
@@ -695,27 +695,30 @@ const PizarraInteractiva = () => {
 
           {/* Selector de Grosor */}
           <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-            {BRUSH_SIZES.map((b) => (
-              <button
-                key={b.size}
-                onClick={() => setBrushSize(b.size)}
-                aria-pressed={brushSize === b.size}
-                style={{
-                  padding: '0.25rem 0.45rem',
-                  fontSize: '0.7rem',
-                  fontWeight: brushSize === b.size ? '700' : '500',
-                  borderRadius: 'var(--border-radius, 6px)',
-                  border: `1px solid ${brushSize === b.size ? 'var(--accent-color)' : 'var(--border-color)'}`,
-                  backgroundColor: brushSize === b.size ? 'var(--accent-soft)' : 'var(--input-bg)',
-                  color: brushSize === b.size ? 'var(--accent-color)' : 'var(--muted-text)',
-                  cursor: 'pointer',
-                  transition: 'all 0.12s ease'
-                }}
-                title={`Grosor: ${b.label}`}
-              >
-                {b.label}
-              </button>
-            ))}
+            {BRUSH_SIZES.map((b) => {
+              const label = t('whiteboard.brushSizes.' + b.id, b.label);
+              return (
+                <button
+                  key={b.size}
+                  onClick={() => setBrushSize(b.size)}
+                  aria-pressed={brushSize === b.size}
+                  style={{
+                    padding: '0.25rem 0.45rem',
+                    fontSize: '0.7rem',
+                    fontWeight: brushSize === b.size ? '700' : '500',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    border: `1px solid ${brushSize === b.size ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                    backgroundColor: brushSize === b.size ? 'var(--accent-soft)' : 'var(--input-bg)',
+                    color: brushSize === b.size ? 'var(--accent-color)' : 'var(--muted-text)',
+                    cursor: 'pointer',
+                    transition: 'all 0.12s ease'
+                  }}
+                  title={t('whiteboard.brushSizeTitle', { size: label, defaultValue: `Grosor: ${b.label}` })}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -744,7 +747,7 @@ const PizarraInteractiva = () => {
           >
             {PRESET_BACKGROUNDS.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name}
+                {t('whiteboard.backgrounds.' + b.key, b.name)}
               </option>
             ))}
             {customBgUrl && <option value="custom">{t('ui.uploadedImage')}</option>}

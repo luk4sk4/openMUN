@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import FullscreenButtonDropdown from '../common/FullscreenButtonDropdown';
 
 const DashboardSubheader = ({
   nombreComite,
@@ -7,7 +8,12 @@ const DashboardSubheader = ({
   tipoSesion = 'formal',
   cambiarTipoSesion,
   roleBadge,
-  roomId
+  roomId,
+  activeTab,
+  isMaximized = false,
+  fullscreenMode = 'with_left',
+  setFullscreenMode,
+  toggleMaximize
 }) => {
   const { t } = useTranslation();
   const committee = nombreComite || t('header.noCommittee', 'Sin comité');
@@ -38,6 +44,16 @@ const DashboardSubheader = ({
           onClick={() => cambiarTipoSesion(state)}
         >{label}</button>)}
       </div>}
+      {toggleMaximize && (activeTab === 'GSL' || activeTab === 'DEBATE') && (
+        <FullscreenButtonDropdown
+          activeTab={activeTab}
+          isMaximized={isMaximized}
+          fullscreenMode={fullscreenMode}
+          setFullscreenMode={setFullscreenMode}
+          toggleMaximize={toggleMaximize}
+          style={{ marginLeft: '8px' }}
+        />
+      )}
     </div>
   );
 };

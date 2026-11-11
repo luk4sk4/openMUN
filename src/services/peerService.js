@@ -1,8 +1,43 @@
 import i18n from '../languages/index.js';
 import { io } from 'socket.io-client';
 import { compressData, decompressData } from '../utils/compression.js';
-import { createStateDelta } from '../utils/deltaSync.js';
-import { playChimeAlert } from '../utils/audioAlerts.js';
+import { LUAX_API_URL } from './luaxAccess.js';
+import { connectLuax, sendLuax } from './luaxRealtime.js';
+
+const noteRoles = Object.assign(Object.create(null), {
+  CHAIR: 'chair',
+  MESA: 'chair',
+  'MESA DE PRESIDENCIA': 'chair',
+  STAFF: 'staff',
+  BACKROOM: 'backroom',
+  SECRETARIA: 'secretariat'
+});
+
+export function canReceiveNote(note, role, country, clientId) {
+  if (!note?.text) return false;
+  const senderRole = note.fromRole || noteRoles[note.from?.trim().toUpperCase()] || 'delegate';
+  const countryName = country?.trim().toUpperCase();
+  const isSender = senderRole === role && (
+    role === 'delegate' ? countryName && note.from?.trim().toUpperCase() === countryName :
+      role === 'chair' || (clientId && clientId === note.senderClientId)
+  );
+  if (isSender) return true;
+  if (role === 'staff' && senderRole === 'delegate') return true;
+  if (['pending', 'rejected'].includes(note.status)) return false;
+
+  const target = note.to?.trim().toUpperCase();
+  if (target === 'TODOS' || target === 'ALL') return true;
+  const targetRole = noteRoles[target];
+  if (targetRole) return role === targetRole || (targetRole === 'chair' && role === 'secretariat');
+  return role === 'delegate' && Boolean(countryName) && target === countryName;
+}
+
+function canReceiveAnnouncement(announcement, role, country) {
+  const target = String(announcement.target || 'ALL').trim().toUpperCase();
+  if (target === 'ALL' || target === 'TODOS') return true;
+  if (noteRoles[target]) return noteRoles[target] === role;
+  return role === 'delegate' && target === country?.trim().toUpperCase();
+}
 
 export const LOCAL_BROADCAST_CHANNEL_NAME = 'openmun_local_secret_channel';
 export const SOCKET_SERVER_URL = import.meta.env?.VITE_LUAX_API_URL?.trim().replace(/\/$/, '')
@@ -80,10 +115,13 @@ export function sanitizeStateForBroadcast(state) {
   // 5. Omitir logs históricos gigantes innecesarios para clientes
   delete sanitized.registroIntervenciones;
   delete sanitized.historicoMociones;
+  delete sanitized.announcements;
   delete sanitized.notes;
   delete sanitized.openmun_notes;
   if (sanitized.snapshot && typeof sanitized.snapshot === 'object') {
     sanitized.snapshot = { ...sanitized.snapshot };
+    delete sanitized.snapshot.announcements;
+    delete sanitized.snapshot.openmun_announcements;
     delete sanitized.snapshot.notes;
     delete sanitized.snapshot.openmun_notes;
   }
@@ -149,7 +187,7 @@ export function getOrCreateClientId() {
   try {
     let id = localStorage.getItem('openmun_client_uuid');
     if (!id) {
-      id = `client_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+      id = `client_${globalThis.crypto?.randomUUID?.() || Date.now().toString(36)}`;
       localStorage.setItem('openmun_client_uuid', id);
     }
     return id;
@@ -201,53 +239,8 @@ class NetworkService {
     } catch (e) {}
   }
 
-  // Filtrar histórico de notas según el rol y país del receptor
-  getNotesForRole(role, country) {
-    if (!Array.isArray(this.latestNotes)) return [];
-    const visible = this.latestNotes.filter(n => !['pending', 'rejected'].includes(n.status) ||
-      ['staff', 'chair', 'secretariat'].includes(role) ||
-      (role === 'delegate' && country && n.from?.toLowerCase().trim() === country.toLowerCase().trim()));
-    if (role === 'secretariat' || role === 'chair') {
-      return visible;
-    }
-    if (role === 'staff') {
-      return visible.filter(n => {
-        const dest = (n.to || '').toUpperCase().trim();
-        return (
-          n.status === 'pending' || n.status === 'rejected' || n.reviewedAt ||
-          dest === 'STAFF' ||
-          dest === 'CHAIR' ||
-          dest === 'MESA' ||
-          dest === 'MESA DE PRESIDENCIA' ||
-          dest === 'TODOS' ||
-          dest === 'ALL' ||
-          n.fromRole === 'staff' ||
-          n.fromRole === 'chair' ||
-          n.from === 'Staff' ||
-          n.from === 'Mesa de Presidencia' ||
-          n.type === 'logistica' ||
-          n.type === 'paje'
-        );
-      });
-    }
-    if (role === 'backroom') {
-      return visible.filter(n =>
-        n.to?.toUpperCase() === 'BACKROOM' ||
-        n.fromRole === 'backroom' ||
-        n.from?.toUpperCase() === 'BACKROOM' ||
-        ['TODOS', 'ALL'].includes(n.to?.toUpperCase()) ||
-        n.type === 'crisis'
-      );
-    }
-    if (role === 'delegate' && country) {
-      const cleanCountry = country.toLowerCase().trim();
-      return visible.filter(n =>
-        (n.to && n.to.toLowerCase().trim() === cleanCountry) ||
-        (n.from && n.from.toLowerCase().trim() === cleanCountry) ||
-        ['TODOS', 'ALL'].includes(n.to?.toUpperCase())
-      );
-    }
-    return [];
+  getNotesForRole(role, country, clientId) {
+    return this.latestNotes.filter(note => canReceiveNote(note, role, country, clientId));
   }
 
   // Suscripción a eventos de red
@@ -270,7 +263,8 @@ class NetworkService {
   // INICIALIZACIÓN DEL HOST (CHAIR)
   // ─────────────────────────────────────────────────────────────
   async initHost(roomId, options = {}) {
-    const cleanRoomId = (roomId || generateRoomCode()).trim().toUpperCase();
+    const committeeId = LUAX_API_URL && localStorage.getItem('openmun_current_comite_id');
+    const cleanRoomId = (committeeId || roomId || generateRoomCode()).trim().toUpperCase();
     this.destroy();
     this.isHost = true;
     this.role = 'chair';
@@ -285,7 +279,7 @@ class NetworkService {
     // REGLA DE ORO: Inicializar BroadcastChannel para la sesión secreta local (mismo navegador / segundo monitor)
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
-        this.broadcastChannel = new BroadcastChannel(LOCAL_BROADCAST_CHANNEL_NAME);
+        this.broadcastChannel = new BroadcastChannel(LOCAL_BROADCAST_CHANNEL_NAME + '-' + cleanRoomId);
         this.broadcastChannel.onmessage = async (event) => {
           const decompressed = await decompressData(event.data);
           this.handleIncomingMessage('local_broadcast_secretariat', decompressed, true);
@@ -318,6 +312,7 @@ class NetworkService {
       } catch (e) {}
     }
 
+    if (LUAX_API_URL) return connectLuax(this, options);
     return new Promise((resolve, reject) => {
       const registrationTimeout = setTimeout(() => {
         this.destroy();
@@ -335,6 +330,8 @@ class NetworkService {
 
         this.socket.on('connect', () => {
           this.socketId = this.socket.id;
+          const conferenceId = typeof window !== 'undefined' && localStorage.getItem('openmun_current_conf_id');
+          if (conferenceId) this.socket.emit('unirse-conferencia', conferenceId);
           // Unirse a la sala del comité en el servidor central
           this.socket.emit('unirse-comite', { sala: this.roomId, isHost: true }, (result) => {
             clearTimeout(registrationTimeout);
@@ -369,14 +366,9 @@ class NetworkService {
           }
         });
 
-        // Recepción de Avisos en Tiempo Real desde el Backend
-        this.socket.on('nuevo-aviso', (aviso) => {
-          if (!aviso) return;
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('openmun_nuevo_aviso', { detail: aviso }));
-            try {
-              playChimeAlert(0.4);
-            } catch (e) {}
+        this.socket.on('avisos-actualizados', detail => {
+          if (typeof window !== 'undefined' && detail?.conferencia_id) {
+            window.dispatchEvent(new CustomEvent('openmun_avisos_actualizados', { detail }));
           }
         });
 
@@ -406,6 +398,8 @@ class NetworkService {
           this.consecutiveErrors = 0;
           console.log(`Reconectado exitosamente al servidor (intento ${attemptNumber})`);
           this.socketId = this.socket.id;
+          const conferenceId = typeof window !== 'undefined' && localStorage.getItem('openmun_current_conf_id');
+          if (conferenceId) this.socket.emit('unirse-conferencia', conferenceId);
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('openmun_network_restored'));
             window.dispatchEvent(new Event('online'));
@@ -443,19 +437,31 @@ class NetworkService {
   // INICIALIZACIÓN DEL CLIENTE (DELEGADO / SECRETO / BACKROOM)
   // ─────────────────────────────────────────────────────────────
   async initClient({ roomId, role, password, country, isLocalBroadcast = false }) {
-    const cleanRoomId = (roomId || '').trim().toUpperCase();
+    const localCommittee = LUAX_API_URL && isLocalBroadcast && localStorage.getItem('openmun_current_comite_id');
+    const cleanRoomId = (localCommittee || roomId || '').trim().toUpperCase();
     this.destroy();
     this.isHost = false;
     this.role = role;
     this.clientCountry = role === 'delegate' ? (country || null) : null;
     this.roomId = cleanRoomId;
 
+    if (LUAX_API_URL && isLocalBroadcast) {
+      const credentialKey = role === 'secretariat' ? 'openmun_secret_pass' : role === 'staff' ? 'openmun_staff_pass' : null;
+      return connectLuax(this, { password: credentialKey ? localStorage.getItem(credentialKey) : password });
+    }
+
     // REGLA DE ORO: Modo Secreto Local mediante BroadcastChannel (sin internet)
     if (isLocalBroadcast) {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        this.broadcastChannel = new BroadcastChannel(LOCAL_BROADCAST_CHANNEL_NAME);
+        this.broadcastChannel = new BroadcastChannel(LOCAL_BROADCAST_CHANNEL_NAME + '-' + cleanRoomId);
         this.broadcastChannel.onmessage = async (event) => {
           const decompressed = await decompressData(event.data);
+          if (decompressed?.type === MSG_TYPES.BROADCAST_ANNOUNCEMENT &&
+              !canReceiveAnnouncement(decompressed.payload, this.role, this.clientCountry)) return;
+          if (decompressed?.type === MSG_TYPES.NOTE_RECEIVED &&
+              !canReceiveNote(decompressed.payload, this.role, this.clientCountry, this.clientId)) return;
+          if (decompressed?.type === MSG_TYPES.AUTH_RESULT &&
+              (decompressed.targetClientId !== this.clientId || decompressed.payload?.role !== this.role)) return;
           this.emit('message', decompressed);
         };
         // Notificar al Chair que se ha unido una pantalla secreta local
@@ -464,7 +470,8 @@ class NetworkService {
           payload: {
             role: role || 'secretariat',
             country: country || (role === 'staff' ? 'Staff Local' : 'Secretaría Local'),
-            isLocal: true
+            isLocal: true,
+            clientId: this.clientId
           },
           id: `auth-${Date.now()}`
         });
@@ -482,6 +489,7 @@ class NetworkService {
     }
 
     // Cliente Socket.io remoto
+    if (LUAX_API_URL) return connectLuax(this, { password });
     return new Promise((resolve, reject) => {
       let isResolved = false;
 
@@ -504,6 +512,8 @@ class NetworkService {
 
         this.socket.on('connect', () => {
           this.socketId = this.socket.id;
+          const conferenceId = typeof window !== 'undefined' && localStorage.getItem('openmun_current_conf_id');
+          if (conferenceId) this.socket.emit('unirse-conferencia', conferenceId);
           // Unirse a la sala del comité
           this.socket.emit('unirse-comite', cleanRoomId);
 
@@ -593,14 +603,9 @@ class NetworkService {
           }
         });
 
-        // Recepción de Avisos en Tiempo Real desde el Backend
-        this.socket.on('nuevo-aviso', (aviso) => {
-          if (!aviso) return;
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('openmun_nuevo_aviso', { detail: aviso }));
-            try {
-              playChimeAlert(0.4);
-            } catch (e) {}
+        this.socket.on('avisos-actualizados', detail => {
+          if (typeof window !== 'undefined' && detail?.conferencia_id) {
+            window.dispatchEvent(new CustomEvent('openmun_avisos_actualizados', { detail }));
           }
         });
 
@@ -634,6 +639,8 @@ class NetworkService {
           this.consecutiveClientErrors = 0;
           console.log(`Cliente reconectado a sala ${cleanRoomId} (intento ${attemptNumber})`);
           this.socketId = this.socket.id;
+          const conferenceId = typeof window !== 'undefined' && localStorage.getItem('openmun_current_conf_id');
+          if (conferenceId) this.socket.emit('unirse-conferencia', conferenceId);
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('openmun_network_restored'));
             window.dispatchEvent(new Event('online'));
@@ -765,7 +772,7 @@ class NetworkService {
           };
           this.peerMetadata.set(senderSocketId, meta);
 
-          const roleNotes = this.getNotesForRole(role, meta.country);
+          const roleNotes = this.getNotesForRole(role, meta.country, meta.clientId || meta.socketId);
 
           const currentPeerList = Array.from(this.peerMetadata.entries()).map(([id, pmeta]) => ({
             peerId: id,
@@ -808,7 +815,7 @@ class NetworkService {
               enmiendasPropuestas: this.latestEnmiendasPropuestas || [],
               sessionState: sanitizeStateForBroadcast(this.latestSessionState) || null,
               notes: roleNotes,
-              announcements: this.latestAnnouncements || [],
+              announcements: this.latestAnnouncements.filter(ann => canReceiveAnnouncement(ann, role, meta.country)),
               connectedPeers: currentPeerList,
               message: conflictNotice || null
             }
@@ -842,6 +849,7 @@ class NetworkService {
 
         this.broadcastLocal({
           type: MSG_TYPES.AUTH_RESULT,
+          targetClientId: clientId,
           payload: {
             success: true,
             role: localRole,
@@ -850,8 +858,8 @@ class NetworkService {
             speakingRequests: this.latestSpeakingRequests || [],
             enmiendasPropuestas: this.latestEnmiendasPropuestas || [],
             sessionState: sanitizeStateForBroadcast(this.latestSessionState) || null,
-            notes: this.latestNotes || [],
-            announcements: this.latestAnnouncements || [],
+            notes: this.getNotesForRole(localRole, localCountry, clientId),
+            announcements: this.latestAnnouncements.filter(ann => canReceiveAnnouncement(ann, localRole, localCountry)),
             connectedPeers: currentPeerList
           }
         });
@@ -1167,8 +1175,8 @@ class NetworkService {
           title: raw.title || 'Aviso Oficial',
           text: raw.text || '',
           priority: raw.priority || 'general', // 'general' | 'urgente' | 'logistica' | 'receso' | 'documento'
-          senderRole: senderMeta?.role || raw.senderRole || 'staff',
-          senderName: raw.senderName || (senderMeta?.role === 'secretariat' ? 'Secretaría' : (senderMeta?.role === 'chair' ? 'Mesa de Presidencia' : 'Staff')),
+          senderRole: senderMeta.role,
+          senderName: senderMeta.role === 'secretariat' ? 'Secretaría' : (senderMeta.role === 'chair' ? 'Mesa de Presidencia' : 'Staff'),
           timestamp: raw.timestamp || Date.now(),
           target: raw.target || 'ALL'
         };
@@ -1181,15 +1189,7 @@ class NetworkService {
           }
         } catch (e) {}
 
-        this.emitSocketMessage({
-          type: MSG_TYPES.BROADCAST_ANNOUNCEMENT,
-          payload: ann
-        });
-        this.broadcastLocal({
-          type: MSG_TYPES.BROADCAST_ANNOUNCEMENT,
-          payload: ann
-        });
-        this.emit('announcement_received', ann);
+        this.publishAnnouncement(ann);
       }
       return;
     }
@@ -1247,7 +1247,8 @@ class NetworkService {
       status: fromRole === 'delegate' && this.roomSettings.requireStaffNoteApproval ? 'pending' : 'delivered',
       id: note.id || `note-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       from: fromName,
-      fromRole: fromRole,
+      fromRole,
+      senderClientId: senderMeta?.clientId || senderMeta?.socketId,
       timestamp: Date.now()
     };
 
@@ -1262,7 +1263,7 @@ class NetworkService {
     } catch (e) { }
     // Las notas pendientes nunca se transmiten al destinatario ni al resto de la sala.
     for (const [peerId, meta] of this.peerMetadata) {
-      if (!meta.isLocal && this.getNotesForRole(meta.role, meta.country).some(n => n.id === note.id)) {
+      if (!meta.isLocal && canReceiveNote(note, meta.role, meta.country, meta.clientId || peerId)) {
         this.emitSocketMessage({ type: MSG_TYPES.NOTE_RECEIVED, targetSocketId: peerId, payload: note });
       }
     }
@@ -1300,50 +1301,17 @@ class NetworkService {
     const fullPayload = {
       ...cleanState,
       roomSettings: this.roomSettings,
-      speakingRequests: this.latestSpeakingRequests || [],
-      announcements: this.latestAnnouncements || []
+      speakingRequests: this.latestSpeakingRequests || []
     };
 
-    let msgToSend = null;
-
-    if (this.latestSessionState) {
-      const diff = createStateDelta(this.latestSessionState, fullPayload);
-      const diffKeys = Object.keys(diff);
-
-      if (diffKeys.length > 0) {
-        const deltaMsg = {
-          type: MSG_TYPES.DELTA_STATE,
-          payload: diff
-        };
-
-        const syncMsg = {
-          type: MSG_TYPES.SYNC_STATE,
-          payload: fullPayload
-        };
-
-        const deltaStrLen = JSON.stringify(deltaMsg).length;
-        const syncStrLen = JSON.stringify(syncMsg).length;
-
-        // Si la diferencia es sustancialmente menor (< 65% del tamaño completo) y no hay demasiados cambios individuales
-        if (deltaStrLen < syncStrLen * 0.65 && diffKeys.length < 150) {
-          msgToSend = deltaMsg;
-        } else {
-          msgToSend = syncMsg;
-        }
-      }
-    } else {
-      msgToSend = {
-        type: MSG_TYPES.SYNC_STATE,
-        payload: fullPayload
-      };
-    }
+    const msgToSend = {
+      type: MSG_TYPES.SYNC_STATE,
+      payload: fullPayload
+    };
 
     this.latestSessionState = fullPayload;
-
-    if (msgToSend) {
-      this.emitSocketMessage(msgToSend);
-      this.broadcastLocal(msgToSend);
-    }
+    this.emitSocketMessage(msgToSend);
+    this.broadcastLocal(msgToSend);
   }
 
   broadcastSpeakingRequests(requests) {
@@ -1394,13 +1362,14 @@ class NetworkService {
   }
 
   broadcastAnnouncement(announcementData) {
+    if (LUAX_API_URL && this.socket) return this.emitSocketMessage({ type: MSG_TYPES.BROADCAST_ANNOUNCEMENT, payload: announcementData });
     const ann = {
       id: announcementData.id || `ann-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       title: announcementData.title || 'Aviso Oficial',
       text: announcementData.text || '',
       priority: announcementData.priority || 'general',
-      senderRole: announcementData.senderRole || 'chair',
-      senderName: announcementData.senderName || 'Mesa de Presidencia',
+      senderRole: 'chair',
+      senderName: 'Mesa de Presidencia',
       timestamp: announcementData.timestamp || Date.now(),
       target: announcementData.target || 'ALL'
     };
@@ -1411,18 +1380,27 @@ class NetworkService {
         localStorage.setItem('openmun_announcements', JSON.stringify(this.latestAnnouncements));
       }
     } catch (e) {}
-    this.emitSocketMessage({
-      type: MSG_TYPES.BROADCAST_ANNOUNCEMENT,
-      payload: ann
-    });
-    this.broadcastLocal({
-      type: MSG_TYPES.BROADCAST_ANNOUNCEMENT,
-      payload: ann
-    });
-    this.emit('announcement_received', ann);
+    this.publishAnnouncement(ann);
+    return true;
+  }
+
+  publishAnnouncement(ann) {
+    const message = { type: MSG_TYPES.BROADCAST_ANNOUNCEMENT, payload: ann };
+    if (LUAX_API_URL && this.socket) {
+      this.emitSocketMessage(message);
+      return;
+    }
+    for (const [peerId, meta] of this.peerMetadata) {
+      if (!meta.isLocal && canReceiveAnnouncement(ann, meta.role, meta.country)) {
+        this.emitSocketMessage({ ...message, targetSocketId: peerId });
+      }
+    }
+    this.broadcastLocal(message);
+    if (canReceiveAnnouncement(ann, this.role)) this.emit('announcement_received', ann);
   }
 
   deleteAnnouncement(announcementId) {
+    if (LUAX_API_URL && this.socket) return this.emitSocketMessage({ type: MSG_TYPES.DELETE_ANNOUNCEMENT, payload: { id: announcementId } });
     this.latestAnnouncements = (this.latestAnnouncements || []).filter(a => a.id !== announcementId);
     try {
       if (typeof window !== 'undefined') {
@@ -1438,6 +1416,7 @@ class NetworkService {
       payload: { id: announcementId }
     });
     this.emit('announcement_deleted', { id: announcementId });
+    return true;
   }
 
   broadcastPeerList() {
@@ -1484,6 +1463,7 @@ class NetworkService {
 
   // Helper para emitir al servidor central Socket.io con compresión automática
   async emitSocketMessage(data) {
+    if (LUAX_API_URL) return sendLuax(this, data);
     const socket = this.socket;
     const roomId = this.roomId;
     if (socket && socket.connected && roomId) {
@@ -1510,13 +1490,14 @@ class NetworkService {
   // MÉTODOS DEL CLIENTE
   // ─────────────────────────────────────────────────────────────
   sendToServer(type, payload) {
+    if (LUAX_API_URL && this.socket) return this.emitSocketMessage({ type, payload });
     const senderRole = this.role || 'delegate';
     const senderCountry = senderRole === 'delegate' ? (this.clientCountry || null) : null;
     const msg = {
       type,
       payload,
       senderSocketId: this.socketId,
-      senderMeta: { role: senderRole, country: senderCountry },
+      senderMeta: { role: senderRole, country: senderCountry, clientId: this.clientId },
       id: `msg-${Date.now()}`
     };
 
@@ -1542,7 +1523,8 @@ class NetworkService {
 
   sendNoteAsClient(to, text, type = 'general', customId = null) {
     const finalId = customId || `note-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    if (this.isHost) {
+    if (LUAX_API_URL && this.socket) return sendLuax(this, { type: MSG_TYPES.SEND_NOTE, payload: { id: finalId, to, text, type } });
+    if (this.isHost && !LUAX_API_URL) {
       this.routeNoteMessage(
         { role: 'chair', country: null },
         { payload: { id: finalId, to, text, type, timestamp: Date.now() } }
@@ -1649,6 +1631,8 @@ class NetworkService {
   // LIMPIEZA
   // ─────────────────────────────────────────────────────────────
   destroy() {
+    this.luaxJoined = false;
+    this.luaxPendingState = null;
     if (this.broadcastDebounceTimer) {
       clearTimeout(this.broadcastDebounceTimer);
       this.broadcastDebounceTimer = null;

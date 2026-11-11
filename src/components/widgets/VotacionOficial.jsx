@@ -18,7 +18,8 @@ import {
   HelpCircle,
   Users,
   Scale,
-  Target
+  Target,
+  ArrowRight
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
@@ -26,10 +27,12 @@ import { ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useToast } from '../../context/ToastContext';
 
 const VotacionOficial = () => {
   const { t } = useTranslation();
   const confirm = useConfirm();
+  const { addToast } = useToast();
   const { isLight } = useAccessibility();
   const vetoColor = 'var(--timer-orange-color, var(--warning-color))';
   const vetoBg = 'var(--timer-orange-bg, var(--warning-soft))';
@@ -39,7 +42,9 @@ const VotacionOficial = () => {
     votacionSesion,
     registrarVotoPais,
     configurarVotacion,
-    resetearVotacion
+    resetearVotacion,
+    siguienteTemaAgenda,
+    irASiguienteTema
   } = useSession();
 
   const [busqueda, setBusqueda] = useState('');
@@ -506,7 +511,52 @@ const VotacionOficial = () => {
         </div>
 
         {/* Acciones principales de votación */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0, flexWrap: 'wrap' }}>
+          {finalizada && (
+            <button
+              type="button"
+              onClick={() => {
+                const res = irASiguienteTema();
+                setModoRollCall(false);
+                if (res?.siguienteTema) {
+                  addToast({
+                    title: t('voting.nextTopicActivatedTitle', 'Siguiente punto de agenda'),
+                    description: t('voting.nextTopicActivatedDesc', {
+                      topic: res.siguienteTema,
+                      defaultValue: `Tema activo: ${res.siguienteTema}`
+                    }),
+                    type: 'success'
+                  });
+                } else {
+                  addToast({
+                    title: t('voting.agendaCompletedTitle', 'Agenda concluida'),
+                    description: t('voting.allTopicsCompletedDesc', 'Se han concluido todos los puntos de agenda propuestos.'),
+                    type: 'info'
+                  });
+                }
+              }}
+              title={siguienteTemaAgenda
+                ? `${t('voting.goToNextTopicTitle', 'Avanzar automáticamente al siguiente punto de agenda')}: ${siguienteTemaAgenda.titulo}`
+                : t('voting.goToNextTopicTitle', 'Avanzar automáticamente al siguiente punto de agenda')}
+              style={{
+                padding: '0.35rem 0.75rem',
+                backgroundColor: 'var(--btn-bg)',
+                border: '1px solid var(--btn-bg)',
+                color: 'var(--btn-text)',
+                borderRadius: 'var(--border-radius)',
+                fontWeight: '750',
+                fontSize: '0.74rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span>{t('voting.goToNextTopic', 'Ir a siguiente tema')}</span>
+              <ArrowRight size={12} />
+            </button>
+          )}
           <button
             type="button"
             aria-pressed={modoRollCall}
@@ -753,8 +803,47 @@ const VotacionOficial = () => {
               </div>
             </div>
           ) : (
-            <div style={{ textAlign: 'center', color: 'var(--muted-text)', padding: '0.35rem', fontSize: '0.75rem' }}>
-              {t('voting.rollCallFinishedAllRegistered', '¡Votación Nominal Roll Call finalizada! Todos los votos han sido registrados.')}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.45rem', textAlign: 'center', color: 'var(--muted-text)', padding: '0.35rem', fontSize: '0.75rem' }}>
+              <span>{t('voting.rollCallFinishedAllRegistered', '¡Votación Nominal Roll Call finalizada! Todos los votos han sido registrados.')}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const res = irASiguienteTema();
+                  setModoRollCall(false);
+                  if (res?.siguienteTema) {
+                    addToast({
+                      title: t('voting.nextTopicActivatedTitle', 'Siguiente punto de agenda'),
+                      description: t('voting.nextTopicActivatedDesc', {
+                        topic: res.siguienteTema,
+                        defaultValue: `Tema activo: ${res.siguienteTema}`
+                      }),
+                      type: 'success'
+                    });
+                  } else {
+                    addToast({
+                      title: t('voting.agendaCompletedTitle', 'Agenda concluida'),
+                      description: t('voting.allTopicsCompletedDesc', 'Se han concluido todos los puntos de agenda propuestos.'),
+                      type: 'info'
+                    });
+                  }
+                }}
+                style={{
+                  padding: '0.38rem 0.85rem',
+                  backgroundColor: 'var(--btn-bg)',
+                  border: '1px solid var(--btn-bg)',
+                  color: 'var(--btn-text)',
+                  borderRadius: 'var(--border-radius)',
+                  fontWeight: '750',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <span>{t('voting.goToNextTopic', 'Ir a siguiente tema')}</span>
+                <ArrowRight size={13} />
+              </button>
             </div>
           )}
         </div>

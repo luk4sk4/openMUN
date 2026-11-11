@@ -71,16 +71,3 @@ export const getSupabaseClient = () => {
     return null;
   }
 };
-
-// Export proxy for backwards-compatible supabase.from(...) calls
-export const supabase = new Proxy({}, {
-  get(target, prop) {
-    const client = getSupabaseClient();
-    if (!client) {
-      throw new Error(
-        i18n.t('ui.supabaseIsNotConfiguredEnterYourSupabaseAnonKeyIn')
-      );
-    }
-    return client[prop];
-  }
-});

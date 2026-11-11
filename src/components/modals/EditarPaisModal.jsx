@@ -165,10 +165,13 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
     onClose();
   };
 
-  const listaIsoFiltrada = PAISES_POPULARES_ISO.filter(p =>
-    p.nombre.toLowerCase().includes(filtroIso.toLowerCase()) ||
-    p.iso.toLowerCase().includes(filtroIso.toLowerCase())
-  );
+  const listaIsoFiltrada = PAISES_POPULARES_ISO.filter(p => {
+    const nombreTraducido = t(`editCountry.popularCountries.${p.iso}`, p.nombre);
+    const q = filtroIso.toLowerCase();
+    return p.nombre.toLowerCase().includes(q) ||
+      nombreTraducido.toLowerCase().includes(q) ||
+      p.iso.toLowerCase().includes(q);
+  });
 
   return (
     <div
@@ -546,34 +549,37 @@ const EditarPaisModal = ({ isOpen, onClose, pais, onGuardar, onEliminar }) => {
                     gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
                     gap: '0.3rem'
                   }}>
-                    {listaIsoFiltrada.map(p => (
-                      <button
-                        key={p.iso}
-                        type="button"
-                        onClick={() => {
-                          setBandera(p.iso);
-                          setMensajeFeedback(t('editCountry.flagSelected', { country: p.nombre, defaultValue: `Bandera seleccionada: ${p.nombre}` }));
-                          setTimeout(() => setMensajeFeedback(''), 2500);
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.3rem',
-                          padding: '0.3rem 0.4rem',
-                          borderRadius: 'var(--border-radius, 6px)',
-                          border: bandera === p.iso ? '1px solid var(--accent-color)' : '1px solid var(--subborder-color)',
-                          backgroundColor: bandera === p.iso ? 'var(--accent-soft)' : 'transparent',
-                          color: 'var(--text-color)',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontSize: '0.68rem',
-                          fontWeight: bandera === p.iso ? '700' : '400'
-                        }}
-                      >
-                        <CountryFlag bandera={p.iso} size="xs" />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</span>
-                      </button>
-                    ))}
+                    {listaIsoFiltrada.map(p => {
+                      const nombreTraducido = t(`editCountry.popularCountries.${p.iso}`, p.nombre);
+                      return (
+                        <button
+                          key={p.iso}
+                          type="button"
+                          onClick={() => {
+                            setBandera(p.iso);
+                            setMensajeFeedback(t('editCountry.flagSelected', { country: nombreTraducido, defaultValue: `Bandera seleccionada: ${nombreTraducido}` }));
+                            setTimeout(() => setMensajeFeedback(''), 2500);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '0.3rem 0.4rem',
+                            borderRadius: 'var(--border-radius, 6px)',
+                            border: bandera === p.iso ? '1px solid var(--accent-color)' : '1px solid var(--subborder-color)',
+                            backgroundColor: bandera === p.iso ? 'var(--accent-soft)' : 'transparent',
+                            color: 'var(--text-color)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: '0.68rem',
+                            fontWeight: bandera === p.iso ? '700' : '400'
+                          }}
+                        >
+                          <CountryFlag bandera={p.iso} size="xs" />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreTraducido}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

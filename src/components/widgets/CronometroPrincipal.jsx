@@ -1,21 +1,51 @@
 import i18n from '../../languages/index.js';
 import { useDebateRunning } from '../../hooks/useDebateRunning';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Play, Pause, RotateCcw, Plus, Minus, Square, Download, Clock, CheckCircle2, ArrowRightLeft, Shield, HelpCircle, SkipForward, AlertTriangle, ChevronUp, ChevronDown, PictureInPicture2, Search, X, Users } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Minus, Square, Download, Clock, CheckCircle2, ArrowRightLeft, Shield, HelpCircle, SkipForward, AlertTriangle, ChevronUp, ChevronDown, PictureInPicture2, Search, X, Users, Maximize2, Minimize2 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import FloatingPipTimer from '../common/FloatingPipTimer';
+import FullscreenButtonDropdown from '../common/FullscreenButtonDropdown';
 import { usePictureInPictureTimer } from '../../hooks/usePictureInPictureTimer';
 import { useTranslation } from 'react-i18next';
 
-const CronometroPrincipal = () => {
+const CronometroPrincipal = ({
+  isLight,
+  isMaximized = false,
+  fullscreenMode = 'with_left',
+  setFullscreenMode,
+  toggleMaximize
+}) => {
   const { t } = useTranslation();
-  const { paises, oradoresCola, removerOrador, registrarIntervencion, descargarSesionJSON, actualizarRelojGSL, yieldEvento, cederTiempo } = useSession();
+  const { paises, oradoresCola, removerOrador, registrarIntervencion, descargarSesionJSON, actualizarRelojGSL, yieldEvento, cederTiempo, controlarRelojDebate, relojDebateState } = useSession();
 
-  const [tiempoInicial, setTiempoInicial] = useState(60);
-  const [inputSegundos, setInputSegundos] = useState(60);
-  const [segundosRestantes, setSegundosRestantes] = useState(60);
+  const handleToggleFullscreen = () => {
+    if (typeof toggleMaximize === 'function') {
+      toggleMaximize();
+    } else {
+      window.dispatchEvent(new CustomEvent('openmun_toggle_fullscreen'));
+    }
+  };
+
+  const [tiempoInicial, setTiempoInicial] = useState(() => relojDebateState?.tiempoInicial || 60);
+  const [inputSegundos, setInputSegundos] = useState(() => relojDebateState?.tiempoInicial || 60);
+  const [segundosRestantes, setSegundosRestantes] = useState(() => {
+    if (typeof relojDebateState?.segundosRestantes === 'number') {
+      if (relojDebateState.corriendo && relojDebateState.timestamp) {
+        const transcurrido = Math.floor((Date.now() - relojDebateState.timestamp) / 1000);
+        return relojDebateState.segundosRestantes - transcurrido;
+      }
+      return relojDebateState.segundosRestantes;
+    }
+    return 60;
+  });
   const [corriendo, setCorriendo] = useDebateRunning();
+
+  useEffect(() => {
+    if (relojDebateState?.corriendo) {
+      setCorriendo(true);
+    }
+  }, []);
   const [mensajeGuardado, setMensajeGuardado] = useState(false);
   const [modalYieldOpen, setModalYieldOpen] = useState(false);
   const [delegacionDropdownOpen, setDelegacionDropdownOpen] = useState(false);
@@ -66,33 +96,72 @@ const CronometroPrincipal = () => {
     return () => clearInterval(timerRef.current);
   }, [corriendo]);
 
-  const handleStartPause = () => setCorriendo(!corriendo);
+  const handleStartPause = () => {
+    const next = !corriendo;
+    setCorriendo(next);
+    if (controlarRelojDebate) {
+      controlarRelojDebate(next ? 'start' : 'stop', {
+        source: 'main',
+        segundosRestantes,
+        tiempoInicial,
+        modo: 'GSL'
+      });
+    }
+  };
 
   const handleReset = () => {
     setCorriendo(false);
     setSegundosRestantes(tiempoInicial);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('reset', {
+        source: 'main',
+        tiempoInicial,
+        segundosRestantes: tiempoInicial,
+        modo: 'GSL'
+      });
+    }
   };
 
   const handleAdd5Sec = () => {
     setSegundosRestantes(prev => prev + 5);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('adjust', { source: 'main', delta: 5, modo: 'GSL' });
+    }
   };
 
   const handleSubtract5Sec = () => {
     setSegundosRestantes(prev => prev - 5);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('adjust', { source: 'main', delta: -5, modo: 'GSL' });
+    }
   };
 
   const handleAdd15Sec = () => {
     setSegundosRestantes(prev => prev + 15);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('adjust', { source: 'main', delta: 15, modo: 'GSL' });
+    }
   };
 
   const handleSubtract15Sec = () => {
     setSegundosRestantes(prev => prev - 15);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('adjust', { source: 'main', delta: -15, modo: 'GSL' });
+    }
   };
 
   const handleCambiarPreset = (nuevosSegundos) => {
     setCorriendo(false);
     setTiempoInicial(nuevosSegundos);
     setSegundosRestantes(nuevosSegundos);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('set_preset', {
+        source: 'main',
+        segundos: nuevosSegundos,
+        tiempoInicial: nuevosSegundos,
+        modo: 'GSL'
+      });
+    }
   };
 
   const handleSiguienteOrador = () => {
@@ -116,6 +185,16 @@ const CronometroPrincipal = () => {
     setTimeout(() => setMensajeGuardado(false), 2500);
 
     setSegundosRestantes(tiempoInicial);
+    if (controlarRelojDebate) {
+      controlarRelojDebate('sync', {
+        source: 'main',
+        signal: 'next_speaker',
+        segundosRestantes: tiempoInicial,
+        tiempoInicial,
+        corriendo: false,
+        modo: 'GSL'
+      });
+    }
   };
 
   const handleEjecutarYield = (tipo, destino = '') => {
@@ -123,28 +202,79 @@ const CronometroPrincipal = () => {
     setModalYieldOpen(false);
   };
 
-  // Escuchar eventos globales de atajos de teclado
+  // Escuchar eventos globales de sincronización de cronómetro y atajos de teclado
   useEffect(() => {
-    const handleToggle = () => setCorriendo(prev => !prev);
+    const handleTimerSignal = (e) => {
+      const detail = e.detail;
+      if (!detail || detail.source === 'main') return;
+
+      const { signal, segundosRestantes: seg, tiempoInicial: init } = detail;
+      if (signal === 'start') {
+        if (typeof seg === 'number') setSegundosRestantes(seg);
+        if (typeof init === 'number') setTiempoInicial(init);
+        setCorriendo(true);
+      } else if (signal === 'stop' || signal === 'pause') {
+        if (typeof seg === 'number') setSegundosRestantes(seg);
+        setCorriendo(false);
+      } else if (signal === 'reset' || signal === 'next_speaker') {
+        setCorriendo(false);
+        const resetSeg = typeof init === 'number' ? init : (typeof seg === 'number' ? seg : tiempoInicial);
+        setSegundosRestantes(resetSeg);
+      } else if (signal === 'adjust') {
+        if (typeof detail.delta === 'number') {
+          setSegundosRestantes(prev => prev + detail.delta);
+        }
+      }
+    };
+
+    const handleToggleHotkey = (e) => {
+      if (e?.detail?.action === 'start') {
+        setCorriendo(true);
+      } else if (e?.detail?.action === 'pause' || e?.detail?.action === 'stop') {
+        setCorriendo(false);
+      } else if (typeof e?.detail?.running === 'boolean') {
+        setCorriendo(e.detail.running);
+      } else if (!e?.detail?.action && typeof e?.detail?.running !== 'boolean') {
+        handleStartPause();
+      }
+    };
+
     const handleNext = () => handleSiguienteOrador();
     const handleResetEv = () => handleReset();
     const handleAdjust = (e) => {
       const delta = e.detail?.delta || 0;
       setSegundosRestantes(prev => prev + delta);
     };
+    const handleSync = (e) => {
+      const state = e.detail;
+      if (!state || state.source === 'main') return;
+      if (typeof state.corriendo === 'boolean') {
+        setCorriendo(state.corriendo);
+      }
+      if (typeof state.segundosRestantes === 'number') {
+        setSegundosRestantes(state.segundosRestantes);
+      }
+      if (typeof state.tiempoInicial === 'number') {
+        setTiempoInicial(state.tiempoInicial);
+      }
+    };
 
-    window.addEventListener('openmun_hotkey_toggle_timer', handleToggle);
+    window.addEventListener('openmun_timer_signal', handleTimerSignal);
+    window.addEventListener('openmun_hotkey_toggle_timer', handleToggleHotkey);
     window.addEventListener('openmun_hotkey_next_speaker', handleNext);
     window.addEventListener('openmun_hotkey_reset_timer', handleResetEv);
     window.addEventListener('openmun_hotkey_adjust_time', handleAdjust);
+    window.addEventListener('openmun_timer_sync', handleSync);
 
     return () => {
-      window.removeEventListener('openmun_hotkey_toggle_timer', handleToggle);
+      window.removeEventListener('openmun_timer_signal', handleTimerSignal);
+      window.removeEventListener('openmun_hotkey_toggle_timer', handleToggleHotkey);
       window.removeEventListener('openmun_hotkey_next_speaker', handleNext);
       window.removeEventListener('openmun_hotkey_reset_timer', handleResetEv);
       window.removeEventListener('openmun_hotkey_adjust_time', handleAdjust);
+      window.removeEventListener('openmun_timer_sync', handleSync);
     };
-  }, [tiempoInicial, segundosRestantes, oradoresCola, removerOrador, registrarIntervencion]);
+  }, [tiempoInicial, segundosRestantes, oradoresCola, removerOrador, registrarIntervencion, handleStartPause, handleReset, handleSiguienteOrador]);
 
   const formatTimeWithNegative = (seg) => {
     const isNegative = seg < 0;
@@ -274,6 +404,15 @@ const CronometroPrincipal = () => {
               <span>PiP</span>
             </button>
           )}
+
+          {/* Botón Pantalla Completa (Dos Opciones de Disposición) */}
+          <FullscreenButtonDropdown
+            activeTab="GSL"
+            isMaximized={isMaximized}
+            fullscreenMode={fullscreenMode}
+            setFullscreenMode={setFullscreenMode}
+            toggleMaximize={toggleMaximize}
+          />
 
           {[45, 60, 90, 120].map(s => (
             <button

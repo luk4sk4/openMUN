@@ -22,8 +22,9 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
   const committee = { id: 'one', conferencia_id: 'conf', nombre: 'One', pin_mesa: hash };
   const received = [];
   const checklist = new Map();
+  const history = new Map();
   let stored;
-  let schemaVersion = 3;
+  let schemaVersion = 5;
   const db = {
     async query(sql, params) {
       const q = sql.trim();
@@ -32,9 +33,25 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
       if (q.startsWith('SELECT conferencia_id, pin_mesa')) return { rows: [committee] };
       if (q.startsWith('SELECT id,nombre,pin_acceso')) return { rows: [{ id: 'conf', nombre: 'Test', requierePin: false }] };
       if (q.includes('AS "requierePinMesa"')) return { rows: [{ id: 'one', requierePinMesa: true }] };
-      if (q.startsWith('SELECT id, conferencia_id')) return { rows: [{ ...committee, id: params[0] }] };
+      if (q.startsWith('SELECT id,') && q.includes('FROM comites WHERE id=$1')) return { rows: [{ ...committee, id: params[0] }] };
       if (q.startsWith('SELECT 1 FROM comites')) return { rowCount: 1 };
-      if (q.startsWith('SELECT estado_debate')) return { rows: [{ debate_revision: '0' }] };
+      if (q.startsWith('SELECT estado_debate')) {
+        return { rows: [{ debate_revision: '1', estado_debate: { version: 2, state: { paises: [{ nombre: 'France' }], roomSettings: { allowDelegateNotes: true, allowChairNotes: false } } } }] };
+      }
+      if (q.startsWith('SELECT private_state')) return { rows: [{ private_state: {}, estado_debate: {}, debate_revision: '0' }] };
+      if (q.startsWith('SELECT * FROM mensajes')) return { rows: [] };
+      if (q.startsWith('SELECT backup_id')) {
+        assert.deepEqual(params, ['conf', 'one']);
+        assert.match(q, /tipo_aviso IS NULL OR tipo_aviso='room_announcement'/);
+        return { rows: [...history.values()] };
+      }
+      if (q.includes('jsonb_to_recordset')) {
+        assert.deepEqual(params.slice(0, 2), ['conf', 'one']);
+        const before = history.size;
+        for (const row of JSON.parse(params[2])) history.set(row.backup_id, row);
+        return { rowCount: history.size - before };
+      }
+      if (q.startsWith('DELETE FROM comites') || q.startsWith('WITH removed AS')) return { rowCount: 1, rows: [] };
       if (q.startsWith('INSERT INTO checklist_staff')) {
         assert.equal(params[0], 'conf');
         const [conferencia_id, comite_id, titulo, asignado_a] = params;
@@ -91,6 +108,15 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
   await assert.rejects(frontend.getCommittee('one', 'conf'), { status: 401 });
   await assert.rejects(frontend.enterChairWithoutPin('conf', 'one'), { status: 401 });
   await frontend.verifyOrganization('conf', '000123');
+  const annotation = { backup_id: '36ed09e8-fcc0-4de7-8e90-8120d5145847', client_id: 'note-1',
+    emisor_rol: 'chair', emisor_id: 'chair', destino_tipo: 'role', destino_rol: 'chair',
+    contenido: JSON.stringify({ id: 'note-1', type: 'speaker_annotation', from: 'CHAIR', to: 'CHAIR',
+      text: '[Formal · France · 8/10]\nGood argument' }), estado: 'delivered', creado_en: new Date().toISOString() };
+  await assert.rejects(frontend.restoreCommitteeHistory('one', 'conf', [{ ...annotation, tipo_aviso: 'info' }]), { status: 400 });
+  assert.deepEqual(await frontend.restoreCommitteeHistory('one', 'conf', [annotation]), { importados: 1 });
+  assert.deepEqual(await frontend.restoreCommitteeHistory('one', 'conf', [annotation]), { importados: 0 });
+  const backup = await frontend.getCommitteeHistory('one', 'conf');
+  assert.equal(JSON.parse(backup.mensajes[0].contenido).text, JSON.parse(annotation.contenido).text);
   assert.deepEqual(await frontend.createChecklistTask('conf', { titulo: 'Preparar la sala' }), { ok: true, id: '1' });
   assert.equal((await frontend.getChecklist('conf')).checklist.length, 1);
   await assert.rejects(frontend.createChecklistTask('conf', { titulo: 'Otra sala', comite_id: 'foreign' }), { status: 404 });
@@ -104,9 +130,9 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
   assert.equal((await frontend.getCommittee('one', 'conf')).requierePinMesa, true);
   frontend.clear();
   await assert.rejects(frontend.getCommittee('one', 'conf'), { status: 401 });
-  async function request(path, { body, token, origin } = {}) {
+  async function request(path, { body, token, origin, method } = {}) {
     const res = await fetch(url + path, {
-      method: body ? 'POST' : 'GET',
+      method: method || (body ? 'POST' : 'GET'),
       headers: {
         'content-type': 'application/json',
         ...(token ? { authorization: 'Bearer ' + token } : {}),
@@ -114,7 +140,7 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
       },
       body: body ? JSON.stringify(body) : undefined
     });
-    return { status: res.status, data: await res.json() };
+    return { status: res.status, headers: res.headers, data: await res.json() };
   }
   const connect = (token, origin) => {
     const socket = io(url, {
@@ -126,10 +152,14 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
   };
   const emit = (socket, name, data) => socket.timeout(3000).emitWithAck(name, data);
 
-  assert.equal((await request('/readyz')).status, 200);
+  const ready = await request('/readyz');
+  assert.equal(ready.status, 200);
+  assert.equal(ready.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(ready.headers.get('x-frame-options'), 'DENY');
+  assert.equal(ready.headers.get('referrer-policy'), 'no-referrer');
   schemaVersion = 1;
   assert.equal((await request('/readyz')).status, 503);
-  schemaVersion = 3;
+  schemaVersion = 5;
   assert.equal((await request('/readyz', { origin: 'https://bad.test' })).status, 403);
   assert.equal((await request('/api/comites/one')).status, 401);
   const deniedSocket = connect('bad-token');
@@ -155,8 +185,11 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
   assert.equal(Object.hasOwn(view.data, 'pin_mesa'), false);
   assert.equal((await request('/api/comites/two', { token: delegate })).status, 403);
   assert.equal((await request('/api/notas/one', { token: delegate })).status, 403);
+  assert.equal((await request('/api/comites/one/historial-respaldo', { token: delegate })).status, 403);
   assert.equal((await request('/api/conferencias/conf/checklist', { token: delegate })).status, 403);
   assert.equal((await request('/api/conferencias/other/checklist', { token: org })).status, 403);
+  assert.equal((await request('/api/conferencias/conf/avisos', { token: staff, body: { comite_id: 'two', mensaje: 'cross' } })).status, 403);
+  assert.equal((await request('/api/conferencias/conf/avisos', { token: staff, body: { comite_id: 'CHAIR_two', mensaje: 'cross' } })).status, 403);
 
   const sender = connect(delegate);
   const receiver = connect(recipient);
@@ -185,4 +218,15 @@ test('HTTP and socket actions enforce the issued scope, and moderation uses the 
   assert.equal(outcomes.filter(result => result.ok).length, 1);
   assert.equal((await delivery)[0].contenido, 'real');
   assert.deepEqual(received, []);
+
+  assert.equal((await emit(sender, 'luax-join', { comiteId: 'one' })).ok, true);
+  assert.equal((await emit(sender, 'luax-command', { type: 'SELECT_COUNTRY', payload: { country: 'France' } })).ok, true);
+  const chairNote = await emit(sender, 'luax-command', { type: 'SEND_NOTE', payload: { to: 'CHAIR', text: 'blocked' } });
+  assert.equal(chairNote.ok, false);
+  assert.equal((await emit(sender, 'luax-command', { type: 'RELEASE_COUNTRY', payload: {} })).ok, true);
+  assert.equal((await emit(sender, 'luax-join', { comiteId: 'one' })).country, null);
+
+  const disconnected = once(unrelated, 'disconnect');
+  assert.equal((await request('/api/comites/two', { token: org, method: 'DELETE' })).status, 200);
+  await disconnected;
 });

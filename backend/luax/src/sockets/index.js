@@ -1,8 +1,17 @@
 const { registerCommitteeSockets, createPersistence } = require('./comites.socket');
+const { createRelay } = require('./relay');
 
-function initSockets(io, db, sessions, accepting) {
+function initSockets(io, db, sessions, accepting, writers) {
   const persistence = createPersistence(db);
   const pending = new Set();
+  const relay = createRelay(io, db, sessions, persistence, writers);
+  const revoke = sessions.revoke;
+  sessions.revoke = predicate => {
+    revoke(predicate);
+    for (const socket of io.sockets.sockets.values()) {
+      if (!sessions.get(socket.handshake.auth.token)) socket.disconnect(true);
+    }
+  };
 
   io.use((socket, next) => {
     const identity = sessions.get(socket.handshake.auth.token);
@@ -32,6 +41,7 @@ function initSockets(io, db, sessions, accepting) {
     });
 
     registerCommitteeSockets(io, socket, on, db, persistence);
+    relay(socket, on);
   });
 
   return async () => {

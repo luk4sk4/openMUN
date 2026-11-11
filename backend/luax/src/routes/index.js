@@ -1,12 +1,17 @@
 const { Router } = require('express');
 const { timingSafeEqual } = require('node:crypto');
 const { registerChecklist } = require('./checklist');
+const { registerManagement } = require('./management');
+const { registerNotices } = require('./notices');
+const { registerParticipants } = require('./participants');
+const { registerCommitteeHistory } = require('./committeeHistory');
+const { privateState, publicState, chairState } = require('../services/committeeState');
 const { createLoginLimiter, field, id, httpError, hashPin, matchesPin, pinInput, requireScope } = require('../services/auth');
 
-const committeeRoles = ['chair', 'staff', 'delegate', 'backroom'];
+const committeeRoles = ['chair', 'staff', 'delegate', 'backroom', 'secretariat'];
 const noteRoles = ['org', 'chair'];
 
-function routes(db, sessions, { bootstrapToken, pepper }) {
+function routes(db, sessions, { bootstrapToken, pepper, publish, writers }) {
   const router = Router();
   const loginAttempt = createLoginLimiter();
   const session = req => sessions.get(/^Bearer (\S+)$/.exec(req.get('authorization') || '')?.[1]);
@@ -14,6 +19,9 @@ function routes(db, sessions, { bootstrapToken, pepper }) {
   const issue = (res, identity) => {
     res.set('Cache-Control', 'no-store').json({ ...sessions.issue(identity), ...identity });
   };
+  registerManagement(router, db, session, sessions, pepper, loginAttempt, issue, writers);
+  registerNotices(router, db, session, publish);
+  registerParticipants(router, db, session, sessions, pepper, loginAttempt, issue);
   const committee = async cid => {
     const result = await db.query(
       'SELECT id, conferencia_id, nombre, pin_mesa, tipo_sesion, topico_actual FROM comites WHERE id=$1', [cid]
@@ -28,6 +36,8 @@ function routes(db, sessions, { bootstrapToken, pepper }) {
     requireScope(identity, row.conferencia_id, row.id, roles);
     return { identity, row };
   };
+
+  registerCommitteeHistory(router, db, authorized);
 
   router.post('/conferencias', async (req, res) => {
     loginAttempt(req.ip, 'bootstrap');
@@ -52,23 +62,25 @@ function routes(db, sessions, { bootstrapToken, pepper }) {
     const conferenceId = id(req.params.id);
     const role = req.body?.role ?? 'observer';
     if (role !== 'org' && role !== 'observer') throw httpError(400, 'Rol inválido');
-    loginAttempt(req.ip, conferenceId + ':' + role);
+    const accepted = loginAttempt(req.ip, conferenceId + ':' + role);
     const pin = req.body?.pin == null ? '' : pinInput(req.body.pin);
     const result = await db.query('SELECT pin_admin, pin_acceso FROM conferencias WHERE id=$1', [conferenceId]);
     const row = result.rows[0];
     const verifier = role === 'org' ? row?.pin_admin : row?.pin_acceso;
     const valid = verifier ? await matchesPin(pin, verifier, pepper) : row && role === 'observer';
     if (!valid) throw httpError(401, 'Credencial inválida');
+    accepted();
     issue(res, { conferenceId, role, userId: role, committeeId: null });
   });
 
   router.post('/comites/:id/acceso', async (req, res) => {
     const cid = id(req.params.id);
-    loginAttempt(req.ip, cid + ':chair');
+    const accepted = loginAttempt(req.ip, cid + ':chair');
     const pin = pinInput(req.body?.pin);
     const result = await db.query('SELECT conferencia_id, pin_mesa FROM comites WHERE id=$1', [cid]);
     const row = result.rows[0];
     if (!row?.pin_mesa || !await matchesPin(pin, row.pin_mesa, pepper)) throw httpError(401, 'Credencial inválida');
+    accepted();
     issue(res, { conferenceId: row.conferencia_id, committeeId: cid, role: 'chair', userId: 'chair' });
   });
 
@@ -94,7 +106,9 @@ function routes(db, sessions, { bootstrapToken, pepper }) {
     const comiteId = id(body.id);
     const name = field(body.nombre, 255);
     const verifier = body.pin_mesa == null ? null : await hashPin(body.pin_mesa, pepper);
-    await db.query('INSERT INTO comites(id,conferencia_id,nombre,pin_mesa) VALUES($1,$2,$3,$4)', [comiteId, cid, name, verifier]);
+    const state = privateState(body.datos_json || {});
+    await db.query(`INSERT INTO comites(id,conferencia_id,nombre,pin_mesa,private_state,estado_debate,debate_revision)
+      VALUES($1,$2,$3,$4,$5,$6,1)`, [comiteId, cid, name, verifier, state, { version: 2, state: publicState(state) }]);
     res.status(201).json({ ok: true, comiteId });
   });
 
@@ -110,9 +124,14 @@ function routes(db, sessions, { bootstrapToken, pepper }) {
   });
 
   router.get('/comites/:id', async (req, res) => {
-    const { row } = await authorized(req, req.params.id);
+    const { row, identity } = await authorized(req, req.params.id);
     const { pin_mesa: verifier, ...publicFields } = row;
-    res.json({ ...publicFields, requierePinMesa: Boolean(verifier) });
+    const state = await db.query('SELECT private_state,estado_debate,debate_revision FROM comites WHERE id=$1', [row.id]);
+    const saved = state.rows[0] || {};
+    res.json({ ...publicFields, requierePinMesa: Boolean(verifier), debate_revision: Number(saved.debate_revision || 0),
+      datos_json: ['org', 'chair'].includes(identity.role)
+        ? chairState(saved.private_state, saved.estado_debate?.state || saved.estado_debate)
+        : publicState(saved.estado_debate?.state || saved.estado_debate || {}) });
   });
 
   router.post('/notas', async (req, res) => {

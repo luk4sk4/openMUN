@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '../../context/ToastContext';
 import { useSession } from '../../context/SessionContext';
 import { useP2P } from '../../context/P2PContext';
-import { googleDriveService } from '../../services/googleDriveService';
 import peerService from '../../services/peerService';
 import conferenceService from '../../services/conferenceService';
 
@@ -12,20 +11,17 @@ const TOAST_OFFLINE_ID = 'openmun_network_offline_alert';
 /**
  * NetworkCrashMonitor
  * Monitorea el estado de la conexión a internet. Si el usuario utiliza funciones
- * que requieren red (Google Drive, Conferencia, Sesión en Vivo con delegados) y la red se cae,
+ * que requieren red (Conferencia, Sesión en Vivo con delegados) y la red se cae,
  * muestra un toast interactivo contextual advirtiendo que la app seguirá funcionando offline
  * y ofreciendo descargar el archivo de respaldo.
  */
 export const NetworkCrashMonitor = () => {
   const { t } = useTranslation();
   const { addToast, removeToast } = useToast();
-  const { isDriveLinked, descargarSesionJSON, sincronizarDriveManual } = useSession();
+  const { descargarSesionJSON } = useSession();
   const { viewMode, connectionStatus, connectedPeers, roomId, role } = useP2P();
 
-  // 1. Google Drive vinculado o sesión autenticada activa
-  const hasDrive = Boolean(isDriveLinked || googleDriveService.isAuthenticated());
-
-  // 2. Participando o moderando una conferencia
+  // 1. Participando o moderando una conferencia
   const inConference = Boolean(
     viewMode === 'conference' ||
     Boolean(conferenceService && conferenceService.obtenerSesionActiva()?.id) ||
@@ -40,7 +36,7 @@ export const NetworkCrashMonitor = () => {
     ))
   );
 
-  // 3. Sesión en vivo activa (con delegados conectados, como host, en sala o reconectando)
+  // 2. Sesión en vivo activa (con delegados conectados, como host, en sala o reconectando)
   const hasLive = Boolean(
     connectionStatus === 'host_active' ||
     connectionStatus === 'connected' ||
@@ -50,31 +46,27 @@ export const NetworkCrashMonitor = () => {
     Boolean(peerService && (peerService.isHost || peerService.socket || peerService.roomId))
   );
 
-  // El usuario requiere red si utiliza alguna de estas 3 características
-  const needsNetwork = hasDrive || inConference || hasLive;
+  // El usuario requiere red si utiliza alguna de estas características
+  const needsNetwork = inConference || hasLive;
 
   // Mantener referencia actualizada a todos los estados para los event listeners del DOM
   const stateRef = useRef({
-    hasDrive,
     inConference,
     hasLive,
     needsNetwork,
     viewMode,
-    descargarSesionJSON,
-    sincronizarDriveManual
+    descargarSesionJSON
   });
 
   useEffect(() => {
     stateRef.current = {
-      hasDrive,
       inConference,
       hasLive,
       needsNetwork,
       viewMode,
-      descargarSesionJSON,
-      sincronizarDriveManual
+      descargarSesionJSON
     };
-  }, [hasDrive, inConference, hasLive, needsNetwork, viewMode, descargarSesionJSON, sincronizarDriveManual]);
+  }, [inConference, hasLive, needsNetwork, viewMode, descargarSesionJSON]);
 
   const wasOfflineRef = useRef(false);
   const lastRestoredToastRef = useRef(0);
@@ -109,8 +101,8 @@ export const NetworkCrashMonitor = () => {
         );
       }
 
-      // Añadir la recomendación de descargar archivo si tiene Drive o sesión en vivo activa
-      if (current.hasDrive || current.hasLive) {
+      // Añadir la recomendación de descargar archivo si tiene sesión en vivo activa
+      if (current.hasLive) {
         messageParts.push(
           t(
             'toast.networkCrashDrive',
@@ -119,7 +111,7 @@ export const NetworkCrashMonitor = () => {
         );
       }
 
-      // Si no usa Drive, conferencia ni sala en vivo, mostrar mensaje tranquilizador
+      // Si no usa conferencia ni sala en vivo, mostrar mensaje tranquilizador
       if (messageParts.length === 0) {
         messageParts.push(
           t(
@@ -132,7 +124,7 @@ export const NetworkCrashMonitor = () => {
       const toastMessage = messageParts.join('\n\n');
 
       // Botón de acción para descargar la sesión o la conferencia directamente
-      const downloadAction = (current.hasDrive || current.inConference || current.hasLive) ? {
+      const downloadAction = (current.inConference || current.hasLive) ? {
         label: t('toast.networkCrashDownloadBtn', 'Descargar archivo'),
         onClick: () => {
           if (current.viewMode === 'conference' || current.inConference) {
@@ -165,7 +157,6 @@ export const NetworkCrashMonitor = () => {
         // Cooldown para evitar falsos positivos y bucles infinitos
         if (now - lastRestoredToastRef.current > 5000) {
           lastRestoredToastRef.current = now;
-          const current = stateRef.current;
 
           addToast({
             type: 'success',
@@ -173,11 +164,6 @@ export const NetworkCrashMonitor = () => {
             message: t('toast.networkRestoredDesc', 'Se ha restablecido la conexión a internet.'),
             duration: 4500
           });
-
-          // Si tiene Google Drive vinculado, intentar sincronizar en segundo plano
-          if (current.hasDrive && typeof current.sincronizarDriveManual === 'function') {
-            current.sincronizarDriveManual(false).catch(() => {});
-          }
         }
       }
     };

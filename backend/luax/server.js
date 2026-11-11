@@ -1,4 +1,4 @@
-require('dotenv').config({ quiet: true });
+try { process.loadEnvFile(); } catch {}
 const express = require('express');
 const http = require('node:http');
 const cors = require('cors');
@@ -24,6 +24,7 @@ function createServer(db, env = process.env) {
   const originAllowed = origin => origin === undefined || origins.has(origin);
   const corsOptions = { origin: (origin, callback) => callback(null, originAllowed(origin)) };
   const sessions = createSessions();
+  const writers = new Map();
   const app = express();
   const server = http.createServer(app);
   let accepting = false;
@@ -32,12 +33,17 @@ function createServer(db, env = process.env) {
   if (env.TRUST_LOCAL_PROXY === 'true') app.set('trust proxy', 1);
   app.disable('x-powered-by');
   app.use((req, res, next) => {
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer'
+    });
     if (!originAllowed(req.get('origin'))) return res.status(403).json({ error: 'Origen no permitido' });
     if (!accepting) return res.status(503).json({ error: 'Servicio no disponible' });
     next();
   });
   app.use(cors(corsOptions));
-  app.use(express.json({ limit: '256kb' }));
+  app.use(express.json({ limit: '1mb' }));
   app.get('/readyz', async (_req, res) => {
     try {
       await checkReadiness(db);
@@ -47,7 +53,14 @@ function createServer(db, env = process.env) {
       res.status(503).json({ ready: false });
     }
   });
-  app.use('/api', routes(db, sessions, { bootstrapToken: env.BOOTSTRAP_TOKEN, pepper: env.PIN_PEPPER }));
+  app.use('/api', routes(db, sessions, { bootstrapToken: env.BOOTSTRAP_TOKEN, pepper: env.PIN_PEPPER, writers,
+    publish(event, row, data, visible) {
+      for (const socket of io.sockets.sockets.values()) {
+        const actor = sessions.get(socket.handshake.auth.token);
+        if (visible(actor, row)) socket.emit(event, data);
+      }
+    }
+  }));
   app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
   app.use((error, _req, res, next) => {
     if (res.headersSent) return next(error);
@@ -63,7 +76,7 @@ function createServer(db, env = process.env) {
     perMessageDeflate: false,
     maxHttpBufferSize: 256 * 1024
   });
-  const drain = initSockets(io, db, sessions, () => accepting);
+  const drain = initSockets(io, db, sessions, () => accepting, writers);
 
   return {
     async start(port = Number(env.PORT || 3005)) {

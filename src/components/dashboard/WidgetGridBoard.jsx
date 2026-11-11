@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { COLS, GAP } from '../../utils/gridUtils';
-import { FIXED_LAYOUTS } from '../../utils/fixedLayouts';
+import { FIXED_LAYOUTS, FULLSCREEN_LAYOUTS } from '../../utils/fixedLayouts';
 import WidgetCard from './WidgetCard';
 
 const WidgetGridBoard = ({
@@ -14,6 +14,10 @@ const WidgetGridBoard = ({
   cellH,
   widgets,
   isLight,
+  isMaximized = false,
+  fullscreenMode = 'with_left',
+  setFullscreenMode,
+  toggleMaximize,
   activeInteraction,
   focusedWidgetId,
   setFocusedWidgetId,
@@ -48,14 +52,36 @@ const WidgetGridBoard = ({
     );
   }, [boardW, maxRowUsed, cellW, cellH]);
 
-  if (fixedLayout) {
-    const panels = FIXED_LAYOUTS[activeTab] || [];
+  const tabConfig = FULLSCREEN_LAYOUTS[activeTab];
+  const isPresentationFullscreen = isMaximized && Boolean(tabConfig);
+
+  if (fixedLayout || isPresentationFullscreen) {
+    const panels = (isPresentationFullscreen && tabConfig)
+      ? (tabConfig[fullscreenMode] || tabConfig.with_left)
+      : (FIXED_LAYOUTS[activeTab] || []);
     const rows = Math.max(1, ...panels.map(panel => panel.row + panel.rowSpan));
-    return <main className="dashboard-fixed-view">
-      <div key={activeTab} className={`dashboard-fixed-grid dashboard-fixed-grid--${activeTab.toLowerCase()} dashboard-tab-pane-transition`} style={{ '--fixed-rows': rows }}>
-        {panels.map(widget => <WidgetCard key={widget.i} widget={widget} fixedLayout isLight={isLight} />)}
-      </div>
-    </main>;
+    return (
+      <main className="dashboard-fixed-view">
+        <div
+          key={`${activeTab}-${isMaximized ? `fs-${fullscreenMode}` : 'normal'}`}
+          className={`dashboard-fixed-grid dashboard-fixed-grid--${activeTab.toLowerCase()}${isMaximized ? ` is-fullscreen is-fullscreen--${fullscreenMode}` : ''} dashboard-tab-pane-transition`}
+          style={{ '--fixed-rows': rows }}
+        >
+          {panels.map(widget => (
+            <WidgetCard
+              key={widget.i}
+              widget={widget}
+              fixedLayout
+              isLight={isLight}
+              isMaximized={isMaximized}
+              fullscreenMode={fullscreenMode}
+              setFullscreenMode={setFullscreenMode}
+              toggleMaximize={toggleMaximize}
+            />
+          ))}
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -94,6 +120,10 @@ const WidgetGridBoard = ({
               cellH={cellH}
               gap={GAP}
               isLight={isLight}
+              isMaximized={isMaximized}
+              fullscreenMode={fullscreenMode}
+              setFullscreenMode={setFullscreenMode}
+              toggleMaximize={toggleMaximize}
               isInteracting={isInteracting}
               isFocused={isFocused}
               isDraggingThis={isDraggingThis}

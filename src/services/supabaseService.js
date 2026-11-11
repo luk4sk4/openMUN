@@ -1,5 +1,6 @@
 import i18n from '../languages/index.js';
-import { getSupabaseClient } from './supabaseClient';
+import { getSupabaseClient } from './supabaseClient.js';
+import { sanitizeId, sanitizeString, sanitizeJsonObject } from '../utils/sanitizeInput.js';
 
 const STORAGE_ACCOUNT_KEY = 'openmun_cloud_account';
 
@@ -101,7 +102,7 @@ export async function registrarConferencia(nombre, password) {
     throw new Error(i18n.t('ui.supabaseIsNotConfiguredPleaseEnterTheSupabaseAnonKey'));
   }
 
-  const cleanName = (nombre || '').trim();
+  const cleanName = sanitizeString(nombre, 255);
   if (!cleanName) throw new Error(i18n.t('ui.conferenceNameIsRequired'));
   if (!password || password.length < 4) throw new Error(i18n.t('ui.passwordMustContainAtLeast4Characters'));
 
@@ -163,7 +164,7 @@ export async function loginConferencia(nombre, password) {
     throw new Error(i18n.t('ui.supabaseIsNotConfiguredPleaseEnterTheSupabaseAnonKey'));
   }
 
-  const cleanName = (nombre || '').trim();
+  const cleanName = sanitizeString(nombre, 255);
   if (!cleanName) throw new Error(i18n.t('ui.conferenceNameIsRequired'));
   if (!password) throw new Error(i18n.t('ui.enterTheConferencePassword'));
 
@@ -227,7 +228,8 @@ export async function guardarComite(nombreComite, payloadJSON) {
   const account = obtenerCuentaActiva();
   if (!account) throw new Error(i18n.t('ui.noConferenceIsSignedIn'));
 
-  const cleanName = (nombreComite || 'Comité').trim();
+  const cleanName = sanitizeString(nombreComite || 'Comité', 255);
+  const cleanPayload = sanitizeJsonObject(payloadJSON || {});
   const timestamp = new Date().toISOString();
 
   const { data, error } = await client
@@ -236,7 +238,7 @@ export async function guardarComite(nombreComite, payloadJSON) {
       {
         conference_id: account.id,
         name: cleanName,
-        data: payloadJSON,
+        data: cleanPayload,
         updated_at: timestamp
       },
       { onConflict: 'conference_id, name' }
@@ -274,11 +276,23 @@ export async function cargarComite(comiteId) {
   const client = getSupabaseClient();
   if (!client) throw new Error(i18n.t('ui.supabaseIsNotConfigured'));
 
-  const { data, error } = await client
+  const account = obtenerCuentaActiva();
+  if (!account) throw new Error(i18n.t('ui.noConferenceIsSignedIn'));
+
+  const cleanId = sanitizeId(comiteId);
+  if (!cleanId) throw new Error('ID de comité inválido');
+
+  // Consulta con filtro estricto por comiteId y conference_id (defensa en profundidad)
+  let query = client
     .from('committees')
     .select('data')
-    .eq('id', comiteId)
-    .single();
+    .eq('id', cleanId);
+
+  if (account.id) {
+    query = query.eq('conference_id', account.id);
+  }
+
+  const { data, error } = await query.single();
 
   if (error) throw new Error(formatSupabaseError(error));
   return data?.data;
@@ -291,10 +305,22 @@ export async function eliminarComite(comiteId) {
   const client = getSupabaseClient();
   if (!client) throw new Error(i18n.t('ui.supabaseIsNotConfigured'));
 
-  const { error } = await client
+  const account = obtenerCuentaActiva();
+  if (!account) throw new Error(i18n.t('ui.noConferenceIsSignedIn'));
+
+  const cleanId = sanitizeId(comiteId);
+  if (!cleanId) throw new Error('ID de comité inválido');
+
+  let query = client
     .from('committees')
     .delete()
-    .eq('id', comiteId);
+    .eq('id', cleanId);
+
+  if (account.id) {
+    query = query.eq('conference_id', account.id);
+  }
+
+  const { error } = await query;
 
   if (error) throw new Error(formatSupabaseError(error));
   return true;

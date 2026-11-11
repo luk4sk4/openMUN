@@ -23,7 +23,7 @@
 
 ## 📌 Descripción
 
-**openMUN** es una suite moderna para la gestión y proyección en vivo de comités de Model United Nations (MUN). Diseñada para optimizar el flujo de trabajo parlamentario, openMUN combina un sistema de **widgets modulares y arrastrables**, sincronización inalámbrica **Peer-to-Peer (P2P)** para proyectores y dispositivos secundarios, integración con **Google Drive**, soporte para **múltiples idiomas**, simulación de **crisis en tiempo real** y herramientas avanzadas de votación, cronómetros y control de quórum.
+**openMUN** es una suite moderna para la gestión y proyección en vivo de comités de Model United Nations (MUN). Diseñada para optimizar el flujo de trabajo parlamentario, openMUN combina un sistema de **widgets modulares y arrastrables**, sincronización inalámbrica **Peer-to-Peer (P2P)** y en servidor para proyectores y dispositivos secundarios, soporte para **múltiples idiomas**, simulación de **crisis en tiempo real** y herramientas avanzadas de votación, cronómetros y control de quórum.
 
 ---
 
@@ -49,8 +49,8 @@
 - 🚨 **Gabinete y Módulo de Crisis**:
   - Gestor de eventos de crisis con publicaciones programadas o inmediatas.
   - Widget de Telenoticias / Noticiero TV (*Breaking News*) y cintillo permanente de noticias.
-- ☁️ **Sincronización Cloud y Respaldo Local**:
-  - Integración nativa con **Google Drive** para guardar y restaurar sesiones de debate en la nube.
+- 💾 **Almacenamiento Seguro y Respaldo Local**:
+  - Guardado 100% privado en el almacenamiento local del navegador (LocalStorage).
   - Exportación e importación completa en formato JSON y plantillas Excel (`.xlsx`).
 - 🔄 **Sincronización P2P en Tiempo Real (PeerJS & WebRTC)**:
   - Conexión sin servidores intermediarios mediante código QR o ID de sala.
@@ -104,9 +104,9 @@ El dashboard modular permite organizar el espacio de trabajo con una cuadrícula
 3. Escanea el código **QR** o comparte el **ID de Sala**.
 4. Todos los cambios (oradores, cronómetros, votaciones, noticias) se replican instantáneamente.
 
-### 2. Sincronización con Google Drive
-- Guarda copias de seguridad de las sesiones activas en tu cuenta de Google Drive con un clic.
-- Carga sesiones previas desde cualquier equipo sin perder configuraciones ni historiales de comités.
+### 2. Respaldo y Restauración de Sesiones
+- Guarda copias de seguridad de las sesiones activas descargando el archivo `.json` de debate con un solo clic.
+- Carga sesiones previas desde cualquier equipo importando el archivo sin perder configuraciones ni historiales de comités.
 
 ---
 
@@ -176,7 +176,7 @@ openMUN/
 │   ├── languages/          # Archivos de traducción i18n (es.json, en.json)
 │   ├── layouts/            # Sistema de cuadrícula y layout Dashboard
 │   ├── plantillas/         # Plantillas de importación de comités
-│   ├── services/           # Lógica P2P (PeerJS), almacenamiento y Google Drive
+│   ├── services/           # Lógica P2P (PeerJS), almacenamiento y sincronización
 │   ├── utils/              # Utilidades de cálculo, quórum y formato
 │   ├── App.jsx             # Enrutador de vistas y punto principal de la app
 │   └── main.jsx            # Entrada de inicialización e i18n

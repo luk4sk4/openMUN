@@ -70,6 +70,9 @@ function createSessions(now = Date.now) {
         return undefined;
       }
       return entry;
+    },
+    revoke(predicate) {
+      for (const [digest, entry] of entries) if (predicate(entry)) entries.delete(digest);
     }
   };
 }
@@ -89,6 +92,13 @@ function createLoginLimiter(now = Date.now) {
       throw httpError(429, 'Demasiados intentos');
     }
     for (const key of [ipKey, scopeKey]) counts.set(key, (counts.get(key) ?? 0) + 1);
+    const attemptDeadline = deadline;
+    let settled = false;
+    return () => {
+      if (settled || deadline !== attemptDeadline) return;
+      settled = true;
+      for (const key of [ipKey, scopeKey]) counts.set(key, Math.max(0, (counts.get(key) || 0) - 1));
+    };
   };
 }
 

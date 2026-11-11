@@ -1,0 +1,432 @@
+/* ==========================================================================
+   AnadirPaises Widget Styles - OpenMUN Design System
+   Conforms to OpenMUN Design System:
+   Tokens: --panel-color, --card-header-bg, --card-hover, --input-bg,
+           --text-color, --muted-text, --border-color, --subborder-color,
+           --btn-bg, --btn-text, --accent-color, --accent-soft,
+           --success-color, --success-soft, --danger-color, --danger-soft,
+           --warning-color, --font-family, --border-radius
+   ========================================================================== */
+
+.anadir-paises-container {
+  position: relative;
+  padding: 0.9rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background-color: var(--panel-color);
+  color: var(--text-color);
+  gap: 0.75rem;
+  font-family: var(--font-family);
+  min-height: 0;
+}
+
+/* Header */
+.anadir-paises-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--subborder-color);
+}
+
+.anadir-paises-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-color);
+}
+
+.anadir-paises-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+/* Secondary utility button (e.g. A-Z) */
+.anadir-paises-util-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: var(--border-radius, 6px);
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.anadir-paises-util-btn:hover {
+  background-color: var(--card-hover);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.anadir-paises-util-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Destructive action button (e.g. Vaciar lista) */
+.anadir-paises-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: var(--border-radius, 6px);
+  border: 1px solid var(--danger-color);
+  background-color: var(--danger-soft);
+  color: var(--danger-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.anadir-paises-clear-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  filter: brightness(1.05);
+}
+
+.anadir-paises-clear-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  border-color: var(--subborder-color);
+  background-color: transparent;
+  color: var(--muted-text);
+}
+
+.anadir-paises-clear-btn:focus-visible {
+  outline: 2px solid var(--danger-color);
+  outline-offset: 2px;
+}
+
+/* ── Queue Selector (Segmented Control / Tablist) ── */
+.anadir-paises-queue-selector {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--card-header-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius, 6px);
+  padding: 3px;
+  gap: 3px;
+  box-sizing: border-box;
+}
+
+.anadir-paises-queue-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.65rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 500;
+  border-radius: calc(var(--border-radius, 6px) - 2px);
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--muted-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.anadir-paises-queue-btn:hover:not(.is-active) {
+  background-color: var(--card-hover);
+  color: var(--text-color);
+}
+
+.anadir-paises-queue-btn.is-active,
+.anadir-paises-queue-btn[aria-selected="true"] {
+  background-color: var(--accent-soft);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  font-weight: 650;
+}
+
+.anadir-paises-queue-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Badge inside queue button */
+.anadir-paises-queue-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 0.05rem 0.4rem;
+  min-width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  background-color: var(--input-bg);
+  color: var(--muted-text);
+  border: 1px solid var(--subborder-color);
+  transition: all 0.15s ease;
+}
+
+.anadir-paises-queue-btn.is-active .anadir-paises-queue-badge,
+.anadir-paises-queue-btn[aria-selected="true"] .anadir-paises-queue-badge {
+  background-color: var(--panel-color);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+/* ── Search and Filters ── */
+.anadir-paises-search-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.anadir-paises-search-box {
+  display: flex;
+  align-items: center;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius, 6px);
+  padding: 0.35rem 0.65rem;
+  gap: 0.45rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.anadir-paises-search-box:focus-within {
+  border-color: var(--accent-color);
+  outline: 2px solid var(--accent-color);
+  outline-offset: 1px;
+}
+
+.anadir-paises-search-input {
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  outline: none;
+  font: inherit;
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.anadir-paises-search-clear {
+  background: transparent;
+  border: none;
+  color: var(--muted-text);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.anadir-paises-search-clear:hover {
+  color: var(--text-color);
+}
+
+/* Quick Filter Pills */
+.anadir-paises-filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.anadir-paises-pills-group {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.anadir-paises-filter-pill {
+  padding: 0.2rem 0.55rem;
+  font: inherit;
+  font-size: 0.72rem;
+  border-radius: var(--border-radius, 6px);
+  border: 1px solid var(--subborder-color);
+  background-color: transparent;
+  color: var(--muted-text);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.anadir-paises-filter-pill:hover:not(.is-active) {
+  background-color: var(--card-hover);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+.anadir-paises-filter-pill.is-active {
+  background-color: var(--accent-soft);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  font-weight: 650;
+}
+
+.anadir-paises-filter-pill.is-active.is-success {
+  background-color: var(--success-soft);
+  border-color: var(--success-color);
+  color: var(--success-color);
+  font-weight: 650;
+}
+
+.anadir-paises-filter-pill:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.anadir-paises-hint-text {
+  font-size: 0.7rem;
+  color: var(--muted-text);
+}
+
+/* ── Country Grid ── */
+.anadir-paises-grid-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 2px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+
+.anadir-paises-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.45rem;
+  align-content: start;
+}
+
+/* Country Card */
+.anadir-paises-card {
+  position: relative;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--border-radius, 6px);
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  background-color: var(--panel-color);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+}
+
+.anadir-paises-card:hover:not(.is-en-lista) {
+  border-color: var(--accent-color);
+  background-color: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.anadir-paises-card.is-en-lista {
+  background-color: var(--card-header-bg);
+  border-color: var(--subborder-color);
+  opacity: 0.65;
+}
+
+.anadir-paises-card.is-en-lista:hover {
+  opacity: 0.95;
+  border-color: var(--danger-color);
+}
+
+.anadir-paises-card.is-dragging {
+  opacity: 0.4;
+}
+
+.anadir-paises-card.is-drag-over {
+  border: 2px dashed var(--accent-color);
+  background-color: var(--accent-soft);
+}
+
+.anadir-paises-card-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.anadir-paises-card.is-en-lista .anadir-paises-card-name {
+  font-weight: 500;
+  color: var(--muted-text);
+}
+
+/* Badges inside Card */
+.anadir-paises-pos-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background-color: var(--card-hover);
+  color: var(--muted-text);
+  border: 1px solid var(--subborder-color);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.anadir-paises-plus-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-text);
+  transition: all 0.15s ease;
+}
+
+.anadir-paises-card:hover:not(.is-en-lista) .anadir-paises-plus-circle {
+  background-color: var(--accent-soft);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+/* ── Footer ── */
+.anadir-paises-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--subborder-color);
+  font-size: 0.74rem;
+  color: var(--muted-text);
+}
+
+.anadir-paises-footer-dest {
+  color: var(--accent-color);
+  font-weight: 700;
+}
+
+.anadir-paises-status-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  background-color: var(--muted-text);
+}
+
+.anadir-paises-status-indicator.is-active {
+  background-color: var(--success-color);
+}

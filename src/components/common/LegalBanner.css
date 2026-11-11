@@ -225,3 +225,176 @@
     width: 100%;
   }
 }
+
+/* Editorial layout for /privacy and /terms (ponytail: shared flat prose styles, zero nested cards) */
+.openmun-legal-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-family, Inter, system-ui, -apple-system, sans-serif);
+}
+
+.openmun-legal-doc {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  box-sizing: border-box;
+  line-height: 1.6;
+  font-size: 0.92rem;
+  color: var(--muted-text);
+}
+
+.openmun-legal-doc-header {
+  padding-bottom: 24px;
+}
+
+.openmun-legal-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent-color);
+  margin-bottom: 8px;
+}
+
+.openmun-legal-doc h1 {
+  font-size: clamp(1.5rem, 2.5vw, 1.95rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text-color);
+  margin: 0 0 12px 0;
+}
+
+.openmun-legal-lead {
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--muted-text);
+  margin: 0;
+}
+
+.openmun-legal-note {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--success-color);
+  background-color: var(--panel-color);
+  border-radius: 0 var(--border-radius, 6px) var(--border-radius, 6px) 0;
+}
+
+.openmun-legal-note-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--success-color);
+  margin-bottom: 4px;
+}
+
+.openmun-legal-note h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0 0 4px 0;
+}
+
+.openmun-legal-note p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.openmun-legal-section {
+  padding: 24px 0;
+  border-top: 1px solid var(--subborder-color);
+}
+
+.openmun-legal-section h2 {
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--text-color);
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.openmun-legal-section h3 {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--text-color);
+  margin: 16px 0 4px 0;
+  line-height: 1.4;
+}
+
+.openmun-legal-section p {
+  margin: 0 0 10px 0;
+}
+
+.openmun-legal-section p:last-child {
+  margin-bottom: 0;
+}
+
+.openmun-legal-list {
+  margin: 8px 0 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.openmun-legal-quote {
+  margin: 12px 0 8px 0;
+  padding: 8px 0 8px 14px;
+  border-left: 2px solid var(--accent-color);
+  color: var(--text-color);
+  font-style: italic;
+}
+
+.openmun-legal-doc a,
+.openmun-legal-text-btn {
+  color: var(--accent-color);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.openmun-legal-doc a:hover,
+.openmun-legal-text-btn:hover {
+  color: var(--text-color);
+}
+
+.openmun-legal-doc a:focus-visible,
+.openmun-legal-text-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.openmun-legal-doc-footer {
+  margin-top: 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--subborder-color);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .openmun-legal-doc {
+    padding: 20px 16px 48px;
+  }
+}

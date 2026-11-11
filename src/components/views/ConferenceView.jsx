@@ -196,7 +196,6 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
   // Estados para nuevo aviso desde Secretaría (Base de Datos)
   const [avisoDestino, setAvisoDestino] = useState(''); // '' = Global
-  const [avisoEmisor, setAvisoEmisor] = useState('organizacion');
   const [avisoTipo, setAvisoTipo] = useState('info');
   const [avisoMensaje, setAvisoMensaje] = useState('');
   const [avisosActivos, setAvisosActivos] = useState([]);
@@ -394,7 +393,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     try {
       const [resResult, avisosResult, checklistResult] = await Promise.allSettled([
         conferenceService.obtenerResumen(conferencia.id),
-        usesLuaxSessions ? null : conferenceService.obtenerAvisos(conferencia.id, null, 'secretaria', null, true),
+        conferenceService.obtenerAvisos(conferencia.id, null, 'secretaria', null, true),
         !usesLuaxSessions || conferenceService.hasLuaxOrganization(conferencia.id)
           ? conferenceService.obtenerChecklist(conferencia.id) : null
       ]);
@@ -504,9 +503,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
     };
 
     const handleNuevoAviso = (e) => {
-      if (e.detail) {
-        setAvisosActivos(prev => [e.detail, ...prev.filter(a => a.id !== e.detail.id)]);
-      }
+      if (e.detail?.conferencia_id === conferencia.id) fetchResumen();
     };
 
     const handleAvisoDesactivado = (e) => {
@@ -517,7 +514,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
 
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('openmun_nuevo_aviso', handleNuevoAviso);
+      window.addEventListener('openmun_avisos_actualizados', handleNuevoAviso);
       window.addEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
     }
     startPolling();
@@ -526,7 +523,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
       if (interval) clearInterval(interval);
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('openmun_nuevo_aviso', handleNuevoAviso);
+        window.removeEventListener('openmun_avisos_actualizados', handleNuevoAviso);
         window.removeEventListener('openmun_aviso_desactivado', handleAvisoDesactivado);
       }
     };
@@ -701,7 +698,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
   }, [checklistStaff, filtroComiteChecklist]);
 
   // Exportar Archivo JSON Completo con las 4 tablas de la base de datos
-  const handleExportarConferenciaJSON = () => {
+  const handleExportarConferenciaJSON = async () => {
     if (!conferencia?.id) return;
     try {
       const confData = {
@@ -711,7 +708,9 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         email_admin: conferencia.email_admin || null
       };
 
-      const comitesData = (comites || []).map(c => {
+      const exportCommittees = usesLuaxSessions
+        ? await Promise.all((comites || []).map(c => conferenceService.obtenerComite(c.id))) : (comites || []);
+      const comitesData = await Promise.all(exportCommittees.map(async c => {
         let comiteState = c.datos_json;
         if (!comiteState || Object.keys(comiteState).length === 0) {
           try {
@@ -725,21 +724,20 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           pin_mesa: c.pin_mesa || null,
           tipo_sesion: c.tipo_sesion || 'formal',
           topico_actual: c.topico_actual || '',
-          datos_json: comiteState || {}
+          datos_json: comiteState || {},
+          ...(usesLuaxSessions && { mensajes: await conferenceService.exportarHistorialComite(conferencia.id, c.id) })
         };
-      });
+      }));
 
-      const avisosData = avisosActivos || [];
       const checklistData = checklistStaff || [];
 
       const fullBackup = {
-        version: '2.0',
+        version: '2.1',
         tipo: 'openmun_conferencia_completa',
         generado_en: new Date().toISOString(),
         tablas: {
           conferencias: confData,
           comites: comitesData,
-          avisos: avisosData,
           checklist: checklistData
         }
       };
@@ -820,7 +818,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
             });
             if (res?.comiteId) idFinal = res.comiteId;
           } catch (e) {
+            if (parsed.mensajes !== undefined && e.status !== 409) throw e;
             console.warn('Sincronización en servidor omitida o fallida:', e);
+          }
+          if (parsed.mensajes !== undefined) {
+            await conferenceService.restaurarHistorialComite(conferencia.id, idFinal, parsed.mensajes);
           }
 
           try {
@@ -912,7 +914,11 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
               });
               if (resComite?.comiteId) idFinal = resComite.comiteId;
             } catch (errC) {
+              if (c.mensajes !== undefined && errC.status !== 409) throw errC;
               console.warn('Error al guardar comité en backend:', cleanNom, errC);
+            }
+            if (c.mensajes !== undefined) {
+              await conferenceService.restaurarHistorialComite(conferencia.id, idFinal, c.mensajes);
             }
 
             try {
@@ -1266,14 +1272,9 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
         targetComite = avisoDestino;
       }
 
-      const emisorFinal = avisoEmisor === 'organizacion' ? 'Organización / Secretaría' :
-        avisoEmisor === 'staff' ? 'Staff General' :
-        avisoEmisor === 'mesa' ? 'Mesa Directiva' :
-        avisoEmisor || 'Secretaría General';
-
       const res = await conferenceService.crearAviso(conferencia.id, {
         comite_id: targetComite,
-        emisor: emisorFinal,
+        emisor: 'Organización / Secretaría General',
         tipo: avisoTipo,
         mensaje: avisoMensaje.trim()
       });
@@ -2218,9 +2219,9 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
           <button type="button" onClick={() => cargarConferencia(conferencia.id)} title={t('conferences.sync', 'Sincronizar')}>
             <RefreshCw size={16} /><span>{t('conferences.sync', 'Sincronizar')}</span>
           </button>
-          <button type="button" onClick={handleExportarConferenciaJSON} title={t('conferences.exportDatabase')}>
+          {(!usesLuaxSessions || isAdminAuthenticated) && <button type="button" onClick={handleExportarConferenciaJSON} title={t('conferences.exportDatabase')}>
             <Download size={16} /><span>{t('conferences.exportDatabase')}</span>
-          </button>
+          </button>}
           <button type="button" onClick={() => { conferenceService.limpiarSesionActiva(); setConferencia(null); }} title={t('conferences.switchConference', 'Cambiar Conferencia')}>
             <Building2 size={16} /><span>{t('conferences.switchConference', 'Cambiar Conferencia')}</span>
           </button>
@@ -3729,25 +3730,8 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         </div>
 
                         <div>
-                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('conferences.issuer')}</label>
-                          <select
-                            value={avisoEmisor}
-                            onChange={(e) => setAvisoEmisor(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '0.55rem',
-                              borderRadius: 'var(--border-radius, 6px)',
-                              border: `1px solid ${borderCol}`,
-                              backgroundColor: headerBg,
-                              color: 'var(--text-color)',
-                              fontSize: '0.85rem'
-                            }}
-                          >
-                            <option value="organizacion">{t('ui.secretariatOrganizers')}</option>
-                            <option value="staff">{t('ui.roomStaff')}</option>
-                            <option value="logistica">{t('conferences.issuerLogistics')}</option>
-                            <option value="mesa">{t('conferences.issuerChair')}</option>
-                          </select>
+                          <div style={{ fontSize: '0.78rem', fontWeight: '700', marginBottom: '0.25rem' }}>{t('conferences.issuer')}</div>
+                          <div>{t('ui.secretariatOrganizers')}</div>
                         </div>
 
                         <div>
@@ -4212,14 +4196,14 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                         {/* PIN para Faculty Advisors / Profesores Acompañantes */}
                         <div>
                           <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', marginBottom: '0.35rem', color: 'var(--text-color)' }}>
-                            PIN para Faculty Advisors / Docentes (Opcional)
+                            {t('conferences.facultyAdvisorPinLabel', 'PIN para Faculty Advisors / Docentes (Opcional)')}
                           </label>
                           <div style={{ position: 'relative' }}>
                             <input
                               type={mostrarConfPinDocentes ? 'text' : 'password'}
                               value={confPinDocentesInput}
                               onChange={(e) => setConfPinDocentesInput(e.target.value)}
-                              placeholder="Ej. faculty2026 (opcional)"
+                              placeholder={t('conferences.facultyAdvisorPinPlaceholder', 'Ej. faculty2026 (opcional)')}
                               style={{
                                 width: '100%',
                                 padding: '0.6rem 2.5rem 0.6rem 2.2rem',
@@ -4258,7 +4242,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                             </button>
                           </div>
                           <span style={{ fontSize: '0.74rem', color: textMuted, marginTop: '0.25rem', display: 'block' }}>
-                            Permite a los profesores acompañantes consultar el rendimiento de sus alumnos en la pestaña Equipos sin tener acceso administrativo. Si se deja vacío, se podrá acceder con el PIN de Organización.
+                            {t('conferences.facultyAdvisorPinDesc', 'Permite a los profesores acompañantes consultar el rendimiento de sus alumnos en la pestaña Equipos sin tener acceso administrativo. Si se deja vacío, se podrá acceder con el PIN de Organización.')}
                           </span>
                         </div>
 
@@ -4455,7 +4439,7 @@ const ConferenceView = ({ initialConfId = '', initialMode = 'explore', onExit, i
                           {importandoJSON ? t('ui.importingJson') : t('ui.importJsonFile')}
                         </strong>
                         <span style={{ fontSize: '0.82rem', color: textMuted }}>
-                          Arrastra aquí el archivo JSON de respaldo o haz clic para seleccionarlo de tu dispositivo
+                          {t('conferences.backupDropzoneHint', 'Arrastra aquí el archivo JSON de respaldo o haz clic para seleccionarlo de tu dispositivo')}
                         </span>
                       </div>
                     </div>

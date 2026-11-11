@@ -41,7 +41,7 @@ import {
 } from '../../utils/resolutionUtils';
 
 // Subcomponentes modulares optimizados
-import CronometroEnmiendasRapido from './enmiendas/CronometroEnmiendasRapido';
+import CronometroEnmiendas from './CronometroEnmiendas';
 import ArticuloItem from './enmiendas/ArticuloItem';
 import EnmiendaCard from './enmiendas/EnmiendaCard';
 import ProponerEnmiendaModal from './enmiendas/ProponerEnmiendaModal';
@@ -97,8 +97,8 @@ const ControladorEnmiendas = () => {
   const [nuevoArticuloPrefijo, setNuevoArticuloPrefijo] = useState('');
   const [nuevoArticuloTexto, setNuevoArticuloTexto] = useState('');
 
-  // Cronómetro embebido
-  const [cronometroVisible, setCronometroVisible] = useState(true);
+  // Cronómetro embebido (cerrado por defecto ya que PanelEnmiendasVotacion lo incluye)
+  const [cronometroVisible, setCronometroVisible] = useState(false);
 
   // Estados de importación / drag & drop
   const [rawInputTexto, setRawInputTexto] = useState(textoResolucion || '');
@@ -689,11 +689,11 @@ const ControladorEnmiendas = () => {
 
       {/* ── CRONÓMETRO MODULAR INTEGRADO ── */}
       {cronometroVisible && (
-        <CronometroEnmiendasRapido
+        <CronometroEnmiendas
+          compact
           paisesAsistentes={paisesAsistentes}
           paises={paises}
           onGuardarIntervencion={registrarIntervencion}
-          isLight={isLight}
         />
       )}
 

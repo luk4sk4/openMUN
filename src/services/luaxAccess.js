@@ -49,7 +49,8 @@ export function createLuaxAccess(baseUrl, fetcher = fetch, now = Date.now) {
         data.role !== role || data.committeeId !== committeeId ||
         typeof data.conferenceId !== 'string' || !data.conferenceId ||
         (conferenceId && data.conferenceId !== conferenceId)) throw unauthorized();
-    sessions.set(key(role, committeeId ?? conferenceId), { token: data.token, expiresAt: data.expiresAt });
+    sessions.set(key(role, committeeId ?? conferenceId ?? data.conferenceId), data);
+    return data;
   }
 
   const conferencePath = id => '/conferencias/' + encodeURIComponent(id);
@@ -57,11 +58,42 @@ export function createLuaxAccess(baseUrl, fetcher = fetch, now = Date.now) {
   const checklistPath = id => conferencePath(id) + '/checklist';
   const checklistFilter = id => id ? '?comite_id=' + encodeURIComponent(id) : '';
   const checklistRequest = (id, suffix, options) =>
-    request(checklistPath(id) + suffix, { ...options, scope: key('org', id) });
+    request(checklistPath(id) + suffix, { ...options, scope: current(key('org', id)) ? key('org', id)
+      : [...sessions.keys()].find(scope => scope.startsWith('staff:') && current(scope)?.conferenceId === id) || key('org', id) });
   const conferenceScope = id => current(key('org', id)) ? key('org', id) : key('observer', id);
+  const committeeScope = (id, conferenceId) => {
+    const member = [...sessions.keys()].find(scope => !scope.startsWith('org:') && !scope.startsWith('observer:') && scope.endsWith(':' + id) && current(scope));
+    if (member) return member;
+    const org = [...sessions.entries()].find(([scope, session]) => scope.startsWith('org:') && session.conferenceId === conferenceId && current(scope));
+    if (org) return org[0];
+    return key('chair', id);
+  };
   const getSummary = id => request(conferencePath(id) + '/resumen', { scope: conferenceScope(id) });
+  const noticeScope = (id, committee) => current(key('org', id)) ? key('org', id)
+    : committee && current(committeeScope(committee, id)) ? committeeScope(committee, id) : conferenceScope(id);
 
   return {
+    configureParticipants: (id, conferenceId, body) => request(committeePath(id) + '/credenciales', { scope: committeeScope(id, conferenceId), method: 'PUT', body }),
+    async accessParticipant(id, role, password, conferenceId) {
+      const scope = conferenceId && current(conferenceScope(conferenceId)) ? conferenceScope(conferenceId) : undefined;
+      return authenticate(committeePath(id) + '/participantes', { role, password }, role, { committeeId: id, scope });
+    },
+    getNotices: (id, committee, all) => request(conferencePath(id) + '/avisos' + (all ? '?todos=true' : ''), { scope: noticeScope(id, committee) }),
+    createNotice: (id, committee, body) => request(conferencePath(id) + '/avisos', { scope: noticeScope(id, committee), body }),
+    deactivateNotice: (id, committee, notice) => request(conferencePath(id) + '/avisos/' + encodeURIComponent(notice) + '/desactivar', { scope: noticeScope(id, committee), method: 'PATCH' }),
+    async registerConference(body) {
+      await authenticate('/conferencias/registro', body, 'org', { conferenceId: body.id });
+      return getSummary(body.id);
+    },
+    updateConference: (id, body) => request(conferencePath(id), { scope: key('org', id), method: 'PATCH', body }),
+    createCommittee: (id, body) => request(conferencePath(id) + '/comites', { scope: key('org', id), body }),
+    updateCommittee: (id, conferenceId, body) => request(committeePath(id), { scope: committeeScope(id, conferenceId), method: 'PATCH', body }),
+    deleteCommittee: (id, conferenceId) => request(committeePath(id), { scope: key('org', conferenceId), method: 'DELETE' }),
+    getCommitteeHistory: (id, conferenceId) =>
+      request(committeePath(id) + '/historial-respaldo', { scope: key('org', conferenceId) }),
+    restoreCommitteeHistory: (id, conferenceId, mensajes) =>
+      request(committeePath(id) + '/historial-respaldo', { scope: key('org', conferenceId), body: { mensajes } }),
+    socketSession: (id, conferenceId, role) => current(role ? key(role, id) : committeeScope(id, conferenceId)),
     async accessConference(id, pin) {
       if (pin || !current(conferenceScope(id))) {
         await authenticate(conferencePath(id) + '/acceso', { pin: pin || undefined, role: 'observer' },
@@ -92,7 +124,7 @@ export function createLuaxAccess(baseUrl, fetcher = fetch, now = Date.now) {
       checklistRequest(id, '/completados' + checklistFilter(committee), { method: 'DELETE' }),
     getCommittee(id, conferenceId) {
       return request(committeePath(id), {
-        scope: current(key('chair', id)) ? key('chair', id) : key('org', conferenceId)
+        scope: committeeScope(id, conferenceId)
       });
     },
     hasOrganization: id => Boolean(current(key('org', id))),
@@ -107,3 +139,5 @@ export function createLuaxAccess(baseUrl, fetcher = fetch, now = Date.now) {
     }
   };
 }
+
+export const luaxAccess = LUAX_API_URL ? createLuaxAccess(LUAX_API_URL) : null;

@@ -3,6 +3,7 @@ import { Search, Users, Timer, Check, Plus, X, Crown, Trash2, ArrowUpDown, GripV
 import { useSession } from '../../context/SessionContext';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
+import './AnadirPaises.css';
 
 // Normalizar texto para búsqueda sin distinguir tildes ni mayúsculas
 function normalizar(texto) {
@@ -36,7 +37,7 @@ const PRESETS_RAPIDOS = [
   }
 ];
 
-const AnadirPaises = () => {
+const AnadirPaises = ({ fixedDestino = null }) => {
   const { t } = useTranslation();
   const {
     paises,
@@ -45,20 +46,17 @@ const AnadirPaises = () => {
     agregarOrador,
     removerOrador,
     vaciarOradoresGSL,
-    ordenarOradoresGSLAlfabetico,
-    reordenarOradoresGSL,
     oradoresCaucus,
     agregarOradorCaucus,
     removerOradorCaucus,
     vaciarOradoresDebate,
-    ordenarOradoresDebateAlfabetico,
-    reordenarOradoresDebate,
     ordenarPaisesAlfabetico,
     reordenarPaises
   } = useSession();
 
   // Switch de destino: 'GSL' (Lista General) o 'DEBATE' (Debate / Caucus)
-  const [destino, setDestino] = useState('GSL');
+  const [destinoState, setDestino] = useState(fixedDestino || 'GSL');
+  const destino = fixedDestino || destinoState;
   const [busqueda, setBusqueda] = useState('');
   const [filtroVista, setFiltroVista] = useState('TODOS'); // 'TODOS' | 'DISPONIBLES' | 'EN_LISTA'
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -123,63 +121,26 @@ const AnadirPaises = () => {
   const cantEnLista = mapaEnLista.size;
 
   return (
-    <div style={{
-      position: 'relative',
-      padding: '0.9rem',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      boxSizing: 'border-box',
-      backgroundColor: 'var(--panel-color)',
-      color: 'var(--text-color)',
-      gap: '0.65rem',
-      fontFamily: 'Inter, system-ui, sans-serif'
-    }}>
+    <div className="anadir-paises-container">
       {/* ── HEADER Y SWITCH SELECTOR ────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '0.5rem',
-        paddingBottom: '0.4rem',
-        borderBottom: '1px solid var(--border-color)'
-      }}>
+      <div className="anadir-paises-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div>
-            <h3 style={{
-              margin: 0,
-              fontSize: '0.92rem',
-              fontWeight: '700',
-              letterSpacing: '0.02em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
-            }}>
-              {t('ui.addCountries')}
-            </h3>
-          </div>
+          <h3 className="anadir-paises-title">
+            {fixedDestino === 'GSL'
+              ? t('sidebar.widgets.anadir_paises_gsl.title')
+              : fixedDestino === 'DEBATE'
+                ? t('sidebar.widgets.anadir_paises_debate.title')
+                : t('ui.addCountries')}
+          </h3>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+        <div className="anadir-paises-actions">
           {/* Botones de orden alfabético y vaciar */}
           <button
             type="button"
             onClick={ordenarPaisesAlfabetico}
             title={t('ui.sortCountriesAlphabeticallyAZ')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              padding: '0.25rem 0.55rem',
-              fontSize: '0.72rem',
-              fontWeight: '600',
-              borderRadius: '6px',
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              color: 'var(--text-color)',
-              cursor: 'pointer'
-            }}
+            className="anadir-paises-util-btn"
           >
             <ArrowUpDown size={12} />
             <span>A-Z</span>
@@ -195,115 +156,59 @@ const AnadirPaises = () => {
             }}
             disabled={listaActiva.length === 0}
             title={t('ui.removeAllSpeakersFrom', { v0: esGSL ? t('tabs.gsl') : t('sidebar.widgets.pizarra_mociones.category') })}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              padding: '0.25rem 0.55rem',
-              fontSize: '0.72rem',
-              fontWeight: '600',
-              borderRadius: '6px',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              color: '#f87171',
-              cursor: listaActiva.length === 0 ? 'not-allowed' : 'pointer',
-              opacity: listaActiva.length === 0 ? 0.4 : 1
-            }}
+            className="anadir-paises-clear-btn"
           >
             <Trash2 size={12} />
             <span>{t('common.clearAll', 'Eliminar todos')}</span>
           </button>
 
-          {/* Switch Destino: Lista General vs Debate */}
-          <div style={{
-            display: 'flex',
-            backgroundColor: '#09090b',
-            borderRadius: '7px',
-            padding: '3px',
-            border: '1px solid #27272a',
-            gap: '2px'
-          }}>
-            <button
-              type="button"
-              onClick={() => setDestino('GSL')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.3rem 0.65rem',
-                fontSize: '0.74rem',
-                fontWeight: esGSL ? '700' : '500',
-                borderRadius: '5px',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                backgroundColor: esGSL ? '#a855f7' : 'transparent',
-                color: esGSL ? '#ffffff' : '#a1a1aa',
-                boxShadow: esGSL ? '0 2px 8px rgba(168, 85, 247, 0.4)' : 'none'
-              }}
+          {/* Switch Destino: Lista General vs Debate (Selector de Cola) */}
+          {!fixedDestino && (
+            <div
+              className="anadir-paises-queue-selector"
+              role="tablist"
+              aria-label={t('timers.queueSelector', 'Selector de cola de oradores')}
             >
-              <Users size={13} />
-              <span>{t('timers.generalList', 'Lista General')}</span>
-              <span style={{
-                fontSize: '0.68rem',
-                backgroundColor: esGSL ? 'rgba(255, 255, 255, 0.25)' : '#1f1f23',
-                color: esGSL ? '#ffffff' : '#71717a',
-                padding: '0.05rem 0.35rem',
-                borderRadius: '9999px',
-                fontWeight: '700'
-              }}>
-                {oradoresCola.length}
-              </span>
-            </button>
+              <button
+                type="button"
+                role="tab"
+                id="queue-tab-gsl"
+                aria-selected={esGSL}
+                aria-controls="anadir-paises-grid"
+                onClick={() => setDestino('GSL')}
+                className={`anadir-paises-queue-btn ${esGSL ? 'is-active' : ''}`}
+              >
+                <Users size={13} />
+                <span>{t('timers.generalList', 'Lista General')}</span>
+                <span className="anadir-paises-queue-badge">
+                  {oradoresCola.length}
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setDestino('DEBATE')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.3rem 0.65rem',
-                fontSize: '0.74rem',
-                fontWeight: !esGSL ? '700' : '500',
-                borderRadius: '5px',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                backgroundColor: !esGSL ? '#f97316' : 'transparent',
-                color: !esGSL ? '#ffffff' : '#a1a1aa',
-                boxShadow: !esGSL ? '0 2px 8px rgba(249, 115, 22, 0.4)' : 'none'
-              }}
-            >
-              <Timer size={13} />
-              <span>{t('timers.debate', 'Debate')}</span>
-              <span style={{
-                fontSize: '0.68rem',
-                backgroundColor: !esGSL ? 'rgba(255, 255, 255, 0.25)' : '#1f1f23',
-                color: !esGSL ? '#ffffff' : '#71717a',
-                padding: '0.05rem 0.35rem',
-                borderRadius: '9999px',
-                fontWeight: '700'
-              }}>
-                {oradoresCaucus.length}
-              </span>
-            </button>
-          </div>
+              <button
+                type="button"
+                role="tab"
+                id="queue-tab-debate"
+                aria-selected={!esGSL}
+                aria-controls="anadir-paises-grid"
+                onClick={() => setDestino('DEBATE')}
+                className={`anadir-paises-queue-btn ${!esGSL ? 'is-active' : ''}`}
+              >
+                <Timer size={13} />
+                <span>{t('timers.debate', 'Debate')}</span>
+                <span className="anadir-paises-queue-badge">
+                  {oradoresCaucus.length}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* ── BARRA DE BÚSQUEDA Y FILTROS RÁPIDOS ─────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+      <div className="anadir-paises-search-row">
         {/* Input Buscador */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          backgroundColor: 'transparent',
-          border: '1px solid var(--border-color)',
-          borderRadius: '6px',
-          padding: '0.35rem 0.65rem',
-          gap: '0.45rem'
-        }}>
+        <div className="anadir-paises-search-box">
           <Search size={14} style={{ color: 'var(--muted-text)', flexShrink: 0 }} />
           <input
             type="text"
@@ -311,28 +216,14 @@ const AnadirPaises = () => {
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             onKeyDown={handleKeyDownBusqueda}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-color)',
-              outline: 'none',
-              fontSize: '0.82rem',
-              width: '100%'
-            }}
+            className="anadir-paises-search-input"
           />
           {busqueda && (
             <button
               type="button"
               onClick={() => setBusqueda('')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--muted-text)',
-                cursor: 'pointer',
-                padding: '2px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
+              className="anadir-paises-search-clear"
+              title={t('common.clear', 'Limpiar')}
             >
               <X size={13} />
             </button>
@@ -341,59 +232,35 @@ const AnadirPaises = () => {
 
         {/* Filtros rápidos de estado (Pills) */}
         {paises.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '0.3rem' }}>
+          <div className="anadir-paises-filters-bar">
+            <div className="anadir-paises-pills-group" role="group" aria-label={t('common.filters', 'Filtros')}>
               <button
                 type="button"
                 onClick={() => setFiltroVista('TODOS')}
-                style={{
-                  padding: '0.15rem 0.5rem',
-                  fontSize: '0.7rem',
-                  borderRadius: '4px',
-                  border: filtroVista === 'TODOS' ? '1px solid var(--border-color)' : '1px solid transparent',
-                  backgroundColor: filtroVista === 'TODOS' ? 'var(--card-header-bg)' : 'transparent',
-                  color: filtroVista === 'TODOS' ? 'var(--text-color)' : 'var(--muted-text)',
-                  cursor: 'pointer',
-                  fontWeight: filtroVista === 'TODOS' ? '700' : '500'
-                }}
+                className={`anadir-paises-filter-pill ${filtroVista === 'TODOS' ? 'is-active' : ''}`}
+                aria-pressed={filtroVista === 'TODOS'}
               >
                 {t('common.all', 'Todos')} ({paises.length})
               </button>
               <button
                 type="button"
                 onClick={() => setFiltroVista('DISPONIBLES')}
-                style={{
-                  padding: '0.15rem 0.5rem',
-                  fontSize: '0.7rem',
-                  borderRadius: '4px',
-                  border: filtroVista === 'DISPONIBLES' ? '1px solid #22c55e44' : '1px solid transparent',
-                  backgroundColor: filtroVista === 'DISPONIBLES' ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
-                  color: filtroVista === 'DISPONIBLES' ? '#22c55e' : 'var(--muted-text)',
-                  cursor: 'pointer',
-                  fontWeight: filtroVista === 'DISPONIBLES' ? '700' : '500'
-                }}
+                className={`anadir-paises-filter-pill ${filtroVista === 'DISPONIBLES' ? 'is-active is-success' : ''}`}
+                aria-pressed={filtroVista === 'DISPONIBLES'}
               >
                 {t('common.available', 'Disponibles')} ({cantDisponibles})
               </button>
               <button
                 type="button"
                 onClick={() => setFiltroVista('EN_LISTA')}
-                style={{
-                  padding: '0.15rem 0.5rem',
-                  fontSize: '0.7rem',
-                  borderRadius: '4px',
-                  border: filtroVista === 'EN_LISTA' ? '1px solid var(--border-color)' : '1px solid transparent',
-                  backgroundColor: filtroVista === 'EN_LISTA' ? 'var(--card-header-bg)' : 'transparent',
-                  color: filtroVista === 'EN_LISTA' ? 'var(--text-color)' : 'var(--muted-text)',
-                  cursor: 'pointer',
-                  fontWeight: filtroVista === 'EN_LISTA' ? '700' : '500'
-                }}
+                className={`anadir-paises-filter-pill ${filtroVista === 'EN_LISTA' ? 'is-active' : ''}`}
+                aria-pressed={filtroVista === 'EN_LISTA'}
               >
                 {t('timers.inList', 'En Lista')} ({cantEnLista})
               </button>
             </div>
 
-            <span style={{ fontSize: '0.68rem', color: 'var(--muted-text)' }}>
+            <span className="anadir-paises-hint-text">
               {esGSL ? t('timers.clickToAddGSL', 'Clic para añadir a GSL') : t('timers.clickToAddDebate', 'Clic para añadir a Debate')}
             </span>
           </div>
@@ -401,14 +268,7 @@ const AnadirPaises = () => {
       </div>
 
       {/* ── GRID / LISTA DE PAÍSES ─────────────────────────────────────────── */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        paddingRight: '2px',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0
-      }}>
+      <div id="anadir-paises-grid" className="anadir-paises-grid-scroll">
         {paises.length === 0 ? (
           /* Estado vacío si no hay delegaciones en la sesión */
           <div style={{
@@ -417,7 +277,7 @@ const AnadirPaises = () => {
             padding: '1.5rem 1rem',
             backgroundColor: 'transparent',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: 'var(--border-radius, 6px)',
             maxWidth: '340px'
           }}>
             <div style={{ fontSize: '0.86rem', fontWeight: '700', color: 'var(--text-color)', marginBottom: '0.3rem' }}>
@@ -436,7 +296,7 @@ const AnadirPaises = () => {
                 fontSize: '0.76rem',
                 fontWeight: '700',
                 padding: '0.45rem 0.8rem',
-                borderRadius: '6px',
+                borderRadius: 'var(--border-radius, 6px)',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -460,18 +320,20 @@ const AnadirPaises = () => {
             {t('ui.noCountriesFoundMatching')}{busqueda}".
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-            gap: '0.45rem',
-            alignContent: 'start'
-          }}>
+          <div className="anadir-paises-grid">
             {paisesFiltrados.map((pais, idx) => {
               const infoEnLista = mapaEnLista.get(pais.nombre);
               const estaEnLista = !!infoEnLista;
               const posEnLista = infoEnLista?.index;
               const isDragging = draggedIndex === idx;
               const isDragOver = dragOverIndex === idx;
+
+              const cardClasses = [
+                'anadir-paises-card',
+                estaEnLista ? 'is-en-lista' : '',
+                isDragging ? 'is-dragging' : '',
+                isDragOver ? 'is-drag-over' : ''
+              ].filter(Boolean).join(' ');
 
               return (
                 <div
@@ -517,93 +379,27 @@ const AnadirPaises = () => {
                   }}
                   onClick={() => handleTogglePais(pais)}
                   title={estaEnLista ? t('ui.onListClickToRemove', { v0: pais.nombre, v1: posEnLista }) : t('ui.clickToAddToDragToReorder', { v0: pais.nombre, v1: esGSL ? t('timers.generalList') : t('sidebar.widgets.pizarra_mociones.category') })}
-                  style={{
-                    position: 'relative',
-                    padding: '0.5rem 0.6rem',
-                    borderRadius: '7px',
-                    cursor: 'grab',
-                    userSelect: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '0.4rem',
-                    transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
-                    backgroundColor: isDragging
-                      ? (esGSL ? 'rgba(168, 85, 247, 0.2)' : 'rgba(249, 115, 22, 0.2)')
-                      : (estaEnLista ? 'var(--card-header-bg)' : 'var(--panel-color)'),
-                    border: isDragOver
-                      ? `2px dashed ${esGSL ? '#a855f7' : '#f97316'}`
-                      : (estaEnLista ? '1px solid var(--subborder-color)' : '1px solid var(--border-color)'),
-                    opacity: isDragging ? 0.4 : (estaEnLista ? 0.55 : 1),
-                    filter: estaEnLista ? 'grayscale(70%)' : 'none',
-                    transform: 'translateZ(0)'
-                  }}
-                  onMouseEnter={e => {
-                    if (!estaEnLista) {
-                      e.currentTarget.style.borderColor = esGSL ? '#a855f7' : '#f97316';
-                      e.currentTarget.style.backgroundColor = esGSL ? 'rgba(168, 85, 247, 0.12)' : 'rgba(249, 115, 22, 0.12)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    } else {
-                      e.currentTarget.style.opacity = '0.85';
-                      e.currentTarget.style.borderColor = '#ef444466';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!estaEnLista) {
-                      e.currentTarget.style.borderColor = 'var(--border-color)';
-                      e.currentTarget.style.backgroundColor = 'var(--panel-color)';
-                      e.currentTarget.style.transform = 'translateY(0px)';
-                    } else {
-                      e.currentTarget.style.opacity = '0.55';
-                      e.currentTarget.style.borderColor = 'var(--subborder-color)';
-                    }
-                  }}
+                  className={cardClasses}
                 >
                   {/* Bandera y Nombre */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0, flex: 1 }}>
                     <CountryFlag bandera={pais.bandera} nombre={pais.nombre} size="sm" />
-                    <span style={{
-                      fontSize: '0.78rem',
-                      fontWeight: estaEnLista ? '500' : '700',
-                      color: estaEnLista ? 'var(--muted-text)' : 'var(--text-color)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}>
+                    <span className="anadir-paises-card-name">
                       {pais.nombre}
                     </span>
                     {pais.veto && (
-                      <Crown size={11} color="#eab308" style={{ flexShrink: 0 }} title={t('ui.permanentMemberP5')} />
+                      <Crown size={12} color="var(--warning-color)" fill="var(--warning-color)" style={{ flexShrink: 0 }} title={t('ui.permanentMemberP5')} />
                     )}
                   </div>
 
-                  {/* Badge de Estado: Posición / Check si está en cola, Plus si disponible */}
+                  {/* Badge de Estado: Posición si está en cola, Plus si disponible */}
                   <div style={{ flexShrink: 0 }}>
                     {estaEnLista ? (
-                      <span style={{
-                        fontSize: '0.65rem',
-                        fontWeight: '800',
-                        backgroundColor: '#27272a',
-                        color: '#a1a1aa',
-                        padding: '0.1rem 0.35rem',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '2px'
-                      }}>
+                      <span className="anadir-paises-pos-badge">
                         #{posEnLista}
                       </span>
                     ) : (
-                      <div style={{
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#71717a'
-                      }}>
+                      <div className="anadir-paises-plus-circle">
                         <Plus size={11} />
                       </div>
                     )}
@@ -617,26 +413,13 @@ const AnadirPaises = () => {
 
       {/* ── FOOTER RESUMEN ──────────────────────────────────────────────────── */}
       {paises.length > 0 && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: '0.4rem',
-          borderTop: '1px solid var(--border-color)',
-          fontSize: '0.72rem',
-          color: '#71717a'
-        }}>
+        <div className="anadir-paises-footer">
           <span>
-            {t('ui.destination')} <strong style={{ color: esGSL ? '#c084fc' : '#fb923c' }}>{esGSL ? t('timers.generalList') : t('sidebar.widgets.pizarra_mociones.category')}</strong>
+            {t('ui.destination')} <strong className="anadir-paises-footer-dest">{esGSL ? t('timers.generalList') : t('sidebar.widgets.pizarra_mociones.category')}</strong>
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <span style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: cantEnLista > 0 ? '#22c55e' : '#52525b'
-            }} />
-            {cantEnLista} {t('ui.inActiveQueue')}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span className={`anadir-paises-status-indicator ${cantEnLista > 0 ? 'is-active' : ''}`} />
+            <span>{cantEnLista} {t('ui.inActiveQueue')}</span>
           </span>
         </div>
       )}

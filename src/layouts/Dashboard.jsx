@@ -5,7 +5,6 @@ import { lazyWithRetry } from '../utils/lazyWithRetry';
 // Modales y Componentes Comunes (Lazy loaded para agilizar carga inicial)
 const AccessibilityModal = lazyWithRetry(() => import('../components/modals/AccessibilityModal'), 'AccessibilityModal');
 const LiveSessionModal = lazyWithRetry(() => import('../components/modals/LiveSessionModal'), 'LiveSessionModal');
-const DriveSessionsModal = lazyWithRetry(() => import('../components/modals/DriveSessionsModal'), 'DriveSessionsModal');
 const CloudSessionsModal = lazyWithRetry(() => import('../components/modals/CloudSessionsModal'), 'CloudSessionsModal');
 const ExportSessionModal = lazyWithRetry(() => import('../components/modals/ExportSessionModal'), 'ExportSessionModal');
 const CommandPaletteModal = lazyWithRetry(() => import('../components/modals/CommandPaletteModal'), 'CommandPaletteModal');
@@ -55,7 +54,6 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLibreBanner, setShowLibreBanner] = useState(true);
   const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
-  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -85,7 +83,7 @@ const Dashboard = () => {
   });
 
   // Hook de pantalla completa
-  const { isMaximized, toggleMaximize } = useFullscreen();
+  const { isMaximized, toggleMaximize, fullscreenMode, setFullscreenMode } = useFullscreen();
 
   // Hook de sincronización y handlers P2P
   useDashboardP2P({ session, p2p });
@@ -241,10 +239,6 @@ const Dashboard = () => {
           initialTab={p2p.liveModalTab}
           isLight={isLight}
         />
-        <DriveSessionsModal
-          isOpen={isDriveModalOpen}
-          onClose={() => setIsDriveModalOpen(false)}
-        />
         <CloudSessionsModal
           isOpen={isCloudModalOpen}
           onClose={() => setIsCloudModalOpen(false)}
@@ -299,6 +293,8 @@ const Dashboard = () => {
           setActiveTab={setActiveTab}
           tabs={tabs}
           toggleMaximize={toggleMaximize}
+          fullscreenMode={fullscreenMode}
+          setFullscreenMode={setFullscreenMode}
           isLight={isLight}
           nombreComite={session.nombreComite}
         />
@@ -322,6 +318,8 @@ const Dashboard = () => {
             isLight={isLight}
             toggleThemeMode={toggleThemeMode}
             toggleMaximize={toggleMaximize}
+            fullscreenMode={fullscreenMode}
+            setFullscreenMode={setFullscreenMode}
             setIsAccessOpen={setIsAccessOpen}
             openCommandPalette={() => setIsCommandPaletteOpen(true)}
             openQuickAddCountry={() => setIsQuickCountryOpen(true)}
@@ -336,18 +334,10 @@ const Dashboard = () => {
             unreadNotesCount={p2p.unreadNotesCount}
             sessionMenuOpen={sessionMenuOpen}
             setSessionMenuOpen={setSessionMenuOpen}
-            isDriveLinked={session.isDriveLinked}
-            driveSyncStatus={session.driveSyncStatus}
-            driveUser={session.driveUser}
-            driveFileName={session.driveFileName}
             fileInputRef={fileInputRef}
             setIsExportModalOpen={setIsExportModalOpen}
-            setIsDriveModalOpen={setIsDriveModalOpen}
             isCloudModalOpen={isCloudModalOpen}
             setIsCloudModalOpen={setIsCloudModalOpen}
-            conectarGoogleDrive={session.conectarGoogleDrive}
-            desconectarGoogleDrive={session.desconectarGoogleDrive}
-            sincronizarDriveManual={session.sincronizarDriveManual}
             borrarDatosLocales={session.borrarDatosLocales}
             addToast={addToast}
           />
@@ -390,6 +380,10 @@ const Dashboard = () => {
           cellH={cellH}
           widgets={widgets}
           isLight={isLight}
+          isMaximized={isMaximized}
+          fullscreenMode={fullscreenMode}
+          setFullscreenMode={setFullscreenMode}
+          toggleMaximize={toggleMaximize}
           activeInteraction={activeInteraction}
           focusedWidgetId={focusedWidgetId}
           setFocusedWidgetId={setFocusedWidgetId}

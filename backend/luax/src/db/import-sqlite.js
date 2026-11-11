@@ -4,6 +4,8 @@ const { readFileSync } = require('node:fs');
 const { databaseConfig, Pool } = require('../config/db');
 const { hashPin, id } = require('../services/auth');
 const { checkReadiness } = require('./init');
+const { privateState, publicState } = require('../services/committeeState');
+const { noticeTarget } = require('../routes/notices');
 
 function readSnapshot(path) {
   const exportRows = spawnSync('python3', ['-c', `
@@ -38,8 +40,9 @@ async function importSnapshot(db, path) {
   const conferences = new Set(source.conferencias.map(row => id(row.id)));
   const committees = new Map(source.comites.map(row => [id(row.id), row.conferencia_id]));
   for (const row of [...source.comites, ...source.checklist_staff, ...source.avisos]) {
+    const targetCommittee = source.avisos.includes(row) ? noticeTarget(row.comite_id).committee : row.comite_id;
     if (!conferences.has(row.conferencia_id) ||
-        (row.comite_id != null && committees.get(row.comite_id) !== row.conferencia_id)) {
+        (targetCommittee != null && committees.get(targetCommittee) !== row.conferencia_id)) {
       throw new Error('Invalid conference/committee relationship');
     }
   }
@@ -84,10 +87,11 @@ async function importSnapshot(db, path) {
       const original = JSON.parse(row.datos_json);
       if (!original || typeof original !== 'object' || Array.isArray(original)) throw new Error('Invalid committee state');
       await client.query(`
-        INSERT INTO comites(id,conferencia_id,nombre,pin_mesa,tipo_sesion,topico_actual,actualizado_en)
-        VALUES($1,$2,$3,$4,$5,$6,$7)
+        INSERT INTO comites(id,conferencia_id,nombre,pin_mesa,tipo_sesion,topico_actual,actualizado_en,private_state,estado_debate,debate_revision)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,1)
       `, [row.id, row.conferencia_id, row.nombre, row.pin_mesa ? await hashPin(row.pin_mesa) : null,
-        row.tipo_sesion, row.topico_actual, date(row.actualizado_en)]);
+        row.tipo_sesion, row.topico_actual, date(row.actualizado_en), privateState(original),
+        { version: 2, state: publicState(original) }]);
       await client.query('INSERT INTO legacy_import.committee_state VALUES($1,$2)', [row.id, row.datos_json]);
     }
     for (const row of source.checklist_staff) {
@@ -100,11 +104,12 @@ async function importSnapshot(db, path) {
     }
     for (const row of source.avisos) {
       if (![0, 1, null].includes(row.activo) || !row.creado_en) throw new Error('Invalid legacy notice');
+      const target = noticeTarget(row.comite_id);
       await client.query(`
-        INSERT INTO mensajes(id,conferencia_id,comite_id,emisor_rol,emisor_id,destino_tipo,contenido,estado,creado_en,tipo_aviso)
-        VALUES($1,$2,$3,'legacy','legacy','all',$4,$5,$6,$7)
-      `, [row.id, row.conferencia_id, row.comite_id, row.mensaje, row.activo === 1 ? 'delivered' : 'archived',
-        date(row.creado_en), row.tipo]);
+        INSERT INTO mensajes(id,conferencia_id,comite_id,emisor_rol,emisor_id,destino_tipo,contenido,estado,creado_en,tipo_aviso,destino_rol,notice_target)
+        VALUES($1,$2,$3,'legacy','legacy',$8,$4,$5,$6,$7,$9,$10)
+      `, [row.id, row.conferencia_id, target.committee, row.mensaje, row.activo === 1 ? 'delivered' : 'archived',
+        date(row.creado_en), row.tipo, target.role ? 'role' : 'all', target.role, target.code]);
       await client.query('INSERT INTO legacy_import.notice VALUES($1,$2)', [row.id, row]);
     }
 

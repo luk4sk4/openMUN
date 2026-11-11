@@ -333,64 +333,13 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
 
   const normCurrent = normalizarIdComite(currentComiteId);
   const normNombre = normalizarIdComite(currentComiteNombre);
-  const rawCurrent = currentComiteId ? String(currentComiteId).trim().toLowerCase() : '';
-
-  // Buscar comité coincidente en la lista de comités si está disponible
-  const matchingComite = (comites || []).find(c => {
-    if (!c) return false;
-    const cid = String(c.id || '').trim().toLowerCase();
-    const cnom = String(c.nombre || '').trim().toLowerCase();
-    const normCid = normalizarIdComite(c.id);
-    const normCnom = normalizarIdComite(c.nombre);
-    return (
-      (rawCurrent && cid === rawCurrent) ||
-      (normCurrent && normCid === normCurrent) ||
-      (normCurrent && normCnom === normCurrent) ||
-      (normNombre && normCnom === normNombre) ||
-      (normNombre && normCid === normNombre)
-    );
-  });
-
-  const matchingIdNorm = matchingComite ? normalizarIdComite(matchingComite.id) : null;
-  const matchingNomNorm = matchingComite ? normalizarIdComite(matchingComite.nombre) : null;
-  const matchingRawId = matchingComite ? String(matchingComite.id).trim().toLowerCase() : null;
-
-  const coincideComite = (normTarget, rawTarget) => {
-    if (!normTarget && !rawTarget) return false;
-    const cleanTarget = (normTarget || '').toLowerCase();
-    const cleanRaw = (rawTarget || '').toLowerCase();
-
-    // 1. Coincidencia con ID actual o Nombre actual normalizado (bidireccional)
-    if (normCurrent && (cleanTarget === normCurrent || cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
-    if (rawCurrent && (cleanRaw === rawCurrent || cleanRaw.endsWith(rawCurrent) || rawCurrent.endsWith(cleanRaw))) return true;
-    if (normNombre && (cleanTarget === normNombre || cleanRaw === normNombre || cleanRaw.includes(normNombre) || normNombre.includes(cleanTarget) || cleanTarget.includes(normNombre))) return true;
-
-    // 2. Coincidencia con datos del comité en la lista de comités de la conferencia
-    if (matchingIdNorm && (cleanTarget === matchingIdNorm || cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
-    if (matchingNomNorm && (cleanTarget === matchingNomNorm || cleanRaw === matchingNomNorm || cleanRaw.includes(matchingNomNorm) || matchingNomNorm.includes(cleanTarget))) return true;
-    if (matchingRawId && (cleanRaw === matchingRawId || cleanRaw.endsWith(matchingRawId) || matchingRawId.endsWith(cleanRaw))) return true;
-
-    // 3. Búsqueda directa del comité objetivo en la lista
-    const targetComiteObj = (comites || []).find(c => {
-      if (!c) return false;
-      const cid = String(c.id || '').trim().toLowerCase();
-      const cnom = String(c.nombre || '').trim().toLowerCase();
-      const nCid = normalizarIdComite(c.id);
-      const nCnom = normalizarIdComite(c.nombre);
-      return cleanTarget === cid || cleanTarget === nCid || cleanRaw === cid || cleanTarget === cnom || cleanTarget === nCnom || cleanRaw === cnom;
-    });
-
-    if (targetComiteObj) {
-      const tid = String(targetComiteObj.id || '').trim().toLowerCase();
-      const tnom = String(targetComiteObj.nombre || '').trim().toLowerCase();
-      const nTid = normalizarIdComite(targetComiteObj.id);
-      const nTnom = normalizarIdComite(targetComiteObj.nombre);
-      if (rawCurrent && (rawCurrent === tid || rawCurrent.endsWith(tid) || tid.endsWith(rawCurrent))) return true;
-      if (normCurrent && (normCurrent === nTid || normCurrent === nTnom)) return true;
-      if (normNombre && (normNombre === nTnom || normNombre === nTid)) return true;
-    }
-
-    return false;
+  const matchingComite = comites.find(c => normalizarIdComite(c?.id) === normCurrent);
+  const coincideComite = target => {
+    if (!target || normCurrent === 'todos') return false;
+    if (normCurrent === target) return true;
+    const matchingName = matchingComite ? normalizarIdComite(matchingComite.nombre) : normNombre;
+    return Boolean(matchingName) && matchingName === target &&
+      !comites.some(c => normalizarIdComite(c?.id) === target);
   };
 
   // 3. CHAIR / MESA DIRECTIVA (y consola de secretaría de sala)
@@ -413,13 +362,13 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
     // d) Su mesa: ej. CHAIR_<comiteId> o MESA_<comiteId>
     if (destinoUpper.startsWith('CHAIR_') || destinoUpper.startsWith('MESA_')) {
       const targetMesa = normalizarIdComite(destinoUpper);
-      const rawTarget = rawDestino.replace(/^(chair_|mesa_)/i, '');
-      return coincideComite(targetMesa, rawTarget);
+
+      return coincideComite(targetMesa);
     }
 
     // e) Su comité completo: ej. <comiteId> o COMITE_<comiteId>
     const targetComite = normalizarIdComite(destinoUpper);
-    return coincideComite(targetComite, rawDestino);
+    return coincideComite(targetComite);
   }
 
   // 4. STAFF (y STAFF GLOBAL)
@@ -439,12 +388,12 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
     // c) Staff de su comité: ej. STAFF_COMITE_<comiteId> o STAFF_<comiteId>
     if (destinoUpper.startsWith('STAFF_COMITE_') || destinoUpper.startsWith('STAFF_')) {
       const targetStaffComite = normalizarIdComite(destinoUpper);
-      const rawTarget = rawDestino.replace(/^(staff_comite_|staff_)/i, '');
+
       // El staff de conferencia (global) o sin sala fija NO debe ver los mensajes internos dirigidos a staff de comités individuales
       if ((!normCurrent && !normNombre) || normCurrent === 'todos' || userRole === 'staff_global') {
         return false;
       }
-      return coincideComite(targetStaffComite, rawTarget);
+      return coincideComite(targetStaffComite);
     }
 
     // d) Su comité: ej. <comiteId> o COMITE_<comiteId>
@@ -453,7 +402,7 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
       return false;
     }
     const targetComite = normalizarIdComite(destinoUpper);
-    return coincideComite(targetComite, rawDestino);
+    return coincideComite(targetComite);
   }
 
   // 5. DELEGATE (Delegaciones de un comité)
@@ -467,7 +416,7 @@ export const correspondeAviso = (aviso, { role = 'staff', currentComiteId = null
     // Su comité
     if (normCurrent && normCurrent !== 'todos') {
       const targetComite = normalizarIdComite(destinoUpper);
-      return coincideComite(targetComite, rawDestino);
+      return coincideComite(targetComite);
     }
     return false;
   }

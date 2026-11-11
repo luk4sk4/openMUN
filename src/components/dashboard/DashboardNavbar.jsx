@@ -24,6 +24,8 @@ const DashboardNavbar = ({
   isLight,
   toggleThemeMode,
   toggleMaximize,
+  fullscreenMode = 'with_left',
+  setFullscreenMode,
   setIsAccessOpen,
   openCommandPalette,
   openAvisosModal,
@@ -39,18 +41,10 @@ const DashboardNavbar = ({
   // Props Session Dropdown
   sessionMenuOpen,
   setSessionMenuOpen,
-  isDriveLinked,
-  driveSyncStatus,
-  driveUser,
-  driveFileName,
   fileInputRef,
   setIsExportModalOpen,
-  setIsDriveModalOpen,
   isCloudModalOpen,
   setIsCloudModalOpen,
-  conectarGoogleDrive,
-  desconectarGoogleDrive,
-  sincronizarDriveManual,
   borrarDatosLocales,
   addToast
 }) => {
@@ -171,6 +165,10 @@ const DashboardNavbar = ({
       {activeTab !== 'HOME' && <DashboardSubheader
         nombreComite={nombreComite} agendaSesion={agendaSesion}
         tipoSesion={tipoSesion} cambiarTipoSesion={cambiarTipoSesion}
+        activeTab={activeTab}
+        fullscreenMode={fullscreenMode}
+        setFullscreenMode={setFullscreenMode}
+        toggleMaximize={toggleMaximize}
       />}
     </header>
     <div
@@ -220,12 +218,10 @@ const DashboardNavbar = ({
           <SessionMenuDropdown
             placement="sidebar"
             sessionMenuOpen={sessionMenuOpen} setSessionMenuOpen={setSessionMenuOpen}
-            isLight={isLight} isDriveLinked={isDriveLinked} driveSyncStatus={driveSyncStatus}
-            driveUser={driveUser} driveFileName={driveFileName} fileInputRef={fileInputRef}
-            setIsExportModalOpen={setIsExportModalOpen} setIsDriveModalOpen={setIsDriveModalOpen}
+            isLight={isLight} fileInputRef={fileInputRef}
+            setIsExportModalOpen={setIsExportModalOpen}
             isCloudModalOpen={isCloudModalOpen} setIsCloudModalOpen={setIsCloudModalOpen}
-            conectarGoogleDrive={conectarGoogleDrive} desconectarGoogleDrive={desconectarGoogleDrive}
-            sincronizarDriveManual={sincronizarDriveManual} borrarDatosLocales={borrarDatosLocales} addToast={addToast}
+            borrarDatosLocales={borrarDatosLocales} addToast={addToast}
           />
           <button
             onClick={() => {

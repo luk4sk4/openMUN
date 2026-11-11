@@ -10,7 +10,16 @@ const ESTADOS = ['Pendiente', 'En Discusión', 'Pausado', 'Concluido'];
 
 const EstablecerAgenda = () => {
   const { t } = useTranslation();
-  const { nombreComite, setNombreComite, agendaSesion, establecerAgenda, cambiarTemaActual, paises } = useSession();
+  const {
+    nombreComite,
+    setNombreComite,
+    agendaSesion,
+    establecerAgenda,
+    cambiarTemaActual,
+    irASiguienteTema,
+    dispararCelebracionVoto,
+    paises
+  } = useSession();
   const [comite, setComite] = useState(nombreComite || '');
   const [nuevoTema, setNuevoTema] = useState('');
   const [ahora, setAhora] = useState(Date.now());
@@ -112,6 +121,17 @@ const EstablecerAgenda = () => {
   const resolverDebate = (item) => {
     const resultado = resolverDebateAgenda(agendaSesion, item.id);
     guardar(resultado.temasPropuestos, resultado.temaActual);
+    const temaResuelto = (resultado.temasPropuestos || []).find(tItem => tItem.id === item.id);
+    if (typeof dispararCelebracionVoto === 'function') {
+      dispararCelebracionVoto(temaResuelto?.debate?.resultado === 'aprobado');
+    }
+  };
+
+  const handleIrASiguienteTemaDesdeModal = () => {
+    if (typeof irASiguienteTema === 'function') {
+      irASiguienteTema();
+    }
+    setModalTemaId(null);
   };
 
   const temaEnModal = temas.find(t => t.id === modalTemaId);
@@ -288,6 +308,7 @@ const EstablecerAgenda = () => {
           onResolverDebate={() => resolverDebate(temaEnModal)}
           onReiniciarDebate={() => reiniciarDebate(temaEnModal)}
           onCancelarDebate={() => cancelarDebate(temaEnModal)}
+          onIrASiguienteTema={temas.length > 1 ? handleIrASiguienteTemaDesdeModal : null}
         />
       )}
     </div>

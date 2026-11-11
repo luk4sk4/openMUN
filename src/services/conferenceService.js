@@ -6,9 +6,16 @@ import i18n from '../languages/index.js';
 
 import { SOCKET_SERVER_URL } from './peerService.js';
 import { registrarAvisoPropio } from '../utils/announcementHelpers.jsx';
-import { createLuaxAccess, LUAX_API_URL } from './luaxAccess.js';
-
-const luax = LUAX_API_URL ? createLuaxAccess(LUAX_API_URL) : null;
+import { luaxAccess as luax, LUAX_API_URL } from './luaxAccess.js';
+import {
+  sanitizeId,
+  sanitizeString,
+  sanitizePin,
+  sanitizeEmail,
+  sanitizeTopic,
+  sanitizeDatabaseId,
+  sanitizeJsonObject
+} from '../utils/sanitizeInput.js';
 
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -49,26 +56,9 @@ async function handleResponse(response) {
 const requestCache = new Map();
 const inFlightRequests = new Map();
 
-// Caché en memoria de avisos activos sincronizados
-let _avisosMemoria = [];
-
 if (typeof window !== 'undefined') {
-  window.addEventListener('openmun_nuevo_aviso', (e) => {
-    if (e.detail) {
-      const nuevo = e.detail;
-      if (nuevo.conferencia_id && !localStorage.getItem('openmun_current_conf_id')) {
-        try {
-          localStorage.setItem('openmun_current_conf_id', String(nuevo.conferencia_id).toLowerCase());
-        } catch {}
-      }
-      _avisosMemoria = [nuevo, ..._avisosMemoria.filter(a => a.id !== nuevo.id)];
-    }
-  });
-
-  window.addEventListener('openmun_aviso_desactivado', (e) => {
-    if (e.detail?.id) {
-      _avisosMemoria = _avisosMemoria.filter(a => String(a.id) !== String(e.detail.id));
-    }
+  window.addEventListener('openmun_avisos_actualizados', e => {
+    invalidateConferenceCache(e.detail?.conferencia_id);
   });
 }
 
@@ -124,16 +114,20 @@ export const conferenceService = {
   enterLuaxChairWithoutPin: (confId, comiteId) => luax.enterChairWithoutPin(confId, comiteId),
   // ── 1. GESTIÓN DE CONFERENCIAS ──
   async crearConferencia({ id, nombre, pin_admin, pin_acceso, email_admin }) {
-    const cleanId = id.toLowerCase().trim();
-    const cleanEmail = email_admin ? email_admin.trim() : null;
+    const cleanId = sanitizeId(id);
+    const cleanNombre = sanitizeString(nombre, 255);
+    const cleanPinAdmin = sanitizePin(pin_admin);
+    const cleanPinAcceso = pin_acceso ? sanitizePin(pin_acceso) : null;
+    const cleanEmail = sanitizeEmail(email_admin);
+    if (luax) return luax.registerConference({ id: cleanId, nombre: cleanNombre, pin_admin: cleanPinAdmin, pin_acceso: cleanPinAcceso, email_admin: cleanEmail });
     const res = await fetch(`${API_BASE_URL}/api/conferencias`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: cleanId,
-        nombre: nombre.trim(),
-        pin_admin: pin_admin.trim(),
-        pin_acceso: pin_acceso ? pin_acceso.trim() : null,
+        nombre: cleanNombre,
+        pin_admin: cleanPinAdmin,
+        pin_acceso: cleanPinAcceso,
         email_admin: cleanEmail
       })
     });
@@ -145,9 +139,10 @@ export const conferenceService = {
   },
 
   async accederConferencia(id, pin = '') {
-    const cleanId = String(id).trim().toLowerCase();
-    if (luax) return luax.accessConference(cleanId, String(pin || '').trim());
-    const effectivePin = pin ? String(pin).trim() : (localStorage.getItem(`openmun_conf_pin_${cleanId}`) || '');
+    const cleanId = sanitizeId(id);
+    const cleanPin = sanitizePin(pin);
+    if (luax) return luax.accessConference(cleanId, cleanPin);
+    const effectivePin = cleanPin || sanitizePin(localStorage.getItem(`openmun_conf_pin_${cleanId}`) || '');
     const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}/acceso`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -171,7 +166,7 @@ export const conferenceService = {
   },
 
   async obtenerResumen(id) {
-    const cleanId = String(id).trim().toLowerCase();
+    const cleanId = sanitizeId(id);
     if (luax) return luax.getSummary(cleanId);
     const url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}/resumen`;
     const data = await fetchWithDeduplication(url, 4000);
@@ -183,7 +178,21 @@ export const conferenceService = {
   },
 
   async actualizarConferencia(id, { pin_admin_actual, nombre, nuevo_pin_admin, pin_acceso, email_admin }) {
-    const cleanId = String(id).trim().toLowerCase();
+    const cleanId = sanitizeId(id);
+    const cleanNombre = nombre !== undefined && nombre !== null ? sanitizeString(nombre, 255) : undefined;
+    const cleanNuevoPin = nuevo_pin_admin !== undefined && nuevo_pin_admin !== null && String(nuevo_pin_admin).trim() !== '' ? sanitizePin(nuevo_pin_admin) : undefined;
+    const cleanPinAcceso = pin_acceso !== undefined ? (pin_acceso ? sanitizePin(pin_acceso) : null) : undefined;
+    const cleanEmail = email_admin !== undefined ? sanitizeEmail(email_admin) : undefined;
+
+    if (luax) {
+      const result = await luax.updateConference(cleanId, { nombre: cleanNombre, nuevo_pin_admin: cleanNuevoPin, pin_acceso: cleanPinAcceso, email_admin: cleanEmail });
+      if (result.reauthenticate) {
+        luax.clear();
+        await luax.verifyOrganization(cleanId, cleanNuevoPin || pin_admin_actual);
+      }
+      this.guardarSesionActiva({ id: cleanId, ...result });
+      return result;
+    }
     
     // Obtener pin_admin_actual del argumento o de la sesión activa
     let pinActual = pin_admin_actual;
@@ -195,19 +204,13 @@ export const conferenceService = {
     }
 
     const payload = {
-      pin_admin_actual: pinActual ? String(pinActual).trim() : ''
+      pin_admin_actual: pinActual ? sanitizePin(pinActual) : ''
     };
 
-    if (nombre !== undefined && nombre !== null) payload.nombre = String(nombre).trim();
-    if (nuevo_pin_admin !== undefined && nuevo_pin_admin !== null && String(nuevo_pin_admin).trim() !== '') {
-      payload.nuevo_pin_admin = String(nuevo_pin_admin).trim();
-    }
-    if (pin_acceso !== undefined) {
-      payload.pin_acceso = pin_acceso ? String(pin_acceso).trim() : null;
-    }
-    if (email_admin !== undefined) {
-      payload.email_admin = email_admin ? String(email_admin).trim() : null;
-    }
+    if (cleanNombre !== undefined) payload.nombre = cleanNombre;
+    if (cleanNuevoPin !== undefined) payload.nuevo_pin_admin = cleanNuevoPin;
+    if (cleanPinAcceso !== undefined) payload.pin_acceso = cleanPinAcceso;
+    if (cleanEmail !== undefined) payload.email_admin = cleanEmail;
 
     const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanId)}`, {
       method: 'PATCH',
@@ -242,17 +245,33 @@ export const conferenceService = {
   },
 
   // ── 2. GESTIÓN DE COMITÉS ──
+  async exportarHistorialComite(conferenciaId, comiteId) {
+    const { mensajes } = await luax.getCommitteeHistory(sanitizeId(comiteId), sanitizeId(conferenciaId));
+    return mensajes;
+  },
+
+  async restaurarHistorialComite(conferenciaId, comiteId, mensajes) {
+    if (!luax || !Array.isArray(mensajes)) throw new Error(i18n.t('ui.couldNotExtractValidCommitteeData'));
+    for (let start = 0; start < mensajes.length; start += 10) {
+      await luax.restoreCommitteeHistory(sanitizeId(comiteId), sanitizeId(conferenciaId), mensajes.slice(start, start + 10));
+    }
+  },
+
   async crearOActualizarComite(conferenciaId, { id, nombre, pin_mesa, datos_json }) {
-    const cleanConfId = String(conferenciaId).trim().toLowerCase();
-    const finalId = id ? id.toLowerCase().trim() : `${cleanConfId}_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`;
+    const cleanConfId = sanitizeId(conferenciaId);
+    const finalId = id ? sanitizeId(id) : `${cleanConfId}_${crypto.randomUUID().slice(0, 8)}`;
+    const cleanNombre = nombre ? sanitizeString(nombre, 255) : undefined;
+    const cleanPinMesa = pin_mesa ? sanitizePin(pin_mesa) : null;
+    const cleanDatos = sanitizeJsonObject(datos_json || {});
+    if (luax) return luax.createCommittee(cleanConfId, { id: finalId, nombre: cleanNombre, pin_mesa: cleanPinMesa, datos_json: cleanDatos });
     const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/comites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: finalId,
-        nombre: nombre ? nombre.trim() : undefined,
-        pin_mesa: pin_mesa ? pin_mesa.trim() : null,
-        datos_json: datos_json || {}
+        nombre: cleanNombre,
+        pin_mesa: cleanPinMesa,
+        datos_json: cleanDatos
       })
     });
     const data = await handleResponse(res);
@@ -260,15 +279,17 @@ export const conferenceService = {
     return data;
   },
 
-  async actualizarComite(comiteId, { nombre, pin_mesa, tipo_sesion, topico_actual, datos_json } = {}) {
+  async actualizarComite(comiteId, { nombre, pin_mesa, tipo_sesion, topico_actual, datos_json, backupOnly } = {}) {
     if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
-    const cleanComiteId = String(comiteId).trim();
+    const cleanComiteId = sanitizeId(comiteId);
     const payload = {};
-    if (nombre !== undefined) payload.nombre = nombre !== null ? String(nombre).trim() : null;
-    if (pin_mesa !== undefined) payload.pin_mesa = pin_mesa !== null ? String(pin_mesa).trim() : null;
-    if (tipo_sesion !== undefined) payload.tipo_sesion = String(tipo_sesion).toLowerCase();
-    if (topico_actual !== undefined) payload.topico_actual = topico_actual !== null ? String(topico_actual).trim() : '';
-    if (datos_json !== undefined) payload.datos_json = datos_json;
+    if (nombre !== undefined) payload.nombre = nombre !== null ? sanitizeString(nombre, 255) : null;
+    if (pin_mesa !== undefined) payload.pin_mesa = pin_mesa !== null ? sanitizePin(pin_mesa) : null;
+    if (tipo_sesion !== undefined) payload.tipo_sesion = sanitizeString(tipo_sesion, 32).toLowerCase();
+    if (topico_actual !== undefined) payload.topico_actual = topico_actual !== null ? sanitizeTopic(topico_actual, 2000) : '';
+    if (datos_json !== undefined) payload.datos_json = sanitizeJsonObject(datos_json);
+    if (luax && backupOnly === true) payload.backupOnly = true;
+    if (luax) return luax.updateCommittee(cleanComiteId, this.obtenerSesionActiva()?.id, payload);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}`, {
@@ -326,15 +347,20 @@ export const conferenceService = {
 
   // ── 3. AVISOS Y BROADCAST ──
   async crearAviso(conferenciaId, { comite_id, emisor, tipo, mensaje }) {
-    const cleanConfId = String(conferenciaId).trim().toLowerCase();
+    const cleanConfId = sanitizeId(conferenciaId);
+    const cleanComiteId = comite_id ? sanitizeString(comite_id, 64) : null;
+    const cleanEmisor = emisor ? sanitizeString(emisor, 128) : 'organizacion';
+    const cleanTipo = tipo ? sanitizeString(tipo, 32) : 'info';
+    const cleanMensaje = sanitizeString(mensaje, 8000);
+    if (luax) return luax.createNotice(cleanConfId, localStorage.getItem('openmun_current_comite_id'), { comite_id: cleanComiteId, tipo: cleanTipo, mensaje: cleanMensaje });
     const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/avisos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        comite_id: comite_id ? comite_id.trim() : null,
-        emisor: emisor || 'organizacion',
-        tipo: tipo || 'info',
-        mensaje: mensaje.trim()
+        comite_id: cleanComiteId,
+        emisor: cleanEmisor,
+        tipo: cleanTipo,
+        mensaje: cleanMensaje
       })
     });
     const data = await handleResponse(res);
@@ -347,17 +373,18 @@ export const conferenceService = {
   },
 
   async obtenerAvisos(conferenciaId, comiteId = null, role = null, comiteNombre = null, todos = false) {
-    const cleanConfId = String(conferenciaId).trim().toLowerCase();
+    const cleanConfId = sanitizeId(conferenciaId);
+    if (luax) return luax.getNotices(cleanConfId, comiteId || localStorage.getItem('openmun_current_comite_id'), todos);
     let url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/avisos`;
     const params = [];
     if (comiteId) {
-      params.push(`comite_id=${encodeURIComponent(String(comiteId).trim())}`);
+      params.push(`comite_id=${encodeURIComponent(sanitizeString(comiteId, 64))}`);
     }
     if (role) {
-      params.push(`role=${encodeURIComponent(String(role).trim())}`);
+      params.push(`role=${encodeURIComponent(sanitizeString(role, 32))}`);
     }
     if (comiteNombre) {
-      params.push(`comite_nombre=${encodeURIComponent(String(comiteNombre).trim())}`);
+      params.push(`comite_nombre=${encodeURIComponent(sanitizeString(comiteNombre, 255))}`);
     }
     if (todos) {
       params.push('todos=true');
@@ -365,59 +392,52 @@ export const conferenceService = {
     if (params.length > 0) {
       url += `?${params.join('&')}`;
     }
-    try {
-      const data = await fetchWithDeduplication(url, 4000);
-      const items = Array.isArray(data) ? data : (data?.avisos && Array.isArray(data.avisos) ? data.avisos : []);
-      if (items.length > 0) {
-        this.guardarAvisosEnMemoria(items);
-      }
-      return data;
-    } catch (err) {
-      // Si falla la red, intentar devolver avisos en memoria para mantener la UI funcionando
-      if (_avisosMemoria.length > 0) {
-        return { avisos: _avisosMemoria };
-      }
-      throw err;
-    }
+    return fetchWithDeduplication(url, 4000);
   },
 
   async desactivarAviso(avisoId, conferenciaId = null) {
-    const res = await fetch(`${API_BASE_URL}/api/avisos/${encodeURIComponent(avisoId)}/desactivar`, {
+    const cleanAvisoId = sanitizeDatabaseId(avisoId) || sanitizeString(avisoId, 64);
+    const cleanConfId = conferenciaId ? sanitizeId(conferenciaId) : null;
+    if (luax) return luax.deactivateNotice(cleanConfId || this.obtenerSesionActiva()?.id, localStorage.getItem('openmun_current_comite_id'), cleanAvisoId);
+    const res = await fetch(`${API_BASE_URL}/api/avisos/${encodeURIComponent(cleanAvisoId)}/desactivar`, {
       method: 'PATCH'
     });
     const data = await handleResponse(res);
-    if (conferenciaId) {
-      invalidateConferenceCache(conferenciaId);
+    if (cleanConfId) {
+      invalidateConferenceCache(cleanConfId);
     } else {
       requestCache.clear();
     }
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('openmun_aviso_desactivado', { detail: { id: avisoId } }));
+      window.dispatchEvent(new CustomEvent('openmun_aviso_desactivado', { detail: { id: cleanAvisoId } }));
     }
     return data;
   },
 
   // ── 4. CHECKLIST DE STAFF ──
   async obtenerChecklist(conferenciaId, comiteId = null) {
-    const cleanConfId = String(conferenciaId).trim().toLowerCase();
+    const cleanConfId = sanitizeId(conferenciaId);
     if (luax) return luax.getChecklist(cleanConfId, comiteId);
     let url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist`;
     if (comiteId) {
-      url += `?comite_id=${encodeURIComponent(String(comiteId).trim())}`;
+      url += `?comite_id=${encodeURIComponent(sanitizeString(comiteId, 64))}`;
     }
     return fetchWithDeduplication(url, 4000);
   },
 
   async crearTareaChecklist(conferenciaId, { comite_id, titulo, asignado_a }) {
-    const cleanConfId = String(conferenciaId).trim().toLowerCase();
-    if (luax) return luax.createChecklistTask(cleanConfId, { comite_id, titulo, asignado_a });
+    const cleanConfId = sanitizeId(conferenciaId);
+    const cleanComiteId = comite_id ? sanitizeString(comite_id, 64) : null;
+    const cleanTitulo = sanitizeString(titulo, 255);
+    const cleanAsignadoA = asignado_a ? sanitizeString(asignado_a, 128) : null;
+    if (luax) return luax.createChecklistTask(cleanConfId, { comite_id: cleanComiteId, titulo: cleanTitulo, asignado_a: cleanAsignadoA });
     const res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        comite_id: comite_id ? String(comite_id).trim() : null,
-        titulo: String(titulo).trim(),
-        asignado_a: asignado_a ? String(asignado_a).trim() : null
+        comite_id: cleanComiteId,
+        titulo: cleanTitulo,
+        asignado_a: cleanAsignadoA
       })
     });
     const data = await handleResponse(res);
@@ -426,8 +446,10 @@ export const conferenceService = {
   },
 
   async toggleTareaChecklist(tareaId, completado, conferenciaId) {
-    if (luax) return luax.setChecklistTaskDone(conferenciaId, tareaId, completado);
-    const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}/toggle`, {
+    const cleanTareaId = sanitizeDatabaseId(tareaId) || sanitizeString(tareaId, 64);
+    const cleanConfId = conferenciaId ? sanitizeId(conferenciaId) : null;
+    if (luax) return luax.setChecklistTaskDone(cleanConfId, cleanTareaId, completado);
+    const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(cleanTareaId)}/toggle`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completado: Boolean(completado) })
@@ -438,8 +460,10 @@ export const conferenceService = {
   },
 
   async eliminarTareaChecklist(tareaId, conferenciaId) {
-    if (luax) return luax.removeChecklistTask(conferenciaId, tareaId);
-    const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(tareaId)}`, {
+    const cleanTareaId = sanitizeDatabaseId(tareaId) || sanitizeString(tareaId, 64);
+    const cleanConfId = conferenciaId ? sanitizeId(conferenciaId) : null;
+    if (luax) return luax.removeChecklistTask(cleanConfId, cleanTareaId);
+    const res = await fetch(`${API_BASE_URL}/api/checklist/${encodeURIComponent(cleanTareaId)}`, {
       method: 'DELETE'
     });
     const data = await handleResponse(res);
@@ -448,11 +472,12 @@ export const conferenceService = {
   },
 
   async eliminarTareasCompletadas(conferenciaId, comiteId = null) {
-    const cleanConfId = String(conferenciaId).trim().toLowerCase();
-    if (luax) return luax.removeCompletedChecklistTasks(cleanConfId, comiteId);
+    const cleanConfId = sanitizeId(conferenciaId);
+    const cleanComiteId = comiteId ? sanitizeString(comiteId, 64) : null;
+    if (luax) return luax.removeCompletedChecklistTasks(cleanConfId, cleanComiteId);
     let url = `${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/checklist/completados`;
-    if (comiteId) {
-      url += `?comite_id=${encodeURIComponent(String(comiteId).trim())}`;
+    if (cleanComiteId) {
+      url += `?comite_id=${encodeURIComponent(cleanComiteId)}`;
     }
     const res = await fetch(url, {
       method: 'DELETE'
@@ -464,8 +489,8 @@ export const conferenceService = {
 
   // ── 5. VERIFICACIÓN Y UTILIDADES ──
   async verificarAdmin(conferenciaId, pin) {
-    const cleanId = String(conferenciaId).trim().toLowerCase();
-    const cleanPin = String(pin || '').trim();
+    const cleanId = sanitizeId(conferenciaId);
+    const cleanPin = sanitizePin(pin);
     if (!cleanPin) {
       const err = new Error(i18n.t('ui.secretariatPinRequired'));
       err.status = 400;
@@ -509,17 +534,17 @@ export const conferenceService = {
 
   async verificarPinMesa(comiteId, pin, pinEsperado = null) {
     if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
-    const cleanComiteId = String(comiteId).trim();
-    const cleanPin = String(pin || '').trim();
+    const cleanComiteId = sanitizeId(comiteId);
+    const cleanPin = sanitizePin(pin);
     if (!cleanPin) {
       const err = new Error(i18n.t('ui.chairPinRequired'));
       err.status = 400;
       throw err;
     }
 
-    if (luax) return luax.verifyChair(cleanComiteId.toLowerCase(), cleanPin);
+    if (luax) return luax.verifyChair(cleanComiteId, cleanPin);
     // 1. Si se conoce el pin_mesa esperado del comité, verificar coincidencia estricta
-    if (pinEsperado && String(pinEsperado).trim() !== cleanPin) {
+    if (pinEsperado && sanitizePin(pinEsperado) !== cleanPin) {
       const err = new Error(i18n.t('ui.incorrectChairPin'));
       err.status = 401;
       throw err;
@@ -557,8 +582,8 @@ export const conferenceService = {
 
   async obtenerComite(comiteId) {
     if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
-    const cleanId = String(comiteId).trim();
-    if (luax) return luax.getCommittee(cleanId.toLowerCase(), this.obtenerSesionActiva()?.id);
+    const cleanId = sanitizeId(comiteId);
+    if (luax) return luax.getCommittee(cleanId, this.obtenerSesionActiva()?.id);
     const res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanId)}`);
     if (res.ok) {
       return await handleResponse(res);
@@ -583,14 +608,15 @@ export const conferenceService = {
 
   async eliminarComite(comiteId, conferenciaId = null) {
     if (!comiteId) throw new Error(i18n.t('ui.committeeIdRequired'));
-    const cleanComiteId = String(comiteId).trim();
+    const cleanComiteId = sanitizeId(comiteId);
+    const cleanConfId = conferenciaId ? sanitizeId(conferenciaId) : (this.obtenerSesionActiva()?.id ? sanitizeId(this.obtenerSesionActiva().id) : null);
+    if (luax) return luax.deleteCommittee(cleanComiteId, cleanConfId);
 
     let res = await fetch(`${API_BASE_URL}/api/comites/${encodeURIComponent(cleanComiteId)}`, {
       method: 'DELETE'
     });
 
-    if (res.status === 404 && conferenciaId) {
-      const cleanConfId = String(conferenciaId).trim().toLowerCase();
+    if (res.status === 404 && cleanConfId) {
       res = await fetch(`${API_BASE_URL}/api/conferencias/${encodeURIComponent(cleanConfId)}/comites/${encodeURIComponent(cleanComiteId)}`, {
         method: 'DELETE'
       });
@@ -598,8 +624,8 @@ export const conferenceService = {
 
     const data = await handleResponse(res);
 
-    if (conferenciaId) {
-      invalidateConferenceCache(conferenciaId);
+    if (cleanConfId) {
+      invalidateConferenceCache(cleanConfId);
     } else {
       requestCache.clear();
     }
@@ -622,19 +648,6 @@ export const conferenceService = {
   },
 
   // ── 4. GESTIÓN LOCAL DE CONFERENCIA ACTIVA Y AVISOS ──
-  guardarAvisosEnMemoria(avisos) {
-    if (Array.isArray(avisos)) {
-      const map = new Map();
-      avisos.forEach(a => { if (a && a.id) map.set(String(a.id), a); });
-      _avisosMemoria.forEach(a => { if (a && a.id && !map.has(String(a.id))) map.set(String(a.id), a); });
-      _avisosMemoria = Array.from(map.values());
-    }
-  },
-
-  obtenerAvisosEnMemoria() {
-    return _avisosMemoria;
-  },
-
   guardarSesionActiva(conferenciaData) {
     try {
       const actual = this.obtenerSesionActiva() || {};
@@ -701,7 +714,6 @@ export const conferenceService = {
           }
         });
       }
-      _avisosMemoria = [];
     } catch (e) {
       console.warn('Error al limpiar sesión activa de conferencia:', e);
     }

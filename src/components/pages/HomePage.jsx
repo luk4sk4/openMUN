@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Play,
   Radio,
@@ -18,8 +18,6 @@ import {
 import OpenMunLogo from '../common/OpenMunLogo';
 import YoutubeIcon from '../common/YoutubeIcon';
 import { useTranslation } from 'react-i18next';
-import { lazyWithRetry } from '../../utils/lazyWithRetry';
-const CreateConferenceModal = lazyWithRetry(() => import('../modals/CreateConferenceModal'), 'CreateConferenceModal');
 import HowToUseModal from '../modals/HowToUseModal';
 import KineticGrid from '../../assets/Kinetic';
 import { navigateTo } from '../../utils/router';
@@ -89,7 +87,6 @@ const FAQ_ITEMS = [
 
 const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
   const { t } = useTranslation();
-  const [isCreateConfModalOpen, setIsCreateConfModalOpen] = useState(false);
   const [isHowToUseModalOpen, setIsHowToUseModalOpen] = useState(false);
 
   // Copiar email
@@ -234,7 +231,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 onClick={onNavigateToComienzo}
                 style={{
                   width: '100%',
-                  padding: '0.95rem 1.25rem',
+                  minHeight: '4.25rem',
+                  padding: '0.85rem 1.2rem',
+                  boxSizing: 'border-box',
                   backgroundColor: 'var(--btn-bg)',
                   color: 'var(--btn-text)',
                   border: '1px solid var(--btn-bg)',
@@ -249,15 +248,15 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.08)'}
                 onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <span style={{ fontSize: '0.98rem', fontWeight: '700' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: '700', lineHeight: 1.25 }}>
                     {t('home.chairCardTitle', 'Iniciar Mesa de Presidencia')}
                   </span>
-                  <span style={{ fontSize: '0.78rem', opacity: 0.92, fontWeight: '400' }}>
+                  <span style={{ fontSize: '0.76rem', opacity: 0.92, fontWeight: '400', lineHeight: 1.3 }}>
                     {t('home.chairCardDescShort', 'Panel de moderación, oradores, caucuses y votaciones')}
                   </span>
                 </div>
-                <Play size={18} fill="currentColor" />
+                <Play size={18} fill="currentColor" style={{ flexShrink: 0, marginLeft: '0.75rem' }} />
               </button>
 
               {/* Acción Secundaria: Unirse como Delegación */}
@@ -266,7 +265,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   onClick={onNavigateToJoin}
                   style={{
                     width: '100%',
-                    padding: '0.82rem 1.15rem',
+                    minHeight: '4.25rem',
+                    padding: '0.85rem 1.2rem',
+                    boxSizing: 'border-box',
                     backgroundColor: controlBg,
                     color: textPrimary,
                     border: `1px solid ${borderColor}`,
@@ -287,15 +288,15 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                     e.currentTarget.style.borderColor = borderColor;
                   }}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: '650' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                    <span style={{ fontSize: '0.92rem', fontWeight: '650', lineHeight: 1.25 }}>
                       {t('home.joinCardTitle', 'Unirse como Delegación')}
                     </span>
-                    <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400' }}>
+                    <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400', lineHeight: 1.3 }}>
                       {t('home.joinCardDescShort', 'Conéctate a una sala activa con código o QR')}
                     </span>
                   </div>
-                  <Radio size={16} style={{ color: textMuted }} />
+                  <Radio size={18} style={{ color: textMuted, flexShrink: 0, marginLeft: '0.75rem' }} />
                 </button>
               )}
 
@@ -308,7 +309,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 }}
                 style={{
                   width: '100%',
-                  padding: '1.15rem 1.25rem',
+                  minHeight: '4.25rem',
+                  padding: '0.85rem 1.2rem',
+                  boxSizing: 'border-box',
                   backgroundColor: controlBg,
                   color: textPrimary,
                   border: `1px solid ${borderColor}`,
@@ -329,15 +332,15 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   e.currentTarget.style.borderColor = borderColor;
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <span style={{ fontSize: '1.05rem', fontWeight: '700' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: '650', lineHeight: 1.25 }}>
                     {t('conferences.createTitle', 'Crear Nueva Conferencia')}
                   </span>
-                  <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400' }}>
+                  <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400', lineHeight: 1.3 }}>
                     {t('conferences.createDescShort', 'Organiza un evento multi-comité sincronizado en vivo')}
                   </span>
                 </div>
-                <Building2 size={20} style={{ color: textMuted }} />
+                <Building2 size={18} style={{ color: textMuted, flexShrink: 0, marginLeft: '0.75rem' }} />
               </button>
 
               {/* Acción Secundaria: Unirse a Conferencia */}
@@ -349,7 +352,9 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                 }}
                 style={{
                   width: '100%',
-                  padding: '0.82rem 1.15rem',
+                  minHeight: '4.25rem',
+                  padding: '0.85rem 1.2rem',
+                  boxSizing: 'border-box',
                   backgroundColor: controlBg,
                   color: textPrimary,
                   border: `1px solid ${borderColor}`,
@@ -370,15 +375,15 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
                   e.currentTarget.style.borderColor = borderColor;
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: '650' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: '650', lineHeight: 1.25 }}>
                     {t('conferences.joinTitle', 'Unirse a una Conferencia')}
                   </span>
-                  <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400' }}>
+                  <span style={{ fontSize: '0.76rem', color: textMuted, fontWeight: '400', lineHeight: 1.3 }}>
                     {t('conferences.joinDescShort', 'Explora comités de un evento o entra como mesa directiva')}
                   </span>
                 </div>
-                <Layers size={16} style={{ color: textMuted }} />
+                <Layers size={18} style={{ color: textMuted, flexShrink: 0, marginLeft: '0.75rem' }} />
               </button>
 
               {/* Acceso al modal: ¿Cómo usar OpenMUN? */}
@@ -949,15 +954,6 @@ const HomePage = ({ onNavigateToComienzo, onNavigateToJoin, isLight }) => {
           </div>
         </footer>
       </div>
-
-      {/* Modal Crear Conferencia */}
-      <Suspense fallback={null}>
-        <CreateConferenceModal
-          isOpen={isCreateConfModalOpen}
-          onClose={() => setIsCreateConfModalOpen(false)}
-          isLight={isLight}
-        />
-      </Suspense>
 
       {/* Modal Cómo Usar OpenMUN */}
       <HowToUseModal

@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 export function getNormalizedRoute() {
   if (typeof window === 'undefined') return null;
 
-  const path = window.location.pathname.toLowerCase();
+  const path = window.location.pathname.toLowerCase().replace(/\/+/g, '/').replace(/(.+)\/$/, '$1');
   const searchParams = new URLSearchParams(window.location.search);
   const pageParam = searchParams.get('page')?.toLowerCase();
   const hash = window.location.hash.toLowerCase().replace('#', '');

@@ -23,26 +23,33 @@ import {
   Trophy,
   PartyPopper,
   Hand,
-  Plus
+  Plus,
+  ArrowRight
 } from 'lucide-react';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { BotonesConDerechos, ListaDerechos } from './VotosConDerechos';
 import CountryFlag from '../common/CountryFlag';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '../../context/ToastContext';
 
-const MiniVotacion = () => {
+const MiniVotacion = ({ hideHeader = false }) => {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const { isLight } = useAccessibility();
   const {
-    paises,
+    paises: rawPaises,
     votacionSesion,
     registrarVotoPais,
     configurarVotacion,
     resetearVotacion,
     enmiendasSesion,
-    resolverEnmiendaResolucion
+    resolverEnmiendaResolucion,
+    siguienteTemaAgenda,
+    irASiguienteTema
   } = useSession();
+
+  const paises = Array.isArray(rawPaises) ? rawPaises : [];
 
   const [modoVista, setModoVista] = useState('manos'); // 'manos' | 'rollcall' | 'lista'
   const [showSettings, setShowSettings] = useState(false);
@@ -54,8 +61,19 @@ const MiniVotacion = () => {
   const [rondaRollCall, setRondaRollCall] = useState(1); // 1 = Primera Ronda, 2 = Segunda Ronda (Pasados)
   const [paisesPasados, setPaisesPasados] = useState([]); // IDs de países que pasaron en Ronda 1
 
-  // Configuración de la votación actual
-  const { asunto = i18n.t('ui.amendmentVote'), tipoVotacion = 'procedural', tipoMayoria = 'simple', aplicarVeto = true, votos = {} } = votacionSesion || {};
+  // Configuración de la votación actual (null-safe)
+  const {
+    asunto: rawAsunto,
+    tipoVotacion: rawTipoVotacion,
+    tipoMayoria: rawTipoMayoria,
+    aplicarVeto: rawAplicarVeto,
+    votos: rawVotos
+  } = votacionSesion || {};
+  const asunto = typeof rawAsunto === 'string' && rawAsunto.trim() ? rawAsunto : i18n.t('ui.amendmentVote');
+  const tipoVotacion = rawTipoVotacion || 'procedural';
+  const tipoMayoria = rawTipoMayoria || 'simple';
+  const aplicarVeto = rawAplicarVeto ?? true;
+  const votos = (rawVotos && typeof rawVotos === 'object' && !Array.isArray(rawVotos)) ? rawVotos : {};
 
   // Formulario local de ajustes
   const [tempAsunto, setTempAsunto] = useState(asunto);
@@ -65,10 +83,10 @@ const MiniVotacion = () => {
 
   // Intentar extraer el país proponente del asunto (ej. "Enmienda de Adición - Artículo 2 (Francia)")
   const proponenteDetectado = useMemo(() => {
-    const match = asunto.match(/\(([^)]+)\)$/);
+    const match = (asunto || '').match(/\(([^)]+)\)$/);
     if (match && match[1]) {
       const nombrePosible = match[1].trim();
-      const paisObj = (paises || []).find(p => p.nombre?.toLowerCase() === nombrePosible.toLowerCase());
+      const paisObj = paises.find(p => p && p.nombre?.toLowerCase() === nombrePosible.toLowerCase());
       return { nombre: nombrePosible, paisObj };
     }
     return null;
@@ -76,7 +94,7 @@ const MiniVotacion = () => {
 
   // Delegaciones presentes (excluyendo ausentes)
   const paisesAsistentes = useMemo(() => {
-    return (paises || []).filter(p => p.estatus === 'Presente' || p.estatus === 'Presente y Votando');
+    return paises.filter(p => p && (p.estatus === 'Presente' || p.estatus === 'Presente y Votando'));
   }, [paises]);
 
   const totalAsistentes = paisesAsistentes.length;
@@ -154,11 +172,11 @@ const MiniVotacion = () => {
 
   // Enmienda asociada si existe en el controlador de enmiendas
   const enmiendaAsociada = useMemo(() => {
-    const list = enmiendasSesion?.enmiendas || [];
+    const list = Array.isArray(enmiendasSesion?.enmiendas) ? enmiendasSesion.enmiendas : [];
     if (proponenteDetectado?.nombre) {
-      return list.find(e => e.paisProponente?.toLowerCase() === proponenteDetectado.nombre.toLowerCase() && e.estado === 'pendiente') || null;
+      return list.find(e => e && e.paisProponente?.toLowerCase() === proponenteDetectado.nombre.toLowerCase() && e.estado === 'pendiente') || null;
     }
-    return list.find(e => e.estado === 'pendiente') || null;
+    return list.find(e => e && e.estado === 'pendiente') || null;
   }, [enmiendasSesion, proponenteDetectado]);
 
   // Manejo de voto en Roll Call
@@ -236,77 +254,77 @@ const MiniVotacion = () => {
       height: '100%',
       backgroundColor: 'var(--panel-bg)',
       color: 'var(--text-color)',
-      borderRadius: '8px',
+      borderRadius: hideHeader ? '0' : 'var(--border-radius, 6px)',
       overflow: 'hidden',
       position: 'relative'
     }}>
       {/* ── HEADER MINI VOTACIÓN (Compacto) ── */}
-      <div style={{
-        padding: '0.5rem 0.75rem',
-        paddingRight: '60px', // Espacio para controles superiores
-        borderBottom: '1px solid var(--subborder-color)',
-        backgroundColor: 'var(--card-header-bg)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.45rem',
-        flexShrink: 0
-      }}>
-
-
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{
-            fontSize: '0.85rem',
-            fontWeight: '650',
-            color: 'var(--text-color)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            {asunto || t('ui.rollCallVoting')}
-          </div>
-
-          <div style={{
-            fontSize: '0.64rem',
-            color: 'var(--muted-text)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.3rem',
-            flexWrap: 'nowrap',
-            overflow: 'hidden'
-          }}>
-            <span style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--subborder-color)',
-              color: 'var(--muted-text)',
-              padding: '0.08rem 0.35rem',
-              borderRadius: 'var(--border-radius, 4px)',
-              fontWeight: '600',
-              fontSize: '0.62rem'
+      {!hideHeader && (
+        <div style={{
+          padding: '0.5rem 0.75rem',
+          paddingRight: '60px', // Espacio para controles superiores
+          borderBottom: '1px solid var(--subborder-color)',
+          backgroundColor: 'var(--card-header-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          flexShrink: 0
+        }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: '0.85rem',
+              fontWeight: '650',
+              color: 'var(--text-color)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
             }}>
-              {tipoVotacion === 'substantive' ? t('voting.substantiveShort') : t('voting.proceduralShort')}
-            </span>
+              {asunto || t('ui.rollCallVoting')}
+            </div>
 
-            {proponenteDetectado && (
+            <div style={{
+              fontSize: '0.64rem',
+              color: 'var(--muted-text)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              flexWrap: 'nowrap',
+              overflow: 'hidden'
+            }}>
               <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.2rem',
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                padding: '0.05rem 0.3rem',
-                borderRadius: '3px',
-                color: 'var(--text-color)',
-                fontWeight: '700',
-                fontSize: '0.6rem'
+                backgroundColor: 'var(--panel-color)',
+                border: '1px solid var(--subborder-color)',
+                color: 'var(--muted-text)',
+                padding: '0.08rem 0.35rem',
+                borderRadius: 'var(--border-radius, 4px)',
+                fontWeight: '600',
+                fontSize: '0.62rem'
               }}>
-                <CountryFlag country={proponenteDetectado.paisObj} bandera={proponenteDetectado.paisObj?.bandera} nombre={proponenteDetectado.nombre} size="xs" />
-                <span style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {proponenteDetectado.nombre}
-                </span>
+                {tipoVotacion === 'substantive' ? t('voting.substantiveShort') : t('voting.proceduralShort')}
               </span>
-            )}
+
+              {proponenteDetectado && (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  padding: '0.05rem 0.3rem',
+                  borderRadius: '3px',
+                  color: 'var(--text-color)',
+                  fontWeight: '700',
+                  fontSize: '0.6rem'
+                }}>
+                  <CountryFlag country={proponenteDetectado.paisObj} bandera={proponenteDetectado.paisObj?.bandera} nombre={proponenteDetectado.nombre} size="xs" />
+                  <span style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {proponenteDetectado.nombre}
+                  </span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── BARRA DE HERRAMIENTAS Y VISTAS (Compacta) ── */}
       <div style={{
@@ -1075,6 +1093,58 @@ const MiniVotacion = () => {
 
         {/* Estado / Dictamen Interactivo y Reset */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          {votacionTerminada && (
+            <button
+              type="button"
+              onClick={() => {
+                const res = irASiguienteTema();
+                setIndiceRollCall(0);
+                setRondaRollCall(1);
+                setPaisesPasados([]);
+                setShowResultModal(false);
+                if (res?.siguienteTema) {
+                  const msg = t('voting.nextTopicActivatedDesc', {
+                    topic: res.siguienteTema,
+                    defaultValue: `Tema activo: ${res.siguienteTema}`
+                  });
+                  addToast({
+                    title: t('voting.nextTopicActivatedTitle', 'Siguiente punto de agenda'),
+                    message: msg,
+                    description: msg,
+                    type: 'success'
+                  });
+                } else {
+                  const msg = t('voting.allTopicsCompletedDesc', 'Se han concluido todos los puntos de agenda propuestos.');
+                  addToast({
+                    title: t('voting.agendaCompletedTitle', 'Agenda concluida'),
+                    message: msg,
+                    description: msg,
+                    type: 'info'
+                  });
+                }
+              }}
+              title={siguienteTemaAgenda
+                ? `${t('voting.goToNextTopicTitle', 'Avanzar automáticamente al siguiente punto de agenda')}: ${siguienteTemaAgenda.titulo}`
+                : t('voting.goToNextTopicTitle', 'Avanzar automáticamente al siguiente punto de agenda')}
+              style={{
+                backgroundColor: 'var(--btn-bg)',
+                border: '1px solid var(--btn-bg)',
+                color: 'var(--btn-text)',
+                padding: '0.18rem 0.5rem',
+                borderRadius: 'var(--border-radius, 4px)',
+                fontSize: '0.68rem',
+                fontWeight: '750',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+            >
+              <span>{t('voting.goToNextTopic', 'Ir a siguiente tema')}</span>
+              <ArrowRight size={11} />
+            </button>
+          )}
+
           <div
             onClick={() => votosEmitidos > 0 && setShowResultModal(true)}
             style={{
@@ -1247,6 +1317,54 @@ const MiniVotacion = () => {
                   {estadoVotacion === 'APROBADA' ? <FileCheck2 size={13} /> : <FileX2 size={13} />} {estadoVotacion === 'APROBADA' ? t('ui.applyAcceptanceToResolution') : t('ui.recordAsRejected')}
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  const res = irASiguienteTema();
+                  setIndiceRollCall(0);
+                  setRondaRollCall(1);
+                  setPaisesPasados([]);
+                  setShowResultModal(false);
+                  if (res?.siguienteTema) {
+                    const msg = t('voting.nextTopicActivatedDesc', {
+                      topic: res.siguienteTema,
+                      defaultValue: `Tema activo: ${res.siguienteTema}`
+                    });
+                    addToast({
+                      title: t('voting.nextTopicActivatedTitle', 'Siguiente punto de agenda'),
+                      message: msg,
+                      description: msg,
+                      type: 'success'
+                    });
+                  } else {
+                    const msg = t('voting.allTopicsCompletedDesc', 'Se han concluido todos los puntos de agenda propuestos.');
+                    addToast({
+                      title: t('voting.agendaCompletedTitle', 'Agenda concluida'),
+                      message: msg,
+                      description: msg,
+                      type: 'info'
+                    });
+                  }
+                }}
+                style={{
+                  backgroundColor: 'var(--btn-bg)',
+                  border: '1px solid var(--btn-bg)',
+                  color: 'var(--btn-text)',
+                  padding: '0.48rem',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  fontSize: '0.74rem',
+                  fontWeight: '750',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <span>{t('voting.goToNextTopic', 'Ir a siguiente tema')}</span>
+                <ArrowRight size={13} />
+              </button>
 
               <div style={{ display: 'flex', gap: '0.35rem' }}>
                 <button

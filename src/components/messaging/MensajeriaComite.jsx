@@ -1,3 +1,4 @@
+import peerService, { canReceiveNote } from '../../services/peerService.js';
 import i18n from '../../languages/index.js';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
@@ -185,68 +186,10 @@ const MensajeriaComite = ({
     }
   }, [notes.length, markNotesAsRead]);
 
-  // Filtrado de notas de acuerdo al rol del usuario
-  const notasRol = useMemo(() => {
-    return notes.filter(n => {
-      if (!n || !n.text) return false;
-      if (['pending', 'rejected'].includes(n.status) && !['staff', 'chair', 'secretariat'].includes(effectiveRole)) {
-        return effectiveRole === 'delegate' && effectiveCountry && n.from?.toLowerCase().trim() === effectiveCountry.toLowerCase().trim();
-      }
-
-      // Host Chair y Secretaría ven todas las notas del comité
-      if (effectiveRole === 'chair' || effectiveRole === 'secretariat') {
-        return true;
-      }
-
-      // Staff ve notas a STAFF, de staff, o dirigidas/enviadas por la Mesa (pajes), o de tipo paje/logística o dirigidas a TODOS
-      if (effectiveRole === 'staff') {
-        const dest = (n.to || '').toUpperCase().trim();
-        return (
-          n.status === 'pending' || n.status === 'rejected' || n.reviewedAt ||
-          dest === 'STAFF' ||
-          dest === 'CHAIR' ||
-          dest === 'MESA' ||
-          dest === 'MESA DE PRESIDENCIA' ||
-          dest === 'TODOS' ||
-          dest === 'ALL' ||
-          n.fromRole === 'staff' ||
-          n.fromRole === 'chair' ||
-          n.from === 'Staff' ||
-          n.from === 'Mesa de Presidencia' ||
-          n.type === 'logistica' ||
-          n.type === 'paje'
-        );
-      }
-
-      // Backroom ve notas de crisis, o dirigidas/enviadas por backroom
-      if (effectiveRole === 'backroom') {
-        return (
-          n.to?.toUpperCase() === 'BACKROOM' ||
-          n.fromRole === 'backroom' ||
-          n.from?.toUpperCase() === 'BACKROOM' ||
-          n.to?.toUpperCase() === 'TODOS' ||
-          n.type === 'crisis' ||
-          n.type === 'backroom'
-        );
-      }
-
-      // Delegado: ve notas donde es emisor, destinatario directo, o emitidas a TODOS
-      if (effectiveRole === 'delegate' && effectiveCountry) {
-        const cleanUser = effectiveCountry.toLowerCase().trim();
-        const cleanTo = (n.to || '').toLowerCase().trim();
-        const cleanFrom = (n.from || '').toLowerCase().trim();
-
-        return (
-          cleanTo === cleanUser ||
-          cleanFrom === cleanUser ||
-          n.to?.toUpperCase() === 'TODOS' ||
-          n.to?.toUpperCase() === 'ALL'
-        );
-      }
-
-      return true;
-    });
-  }, [notes, effectiveRole, effectiveCountry]);
+  const notasRol = useMemo(
+    () => notes.filter(note => canReceiveNote(note, effectiveRole, effectiveCountry, peerService.clientId)),
+    [notes, effectiveRole, effectiveCountry]
+  );
 
   // Filtrado adicional por dirección, categoría y texto de búsqueda
   const notasFiltradas = useMemo(() => {
@@ -282,12 +225,12 @@ const MensajeriaComite = ({
   }, [notasRol, filtroDireccion, filtroTipo, busqueda, effectiveCountry, effectiveRole]);
 
   // Manejador de Envío
-  const handleEnviarNota = (e) => {
+  const handleEnviarNota = async (e) => {
     if (e) e.preventDefault();
     if (!textoNota.trim() || enviando) return;
 
     setEnviando(true);
-    const ok = sendNote(destinatario, textoNota.trim(), tipoNota);
+    const ok = await sendNote(destinatario, textoNota.trim(), tipoNota);
 
     if (ok) {
       if (sonidoHabilitado) {

@@ -1,7 +1,17 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { hashPin, matchesPin, createSessions } = require('../src/services/auth');
+const { hashPin, matchesPin, createSessions, createLoginLimiter } = require('../src/services/auth');
 const { createDebateQueue } = require('../src/services/debateQueue');
+
+test('successful participants sharing Wi-Fi do not exhaust failed login attempts', () => {
+  let time = 0;
+  const attempt = createLoginLimiter(() => time);
+  for (let n = 0; n < 100; n++) attempt('school', 'committee')();
+  for (let n = 0; n < 12; n++) attempt('school', 'committee');
+  assert.throws(() => attempt('school', 'committee'), { status: 429 });
+  time = 60001;
+  assert.doesNotThrow(() => attempt('school', 'committee'));
+});
 
 test('PIN verifiers are salted and preserve leading zeroes', async () => {
   const pepper = 'test pepper';

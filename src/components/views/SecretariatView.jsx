@@ -37,18 +37,21 @@ import {
   AlertTriangle,
   HelpCircle,
   ChevronDown,
-  LayoutDashboard
+  LayoutDashboard,
+  GripVertical
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useConfirm } from '../../context/ConfirmContext';
 import CountryFlag from '../common/CountryFlag';
 import SpeakerNotesPanel from '../common/SpeakerNotesPanel';
+import SecretariatDebateTimer from '../common/SecretariatDebateTimer';
 import { getCurrentSpeaker } from '../../utils/speakerNotes';
 import { getFlagEmoji } from '../../utils/flags';
 import { useP2P } from '../../context/P2PContext';
 import { useSession } from '../../context/SessionContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import AccessibilityModal from '../modals/AccessibilityModal';
+import SecretariatSettingsModal from '../modals/SecretariatSettingsModal';
 import OpenMunLogo from '../common/OpenMunLogo';
 import LanguageSelector from '../common/LanguageSelector';
 import ConferenceBanner from '../common/ConferenceBanner';
@@ -76,6 +79,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   const { isLight: contextIsLight, toggleThemeMode } = useAccessibility();
   const isLight = propIsLight !== undefined ? propIsLight : contextIsLight;
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Hook para detectar overflow en la barra de secretaría y compactar el logo automáticamente
   const { containerRef: headerRef, isLogoCompact, isExtraCompact } = useTopBarOverflow();
@@ -92,9 +96,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     removerOrador,
     removerOradorCaucus,
     avanzarOradorCaucus,
+    reordenarOradoresGSL,
+    reordenarOradoresDebate,
     ejecutarAccion,
     aplicarEstadoExterno,
-    agregarEnmiendaResolucion
+    agregarEnmiendaResolucion,
+    controlarRelojDebate
   } = useSession();
 
   const {
@@ -118,7 +125,8 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     announcements = [],
     broadcastAnnouncement,
     deleteAnnouncement,
-    setViewMode
+    setViewMode,
+    sendSessionAction
   } = useP2P();
 
   // Estados y gestión de retorno / volver atrás
@@ -190,11 +198,25 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     });
   }, [registerSessionHandlers, aplicarEstadoExterno, ejecutarAccion]);
 
+  // Sincronizar remoteSessionState con SessionContext si ya existe al montar o actualizarse
+  useEffect(() => {
+    if (remoteSessionState) {
+      aplicarEstadoExterno(remoteSessionState);
+    }
+  }, [remoteSessionState, aplicarEstadoExterno]);
+
   const [activeTab, setActiveTab] = useState('NOTAS');
   const [subTabNotas, setSubTabNotas] = useState('COMITE'); // 'COMITE' | 'CONFERENCIA' | 'AVISOS'
   const [subTabInfo, setSubTabInfo] = useState('MATRIZ'); // 'MATRIZ' | 'ANADIR' | 'HISTORICO' | 'AGENDA' | 'IMPORTAR' | 'MOCIONES' | 'RULETA'
   const [subTabVotacion, setSubTabVotacion] = useState('OFICIAL'); // 'OFICIAL' | 'MAPA'
   const [subTabDebate, setSubTabDebate] = useState('MONITOR'); // 'MONITOR' | 'ANADIR'
+  const [subTabConexiones, setSubTabConexiones] = useState('SOLICITUDES'); // 'SOLICITUDES' | 'CONEXIONES'
+
+  // Estados para Drag & Drop de oradores en el monitor de debate
+  const [draggedGslIndex, setDraggedGslIndex] = useState(null);
+  const [dragOverGslIndex, setDragOverGslIndex] = useState(null);
+  const [draggedCaucusIndex, setDraggedCaucusIndex] = useState(null);
+  const [dragOverCaucusIndex, setDragOverCaucusIndex] = useState(null);
 
   // Estados para Emisión de Avisos desde Secretaría
   const [tituloAvisoSec, setTituloAvisoSec] = useState('');
@@ -256,6 +278,10 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     }
   }, [confActiva?.id]);
 
+  const state = remoteSessionState || {};
+  const isRemote = Boolean(remoteSessionState);
+  const nombreComite = (isRemote ? (state.comision || state.nombreComite) : null) || sessionNombreComite || state.comision || state.nombreComite || i18n.t('ui.liveCommittee');
+
   useEffect(() => {
     if (!confActiva?.id) return;
     const fetchAvisos = async () => {
@@ -285,16 +311,14 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
     }
 
     const handleNuevo = (e) => {
-      if (e.detail) {
-        setAvisosDB(prev => [e.detail, ...prev.filter(a => a.id !== e.detail.id)]);
-      }
+      if (e.detail?.conferencia_id === confActiva.id) fetchAvisos();
     };
     const handleDesactivado = (e) => {
       if (e.detail?.id) {
         setAvisosDB(prev => prev.filter(a => String(a.id) !== String(e.detail.id)));
       }
     };
-    window.addEventListener('openmun_nuevo_aviso', handleNuevo);
+    window.addEventListener('openmun_avisos_actualizados', handleNuevo);
     window.addEventListener('openmun_aviso_desactivado', handleDesactivado);
 
     return () => {
@@ -302,19 +326,62 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVis);
       }
-      window.removeEventListener('openmun_nuevo_aviso', handleNuevo);
+      window.removeEventListener('openmun_avisos_actualizados', handleNuevo);
       window.removeEventListener('openmun_aviso_desactivado', handleDesactivado);
     };
-  }, [confActiva?.id, currentComiteId]);
+  }, [confActiva?.id, currentComiteId, nombreComite, comitesConf]);
 
-  const state = remoteSessionState || {};
-  const nombreComite = sessionNombreComite || state.comision || state.nombreComite || i18n.t('ui.liveCommittee');
-  const temaActual = sessionAgendaSesion?.temaActual || sessionCaucusActivo?.tema || state.agendaSesion?.temaActual || state.caucusActivo?.tema || 'En Discusión';
-  const oradoresGSL = sessionOradoresCola ?? state.oradoresCola ?? [];
-  const oradoresCaucus = sessionOradoresCaucus ?? state.oradoresCaucus ?? [];
-  const caucusActivo = (sessionCaucusActivo && sessionCaucusActivo.activo !== undefined) ? sessionCaucusActivo : (state.caucusActivo || {});
+  const temaActual = (isRemote ? (state.agendaSesion?.temaActual || state.caucusActivo?.tema) : null) || sessionAgendaSesion?.temaActual || sessionCaucusActivo?.tema || state.agendaSesion?.temaActual || state.caucusActivo?.tema || 'En Discusión';
+  const oradoresGSL = (isRemote && Array.isArray(state.oradoresCola))
+    ? state.oradoresCola
+    : (sessionOradoresCola || []);
+  const oradoresCaucus = (isRemote && Array.isArray(state.oradoresCaucus))
+    ? state.oradoresCaucus
+    : (sessionOradoresCaucus || []);
+  const caucusActivo = (isRemote && state.caucusActivo && typeof state.caucusActivo === 'object')
+    ? state.caucusActivo
+    : (sessionCaucusActivo || {});
   const oradorActual = getCurrentSpeaker(oradoresGSL, oradoresCaucus, caucusActivo);
-  const paises = sessionPaises?.length > 0 ? sessionPaises : (state.paises || []);
+  const paises = (isRemote && Array.isArray(state.paises) && state.paises.length > 0)
+    ? state.paises
+    : (sessionPaises?.length > 0 ? sessionPaises : (state.paises || []));
+
+  const handleAvanzarOradorCaucus = () => {
+    avanzarOradorCaucus();
+    if (controlarRelojDebate) {
+      const tiempoOrador = caucusActivo?.tiempoOrador || 60;
+      controlarRelojDebate('sync', {
+        source: 'secretariat',
+        signal: 'next_speaker',
+        tiempoOradorSeg: tiempoOrador,
+        limiteOradorSeg: tiempoOrador,
+        corriendo: false,
+        modo: 'CAUCUS'
+      });
+    }
+  };
+
+  const handleReordenarGSL = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+    if ((!sessionOradoresCola || sessionOradoresCola.length === 0) && state.oradoresCola?.length > 0) {
+      aplicarEstadoExterno({ oradoresCola: state.oradoresCola });
+    }
+    reordenarOradoresGSL(fromIndex, toIndex);
+    if (sendSessionAction) {
+      sendSessionAction('reordenarOradoresGSL', { fromIndex, toIndex });
+    }
+  };
+
+  const handleReordenarCaucus = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
+    if ((!sessionOradoresCaucus || sessionOradoresCaucus.length === 0) && state.oradoresCaucus?.length > 0) {
+      aplicarEstadoExterno({ oradoresCaucus: state.oradoresCaucus });
+    }
+    reordenarOradoresDebate(fromIndex, toIndex);
+    if (sendSessionAction) {
+      sendSessionAction('reordenarOradoresDebate', { fromIndex, toIndex });
+    }
+  };
 
   const handleExportarNotasCSV = () => {
     let csv = 'ID,Fecha,De,Rol,Para,Tipo,Mensaje\n';
@@ -355,59 +422,38 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
   ];
 
   const comiteNotesCount = notes.filter(n => n.type !== 'speaker_annotation').length;
-  const speakerNotesCount = notes.filter(n => n.type === 'speaker_annotation' && n.to === 'CHAIR').length;
   const inboxTabs = [
     { id: 'COMITE', label: t('ui.committeeNotes'), icon: MessageSquare, count: comiteNotesCount },
     { id: 'CONFERENCIA', label: t('ui.conferenceAnnouncements'), icon: Globe, count: avisosDB.length },
     { id: 'AVISOS', label: t('views.secretariat.officialAnnouncements'), icon: Megaphone, count: visibleAnnouncements.length }
   ];
 
+  const totalSolicitudes = speakingRequests.length + enmiendasPropuestas.length;
+
+  const solicitudesConexionesTabs = [
+    { id: 'SOLICITUDES', label: t('views.secretariat.speakingRequestsTab', 'Solicitudes'), icon: Zap, count: totalSolicitudes },
+    { id: 'CONEXIONES', label: t('views.secretariat.connections', 'Conexiones'), icon: Users, count: connectedPeers.length }
+  ];
+
   const secretariatTabs = [
     { id: 'NOTAS', label: t('views.delegate.inbox', 'Buzón de Entrada'), icon: MessageSquare, badge: comiteNotesCount + avisosDB.length + visibleAnnouncements.length },
-    { id: 'ORADOR', label: t('speakerNotes.tabTitle', 'Notas de orador'), icon: FileText, badge: speakerNotesCount },
-    { id: 'SOLICITUDES', label: t('views.secretariat.speakingRequestsTab', 'Solicitudes'), icon: Zap, badge: speakingRequests.length + enmiendasPropuestas.length },
     { id: 'DEBATE', label: t('views.secretariat.debateMonitor', 'Monitor de Debate & Oradores'), icon: Clock },
+    { id: 'SOLICITUDES', label: t('views.secretariat.requestsAndConnections', 'Solicitudes & Conexiones'), icon: Zap, badge: totalSolicitudes > 0 ? totalSolicitudes : undefined },
     { id: 'VOTACION', label: t('views.secretariat.votingMap', 'Votaciones & Mapa'), icon: Vote },
     { id: 'INFO', label: t('views.secretariat.committeeManagement', 'Gestión de Comité & Widgets'), icon: BarChart3 },
-    { id: 'CRISIS', label: t('views.secretariat.crisisCabinet', 'Gabinete de Crisis & Noticiero'), icon: Flame },
-    { id: 'CONEXIONES', label: t('views.secretariat.connections', 'Conexiones'), icon: Users, badge: connectedPeers.length }
+    { id: 'CRISIS', label: t('views.secretariat.crisisCabinet', 'Gabinete de Crisis & Noticiero'), icon: Flame }
   ];
 
   const secretariatSidebarActions = (
     <>
-      <details className="secretariat-settings">
-        <summary><Sliders size={16} aria-hidden="true" /> {t('views.secretariat.settingsPermissions')}</summary>
-        <div className="secretariat-settings-fields">
-          <small>{t('ui.changesMadeByTheSecretariatSyncImmediatelyWithTheChair')}</small>
-          {[
-            ['speakerRequestMode', 'liveSession.gslRequestMode', 'liveSession.gslRequestModeDesc'],
-            ['caucusRequestMode', 'liveSession.caucusRequestMode', 'ui.controlHowDelegatesJoinTheListDuringAModeratedDebate']
-          ].map(([key, label, description]) => (
-            <label key={key}>
-              {t(label)}
-              <small>{t(description)}</small>
-              <select value={roomSettings[key]} onChange={event => updateRoomSettings({ [key]: event.target.value })}>
-                <option value="direct">{t('liveSession.requestModeDirect')}</option>
-                <option value="approval">{t('liveSession.requestModeApproval')}</option>
-                <option value="disabled">{t('liveSession.requestModeDisabled')}</option>
-              </select>
-            </label>
-          ))}
-          <fieldset>
-            <legend>{t('liveSession.delegatePermissions')}</legend>
-            {['allowDelegateNotes', 'allowChairNotes', 'allowMotions', 'allowLiveVoting'].map(key => (
-              <label key={key}>
-                <input
-                  type="checkbox"
-                  checked={roomSettings[key]}
-                  onChange={event => updateRoomSettings({ [key]: event.target.checked })}
-                />
-                <span>{t(`liveSession.${key}`)}<small>{t(`liveSession.${key}Desc`)}</small></span>
-              </label>
-            ))}
-          </fieldset>
-        </div>
-      </details>
+      <button
+        type="button"
+        onClick={() => setIsSettingsModalOpen(true)}
+        title={t('views.secretariat.settingsPermissions', 'Ajustes y Permisos')}
+      >
+        <Sliders size={16} aria-hidden="true" />
+        <span>{t('views.secretariat.settingsPermissions', 'Ajustes y Permisos')}</span>
+      </button>
       <button
         type="button"
         onClick={handleExportarNotasCSV}
@@ -429,6 +475,12 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       flexDirection: 'column'
     }}>
       <AccessibilityModal isOpen={isAccessModalOpen} onClose={() => setIsAccessModalOpen(false)} />
+      <SecretariatSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        roomSettings={roomSettings}
+        updateRoomSettings={updateRoomSettings}
+      />
 
       <ConsoleNavbar
         title={t('views.secretariat.consoleTitle', 'Consola de Secretaría y Pajes')}
@@ -459,7 +511,7 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
       <ConferenceBanner isLight={isLight} role="secretariat" comiteId={currentComiteId} comiteNombre={nombreComite} comites={comitesConf} />
 
       {/* ── Contenido Principal de Secretaría ── */}
-      <main className="openmun-main-content" style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
+      <main className="openmun-main-content" style={{ padding: activeTab === 'DEBATE' ? '0.75rem 1.25rem' : '1.5rem', flex: 1, overflowY: 'auto' }}>
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA: CRISIS & NOTICIERO                             */}
         {/* ═══════════════════════════════════════════════════════ */}
@@ -538,16 +590,16 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
                 {t('ui.secretariatAnnouncementsAreImmediatelyDisplayedInTheHeaderAndNotice')}
               </p>
 
-              <form onSubmit={(e) => {
+              <form onSubmit={async (e) => {
                 e.preventDefault();
                 if (!tituloAvisoSec.trim() && !textoAvisoSec.trim()) return;
-                broadcastAnnouncement({
+                const sent = await broadcastAnnouncement({
                   title: tituloAvisoSec.trim() || i18n.t('ui.secretariatAnnouncement'),
                   text: textoAvisoSec.trim(),
                   priority: prioridadAvisoSec,
-                  senderRole: 'secretariat',
-                  senderName: 'Secretaría'
+
                 });
+                if (!sent) return;
                 setTituloAvisoSec('');
                 setTextoAvisoSec('');
                 setFeedbackAvisoSec(t('ui.announcementIssuedSuccessfullyToTheEntireRoom'));
@@ -831,33 +883,569 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           </div>
         )}
 
-        {activeTab === 'ORADOR' && (
-          <div style={{
-            backgroundColor: 'var(--panel-color)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            maxWidth: '900px',
-            width: '100%',
-            margin: '0 auto',
-            boxSizing: 'border-box'
-          }}>
-            <SpeakerNotesPanel
-              orador={oradorActual}
-              modalidad={caucusActivo.activo ? caucusActivo.tipo || 'Caucus' : 'GSL'}
-              tema={temaActual}
-              notes={notes}
-              sendNote={sendNote}
-            />
+        {activeTab === 'DEBATE' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '1320px', margin: '0 auto' }}>
+            {/* Sub-selector de Monitor, Notas y Añadir Países */}
+            <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              borderBottom: '1px solid var(--border-color)',
+              paddingBottom: '0.45rem',
+              overflowX: 'auto'
+            }}>
+              <button
+                onClick={() => setSubTabDebate('MONITOR')}
+                style={{
+                  padding: '0.45rem 0.9rem',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: subTabDebate === 'MONITOR' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
+                  color: subTabDebate === 'MONITOR' ? 'var(--btn-text)' : 'var(--muted-text)',
+                  fontWeight: '700',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem'
+                }}
+              >
+                <Users size={15} /> {t('ui.queueMonitorGslCaucus')}
+              </button>
+
+              <button
+                onClick={() => setSubTabDebate('ANADIR')}
+                style={{
+                  padding: '0.45rem 0.9rem',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: subTabDebate === 'ANADIR' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
+                  color: subTabDebate === 'ANADIR' ? 'var(--btn-text)' : 'var(--muted-text)',
+                  fontWeight: '700',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem'
+                }}
+              >
+                <UserPlus size={15} /> {t('ui.addCountriesToQueues')}
+              </button>
+            </div>
+
+            {subTabDebate === 'ANADIR' ? (
+              <div style={{
+                backgroundColor: 'var(--panel-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius, 6px)',
+                overflow: 'hidden',
+                minHeight: '540px'
+              }}>
+                <AnadirPaises />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {/* Cronómetro Sincronizado con la Mesa Principal */}
+                <SecretariatDebateTimer
+                  oradorActual={oradorActual}
+                  caucusActivo={caucusActivo}
+                  oradoresGSL={oradoresGSL}
+                  oradoresCaucus={oradoresCaucus}
+                />
+
+                <div className="secretariat-debate-notes-layout">
+                {/* Panel de Notas de Orador */}
+                <div style={{
+                  backgroundColor: 'var(--panel-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius, 6px)',
+                  padding: '0.85rem 1rem',
+                  boxSizing: 'border-box',
+                  minWidth: 0
+                }}>
+                  <SpeakerNotesPanel
+                    orador={oradorActual}
+                    modalidad={caucusActivo.activo ? caucusActivo.tipo || 'Caucus' : 'GSL'}
+                    tema={temaActual}
+                    notes={notes}
+                    sendNote={sendNote}
+                    paises={paises}
+                  />
+                </div>
+
+                {/* Monitor de Debate: GSL y Caucus Moderado juntos */}
+                <div className="secretariat-debate-queues-stack">
+                  {/* Tarjeta Lista General GSL */}
+                  <div style={{
+                    backgroundColor: 'var(--panel-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '0.75rem 0.95rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.55rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ fontWeight: '800', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Users size={16} color="var(--accent-color)" /> {t('ui.generalSpeakersList')}{oradoresGSL.length})
+                      </div>
+                      <button
+                        onClick={() => {
+                          setActiveTab('DEBATE');
+                          setSubTabDebate('ANADIR');
+                        }}
+                        style={{
+                          backgroundColor: 'var(--card-header-bg)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-color)',
+                          borderRadius: '6px',
+                          padding: '0.25rem 0.6rem',
+                          fontSize: '0.74rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        <UserPlus size={12} /> {t('ui.addSpeakers')}
+                      </button>
+                    </div>
+
+                    {oradoresGSL.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.82rem' }}>
+                        {t('ui.gslListEmpty')}
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.35rem',
+                        maxHeight: '210px',
+                        overflowY: 'auto',
+                        paddingRight: '3px'
+                      }}>
+                        {oradoresGSL.map((o, idx) => {
+                          const isDragging = draggedGslIndex === idx;
+                          const isDragOver = dragOverGslIndex === idx;
+
+                          return (
+                            <div
+                              key={o.id || idx}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'gsl', index: idx }));
+                                e.dataTransfer.effectAllowed = 'move';
+                                setDraggedGslIndex(idx);
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                              }}
+                              onDragEnter={(e) => {
+                                e.preventDefault();
+                                if (draggedGslIndex !== idx) {
+                                  setDragOverGslIndex(idx);
+                                }
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverGslIndex === idx) {
+                                  setDragOverGslIndex(null);
+                                }
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                try {
+                                  const raw = e.dataTransfer.getData('text/plain');
+                                  let fromIdx = null;
+                                  if (raw && raw.startsWith('{')) {
+                                    const parsed = JSON.parse(raw);
+                                    if (parsed.type === 'gsl') fromIdx = parsed.index;
+                                  } else {
+                                    fromIdx = parseInt(raw, 10);
+                                  }
+                                  if (fromIdx !== null && !isNaN(fromIdx) && fromIdx !== idx) {
+                                    handleReordenarGSL(fromIdx, idx);
+                                  }
+                                } catch (err) {
+                                  console.error('Error al reordenar oradores GSL:', err);
+                                }
+                                setDraggedGslIndex(null);
+                                setDragOverGslIndex(null);
+                              }}
+                              onDragEnd={() => {
+                                setDraggedGslIndex(null);
+                                setDragOverGslIndex(null);
+                              }}
+                              style={{
+                                backgroundColor: isDragging
+                                  ? 'var(--accent-soft)'
+                                  : (idx === 0 ? 'var(--accent-soft)' : 'var(--card-header-bg)'),
+                                border: isDragOver
+                                  ? '2px dashed var(--accent-color)'
+                                  : `1px solid ${isDragging || idx === 0 ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                                borderRadius: 'var(--border-radius, 6px)',
+                                padding: '0.35rem 0.65rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                opacity: isDragging ? 0.45 : 1,
+                                cursor: 'grab',
+                                userSelect: 'none',
+                                transition: 'background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                                <span
+                                  title={t('motions.dragToReorder', 'Arrastrar para reordenar')}
+                                  aria-label={t('motions.dragToReorder', 'Arrastrar para reordenar')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: 'var(--muted-text)',
+                                    cursor: 'grab',
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  <GripVertical size={14} />
+                                </span>
+                                <span style={{
+                                  width: '22px',
+                                  height: '22px',
+                                  borderRadius: '50%',
+                                  backgroundColor: idx === 0 ? 'var(--btn-bg)' : 'var(--input-bg)',
+                                  color: idx === 0 ? 'var(--btn-text)' : 'var(--muted-text)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.72rem',
+                                  fontWeight: '800',
+                                  fontVariantNumeric: 'tabular-nums',
+                                  flexShrink: 0
+                                }}>
+                                  {idx + 1}
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                                  <CountryFlag bandera={o.bandera} nombre={o.nombre} size="sm" />
+                                  <span style={{
+                                    fontWeight: '700',
+                                    fontSize: '0.85rem',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {o.nombre}
+                                  </span>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                                {idx === 0 && (
+                                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: 'var(--success-color)' }}>
+                                    {t('ui.speaking2')}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removerOrador(o.id || o.nombre);
+                                  }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  title={t('ui.removeFromList')}
+                                  aria-label={t('ui.removeFromList')}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--muted-text)',
+                                    cursor: 'pointer',
+                                    padding: '0.2rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px'
+                                  }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tarjeta Caucus Moderado */}
+                  <div style={{
+                    backgroundColor: 'var(--panel-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius, 6px)',
+                    padding: '0.75rem 0.95rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.55rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ fontWeight: '800', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Clock size={16} color="var(--accent-color)" /> {t('ui.moderatedCaucus')}{oradoresCaucus.length})
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {oradoresCaucus.length > 0 && (
+                          <button
+                            onClick={handleAvanzarOradorCaucus}
+                            style={{
+                              backgroundColor: 'var(--btn-bg)',
+                              border: '1px solid var(--border-color)',
+                              color: 'var(--btn-text)',
+                              borderRadius: '6px',
+                              padding: '0.25rem 0.6rem',
+                              fontSize: '0.72rem',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.3rem'
+                            }}
+                          >
+                            <SkipForward size={12} /> {t('ui.next')}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setActiveTab('DEBATE');
+                            setSubTabDebate('ANADIR');
+                          }}
+                          style={{
+                            backgroundColor: 'var(--card-header-bg)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-color)',
+                            borderRadius: '6px',
+                            padding: '0.25rem 0.6rem',
+                            fontSize: '0.74rem',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem'
+                          }}
+                        >
+                          <UserPlus size={12} /> {t('ui.addSpeakers')}
+                        </button>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          fontWeight: '800',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          backgroundColor: 'var(--card-header-bg)',
+                          border: '1px solid var(--subborder-color)',
+                          color: caucusActivo.activo ? 'var(--success-color)' : 'var(--muted-text)'
+                        }}>
+                          {caucusActivo.activo ? t('agenda.active') : t('ui.inactive')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {caucusActivo.activo && caucusActivo.tema && (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--muted-text)' }}>
+                        {t('ui.topic2')} <strong>{caucusActivo.tema}</strong>
+                      </div>
+                    )}
+
+                    {oradoresCaucus.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.82rem' }}>
+                        {t('ui.noCaucusSpeakers')}
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.35rem',
+                        maxHeight: '145px',
+                        overflowY: 'auto',
+                        paddingRight: '3px'
+                      }}>
+                        {oradoresCaucus.map((o, idx) => {
+                          const isDragging = draggedCaucusIndex === idx;
+                          const isDragOver = dragOverCaucusIndex === idx;
+
+                          return (
+                            <div
+                              key={o.id || idx}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'caucus', index: idx }));
+                                e.dataTransfer.effectAllowed = 'move';
+                                setDraggedCaucusIndex(idx);
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = 'move';
+                              }}
+                              onDragEnter={(e) => {
+                                e.preventDefault();
+                                if (draggedCaucusIndex !== idx) {
+                                  setDragOverCaucusIndex(idx);
+                                }
+                              }}
+                              onDragLeave={() => {
+                                if (dragOverCaucusIndex === idx) {
+                                  setDragOverCaucusIndex(null);
+                                }
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                try {
+                                  const raw = e.dataTransfer.getData('text/plain');
+                                  let fromIdx = null;
+                                  if (raw && raw.startsWith('{')) {
+                                    const parsed = JSON.parse(raw);
+                                    if (parsed.type === 'caucus') fromIdx = parsed.index;
+                                  } else {
+                                    fromIdx = parseInt(raw, 10);
+                                  }
+                                  if (fromIdx !== null && !isNaN(fromIdx) && fromIdx !== idx) {
+                                    handleReordenarCaucus(fromIdx, idx);
+                                  }
+                                } catch (err) {
+                                  console.error('Error al reordenar oradores Caucus:', err);
+                                }
+                                setDraggedCaucusIndex(null);
+                                setDragOverCaucusIndex(null);
+                              }}
+                              onDragEnd={() => {
+                                setDraggedCaucusIndex(null);
+                                setDragOverCaucusIndex(null);
+                              }}
+                              style={{
+                                backgroundColor: isDragging
+                                  ? 'var(--accent-soft)'
+                                  : (idx === 0 ? 'var(--accent-soft)' : 'var(--card-header-bg)'),
+                                border: isDragOver
+                                  ? '2px dashed var(--accent-color)'
+                                  : `1px solid ${isDragging || idx === 0 ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                                borderRadius: 'var(--border-radius, 6px)',
+                                padding: '0.35rem 0.65rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                opacity: isDragging ? 0.45 : 1,
+                                cursor: 'grab',
+                                userSelect: 'none',
+                                transition: 'background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                                <span
+                                  title={t('motions.dragToReorder', 'Arrastrar para reordenar')}
+                                  aria-label={t('motions.dragToReorder', 'Arrastrar para reordenar')}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: 'var(--muted-text)',
+                                    cursor: 'grab',
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  <GripVertical size={14} />
+                                </span>
+                                <span style={{
+                                  width: '22px',
+                                  height: '22px',
+                                  borderRadius: '50%',
+                                  backgroundColor: idx === 0 ? 'var(--btn-bg)' : 'var(--input-bg)',
+                                  color: idx === 0 ? 'var(--btn-text)' : 'var(--muted-text)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.72rem',
+                                  fontWeight: '800',
+                                  fontVariantNumeric: 'tabular-nums',
+                                  flexShrink: 0
+                                }}>
+                                  {idx + 1}
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                                  <CountryFlag bandera={o.bandera} nombre={o.nombre} size="sm" />
+                                  <span style={{
+                                    fontWeight: '700',
+                                    fontSize: '0.85rem',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {o.nombre}
+                                  </span>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                                {idx === 0 && (
+                                  <span style={{ fontSize: '0.68rem', fontWeight: '800', color: 'var(--success-color)' }}>
+                                    {t('ui.speaking2')}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removerOradorCaucus(o.id || o.nombre);
+                                  }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  title={t('ui.removeFromCaucus')}
+                                  aria-label={t('ui.removeFromCaucus')}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--muted-text)',
+                                    cursor: 'pointer',
+                                    padding: '0.2rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px'
+                                  }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              </div>
+            )}
           </div>
         )}
 
-        {activeTab === 'SOLICITUDES' && (() => {
-          const puntosParlamentarios = speakingRequests.filter(r => r.speechType === 'POINT');
-          const otrasSolicitudes = speakingRequests.filter(r => r.speechType !== 'POINT');
+        {/* ═══════════════════════════════════════════════════════ */}
+        {/* PESTAÑA: SOLICITUDES & CONEXIONES (INTEGRADA)          */}
+        {/* ═══════════════════════════════════════════════════════ */}
+        {(activeTab === 'SOLICITUDES' || activeTab === 'CONEXIONES') && (
+          <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Sub-selector de Pestaña */}
+            <div className="secretariat-inbox-tabs" role="tablist" aria-label={t('views.secretariat.requestsAndConnections', 'Solicitudes & Conexiones')}>
+              {solicitudesConexionesTabs.map(({ id, label, icon: Icon, count }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={subTabConexiones === id}
+                  aria-pressed={subTabConexiones === id}
+                  onClick={() => setSubTabConexiones(id)}
+                >
+                  <Icon size={15} aria-hidden="true" />
+                  <span>{label}</span>
+                  {count > 0 && <b className="dashboard-unread">{count}</b>}
+                </button>
+              ))}
+            </div>
 
-          return (
-            <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {subTabConexiones === 'SOLICITUDES' && (() => {
+              const puntosParlamentarios = speakingRequests.filter(r => r.speechType === 'POINT');
+              const otrasSolicitudes = speakingRequests.filter(r => r.speechType !== 'POINT');
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
               {/* ── SECCIÓN PRIORITARIA: AVISOS ESPECIALES / PUNTOS PARLAMENTARIOS ── */}
               {puntosParlamentarios.length > 0 && (
@@ -1362,6 +1950,123 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           );
         })()}
 
+        {subTabConexiones === 'CONEXIONES' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{
+              backgroundColor: 'var(--panel-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '14px',
+              padding: '1.25rem 1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
+                  {t('ui.connectedDevicesAndDelegations')}{connectedPeers.length})
+                </h3>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--muted-text)' }}>
+                  {t('ui.monitorLiveConnectionsWithTheAbilityToRemoveParticipants')}
+                </p>
+              </div>
+            </div>
+
+            {connectedPeers.length === 0 ? (
+              <div style={{
+                padding: '4rem 1.5rem',
+                textAlign: 'center',
+                backgroundColor: 'var(--panel-color)',
+                borderRadius: '14px',
+                border: '1px dashed var(--border-color)',
+                color: 'var(--muted-text)'
+              }}>
+                <Users size={36} style={{ opacity: 0.35, marginBottom: '0.6rem' }} />
+                <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{t('ui.noDevicesConnected')}</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {connectedPeers.map(peer => (
+                  <div
+                    key={peer.peerId}
+                    style={{
+                      backgroundColor: 'var(--panel-color)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      padding: '0.9rem 1.2rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{
+                        width: '9px',
+                        height: '9px',
+                        borderRadius: '50%',
+                        backgroundColor: '#22c55e',
+                        boxShadow: '0 0 8px #22c55e'
+                      }} />
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>
+                          {peer.country || t('ui.noIdentifier')}
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
+                          ID: {peer.peerId.substring(0, 10)}{t('ui.role')} {peer.role}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: '700',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '6px',
+                        backgroundColor: peer.role === 'secretariat' ? 'rgba(59, 130, 246, 0.15)' : (peer.role === 'backroom' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(34, 197, 94, 0.15)'),
+                        color: peer.role === 'secretariat' ? '#60a5fa' : (peer.role === 'backroom' ? '#fb923c' : '#4ade80')
+                      }}>
+                        {peer.role?.toUpperCase()}
+                      </span>
+
+                      <button
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: t('ui.disconnect', 'Desconectar'),
+                            message: t('ui.removeFromTheSession', { v0: peer.country || peer.peerId }),
+                            confirmText: t('ui.disconnect', 'Desconectar'),
+                            cancelText: t('common.cancel', 'Cancelar'),
+                            type: 'danger'
+                          });
+                          if (ok) {
+                            kickPeer(peer.peerId);
+                          }
+                        }}
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                          border: '1px solid rgba(239, 68, 68, 0.35)',
+                          color: '#ef4444',
+                          borderRadius: '6px',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <UserX size={14} /> {t('liveSession.kickPeer')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
         {/* ═══════════════════════════════════════════════════════ */}
         {/* PESTAÑA: VOTACIONES (OFICIAL & MAPA MUNDIAL)            */}
         {/* ═══════════════════════════════════════════════════════ */}
@@ -1603,439 +2308,6 @@ const SecretariatView = ({ isLight: propIsLight, onExit }) => {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PESTAÑA 5: GESTIÓN DE CONEXIONES                        */}
-        {/* ═══════════════════════════════════════════════════════ */}
-        {activeTab === 'CONEXIONES' && (
-          <div style={{ maxWidth: '850px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{
-              backgroundColor: 'var(--panel-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '1.25rem 1.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
-                  {t('ui.connectedDevicesAndDelegations')}{connectedPeers.length})
-                </h3>
-                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--muted-text)' }}>
-                  {t('ui.monitorLiveConnectionsWithTheAbilityToRemoveParticipants')}
-                </p>
-              </div>
-            </div>
-
-            {connectedPeers.length === 0 ? (
-              <div style={{
-                padding: '4rem 1.5rem',
-                textAlign: 'center',
-                backgroundColor: 'var(--panel-color)',
-                borderRadius: '14px',
-                border: '1px dashed var(--border-color)',
-                color: 'var(--muted-text)'
-              }}>
-                <Users size={36} style={{ opacity: 0.35, marginBottom: '0.6rem' }} />
-                <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{t('ui.noDevicesConnected')}</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                {connectedPeers.map(peer => (
-                  <div
-                    key={peer.peerId}
-                    style={{
-                      backgroundColor: 'var(--panel-color)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      padding: '0.9rem 1.2rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{
-                        width: '9px',
-                        height: '9px',
-                        borderRadius: '50%',
-                        backgroundColor: '#22c55e',
-                        boxShadow: '0 0 8px #22c55e'
-                      }} />
-                      <div>
-                        <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>
-                          {peer.country || t('ui.noIdentifier')}
-                        </div>
-                        <div style={{ fontSize: '0.74rem', color: 'var(--muted-text)' }}>
-                          ID: {peer.peerId.substring(0, 10)}{t('ui.role')} {peer.role}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                      <span style={{
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: '6px',
-                        backgroundColor: peer.role === 'secretariat' ? 'rgba(59, 130, 246, 0.15)' : (peer.role === 'backroom' ? 'rgba(249, 115, 22, 0.15)' : 'rgba(34, 197, 94, 0.15)'),
-                        color: peer.role === 'secretariat' ? '#60a5fa' : (peer.role === 'backroom' ? '#fb923c' : '#4ade80')
-                      }}>
-                        {peer.role?.toUpperCase()}
-                      </span>
-
-                      <button
-                        onClick={async () => {
-                          const ok = await confirm({
-                            title: t('ui.disconnect', 'Desconectar'),
-                            message: t('ui.removeFromTheSession', { v0: peer.country || peer.peerId }),
-                            confirmText: t('ui.disconnect', 'Desconectar'),
-                            cancelText: t('common.cancel', 'Cancelar'),
-                            type: 'danger'
-                          });
-                          if (ok) {
-                            kickPeer(peer.peerId);
-                          }
-                        }}
-                        style={{
-                          backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                          border: '1px solid rgba(239, 68, 68, 0.35)',
-                          color: '#ef4444',
-                          borderRadius: '6px',
-                          padding: '0.35rem 0.75rem',
-                          fontSize: '0.75rem',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.35rem'
-                        }}
-                      >
-                        <UserX size={14} /> {t('liveSession.kickPeer')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════ */}
-        {/* PESTAÑA: MONITOR DE DEBATE & AÑADIR PAÍSES              */}
-        {/* ═══════════════════════════════════════════════════════ */}
-        {activeTab === 'DEBATE' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Sub-selector de Debate */}
-            <div style={{
-              display: 'flex',
-              gap: '0.5rem',
-              borderBottom: '1px solid var(--border-color)',
-              paddingBottom: '0.75rem',
-              overflowX: 'auto'
-            }}>
-              <button
-                onClick={() => setSubTabDebate('MONITOR')}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: subTabDebate === 'MONITOR' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-                  color: subTabDebate === 'MONITOR' ? 'var(--btn-text)' : 'var(--muted-text)',
-                  fontWeight: '700',
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.45rem'
-                }}
-              >
-                <Users size={15} /> {t('ui.queueMonitorGslCaucus')}
-              </button>
-
-              <button
-                onClick={() => setSubTabDebate('ANADIR')}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: subTabDebate === 'ANADIR' ? 'var(--btn-bg)' : 'var(--card-header-bg)',
-                  color: subTabDebate === 'ANADIR' ? 'var(--btn-text)' : 'var(--muted-text)',
-                  fontWeight: '700',
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.45rem'
-                }}
-              >
-                <UserPlus size={15} /> {t('ui.addCountriesToQueues')}
-              </button>
-            </div>
-
-            {/* Contenido según subtab */}
-            {subTabDebate === 'ANADIR' ? (
-              <div style={{
-                backgroundColor: 'var(--panel-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                minHeight: '540px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-              }}>
-                <AnadirPaises />
-              </div>
-            ) : (
-              <div className="openmun-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                {/* Tarjeta Lista General GSL */}
-                <div style={{
-                  backgroundColor: 'var(--panel-color)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '14px',
-                  padding: '1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Users size={16} color="#c084fc" /> {t('ui.generalSpeakersList')}{oradoresGSL.length})
-                    </div>
-                    <button
-                      onClick={() => setSubTabDebate('ANADIR')}
-                      style={{
-                        backgroundColor: 'rgba(168, 85, 247, 0.15)',
-                        border: '1px solid rgba(168, 85, 247, 0.35)',
-                        color: '#c084fc',
-                        borderRadius: '6px',
-                        padding: '0.25rem 0.6rem',
-                        fontSize: '0.72rem',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.3rem'
-                      }}
-                    >
-                      <UserPlus size={12} /> {t('ui.addSpeakers')}
-                    </button>
-                  </div>
-
-                  {oradoresGSL.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.82rem' }}>
-                      {t('ui.gslListEmpty')}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                      {oradoresGSL.map((o, idx) => (
-                        <div
-                          key={o.id || idx}
-                          style={{
-                            backgroundColor: idx === 0 ? 'rgba(34, 197, 94, 0.12)' : 'var(--card-header-bg)',
-                            border: `1px solid ${idx === 0 ? 'rgba(34, 197, 94, 0.35)' : 'var(--border-color)'}`,
-                            borderRadius: '8px',
-                            padding: '0.6rem 0.85rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '50%',
-                              backgroundColor: idx === 0 ? '#22c55e' : 'rgba(255,255,255,0.08)',
-                              color: idx === 0 ? '#ffffff' : 'var(--muted-text)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.72rem',
-                              fontWeight: '800'
-                            }}>
-                              {idx + 1}
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <CountryFlag bandera={o.bandera} nombre={o.nombre} size="sm" />
-                              <span style={{ fontWeight: '700', fontSize: '0.85rem' }}>{o.nombre}</span>
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {idx === 0 && (
-                              <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#22c55e' }}>
-                                {t('ui.speaking2')}
-                              </span>
-                            )}
-                            <button
-                              onClick={() => removerOrador(o.id || o.nombre)}
-                              title={t('ui.removeFromList')}
-                              aria-label={t('ui.removeFromList')}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--muted-text)',
-                                cursor: 'pointer',
-                                padding: '0.2rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                borderRadius: '4px'
-                              }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Tarjeta Caucus Moderado */}
-                <div style={{
-                  backgroundColor: 'var(--panel-color)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '14px',
-                  padding: '1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div style={{ fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Clock size={16} color="#fb923c" /> {t('ui.moderatedCaucus')}{oradoresCaucus.length})
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      {oradoresCaucus.length > 0 && (
-                        <button
-                          onClick={avanzarOradorCaucus}
-                          style={{
-                            backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                            border: '1px solid rgba(34, 197, 94, 0.35)',
-                            color: '#22c55e',
-                            borderRadius: '6px',
-                            padding: '0.25rem 0.6rem',
-                            fontSize: '0.72rem',
-                            fontWeight: '700',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.3rem'
-                          }}
-                        >
-                          <SkipForward size={12} /> {t('ui.next')}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setSubTabDebate('ANADIR')}
-                        style={{
-                          backgroundColor: 'rgba(249, 115, 22, 0.15)',
-                          border: '1px solid rgba(249, 115, 22, 0.35)',
-                          color: '#fb923c',
-                          borderRadius: '6px',
-                          padding: '0.25rem 0.6rem',
-                          fontSize: '0.72rem',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.3rem'
-                        }}
-                      >
-                        <UserPlus size={12} /> {t('ui.addSpeakers')}
-                      </button>
-                      <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: '800',
-                        padding: '0.15rem 0.45rem',
-                        borderRadius: '4px',
-                        backgroundColor: caucusActivo.activo ? 'rgba(34, 197, 94, 0.15)' : 'rgba(113, 113, 122, 0.15)',
-                        color: caucusActivo.activo ? '#22c55e' : '#a1a1aa'
-                      }}>
-                        {caucusActivo.activo ? t('agenda.active') : t('ui.inactive')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {caucusActivo.activo && caucusActivo.tema && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--muted-text)' }}>
-                      {t('ui.topic2')} <strong>{caucusActivo.tema}</strong>
-                    </div>
-                  )}
-
-                  {oradoresCaucus.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--muted-text)', fontSize: '0.82rem' }}>
-                      {t('ui.noCaucusSpeakers')}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                      {oradoresCaucus.map((o, idx) => (
-                        <div
-                          key={o.id || idx}
-                          style={{
-                            backgroundColor: idx === 0 ? 'rgba(168, 85, 247, 0.12)' : 'var(--card-header-bg)',
-                            border: `1px solid ${idx === 0 ? 'rgba(168, 85, 247, 0.35)' : 'var(--border-color)'}`,
-                            borderRadius: '8px',
-                            padding: '0.6rem 0.85rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '50%',
-                              backgroundColor: idx === 0 ? '#a855f7' : 'rgba(255,255,255,0.08)',
-                              color: idx === 0 ? '#ffffff' : 'var(--muted-text)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.72rem',
-                              fontWeight: '800'
-                            }}>
-                              {idx + 1}
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <CountryFlag bandera={o.bandera} nombre={o.nombre} size="sm" />
-                              <span style={{ fontWeight: '700', fontSize: '0.85rem' }}>{o.nombre}</span>
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {idx === 0 && (
-                              <span style={{ fontSize: '0.68rem', fontWeight: '800', color: '#c084fc' }}>
-                                {t('ui.speaking2')}
-                              </span>
-                            )}
-                            <button
-                              onClick={() => removerOradorCaucus(o.id || o.nombre)}
-                              title={t('ui.removeFromCaucus')}
-                              aria-label={t('ui.removeFromCaucus')}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--muted-text)',
-                                cursor: 'pointer',
-                                padding: '0.2rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                borderRadius: '4px'
-                              }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </main>
     </div>
   );

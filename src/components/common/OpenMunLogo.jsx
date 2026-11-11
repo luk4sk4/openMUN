@@ -3,6 +3,7 @@ import React from 'react';
 const OpenMunLogo = ({ width = 180, height = 44, showText = true, isLight = false, className = '', style = {} }) => {
   const primaryColor = isLight ? '#0f172a' : '#ffffff';
   const secondaryColor = isLight ? '#475569' : '#a1a1aa';
+  const accentColor = `var(--accent-color, ${isLight ? '#a84728' : '#efa37f'})`;
   
   // Dynamic fills for the classical temple logo SVG
   const fillMain = isLight ? '#0f172a' : '#f8fafc';
@@ -100,7 +101,7 @@ const OpenMunLogo = ({ width = 180, height = 44, showText = true, isLight = fals
             letterSpacing: '0.08em',
             color: primaryColor,
           }}>
-            OPEN<span style={{ color: secondaryColor }}>MUN</span>
+            OPEN<span style={{ color: accentColor }}>MUN</span>
           </span>
           <span style={{
             fontSize: '0.58rem',

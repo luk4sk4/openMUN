@@ -490,7 +490,7 @@ const PizarraInteractiva = () => {
         height: '100%',
         backgroundColor: 'var(--panel-color)',
         borderRadius: 'var(--border-radius, 6px)',
-        overflow: 'hidden',
+        overflowY: 'auto',
         border: 'none',
         fontFamily: 'var(--font-family, Inter, system-ui, sans-serif)',
         position: 'relative',
@@ -653,7 +653,7 @@ const PizarraInteractiva = () => {
         </div>
 
         {/* Paleta de Colores & Selector de Grosor */}
-        <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="mobile-wrap" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
           {/* Paleta */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
             {PRESET_COLORS.map((c) => (
@@ -694,7 +694,7 @@ const PizarraInteractiva = () => {
           </div>
 
           {/* Selector de Grosor */}
-          <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+          <div className="mobile-wrap" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.2rem' }}>
             {BRUSH_SIZES.map((b) => {
               const label = t('whiteboard.brushSizes.' + b.id, b.label);
               return (
@@ -723,7 +723,7 @@ const PizarraInteractiva = () => {
         </div>
 
         {/* Fondos Predefinidos, Carga de Archivo & Exportar */}
-        <div className="mobile-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div className="mobile-wrap" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.35rem' }}>
           {/* Selector de Fondo */}
           <select
             value={bgType}
@@ -866,6 +866,7 @@ const PizarraInteractiva = () => {
           flex: 1,
           width: '100%',
           height: '100%',
+          minHeight: 'min(120px, 35dvh)',
           position: 'relative',
           display: 'flex',
           alignItems: 'center',

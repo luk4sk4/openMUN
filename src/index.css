@@ -1739,13 +1739,13 @@ body.light-theme .dashboard-fixed-grid > .fixed-panel,
 /* Estilos de la Página de Creación de Conferencia */
 .openmun-create-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
 
 @media (max-width: 768px) {
   .openmun-create-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
   }
 }
@@ -1764,6 +1764,10 @@ body.light-theme .dashboard-fixed-grid > .fixed-panel,
 /* Tooltips y controles de ayuda (OpenMUN Design System) */
 [data-tooltip] {
   position: relative;
+}
+
+[data-tooltip]:not(:hover, :focus-visible)::after {
+  content: none;
 }
 
 [data-tooltip]::after {

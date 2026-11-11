@@ -47,12 +47,13 @@ const PanelEnmiendasVotacion = () => {
         borderBottom: '1px solid var(--subborder-color)',
         backgroundColor: 'var(--card-header-bg)',
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '0.6rem',
         flexShrink: 0
       }}>
-        <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ minWidth: 0, flex: '1 1 10rem' }}>
           <div style={{
             fontSize: '0.88rem',
             fontWeight: '800',
@@ -62,7 +63,7 @@ const PanelEnmiendasVotacion = () => {
           }}>
             {asunto || t('ui.amendmentDebateAndVoting')}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--muted-text)', marginTop: '2px' }}>
             <span>{tipoVotacion === 'substantive' ? t('voting.substantiveShort') : t('voting.proceduralShort')}</span>
             {proponenteDetectado && (
               <>
@@ -77,6 +78,7 @@ const PanelEnmiendasVotacion = () => {
         {/* Selector de Vista: Unificada / Solo Cronómetro / Solo Votación */}
         <div style={{
           display: 'flex',
+          flexWrap: 'wrap',
           alignItems: 'center',
           gap: '3px',
           backgroundColor: 'var(--input-bg)',
